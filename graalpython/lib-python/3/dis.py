@@ -7,12 +7,17 @@ import io
 
 # GraalPy change: remove all the _opcode imports and dependent stuff
 
-# GraalPy change: add a dummy opmap to make coverage happy
+# GraalPy change: add dummy opcode metadata for coverage.py
 opmap = {
+    "EXTENDED_ARG": -1,
+    "JUMP_FORWARD": -1,
     "RETURN_VALUE": -1,
     "YIELD_VALUE": -1,
     "YIELD_FROM": -1,
 }
+opname = []
+hasjabs = []
+hasjrel = []
 
 __all__ = ["code_info", "dis", "disassemble", "distb", "disco",
            "findlinestarts", "findlabels", "show_code",
