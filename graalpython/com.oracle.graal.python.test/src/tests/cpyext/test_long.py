@@ -228,6 +228,13 @@ def _int_examples():
 
 
 class TestPyLong(CPyExtTestCase):
+    test_PyLong_GetInfo = CPyExtFunction(
+        lambda args: sys.int_info,
+        lambda: ((),),
+        resultspec="O",
+        argspec="",
+        arguments=[],
+    )
 
     def test_native_long_subtype_has_native_layout(self):
         NativeLongWithMember = CPyExtType(

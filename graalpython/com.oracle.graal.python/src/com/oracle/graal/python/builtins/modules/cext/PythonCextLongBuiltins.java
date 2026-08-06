@@ -66,6 +66,7 @@ import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -111,6 +112,12 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PythonCextLongBuiltins {
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
+    static long PyLong_GetInfo() {
+        Object result = SysModuleBuiltins.createIntInfo(PythonLanguage.get(null));
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
+    }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
     abstract static class GraalPyPrivate_Long_DigitCount extends CApiUnaryBuiltinNode {
