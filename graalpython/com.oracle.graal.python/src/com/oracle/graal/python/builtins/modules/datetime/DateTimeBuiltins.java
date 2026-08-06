@@ -49,13 +49,11 @@ import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBu
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCFROMTIMESTAMP;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCNOW;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -97,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -178,10 +175,9 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         PythonLanguage language = core.getLanguage();
 
-        PythonModule datetimeModule = core.lookupBuiltinModule(T__DATETIME);
-        PythonBuiltinClass self = (PythonBuiltinClass) datetimeModule.getAttribute(T_DATETIME);
         final var dateTimeType = PythonBuiltinClassType.PDateTime;
         final var dateTimeShape = dateTimeType.getInstanceShape(language);
+        PythonBuiltinClass self = core.lookupType(dateTimeType);
 
         final var min = new PDateTime(dateTimeType, dateTimeShape, MIN_YEAR, 1, 1, 0, 0, 0, 0, null, 0);
         self.setAttribute(T_MIN, min);
