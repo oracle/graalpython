@@ -599,6 +599,20 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("open_osfhandle");
     }
 
+    @ExportMessage
+    public int setMode(int fd, int mode) throws PosixException {
+        int binary = PosixConstants.O_BINARY.getValueIfDefined();
+        int text = PosixConstants.O_TEXT.getValueIfDefined();
+        if (mode != binary && mode != text) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        int previousMode = setModeTracked(fd, mode);
+        if (previousMode < 0) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        return previousMode;
+    }
+
     @ExportMessage(name = "pipe")
     public int[] pipeMessage(@Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         // TODO: will merge with super.pipe once the super class is merged with this class

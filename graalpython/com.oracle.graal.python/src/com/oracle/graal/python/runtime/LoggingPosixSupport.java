@@ -264,6 +264,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int setMode(int fd, int mode,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("setMode", "%d, %d", fd, mode);
+        try {
+            return logExit("setMode", "%d", lib.setMode(delegate, fd, mode));
+        } catch (PosixException e) {
+            throw logException("setMode", e);
+        }
+    }
+
+    @ExportMessage
     final int[] pipe(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("pipe", "");

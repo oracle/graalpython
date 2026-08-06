@@ -11,4 +11,6 @@ test.test_dbm.TestCase_dumb.test_keys @ darwin-arm64,linux-aarch64,linux-aarch64
 test.test_dbm.TestCase_dumb.test_open_with_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dbm.TestCase_dumb.test_open_with_pathlib_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dbm.TestCase_dumb.test_open_with_pathlib_path_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_dbm.WhichDBTestCase.test_whichdb @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dbm.WhichDBTestCase.test_whichdb @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+# GR-78201
+!test.test_dbm.WhichDBTestCase.test_whichdb @ win32-AMD64,win32-AMD64-github

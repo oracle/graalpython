@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,7 @@ abstract class PosixResources extends PosixSupport {
     /** Context-local file-descriptor mappings and PID mappings */
     protected final PythonContext context;
     private final SortedMap<Integer, ChannelWrapper> files;
+    private final Map<Integer, Integer> fileModes;
     protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
@@ -222,12 +223,16 @@ abstract class PosixResources extends PosixSupport {
     protected PosixResources(PythonContext context) {
         this.context = context;
         files = Collections.synchronizedSortedMap(new TreeMap<>());
+        fileModes = Collections.synchronizedMap(new HashMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
         children = Collections.synchronizedList(new ArrayList<>());
 
         files.put(FD_STDIN, ChannelWrapper.createForStandardStream());
         files.put(FD_STDOUT, ChannelWrapper.createForStandardStream());
         files.put(FD_STDERR, ChannelWrapper.createForStandardStream());
+        fileModes.put(FD_STDIN, defaultFileMode());
+        fileModes.put(FD_STDOUT, defaultFileMode());
+        fileModes.put(FD_STDERR, defaultFileMode());
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             filePaths.put(FD_STDIN, "STDIN");
             filePaths.put(FD_STDOUT, "STDOUT");
@@ -260,6 +265,7 @@ abstract class PosixResources extends PosixSupport {
     @TruffleBoundary
     private void addFD(int fd, Channel channel, String path) {
         files.put(fd, new ChannelWrapper(channel));
+        fileModes.put(fd, defaultFileMode());
         if (path != null) {
             filePaths.put(fd, path);
         }
@@ -278,6 +284,7 @@ abstract class PosixResources extends PosixSupport {
                 }
 
                 files.remove(fd);
+                fileModes.remove(fd);
                 filePaths.remove(fd);
             }
             return true;
@@ -295,10 +302,21 @@ abstract class PosixResources extends PosixSupport {
         if (channelWrapper != null) {
             channelWrapper.cnt += 1;
             files.put(fd2, channelWrapper);
+            fileModes.put(fd2, fileModes.get(fd1));
             if (path != null) {
                 filePaths.put(fd2, path);
             }
         }
+    }
+
+    private static int defaultFileMode() {
+        return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? PosixConstants.O_BINARY.getValueIfDefined() : 0;
+    }
+
+    @TruffleBoundary
+    protected int setModeTracked(int fd, int mode) {
+        Integer previousMode = fileModes.replace(fd, mode);
+        return previousMode == null ? -1 : previousMode;
     }
 
     protected boolean isStandardStream(int fd) {
