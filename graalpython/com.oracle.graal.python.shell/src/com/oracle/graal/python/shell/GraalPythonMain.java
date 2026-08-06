@@ -162,6 +162,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean snaptshotStartup = false;
     private boolean warnDefaultEncoding = false;
     private int intMaxStrDigits = -1;
+    private int cpuCount = -1;
+    private boolean cpuCountXOptionSet = false;
+    private boolean cpuCountSet = false;
     private VersionAction versionAction = VersionAction.None;
     private List<String> givenArguments;
     private List<String> relaunchArgs;
@@ -465,6 +468,10 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                 if (eq > 0) {
                                     intMaxStrDigits = validateIntMaxStrDigits(xOption.substring(eq), "-X int_max_str_digits");
                                 }
+                            } else if (xOption.equals("cpu_count") || xOption.startsWith("cpu_count=")) {
+                                cpuCount = validateCpuCount(xOption, true);
+                                cpuCountXOptionSet = true;
+                                cpuCountSet = true;
                             } else if ("jit".equals(xOption) || xOption.startsWith("jit=")) {
                                 applyJitModePreset(polyglotOptions, xOption);
                                 jitModePresetSpecified = true;
@@ -792,6 +799,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             if (intMaxStrDigits < 0 && maxStrDigitsEnv != null) {
                 intMaxStrDigits = validateIntMaxStrDigits(maxStrDigitsEnv, "PYTHONINTMAXSTRDIGITS");
             }
+            String cpuCountEnv = getEnv("PYTHON_CPU_COUNT");
+            if (!cpuCountXOptionSet && cpuCountEnv != null) {
+                cpuCount = validateCpuCount(cpuCountEnv, false);
+                cpuCountSet = true;
+            }
 
             String hashSeed = getEnv("PYTHONHASHSEED");
             if (hashSeed != null) {
@@ -852,6 +864,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.WarnDefaultEncodingFlag", Boolean.toString(warnDefaultEncoding));
         if (intMaxStrDigits > 0) {
             contextBuilder.option("python.IntMaxStrDigits", Integer.toString(intMaxStrDigits));
+        }
+        if (cpuCountSet) {
+            contextBuilder.option("python.CpuCount", Integer.toString(cpuCount));
         }
         contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
@@ -977,6 +992,29 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             // fallthrough
         }
         throw abort(String.format("%s: invalid limit; must be >= %d  or 0 for unlimited.", name, INT_MAX_STR_DIGITS_THRESHOLD), 1);
+    }
+
+    private int validateCpuCount(String input, boolean xOption) {
+        String value = input;
+        if (xOption) {
+            int eq = input.indexOf('=');
+            if (eq < 0) {
+                throw abort("-X cpu_count=n option: n is missing or an invalid number, n must be greater than 0", 1);
+            }
+            value = input.substring(eq + 1);
+        }
+        if (value.equals("default")) {
+            return -1;
+        }
+        try {
+            int count = Integer.parseInt(value.stripLeading());
+            if (count > 0) {
+                return count;
+            }
+        } catch (NumberFormatException e) {
+            // fallthrough
+        }
+        throw abort("-X cpu_count=n option: n is missing or an invalid number, n must be greater than 0", 1);
     }
 
     private void applyJitModePreset(Map<String, String> polyglotOptions, String xOption) {
@@ -1233,7 +1271,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         "-V     : print the Python version number and exit (also --version)\n" +
                         "         when given twice, print more information about the build\n" +
                         "-X opt : set implementation-specific option\n" +
-                        "         CPython-compatible options supported by GraalPy: warn_default_encoding, int_max_str_digits\n" +
+                        "         CPython-compatible options supported by GraalPy: warn_default_encoding, int_max_str_digits, cpu_count\n" +
                         "         GraalPy implementation-specific options: jit=0|1|2 (default: jit=1)\n" +
                         "-W arg : warning control; arg is action:message:category:module:lineno\n" +
                         "         also PYTHONWARNINGS=arg\n" +
@@ -1247,6 +1285,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         "               default module search path.  The result is sys.path.\n" +
                         "PYTHONHOME   : alternate <prefix> directory (or <prefix>:<exec_prefix>).\n" +
                         "               The default module search path uses <prefix>/pythonX.X.\n" +
+                        "PYTHON_CPU_COUNT: override the return value of os.cpu_count() (-X cpu_count).\n" +
                         "PYTHONCASEOK : ignore case in 'import' statements (Windows).\n" +
                         "PYTHONIOENCODING: Encoding[:errors] used for stdin/stdout/stderr.\n" +
                         "PYTHONHASHSEED: if this variable is set to 'random', the effect is the same\n" +

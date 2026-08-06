@@ -2370,6 +2370,15 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_get_cpu_count_config")
+    @GenerateNodeFactory
+    abstract static class GetCpuCountConfig extends PythonBuiltinNode {
+        @Specialization
+        int get() {
+            return getContext().getOption(PythonOptions.CpuCount);
+        }
+    }
+
     @Builtin(name = "set_int_max_str_digits", minNumOfPositionalArgs = 1, parameterNames = {"maxdigits"})
     @ArgumentClinic(name = "maxdigits", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
