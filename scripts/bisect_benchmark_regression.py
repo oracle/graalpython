@@ -105,10 +105,17 @@ def parse_args() -> argparse.Namespace:
         description="Generate and optionally submit a bisect-benchmark CI workflow for a benchmark regression.",
     )
     parser.add_argument("benchmark_job_name", help="Benchmark job key, for example pybench-micro-graalvm_ee_default-post_merge-linux-amd64-jdk-latest.")
-    parser.add_argument("benchmark_name", help="Benchmark selector to narrow the benchmark command to a single benchmark.")
+    parser.add_argument("benchmark_name", help="Benchmark result name to bisect.")
     parser.add_argument("metric", help="Benchmark metric name, or WORKS.")
     parser.add_argument("good_commit", help="Known good GraalPy commit or ref.")
     parser.add_argument("bad_commit", help="Known bad GraalPy commit or ref.")
+    parser.add_argument(
+        "--benchmark-selector",
+        help=(
+            "Benchmark selector used to narrow the benchmark command. Defaults to benchmark_name. "
+            "Use this when a harness selector produces several separately named results."
+        ),
+    )
     parser.add_argument("--config-only", action="store_true", help="Print the generated bisect config and exit.")
     parser.add_argument("--force-rebuild", action="store_true", help="Submit a fresh bisect job even if one already exists.")
     parser.add_argument("--debug", action="store_true", help="Print progress information to stderr.")
@@ -153,16 +160,19 @@ def abbreviate_commit(commit: str) -> str:
     return commit[:12]
 
 
-def build_branch_name(job_name: str, benchmark_name: str, metric: str, good_commit: str, bad_commit: str) -> str:
-    slug = "_".join(
-        [
-            job_name,
-            benchmark_name,
-            metric,
-            abbreviate_commit(good_commit),
-            abbreviate_commit(bad_commit),
-        ]
-    )
+def build_branch_name(
+    job_name: str,
+    benchmark_name: str,
+    metric: str,
+    good_commit: str,
+    bad_commit: str,
+    benchmark_selector: str | None = None,
+) -> str:
+    parts = [job_name, benchmark_name]
+    if benchmark_selector:
+        parts.append(benchmark_selector)
+    parts.extend([metric, abbreviate_commit(good_commit), abbreviate_commit(bad_commit)])
+    slug = "_".join(parts)
     return "bisect/{}".format(slug)
 
 
@@ -509,6 +519,7 @@ def generate_config(
     repo_dir: Path,
     benchmark_job_name: str,
     benchmark_name: str,
+    benchmark_selector: str | None,
     metric: str,
     good_commit: str,
     bad_commit: str,
@@ -516,7 +527,7 @@ def generate_config(
     reference_build = get_reference_build(repo_dir, benchmark_job_name, bad_commit, good_commit)
     debug("Using reference build {} ({})".format(reference_build.build_number, reference_build.url))
     build_log = run_command(["gdev-cli", "buildbot", "get-log", str(reference_build.build_number)], cwd=repo_dir)
-    build_command, benchmark_command = extract_commands(build_log, benchmark_name)
+    build_command, benchmark_command = extract_commands(build_log, benchmark_selector or benchmark_name)
     results_benchmark_name = None if metric == "WORKS" else benchmark_selector_for_command(benchmark_name)
     enterprise = "enterprise" in build_command
     return build_config_text(
@@ -543,6 +554,7 @@ def main() -> int:
         repo_dir=repo_dir,
         benchmark_job_name=args.benchmark_job_name,
         benchmark_name=args.benchmark_name,
+        benchmark_selector=args.benchmark_selector,
         metric=args.metric,
         good_commit=good_commit,
         bad_commit=bad_commit,
