@@ -37,9 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import errno
 import mmap
 import os
 import sys
+import tempfile
 import time
 import unittest
 
@@ -97,6 +99,27 @@ def test_access_copy_without_map_private_constant():
         assert m[:] == b'a'
     finally:
         m.close()
+
+
+@unittest.skipIf(sys.platform == "win32", "trackfd is Unix-only")
+def test_trackfd():
+    test_case = unittest.TestCase()
+    # The emulated POSIX backend reopens the file by path when creating the mapping.
+    # TemporaryFile unlinks that path immediately on POSIX (GR-29159).
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(b"x" * 64)
+        f.flush()
+        with mmap.mmap(f.fileno(), 32) as m:
+            assert m.size() == 64
+        with mmap.mmap(f.fileno(), 32, trackfd=False) as m:
+            f.close()
+            assert len(m) == 32
+            with test_case.assertRaises(OSError) as error:
+                m.size()
+            assert error.exception.errno == errno.EBADF
+            with test_case.assertRaisesRegex(ValueError, "trackfd=False"):
+                m.resize(16)
+            assert m[:1] == b"x"
 
 
 def test_find():

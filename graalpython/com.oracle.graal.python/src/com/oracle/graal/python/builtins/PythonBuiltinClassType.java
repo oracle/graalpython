@@ -508,7 +508,18 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, newBuilder()),
     PMethod("method", PythonObject, newBuilder().slots(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS).doc("""
                     Create a bound instance method object.""")),
-    PMMap("mmap", PythonObject, newBuilder().publishInModule("mmap").basetype().slots(MMapBuiltins.SLOTS)),
+    PMMap("mmap", PythonObject, newBuilder().publishInModule("mmap").basetype().slots(MMapBuiltins.SLOTS).doc("""
+                    Windows: mmap(fileno, length[, tagname[, access[, offset]]])
+
+                    Maps length bytes from the file specified by the file handle fileno.
+
+                    Unix: mmap(fileno, length[, flags[, prot[, access[, offset]]]], *, trackfd=True)
+
+                    Maps length bytes from the file specified by the file descriptor fileno. If length
+                    is 0, the maximum length of the map is the current size of the file. If trackfd is
+                    false, fileno is not duplicated and size() and resize() are unavailable.
+
+                    To map anonymous memory, pass -1 as fileno.""")),
     PNone("NoneType", PythonObject, newBuilder().slots(NoneBuiltins.SLOTS)),
     PNotImplemented("NotImplementedType", PythonObject, newBuilder().slots(NotImplementedBuiltins.SLOTS)),
     PProperty(J_PROPERTY, PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().slots(PropertyBuiltins.SLOTS).doc("""

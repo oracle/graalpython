@@ -1150,8 +1150,8 @@ public final class PFactory {
         return new PEncodingMap(PythonBuiltinClassType.PEncodingMap, PythonBuiltinClassType.PEncodingMap.getInstanceShape(language), count2, count3, level1, level23);
     }
 
-    public static PMMap createMMap(PythonContext context, Object cls, Shape shape, Object mmapHandle, int fd, long length, int access) {
-        return new PMMap(cls, shape, context, mmapHandle, fd, length, access);
+    public static PMMap createMMap(PythonContext context, Object cls, Shape shape, Object mmapHandle, int fd, long length, int access, boolean trackFd) {
+        return new PMMap(cls, shape, context, mmapHandle, fd, length, access, trackFd);
     }
 
     public static BZ2Object.BZ2Compressor createBZ2Compressor(PythonLanguage language) {

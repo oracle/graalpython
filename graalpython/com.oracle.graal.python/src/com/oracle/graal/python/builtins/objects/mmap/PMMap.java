@@ -74,10 +74,10 @@ public final class PMMap extends PythonObject {
     private long pos;
     private final int access;
 
-    public PMMap(Object pythonClass, Shape instanceShape, PythonContext context, Object handle, int fd, long length, int access) {
+    public PMMap(Object pythonClass, Shape instanceShape, PythonContext context, Object handle, int fd, long length, int access, boolean trackFd) {
         super(pythonClass, instanceShape);
         assert handle != null;
-        this.ref = new PMMap.MMapRef(this, handle, context.getSharedFinalizer(), fd, length);
+        this.ref = new PMMap.MMapRef(this, handle, context.getSharedFinalizer(), fd, length, trackFd);
         this.access = access;
     }
 
@@ -108,6 +108,14 @@ public final class PMMap extends PythonObject {
 
     public long getLength() {
         return ref.length;
+    }
+
+    int getFd() {
+        return ref.fd;
+    }
+
+    boolean tracksFd() {
+        return ref.trackFd;
     }
 
     public long getPos() {
@@ -174,11 +182,13 @@ public final class PMMap extends PythonObject {
 
         final int fd;
         private final long length;
+        private final boolean trackFd;
 
-        MMapRef(PMMap referent, Object handle, AsyncHandler.SharedFinalizer finalizer, int fd, long length) {
+        MMapRef(PMMap referent, Object handle, AsyncHandler.SharedFinalizer finalizer, int fd, long length, boolean trackFd) {
             super(referent, handle, finalizer);
             this.fd = fd;
             this.length = length;
+            this.trackFd = trackFd;
         }
 
         @Override
