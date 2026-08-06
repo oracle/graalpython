@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -350,6 +351,22 @@ public final class PythonCextListBuiltins {
         static int reverse(PList self,
                         @Cached ListBuiltins.ListReverseNode reverseNode) {
             reverseNode.execute(null, self);
+            return 0;
+        }
+
+        @Fallback
+        static int error(@SuppressWarnings("unused") Object self,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class PyList_Clear extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int clear(PList self) {
+            self.setSequenceStorage(EmptySequenceStorage.INSTANCE);
             return 0;
         }
 
