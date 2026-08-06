@@ -343,7 +343,7 @@ def _bisect_benchmark(argv, bisect_id):
         build_command = shlex.split(args.build_command)
         if not args.no_clean:
             try:
-                clean_command = build_command[:build_command.index('build')] + ['clean']
+                clean_command = build_command[:build_command.index('build')] + ['clean', '--all', '--aggressive']
                 retcode = mx.run(clean_command, nonZeroIsFatal=False)
                 if retcode:
                     print("Warning: clean command failed")
