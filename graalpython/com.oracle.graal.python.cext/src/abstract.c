@@ -3003,6 +3003,7 @@ PyObject_GetAIter(PyObject *o) {
     return it;
 }
 #endif // GraalPy change
+
 int
 PyIter_Check(PyObject *obj)
 {
@@ -3010,7 +3011,7 @@ PyIter_Check(PyObject *obj)
     return (tp->tp_iternext != NULL &&
             tp->tp_iternext != &_PyObject_NextNotImplemented);
 }
-#if 0 // GraalPy change
+
 int
 PyAIter_Check(PyObject *obj)
 {
@@ -3020,6 +3021,7 @@ PyAIter_Check(PyObject *obj)
             tp->tp_as_async->am_anext != &_PyObject_NextNotImplemented);
 }
 
+#if 0 // GraalPy change
 /* Return next item.
  * If an error occurs, return NULL.  PyErr_Occurred() will be true.
  * If the iteration terminates normally, return NULL and clear the

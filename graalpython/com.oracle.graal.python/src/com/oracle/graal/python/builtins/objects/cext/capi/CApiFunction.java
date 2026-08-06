@@ -641,7 +641,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_c_prod", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_quot", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_sum", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
-    @CApiBuiltin(name = "PyAIter_Check", ret = Int, args = {PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "PyAIter_Check", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyAsyncGen_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)

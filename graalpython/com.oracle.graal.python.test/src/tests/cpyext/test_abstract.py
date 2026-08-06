@@ -120,6 +120,33 @@ def _reference_next(args):
     except BaseException:
         raise SystemError
 
+
+class Iterator:
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        raise StopIteration
+
+
+class Iterable:
+    def __iter__(self):
+        return Iterator()
+
+
+class AsyncIterator:
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        raise StopAsyncIteration
+
+
+class AsyncIterable:
+    def __aiter__(self):
+        return AsyncIterator()
+
+
 def raise_type_error():
     raise TypeError
 
@@ -740,6 +767,33 @@ class TestAbstractWithNative(unittest.TestCase):
 
 
 class TestAbstract(CPyExtTestCase):
+
+    test_PyIter_Check = CPyExtFunction(
+        lambda args: hasattr(type(args[0]), "__next__"),
+        lambda: (
+            (iter(()),),
+            (Iterator(),),
+            (Iterable(),),
+            (AsyncIterator(),),
+            (object(),),
+        ),
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* object"],
+    )
+
+    test_PyAIter_Check = CPyExtFunction(
+        lambda args: hasattr(type(args[0]), "__anext__"),
+        lambda: (
+            (AsyncIterator(),),
+            (AsyncIterable(),),
+            (Iterator(),),
+            (object(),),
+        ),
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* object"],
+    )
 
     test_PyNumber_Absolute = CPyExtFunction(
         lambda args: abs(args[0]),
