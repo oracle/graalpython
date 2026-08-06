@@ -497,7 +497,7 @@ def write_temp_branch(repo_dir: Path, branch_name: str, config_text: str) -> str
         run_command(["git", "add", *[str(path) for path in BRANCH_SUPPORT_FILES]], cwd=clone_dir)
         run_command(["git", "commit", "-m", commit_message], cwd=clone_dir)
         commit = resolve_commit(clone_dir, "HEAD")
-        run_command(["git", "push", "origin", "HEAD:refs/heads/{}".format(branch_name)], cwd=clone_dir)
+        run_command(["git", "push", "--force", "origin", "HEAD:refs/heads/{}".format(branch_name)], cwd=clone_dir)
         debug("Pushed branch {} at {}".format(branch_name, commit))
         return commit
 
@@ -570,11 +570,12 @@ def main() -> int:
         args.metric,
         good_commit,
         bad_commit,
+        args.benchmark_selector,
     )
     debug("Branch name: {}".format(branch_name))
 
     branch_head = get_remote_branch_head(repo_dir, branch_name)
-    if branch_head is None:
+    if branch_head is None or args.force_rebuild:
         branch_head = write_temp_branch(repo_dir, branch_name, config_text)
         wait_for_enumeration(
             repo_dir,
@@ -589,7 +590,7 @@ def main() -> int:
     else:
         debug("Remote branch head: {}".format(branch_head))
         existing_builds = get_matching_builds(repo_dir, branch_head, BISECT_JOB_NAME)
-        if existing_builds and not args.force_rebuild:
+        if existing_builds:
             build = wait_for_bisect_build(repo_dir, branch_head)
         else:
             wait_for_enumeration(
