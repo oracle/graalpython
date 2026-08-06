@@ -171,7 +171,6 @@ import com.oracle.graal.python.compiler.AstOptimizer;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.lib.IteratorExhausted;
-import com.oracle.graal.python.lib.PyAIterCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
@@ -191,6 +190,7 @@ import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectFormat;
+import com.oracle.graal.python.lib.PyObjectGetAIter;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -2428,21 +2428,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
                         @Bind Node inliningTarget,
-                        @Cached GetObjectSlotsNode getSlots,
-                        @Cached CallSlotUnaryNode callSlot,
-                        @Cached PyAIterCheckNode checkNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PRaiseNode raiseNode) {
-            TpSlots slots = getSlots.execute(inliningTarget, arg);
-            if (slots.am_aiter() == null) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNC_ITERABLE, arg);
-            }
-            Object asyncIterator = callSlot.execute(frame, inliningTarget, slots.am_aiter(), arg);
-            if (!checkNode.execute(inliningTarget, asyncIterator)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AITER_RETURNED_NOT_ASYNC_ITERATOR,
-                                getClassNode.execute(inliningTarget, asyncIterator));
-            }
-            return asyncIterator;
+                        @Cached PyObjectGetAIter getAIter) {
+            return getAIter.execute(frame, inliningTarget, arg);
         }
     }
 

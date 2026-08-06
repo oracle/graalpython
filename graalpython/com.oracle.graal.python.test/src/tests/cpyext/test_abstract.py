@@ -147,6 +147,11 @@ class AsyncIterable:
         return AsyncIterator()
 
 
+class BadAsyncIterable:
+    def __aiter__(self):
+        return object()
+
+
 def raise_type_error():
     raise TypeError
 
@@ -793,6 +798,21 @@ class TestAbstract(CPyExtTestCase):
         resultspec="i",
         argspec="O",
         arguments=["PyObject* object"],
+    )
+
+    test_PyObject_GetAIter = CPyExtFunction(
+        lambda args: aiter(args[0]),
+        lambda: (
+            (AsyncIterator(),),
+            (AsyncIterable(),),
+            (BadAsyncIterable(),),
+            (Iterator(),),
+            (object(),),
+        ),
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* object"],
+        cmpfunc=lambda x, y: type(x) is type(y) and (not isinstance(x, BaseException) or str(x) == str(y)),
     )
 
     test_PyNumber_Absolute = CPyExtFunction(

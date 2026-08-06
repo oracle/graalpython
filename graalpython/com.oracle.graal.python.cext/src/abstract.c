@@ -2983,9 +2983,13 @@ PyObject_GetIter(PyObject *o)
         return res;
     }
 }
-#if 0 // GraalPy change
 PyObject *
 PyObject_GetAIter(PyObject *o) {
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(o)) {
+        return GraalPyPrivate_Object_GetAIter(o);
+    }
+
     PyTypeObject *t = Py_TYPE(o);
     unaryfunc f;
 
@@ -3002,7 +3006,6 @@ PyObject_GetAIter(PyObject *o) {
     }
     return it;
 }
-#endif // GraalPy change
 
 int
 PyIter_Check(PyObject *obj)

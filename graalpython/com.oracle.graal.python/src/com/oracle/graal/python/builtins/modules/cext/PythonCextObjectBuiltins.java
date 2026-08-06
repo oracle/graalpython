@@ -115,6 +115,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectFormat;
+import com.oracle.graal.python.lib.PyObjectGetAIter;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -708,6 +709,13 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached PyObjectFormat format) {
             return format.execute(null, obj, spec);
         }
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Object_GetAIter(long objectPtr) {
+        Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
+        Object result = PyObjectGetAIter.executeUncached(object);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored)
