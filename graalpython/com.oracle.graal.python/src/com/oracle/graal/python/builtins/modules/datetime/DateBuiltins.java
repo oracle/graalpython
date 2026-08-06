@@ -51,10 +51,8 @@ import static com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichComp
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -89,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -154,10 +151,9 @@ public final class DateBuiltins extends PythonBuiltins {
 
         PythonLanguage language = core.getLanguage();
 
-        PythonModule datetimeModule = core.lookupBuiltinModule(T__DATETIME);
-        PythonBuiltinClass self = (PythonBuiltinClass) datetimeModule.getAttribute(T_DATE);
         final var dateType = PythonBuiltinClassType.PDate;
         final var dateShape = dateType.getInstanceShape(language);
+        PythonBuiltinClass self = core.lookupType(dateType);
 
         final var minDate = new PDate(dateType, dateShape, MIN_YEAR, 1, 1);
         self.setAttribute(T_MIN, minDate);

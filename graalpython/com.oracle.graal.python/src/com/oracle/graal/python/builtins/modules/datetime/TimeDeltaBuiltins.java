@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisi
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -67,7 +66,6 @@ import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.Time
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -131,10 +129,9 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
 
         PythonLanguage language = core.getLanguage();
 
-        PythonModule datetimeModule = core.lookupBuiltinModule(T__DATETIME);
-        PythonBuiltinClass self = (PythonBuiltinClass) datetimeModule.getAttribute(T_TIMEDELTA);
         final var timeDeltaType = PythonBuiltinClassType.PTimeDelta;
         final var timeDeltaShape = timeDeltaType.getInstanceShape(language);
+        PythonBuiltinClass self = core.lookupType(timeDeltaType);
 
         final var min = new PTimeDelta(timeDeltaType, timeDeltaShape, -999999999, 0, 0);
         self.setAttribute(T_MIN, min);

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.datetime;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TIMEZONE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UTC;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -76,7 +75,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_datetime")
+// Initialized so that the module state is available for host temporal object interop
+@CoreFunctions(defineModule = "_datetime", isEager = true)
 public class DatetimeModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor ISO_CALENDAR_DATE = new StructSequence.BuiltinTypeDescriptor(
@@ -113,7 +113,7 @@ public class DatetimeModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
 
         PythonModule self = core.lookupBuiltinModule(T__DATETIME);
-        PythonBuiltinClass timeZoneClass = (PythonBuiltinClass) self.getAttribute(T_TIMEZONE);
+        PythonBuiltinClass timeZoneClass = core.lookupType(PythonBuiltinClassType.PTimezone);
         Object utcObject = timeZoneClass.getAttribute(TimeZoneBuiltins.T_UTC_ATTRIBUTE);
 
         // if by some reason datetime.timezone.utc attribute isn't set yet

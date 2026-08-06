@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TIME;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -75,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -139,10 +136,9 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         PythonLanguage language = core.getLanguage();
 
-        PythonModule datetimeModule = core.lookupBuiltinModule(T__DATETIME);
-        PythonBuiltinClass self = (PythonBuiltinClass) datetimeModule.getAttribute(T_TIME);
         final var timeType = PythonBuiltinClassType.PTime;
         final var timeShape = timeType.getInstanceShape(language);
+        PythonBuiltinClass self = core.lookupType(timeType);
 
         final var min = new PTime(timeType, timeShape, 0, 0, 0, 0, null, 0);
         self.setAttribute(T_MIN, min);

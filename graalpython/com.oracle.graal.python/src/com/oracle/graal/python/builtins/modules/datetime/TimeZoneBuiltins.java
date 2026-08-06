@@ -44,9 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TIMEZONE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UTC;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETINITARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -65,7 +63,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -115,12 +112,11 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
 
         PythonLanguage language = core.getLanguage();
 
-        PythonModule datetimeModule = core.lookupBuiltinModule(T__DATETIME);
-        PythonBuiltinClass self = (PythonBuiltinClass) datetimeModule.getAttribute(T_TIMEZONE);
         var timeDeltaType = PythonBuiltinClassType.PTimeDelta;
         var timeDeltaShape = timeDeltaType.getInstanceShape(language);
         var timezoneType = PythonBuiltinClassType.PTimezone;
         var timezoneShape = timezoneType.getInstanceShape(language);
+        PythonBuiltinClass self = core.lookupType(timezoneType);
 
         // -(23 hours, 59 minutes)
         var timeDeltaMin = new PTimeDelta(timeDeltaType, timeDeltaShape, -1, 60, 0);

@@ -48,9 +48,12 @@ import static org.junit.Assert.assertTrue;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Date;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
@@ -78,6 +81,15 @@ public class HostInteropTest extends PythonTests {
     }
 
     public static int TEST_FIELD = 32;
+
+    @Test
+    public void testJavaTemporalStrWithoutImportingDatetime() {
+        Value strFunction = context.eval("python", "str");
+        assertEquals("1970-01-01 00:00:00+00:00", strFunction.execute(new Date(0)).asString());
+        assertEquals("1970-01-01 00:00:00+00:00", strFunction.execute(Instant.EPOCH).asString());
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(2000, 1, 2, 3, 4, 5, 0, ZoneId.of("UTC"));
+        assertEquals("2000-01-02 03:04:05+00:00", strFunction.execute(zonedDateTime).asString());
+    }
 
     @Test
     public void testStaticMembers() {
