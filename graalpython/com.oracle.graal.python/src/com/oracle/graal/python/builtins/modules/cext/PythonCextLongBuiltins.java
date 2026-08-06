@@ -58,8 +58,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 
 import java.math.BigInteger;
 import java.nio.ByteOrder;
@@ -74,26 +74,26 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
-import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -379,12 +379,7 @@ public final class PythonCextLongBuiltins {
             throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
         }
 
-        boolean littleEndian;
-        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
-            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-        } else {
-            littleEndian = (flags & LITTLE_ENDIAN) != 0;
-        }
+        boolean littleEndian = resolveEndianness(flags);
         if (size > 0) {
             writeNativeBytes(buffer, size, value, littleEndian);
         }
@@ -448,16 +443,34 @@ public final class PythonCextLongBuiltins {
         if (size != (int) size) {
             throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
         }
-        boolean littleEndian;
-        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
-            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-        } else {
-            littleEndian = (flags & LITTLE_ENDIAN) != 0;
-        }
+        boolean littleEndian = resolveEndianness(flags);
         boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
         byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
         Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, signed);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
+    static long PyLong_FromUnsignedNativeBytes(long buffer, long size, int flags) {
+        if (buffer == 0) {
+            throw PythonCextBuiltins.badInternalCall("PyLong_FromUnsignedNativeBytes", "buffer");
+        }
+        if (size != (int) size) {
+            throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+        }
+        boolean littleEndian = resolveEndianness(flags);
+        byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
+        Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, false);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
+    }
+
+    private static boolean resolveEndianness(int flags) {
+        boolean littleEndian;
+        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+        } else {
+            littleEndian = (flags & LITTLE_ENDIAN) != 0;
+        }
+        return littleEndian;
+    }
 }

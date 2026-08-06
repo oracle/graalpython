@@ -136,6 +136,15 @@ def _reference_from_native_bytes(args):
     return int.from_bytes(data, byteorder, signed=signed)
 
 
+def _reference_from_unsigned_native_bytes(args):
+    data, flags = args
+    if flags == -1 or flags & 2:
+        byteorder = sys.byteorder
+    else:
+        byteorder = 'little' if flags & 1 else 'big'
+    return int.from_bytes(data, byteorder, signed=False)
+
+
 def _reference_as_native_bytes(args):
     value, size, flags, expected_size = args
     if flags == -1 or flags & 2:
@@ -698,6 +707,26 @@ class TestPyLong(CPyExtTestCase):
             (b'\x80\x00', 1),
             (b'\x00\x80', 1),
             (b'\xff\x00', -1),
+            (b'\xff\x00', 2),
+            (b'\xff\x00', 3),
+            (b'\x01\x23\x45\x67\x89\xab\xcd\xef\x01', 0),
+        ),
+        resultspec="O",
+        argspec="y#i",
+        arguments=["const char* buffer", "Py_ssize_t size", "int flags"],
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyLong_FromUnsignedNativeBytes = CPyExtFunction(
+        _reference_from_unsigned_native_bytes,
+        lambda: (
+            (b'', 0),
+            (b'\x00', 0),
+            (b'\xff', 0),
+            (b'\xff', 4),
+            (b'\x80\x00', 0),
+            (b'\x80\x00', 1),
+            (b'\x00\x80', 1),
             (b'\xff\x00', 2),
             (b'\xff\x00', 3),
             (b'\x01\x23\x45\x67\x89\xab\xcd\xef\x01', 0),

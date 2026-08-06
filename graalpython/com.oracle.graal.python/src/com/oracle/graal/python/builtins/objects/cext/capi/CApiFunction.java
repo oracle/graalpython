@@ -768,7 +768,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_Next", ret = PyInterpreterState, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_ThreadHead", ret = PyThreadState, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyList_Clear", ret = PrimitiveResult32, args = {PyObjectReturn}, call = NotImplemented)
-    @CApiBuiltin(name = "PyLong_FromUnsignedNativeBytes", ret = PyObjectReturn, args = {CONST_VOID_PTR, SIZE_T, PrimitiveResult32}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyMarshal_ReadLastObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyMarshal_ReadLongFromFile", ret = PrimitiveResult64, args = {FILE_PTR}, call = NotImplemented)
