@@ -73,6 +73,9 @@ PyAPI_DATA(const unsigned long) Py_Version;
 PyAPI_FUNC(int) Py_IsFinalizing(void);
 #endif
 
+// GraalPy change: compatibility alias for pybind11
+PyAPI_FUNC(int) _Py_IsFinalizing(void);
+
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_PYLIFECYCLE_H
 #  include "cpython/pylifecycle.h"
