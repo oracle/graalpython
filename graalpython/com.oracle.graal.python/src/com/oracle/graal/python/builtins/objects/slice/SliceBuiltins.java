@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.slice;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -46,11 +45,13 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToObjectS
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceCastToToBigInt;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceExactCastToInt;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -65,7 +66,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -122,9 +122,14 @@ public final class SliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        public static TruffleString repr(PSlice self) {
-            return toTruffleStringUncached(self.toString());
+        static TruffleString repr(VirtualFrame frame, PSlice self,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("slice(%s, %s, %s)",
+                            reprNode.execute(frame, inliningTarget, self.getStart()),
+                            reprNode.execute(frame, inliningTarget, self.getStop()),
+                            reprNode.execute(frame, inliningTarget, self.getStep()));
         }
     }
 
