@@ -154,6 +154,7 @@ endif()
 graalpy_sysconfig_env_value("LDCXXSHARED")
 graalpy_sysconfig_env_value("LDSHARED")
 graalpy_sysconfig_value("LDLIBRARY" "libpython.${GRAALPY_SYSCONFIG_SOABI}${GRAALPY_SYSCONFIG_SHLIB_SUFFIX}")
+graalpy_sysconfig_value("INSTSONAME" "${GRAALPY_SYSCONFIG_LDLIBRARY}")
 
 set(GRAALPY_SYSCONFIG_STRING_NAMES
     ABIFLAGS
@@ -166,6 +167,7 @@ set(GRAALPY_SYSCONFIG_STRING_NAMES
     CXX
     EXE
     EXT_SUFFIX
+    INSTSONAME
     LD
     LDCXXSHARED
     LDLIBRARY
