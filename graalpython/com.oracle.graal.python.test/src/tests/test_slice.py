@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -194,6 +194,25 @@ def test_correct_error():
         [1][:"42"]
     except TypeError as e:
         assert "slice indices must be integers" in str(e)
+
+
+def test_repr():
+    assert repr(slice(1, 2, 3)) == "slice(1, 2, 3)"
+    assert repr(slice(1, 2)) == "slice(1, 2, None)"
+    assert repr(slice(None)) == "slice(None, None, None)"
+    assert repr(slice(2**70)) == "slice(None, 1180591620717411303424, None)"
+    # each member is formatted with repr(), not with a debug representation
+    assert repr(slice(())) == "slice(None, (), None)"
+    assert repr(slice((1,))) == "slice(None, (1,), None)"
+    assert repr(slice([])) == "slice(None, [], None)"
+    assert repr(slice("")) == "slice(None, '', None)"
+    assert repr(slice(True, 2)) == "slice(True, 2, None)"
+
+    class Custom:
+        def __repr__(self):
+            return "<custom>"
+
+    assert repr(slice(Custom())) == "slice(None, <custom>, None)"
 
 
 def test_slice_eq():
