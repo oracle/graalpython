@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -83,7 +83,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "isNoValue(keywordArg)")
         static PEnumerate doNone(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
                         @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -119,7 +119,8 @@ public final class EnumerateBuiltins extends PythonBuiltins {
             return isInteger(idx) || idx instanceof PInt;
         }
 
-        @Specialization(guards = "!isIntegerIndex(start)")
+        // !isNoValue: specializations are shared, so an omitted start must not reach this branch
+        @Specialization(guards = {"!isIntegerIndex(start)", "!isNoValue(start)"})
         static void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
