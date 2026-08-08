@@ -59,3 +59,37 @@ def test_omitted_start_after_rejected_start():
     # not break a later call that omits it
     assert_raises(TypeError, enumerate, 'abc', 'x')
     assert list(enumerate('abc')) == [(0, 'a'), (1, 'b'), (2, 'c')]
+
+
+def test_bool_start():
+    # GH-1074: bool is an int subclass, so True is a start of 1
+    assert list(enumerate('abc', True)) == [(1, 'a'), (2, 'b'), (3, 'c')]
+    assert list(enumerate('abc', False)) == [(0, 'a'), (1, 'b'), (2, 'c')]
+
+
+def test_index_start():
+    # GH-1074: any object implementing __index__ is accepted as start
+    class Idx:
+        def __index__(self):
+            return 3
+
+    assert list(enumerate([9, 8, 7], Idx())) == [(3, 9), (4, 8), (5, 7)]
+
+
+def test_huge_index_start():
+    # GH-1074: an __index__ result too large for a Java long still works
+    class BigIdx:
+        def __index__(self):
+            return 2 ** 70
+
+    assert list(enumerate('a', BigIdx())) == [(1180591620717411303424, 'a')]
+
+
+def test_float_start_is_rejected():
+    assert_raises(TypeError, enumerate, 'abc', 1.0)
+
+
+def test_omitted_start_after_coerced_start():
+    # GH-1074: coercing a start must not break a later call that omits it
+    assert list(enumerate('abc', True)) == [(1, 'a'), (2, 'b'), (3, 'c')]
+    assert list(enumerate('abc')) == [(0, 'a'), (1, 'b'), (2, 'c')]
