@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_ENUMERATE;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -49,14 +48,14 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -66,6 +65,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEnumerate)
@@ -83,8 +83,8 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
-        @Specialization
-        static PEnumerate doNone(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
+        @Specialization(guards = "isNoValue(keywordArg)")
+        static PEnumerate doNoValue(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
                         @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -119,10 +119,23 @@ public final class EnumerateBuiltins extends PythonBuiltins {
             return isInteger(idx) || idx instanceof PInt;
         }
 
-        @Specialization(guards = "!isIntegerIndex(start)")
-        static void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
+        // see cpython://Objects/enumobject.c#enum_new_impl
+        // !isNoValue: specializations are shared, so an omitted start must not reach this branch
+        @Specialization(guards = {"!isIntegerIndex(start)", "!isNoValue(start)"})
+        static PEnumerate doGeneric(VirtualFrame frame, Object cls, Object iterable, Object start,
+                        @Bind Node inliningTarget,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast,
+                        @Cached InlinedConditionProfile bigIntIndexProfile) {
+            Object index = indexNode.execute(frame, inliningTarget, start);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
+            Shape shape = getInstanceShape.execute(cls);
+            if (bigIntIndexProfile.profile(inliningTarget, index instanceof PInt)) {
+                return PFactory.createEnumerate(cls, shape, iterator, (PInt) index);
+            }
+            return PFactory.createEnumerate(cls, shape, iterator, cast.execute(inliningTarget, index));
         }
     }
 
