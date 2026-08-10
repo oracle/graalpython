@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PCell extends PythonAbstractObject {
+public final class PCell extends PythonBuiltinObject {
     private final Assumption effectivelyFinal;
     private Object ref;
 
-    public PCell(Assumption effectivelyFinalAssumption) {
+    public PCell(Object cls, Shape instanceShape, Assumption effectivelyFinalAssumption) {
+        super(cls, instanceShape);
         this.effectivelyFinal = effectivelyFinalAssumption;
     }
 
@@ -63,10 +65,6 @@ public final class PCell extends PythonAbstractObject {
 
     public Object getRef() {
         return ref;
-    }
-
-    public void clearRef(Assumption assumption) {
-        setRef(null, assumption);
     }
 
     public void clearRef() {

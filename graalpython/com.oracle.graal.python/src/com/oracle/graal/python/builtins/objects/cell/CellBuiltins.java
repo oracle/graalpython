@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -119,9 +120,10 @@ public final class CellBuiltins extends PythonBuiltins {
         @Specialization
         Object newCell(@SuppressWarnings("unused") Object cls, Object contents,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nonEmptyProfile) {
             Assumption assumption = getAssumption();
-            PCell cell = PFactory.createCell(assumption);
+            PCell cell = PFactory.createCell(language, assumption);
             if (nonEmptyProfile.profile(inliningTarget, !isNoValue(contents))) {
                 cell.setRef(contents, assumption);
             }
