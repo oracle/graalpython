@@ -82,6 +82,22 @@ def identCallResult(arg):
         return ident(arg)
 
 
+def _make_function_with_fields():
+    closed_over = 42
+
+    def function(positional="default", *, keyword="kwdefault") -> int:
+        return closed_over
+
+    return function
+
+
+function_with_fields = _make_function_with_fields()
+
+
+def function_without_optional_fields():
+    pass
+
+
 class TypeWithAttr:
     attr = "str"
 
@@ -651,6 +667,57 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* func"],
         callfunction="wrapGraalPyCFunction_GetMethodDef",
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyFunction_GET_FIELDS = CPyExtFunction(
+        lambda args: (
+            args[0].__code__,
+            args[0].__globals__,
+            args[0].__module__,
+            args[0].__defaults__,
+            args[0].__kwdefaults__,
+            args[0].__closure__,
+            args[0].__annotations__ or None,
+            True,
+        ),
+        lambda: (
+            (function_with_fields,),
+            (function_without_optional_fields,),
+        ),
+        code="""
+            static PyObject* wrap_PyFunction_GET_FIELDS(PyObject* function) {
+                PyObject *module = PyFunction_GET_MODULE(function);
+                PyObject *defaults = PyFunction_GET_DEFAULTS(function);
+                PyObject *kwdefaults = PyFunction_GET_KW_DEFAULTS(function);
+                PyObject *closure = PyFunction_GET_CLOSURE(function);
+                PyObject *annotations = PyFunction_GET_ANNOTATIONS(function);
+                PyObject *module_attr = PyObject_GetAttrString(function, "__module__");
+                PyObject *result;
+                int stable_module;
+
+                if (module_attr == NULL) {
+                    return NULL;
+                }
+                stable_module = module == module_attr;
+                Py_DECREF(module_attr);
+
+                result = PyTuple_Pack(
+                    8,
+                    PyFunction_GET_CODE(function),
+                    PyFunction_GET_GLOBALS(function),
+                    module,
+                    defaults != NULL ? defaults : Py_None,
+                    kwdefaults != NULL ? kwdefaults : Py_None,
+                    closure != NULL ? closure : Py_None,
+                    annotations != NULL ? annotations : Py_None,
+                    stable_module ? Py_True : Py_False
+                );
+                return result;
+            }
+        """,
+        argspec="O",
+        arguments=["PyObject* function"],
+        callfunction="wrap_PyFunction_GET_FIELDS",
     )
     # create function from PyMethodDef
     # test PyMethodDef is same

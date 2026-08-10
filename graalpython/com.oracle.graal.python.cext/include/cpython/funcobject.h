@@ -89,40 +89,50 @@ PyAPI_FUNC(int) PyFunction_SetAnnotations(PyObject *, PyObject *);
 #define _PyFunction_CAST(func) \
     (assert(PyFunction_Check(func)), _Py_CAST(PyFunctionObject*, func))
 
+/* GraalPy public API functions replacing direct PyFunctionObject field access.
+   Return borrowed references. */
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_CODE(PyObject *func);
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_GLOBALS(PyObject *func);
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_MODULE(PyObject *func);
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_DEFAULTS(PyObject *func);
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_KW_DEFAULTS(PyObject *func);
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_CLOSURE(PyObject *func);
+PyAPI_FUNC(PyObject *) GraalPyFunction_GET_ANNOTATIONS(PyObject *func);
+
 /* Static inline functions for direct access to these values.
    Type checks are *not* done, so use with care. */
 static inline PyObject* PyFunction_GET_CODE(PyObject *func) {
-    return _PyFunction_CAST(func)->func_code;
+    return GraalPyFunction_GET_CODE(func);
 }
 #define PyFunction_GET_CODE(func) PyFunction_GET_CODE(_PyObject_CAST(func))
 
 static inline PyObject* PyFunction_GET_GLOBALS(PyObject *func) {
-    return _PyFunction_CAST(func)->func_globals;
+    return GraalPyFunction_GET_GLOBALS(func);
 }
 #define PyFunction_GET_GLOBALS(func) PyFunction_GET_GLOBALS(_PyObject_CAST(func))
 
 static inline PyObject* PyFunction_GET_MODULE(PyObject *func) {
-    return _PyFunction_CAST(func)->func_module;
+    return GraalPyFunction_GET_MODULE(func);
 }
 #define PyFunction_GET_MODULE(func) PyFunction_GET_MODULE(_PyObject_CAST(func))
 
 static inline PyObject* PyFunction_GET_DEFAULTS(PyObject *func) {
-    return _PyFunction_CAST(func)->func_defaults;
+    return GraalPyFunction_GET_DEFAULTS(func);
 }
 #define PyFunction_GET_DEFAULTS(func) PyFunction_GET_DEFAULTS(_PyObject_CAST(func))
 
 static inline PyObject* PyFunction_GET_KW_DEFAULTS(PyObject *func) {
-    return _PyFunction_CAST(func)->func_kwdefaults;
+    return GraalPyFunction_GET_KW_DEFAULTS(func);
 }
 #define PyFunction_GET_KW_DEFAULTS(func) PyFunction_GET_KW_DEFAULTS(_PyObject_CAST(func))
 
 static inline PyObject* PyFunction_GET_CLOSURE(PyObject *func) {
-    return _PyFunction_CAST(func)->func_closure;
+    return GraalPyFunction_GET_CLOSURE(func);
 }
 #define PyFunction_GET_CLOSURE(func) PyFunction_GET_CLOSURE(_PyObject_CAST(func))
 
 static inline PyObject* PyFunction_GET_ANNOTATIONS(PyObject *func) {
-    return _PyFunction_CAST(func)->func_annotations;
+    return GraalPyFunction_GET_ANNOTATIONS(func);
 }
 #define PyFunction_GET_ANNOTATIONS(func) PyFunction_GET_ANNOTATIONS(_PyObject_CAST(func))
 
