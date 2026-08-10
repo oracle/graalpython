@@ -8,6 +8,7 @@ test.test_zipapp.ZipAppTest.test_content_of_copied_archive @ darwin-arm64,linux-
 test.test_zipapp.ZipAppTest.test_create_archive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipapp.ZipAppTest.test_create_archive_default_target @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipapp.ZipAppTest.test_create_archive_filter_exclude_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipapp.ZipAppTest.test_create_archive_self_insertion @ linux-x86_64-github
 test.test_zipapp.ZipAppTest.test_create_archive_with_compression @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipapp.ZipAppTest.test_create_archive_with_filter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipapp.ZipAppTest.test_create_archive_with_pathlib @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -29,4 +30,5 @@ test.test_zipapp.ZipAppTest.test_read_missing_shebang @ darwin-arm64,linux-aarch
 test.test_zipapp.ZipAppTest.test_read_shebang @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipapp.ZipAppTest.test_remove_shebang @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipapp.ZipAppTest.test_shebang_is_executable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipapp.ZipAppTest.test_target_overwrites_source_file @ linux-x86_64-github
 test.test_zipapp.ZipAppTest.test_write_shebang_to_fileobj @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

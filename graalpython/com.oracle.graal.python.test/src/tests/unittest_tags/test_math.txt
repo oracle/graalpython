@@ -1,4 +1,10 @@
 DocFileCase.ieee754_txt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_math.FMATests.test_fma_infinities @ linux-x86_64-github
+test.test_math.FMATests.test_fma_nan_results @ linux-x86_64-github
+test.test_math.FMATests.test_fma_overflow @ linux-x86_64-github
+test.test_math.FMATests.test_fma_single_round @ linux-x86_64-github
+test.test_math.FMATests.test_fma_zero_result @ linux-x86_64-github
+test.test_math.FMATests.test_random @ linux-x86_64-github
 test.test_math.IsCloseTests.test_asymmetry @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_math.IsCloseTests.test_decimals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_math.IsCloseTests.test_eight_decimal_places @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -40,6 +46,7 @@ test.test_math.MathTests.testIsinf @ darwin-arm64,linux-aarch64,linux-aarch64-gi
 test.test_math.MathTests.testIsnan @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_math.MathTests.testIsqrt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_math.MathTests.testLdexp @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_math.MathTests.testLdexp_denormal @ linux-x86_64-github
 test.test_math.MathTests.testLog @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_math.MathTests.testLog10 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_math.MathTests.testLog1p @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

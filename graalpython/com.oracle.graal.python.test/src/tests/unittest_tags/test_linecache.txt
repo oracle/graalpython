@@ -19,8 +19,10 @@ test.test_linecache.LineCacheTests.test_lazycache_check @ darwin-arm64,linux-aar
 test.test_linecache.LineCacheTests.test_lazycache_no_globals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_linecache.LineCacheTests.test_lazycache_provide_after_failed_lookup @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_linecache.LineCacheTests.test_lazycache_smoke @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_linecache.LineCacheTests.test_linecache_python_string @ linux-x86_64-github
 test.test_linecache.LineCacheTests.test_loader @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_linecache.LineCacheTests.test_memoryerror @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_linecache.LineCacheTests.test_no_ending_newline @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_linecache.MultiThreadingTest.test_read_write_safety @ linux-x86_64-github
 test.test_linecache.SingleEmptyLine.test_getline @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_linecache.SingleEmptyLine.test_getlines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -79,6 +79,7 @@ test.test_xmlrpc.XMLRPCTestCase.test_dump_big_long @ darwin-arm64,linux-aarch64,
 test.test_xmlrpc.XMLRPCTestCase.test_dump_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.XMLRPCTestCase.test_dump_double @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.XMLRPCTestCase.test_dump_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_xmlrpc.XMLRPCTestCase.test_dump_escape_methodname @ linux-x86_64-github
 test.test_xmlrpc.XMLRPCTestCase.test_dump_load @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.XMLRPCTestCase.test_dump_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.XMLRPCTestCase.test_dump_recursive_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

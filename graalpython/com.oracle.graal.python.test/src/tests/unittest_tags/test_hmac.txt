@@ -9,6 +9,7 @@ test.test_hmac.ConstructorTestCase.test_with_str_key @ darwin-arm64,linux-aarch6
 test.test_hmac.ConstructorTestCase.test_withmodule @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_hmac.ConstructorTestCase.test_withtext @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_hmac.CopyTestCase.test_attributes_old @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_hmac.CopyTestCase.test_copy @ linux-x86_64-github
 test.test_hmac.CopyTestCase.test_equality @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_hmac.CopyTestCase.test_equality_new @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_hmac.CopyTestCase.test_realcopy_hmac @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

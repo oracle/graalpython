@@ -32,6 +32,7 @@ test.test_fractions.FractionTest.testRound @ darwin-arm64,linux-aarch64,linux-aa
 test.test_fractions.FractionTest.testStringification @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.testSupportsInt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.test_as_integer_ratio @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_fractions.FractionTest.test_complex_handling @ linux-x86_64-github
 test.test_fractions.FractionTest.test_copy_deepcopy_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.test_float_format_testfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.test_format_e_presentation_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

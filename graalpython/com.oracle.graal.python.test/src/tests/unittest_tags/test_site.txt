@@ -1,3 +1,8 @@
+test.test_site.CommandLineTests.test_base_arg @ linux-x86_64-github
+test.test_site.CommandLineTests.test_both_args @ linux-x86_64-github
+test.test_site.CommandLineTests.test_no_args @ linux-x86_64-github
+test.test_site.CommandLineTests.test_site_arg @ linux-x86_64-github
+test.test_site.CommandLineTests.test_unknown_args @ linux-x86_64-github
 test.test_site.HelperFunctionsTests.test__getuserbase @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_addpackage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_addpackage_empty_lines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -7,6 +12,7 @@ test.test_site.HelperFunctionsTests.test_addpackage_import_bad_syntax @ darwin-a
 test.test_site.HelperFunctionsTests.test_addsitedir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_addsitedir_dotfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_get_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_site.HelperFunctionsTests.test_gethistoryfile @ linux-x86_64-github
 test.test_site.HelperFunctionsTests.test_getsitepackages @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_getuserbase @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_getusersitepackages @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -16,6 +22,7 @@ test.test_site.HelperFunctionsTests.test_no_home_directory @ darwin-arm64,linux-
 test.test_site.HelperFunctionsTests.test_s_option @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.HelperFunctionsTests.test_trace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.ImportSideEffectTests.test_abs_paths_cached_None @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_site.ImportSideEffectTests.test_customization_modules_on_startup @ linux-x86_64-github
 test.test_site.ImportSideEffectTests.test_no_duplicate_paths @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.ImportSideEffectTests.test_setting_copyright @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.ImportSideEffectTests.test_setting_help @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

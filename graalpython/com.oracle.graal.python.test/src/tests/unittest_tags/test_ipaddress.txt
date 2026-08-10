@@ -6,6 +6,7 @@ test.test_ipaddress.AddressTestCase_v4.test_floats_rejected @ darwin-arm64,linux
 test.test_ipaddress.AddressTestCase_v4.test_format @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v4.test_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v4.test_invalid_characters @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ipaddress.AddressTestCase_v4.test_ipv6_mapped @ linux-x86_64-github
 test.test_ipaddress.AddressTestCase_v4.test_large_ints_rejected @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v4.test_leading_zeros @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v4.test_negative_ints_rejected @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -19,6 +20,7 @@ test.test_ipaddress.AddressTestCase_v4.test_weakref @ darwin-arm64,linux-aarch64
 test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_leading_colon @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_not_enough_parts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_repeated_double_colon @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_too_long @ linux-x86_64-github
 test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_too_many_colons @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_too_many_parts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_too_many_parts_with_double_colon @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -125,6 +127,7 @@ test.test_ipaddress.IpaddrUnitTest.testIPv4Net @ darwin-arm64,linux-aarch64,linu
 test.test_ipaddress.IpaddrUnitTest.testIPv4NetworkHelpers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testIPv4Tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testIPv6AddressTooLarge @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ipaddress.IpaddrUnitTest.testIPv6IPv4MappedStringRepresentation @ linux-x86_64-github
 test.test_ipaddress.IpaddrUnitTest.testIPv6NetworkHelpers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testIPv6Tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testIntRepresentation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -141,6 +144,8 @@ test.test_ipaddress.IpaddrUnitTest.testIpv4MappedProperties @ darwin-arm64,linux
 test.test_ipaddress.IpaddrUnitTest.testMaxPrefixLength @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testNetworkComparison @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testNetworkElementCaching @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ipaddress.IpaddrUnitTest.testNetworkV4HashCollisions @ linux-x86_64-github
+test.test_ipaddress.IpaddrUnitTest.testNetworkV6HashCollisions @ linux-x86_64-github
 test.test_ipaddress.IpaddrUnitTest.testNotEqual @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testNth @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ipaddress.IpaddrUnitTest.testOverlaps @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

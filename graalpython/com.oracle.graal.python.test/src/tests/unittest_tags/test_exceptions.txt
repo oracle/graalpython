@@ -61,3 +61,7 @@ test.test_exceptions.PEP626Tests.test_lineno_in_finally_normal @ darwin-arm64,li
 !test.test_exceptions.PEP626Tests.test_lineno_in_try @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.SyntaxErrorTests.test_attributes_new_constructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.SyntaxErrorTests.test_attributes_old_constructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.SyntaxErrorTests.test_encodings @ linux-x86_64-github
+test.test_exceptions.SyntaxErrorTests.test_range_of_offsets @ linux-x86_64-github
+test.test_exceptions.SyntaxErrorTests.test_subclass @ linux-x86_64-github
+test.test_exceptions.SyntaxErrorTests.test_syntax_error_memory_leak @ linux-x86_64-github

@@ -132,6 +132,7 @@ test.test_dataclasses.TestDocString.test_docstring_with_no_signature @ darwin-ar
 test.test_dataclasses.TestDocString.test_existing_docstring_not_overridden @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestEq.test_no_eq @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestEq.test_overwriting_eq @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestEq.test_recursive_eq @ linux-x86_64-github
 test.test_dataclasses.TestFieldNoAnnotation.test_field_without_annotation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFieldNoAnnotation.test_field_without_annotation_but_annotation_in_base @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFieldNoAnnotation.test_field_without_annotation_but_annotation_in_base_not_dataclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -143,9 +144,12 @@ test.test_dataclasses.TestFrozen.test_frozen_hash @ darwin-arm64,linux-aarch64,l
 test.test_dataclasses.TestFrozen.test_inherit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFrozen.test_inherit_from_normal_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFrozen.test_inherit_frozen_from_nonfrozen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestFrozen.test_inherit_frozen_mutliple_inheritance @ linux-x86_64-github
+test.test_dataclasses.TestFrozen.test_inherit_frozen_mutliple_inheritance_regular_mixins @ linux-x86_64-github
 test.test_dataclasses.TestFrozen.test_inherit_nonfrozen_from_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFrozen.test_inherit_nonfrozen_from_empty_frozen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFrozen.test_inherit_nonfrozen_from_frozen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestFrozen.test_multiple_frozen_dataclasses_inheritance @ linux-x86_64-github
 test.test_dataclasses.TestFrozen.test_non_frozen_normal_derived @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFrozen.test_non_frozen_normal_derived_from_empty_frozen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestFrozen.test_overwriting_frozen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -210,10 +214,13 @@ test.test_dataclasses.TestRepr.test_no_repr @ darwin-arm64,linux-aarch64,linux-a
 test.test_dataclasses.TestRepr.test_overwriting_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestRepr.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_add_slots_when_slots_exists @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestSlots.test_class_cell_from_other_class @ linux-x86_64-github
 test.test_dataclasses.TestSlots.test_dataclass_derived_generic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_dataclass_derived_generic_from_slotted_base @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestSlots.test_dataclass_derived_generic_from_slotted_base_with_weakref @ linux-x86_64-github
 test.test_dataclasses.TestSlots.test_dataclass_slot_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_derived_added_field @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestSlots.test_empty_class_cell @ linux-x86_64-github
 test.test_dataclasses.TestSlots.test_frozen_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_frozen_slots_pickle_custom_state @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_generated_slots @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

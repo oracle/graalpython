@@ -1,4 +1,6 @@
 test.test_context.ContextTest.test_context_copy_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_context.ContextTest.test_context_eq_reentrant_contextvar_set @ linux-x86_64-github
+test.test_context.ContextTest.test_context_eq_reentrant_contextvar_set_in_hash @ linux-x86_64-github
 test.test_context.ContextTest.test_context_get_context_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_context.ContextTest.test_context_getset_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_context.ContextTest.test_context_getset_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -3,6 +3,7 @@ test.test_urllib2net.OtherNetworkTests.test_custom_headers @ linux-aarch64-githu
 test.test_urllib2net.OtherNetworkTests.test_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 # Connecting to external page that sometimes times out
 !test.test_urllib2net.OtherNetworkTests.test_ftp
+test.test_urllib2net.OtherNetworkTests.test_ftp_no_leak @ linux-x86_64-github
 test.test_urllib2net.OtherNetworkTests.test_redirect_url_withfrag @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_urllib2net.OtherNetworkTests.test_urlwithfrag @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_urllib2net.TimeoutTest.test_ftp_basic @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
