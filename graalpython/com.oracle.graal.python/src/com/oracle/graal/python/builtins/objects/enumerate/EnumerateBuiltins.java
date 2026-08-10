@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -124,8 +125,8 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isIntegerIndex(start)", "!isNoValue(start)"})
         static PEnumerate doGeneric(VirtualFrame frame, Object cls, Object iterable, Object start,
                         @Bind Node inliningTarget,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongExactNode cast,
                         @Cached InlinedConditionProfile bigIntIndexProfile) {
