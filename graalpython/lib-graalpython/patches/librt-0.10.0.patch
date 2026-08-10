@@ -89,6 +89,39 @@ index 6309ed5..2851067 100644
  }
  
  #define CPy_INCREF_NO_IMM(op) CPy_INCREF_NO_IMM((PyObject *)(op))
+diff --git a/pythoncapi_compat.h b/pythoncapi_compat.h
+index 245050b..d04cb65 100644
+--- a/pythoncapi_compat.h
++++ b/pythoncapi_compat.h
+@@ -1576,7 +1576,7 @@ static inline int PyLong_IsZero(PyObject *obj)
+ // gh-124502 added PyUnicode_Equal() to Python 3.14.0a0
+ #if PY_VERSION_HEX < 0x030E00A0
+ 
+-#if PY_VERSION_HEX >= 0x030d0000 && !defined(PYPY_VERSION)
++#if PY_VERSION_HEX >= 0x030d0000 && !defined(PYPY_VERSION) && !defined(GRAALPY_VERSION_NUM)
+ PyAPI_FUNC(int) _PyUnicode_Equal(PyObject *str1, PyObject *str2);
+ #endif
+ 
+@@ -1593,7 +1593,9 @@ static inline int PyUnicode_Equal(PyObject *str1, PyObject *str2)
+         return -1;
+     }
+ 
+-#if PY_VERSION_HEX >= 0x030d0000 && !defined(PYPY_VERSION)
++#if defined(GRAALPY_VERSION_NUM)
++    return PyObject_RichCompareBool(str1, str2, Py_EQ);
++#elif PY_VERSION_HEX >= 0x030d0000 && !defined(PYPY_VERSION)
+     return _PyUnicode_Equal(str1, str2);
+ #elif PY_VERSION_HEX >= 0x03060000 && !defined(PYPY_VERSION)
+     return _PyUnicode_EQ(str1, str2);
+@@ -2674,7 +2676,7 @@ PyUnstable_Unicode_GET_CACHED_HASH(PyObject *op)
+ }
+ #endif
+ 
+-#if 0x030D0000 <= PY_VERSION_HEX && PY_VERSION_HEX < 0x030F00A7 && !defined(PYPY_VERSION)
++#if 0x030D0000 <= PY_VERSION_HEX && PY_VERSION_HEX < 0x030F00A7 && !defined(PYPY_VERSION) && !defined(GRAALPY_VERSION_NUM)
+ // Immortal objects were implemented in Python 3.12, however there is no easy API
+ // to make objects immortal until 3.14 which has _Py_SetImmortal(). Since
+ // immortal objects are primarily needed for free-threading, this API is implemented
 diff --git a/pythonsupport.c b/pythonsupport.c
 index 0a99f0a..1a442bb 100644
 --- a/pythonsupport.c
@@ -142,10 +175,27 @@ index 0a99f0a..1a442bb 100644
  // Slow path of CPyLong_AsSsize_tAndOverflow (non-inlined)
  Py_ssize_t
 diff --git a/pythonsupport.h b/pythonsupport.h
-index 6f38a9b..0e89511 100644
+index 6f38a9b..c636aec 100644
 --- a/pythonsupport.h
 +++ b/pythonsupport.h
-@@ -40,7 +40,15 @@ int init_subclass(PyTypeObject *type, PyObject *kwds);
+@@ -18,10 +18,16 @@
+ #ifndef Py_BUILD_CORE
+ #define Py_BUILD_CORE
+ #endif
++#ifdef GRAALPY_VERSION_NUM
++PyAPI_FUNC(int) _PyGen_FetchStopIterationValue(PyObject **);
++PyAPI_FUNC(void) _PyErr_SetKeyError(PyObject *);
++PyAPI_FUNC(PyObject *) _PyErr_FormatFromCause(PyObject *, const char *, ...);
++#else
+ #include "internal/pycore_genobject.h"  // _PyGen_FetchStopIterationValue
+ #include "internal/pycore_pyerrors.h"  // _PyErr_FormatFromCause, _PyErr_SetKeyError
+ #include "internal/pycore_setobject.h"  // _PySet_Update
+ #endif
++#endif
+ 
+ #if CPY_3_12_FEATURES
+ #include "internal/pycore_frame.h"
+@@ -40,7 +46,15 @@ int init_subclass(PyTypeObject *type, PyObject *kwds);
  Py_ssize_t
  CPyLong_AsSsize_tAndOverflow_(PyObject *vv, int *overflow);
  
@@ -162,7 +212,7 @@ index 6f38a9b..0e89511 100644
  
  static inline Py_ssize_t
  CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
-@@ -117,6 +125,7 @@ CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
+@@ -117,6 +131,7 @@ CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
  #endif
  
  // Adapted from listobject.c in Python 3.7.0
@@ -170,7 +220,7 @@ index 6f38a9b..0e89511 100644
  static int
  list_resize(PyListObject *self, Py_ssize_t newsize)
  {
-@@ -162,6 +171,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
+@@ -162,6 +177,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
      self->allocated = new_allocated;
      return 0;
  }
@@ -178,7 +228,7 @@ index 6f38a9b..0e89511 100644
  
  // Changed to use PyList_SetSlice instead of the internal list_ass_slice
  static PyObject *
-@@ -182,6 +192,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
+@@ -182,6 +198,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
          return NULL;
      }
      v = PySequence_Fast_ITEMS((PyObject*)self)[index];
@@ -186,7 +236,7 @@ index 6f38a9b..0e89511 100644
      if (index == Py_SIZE(self) - 1) {
          status = list_resize(self, Py_SIZE(self) - 1);
          if (status >= 0)
-@@ -189,6 +200,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
+@@ -189,6 +206,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
          else
              return NULL;
      }
