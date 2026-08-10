@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
@@ -365,7 +366,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
 
     @CompilationFinal(dimensions = 1) public static final PythonAbstractObject[] CONTEXT_INSENSITIVE_SINGLETONS = new PythonAbstractObject[]{PNone.NONE, PEllipsis.INSTANCE,
-                    PNotImplemented.NOT_IMPLEMENTED};
+                    PNotImplemented.NOT_IMPLEMENTED, PNoDefault.NO_DEFAULT};
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;

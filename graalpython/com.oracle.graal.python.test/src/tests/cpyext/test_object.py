@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+import typing
 import unittest
 from unittest import skipIf
 
@@ -1595,6 +1596,21 @@ class DummyBytes(bytes):
     pass
 
 class TestObjectFunctions(CPyExtTestCase):
+
+    test_abstract_object_constants_native_roundtrip = CPyExtFunction(
+        lambda args: args[0],
+        lambda: (
+            (None,),
+            (Ellipsis,),
+            (NotImplemented,),
+            (typing.NoDefault,),
+        ),
+        arguments=["PyObject* obj"],
+        resultspec="N",
+        argspec="O",
+        callfunction="Py_NewRef",
+        cmpfunc=lambda actual, expected: actual is expected,
+    )
 
     test_PyCallable_Check = CPyExtFunction(
         lambda args: callable(args[0]),
