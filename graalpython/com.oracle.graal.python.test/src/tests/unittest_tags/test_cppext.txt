@@ -1,4 +1,4 @@
-test.test_cppext.TestCPPExt.test_build @ linux-x86_64-github
+test.test_cppext.TestCPPExt.test_build @ linux-aarch64-github,linux-x86_64-github
 test.test_cppext.TestCPPExt.test_build_cpp03 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_cppext.TestCPPExt.test_build_cpp11 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_cppext.TestCPPExt.test_build_limited @ linux-x86_64-github
+test.test_cppext.TestCPPExt.test_build_limited @ linux-aarch64-github,linux-x86_64-github

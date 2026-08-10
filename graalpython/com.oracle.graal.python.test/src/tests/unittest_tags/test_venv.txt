@@ -1,11 +1,11 @@
 test.test_venv.BasicTest.test_activate_shell_script_has_no_dos_newlines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_venv.BasicTest.test_cli_with_scm_ignore_files @ linux-x86_64-github
-test.test_venv.BasicTest.test_cli_without_scm_ignore_files @ linux-x86_64-github
+test.test_venv.BasicTest.test_cli_with_scm_ignore_files @ linux-aarch64-github,linux-x86_64-github
+test.test_venv.BasicTest.test_cli_without_scm_ignore_files @ linux-aarch64-github,linux-x86_64-github
 test.test_venv.BasicTest.test_config_file_command_key @ win32-AMD64,win32-AMD64-github
-test.test_venv.BasicTest.test_create_scm_ignore_files_empty @ linux-x86_64-github
-test.test_venv.BasicTest.test_create_scm_ignore_files_multiple @ linux-x86_64-github
+test.test_venv.BasicTest.test_create_scm_ignore_files_empty @ linux-aarch64-github,linux-x86_64-github
+test.test_venv.BasicTest.test_create_scm_ignore_files_multiple @ linux-aarch64-github,linux-x86_64-github
 test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts_and_hashing_disabled @ linux-x86_64-github
+test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts_and_hashing_disabled @ linux-aarch64-github,linux-x86_64-github
 test.test_venv.BasicTest.test_defaults_with_pathlike @ win32-AMD64,win32-AMD64-github
 test.test_venv.BasicTest.test_defaults_with_str_path @ win32-AMD64,win32-AMD64-github
 test.test_venv.BasicTest.test_executable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -18,7 +18,7 @@ test.test_venv.BasicTest.test_overwrite_existing @ darwin-arm64,linux-aarch64,li
 test.test_venv.BasicTest.test_pathsep_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_venv.BasicTest.test_prefixes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_venv.BasicTest.test_prompt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_venv.BasicTest.test_scm_ignore_files_git @ linux-x86_64-github
+test.test_venv.BasicTest.test_scm_ignore_files_git @ linux-aarch64-github,linux-x86_64-github
 test.test_venv.BasicTest.test_special_chars_bash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_venv.BasicTest.test_special_chars_csh @ darwin-arm64
 test.test_venv.BasicTest.test_symlinking @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -79,8 +79,8 @@ test.test_tempfile.TestSpooledTemporaryFile.test_text_newline_and_encoding @ dar
 test.test_tempfile.TestSpooledTemporaryFile.test_truncate_with_size_parameter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tempfile.TestSpooledTemporaryFile.test_write_sequential @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tempfile.TestSpooledTemporaryFile.test_writelines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tempfile.TestSpooledTemporaryFile.test_writelines_fast_path @ linux-x86_64-github
-test.test_tempfile.TestSpooledTemporaryFile.test_writelines_rollover @ linux-x86_64-github
+test.test_tempfile.TestSpooledTemporaryFile.test_writelines_fast_path @ linux-aarch64-github,linux-x86_64-github
+test.test_tempfile.TestSpooledTemporaryFile.test_writelines_rollover @ linux-aarch64-github,linux-x86_64-github
 test.test_tempfile.TestSpooledTemporaryFile.test_writelines_sequential @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tempfile.TestTemporaryDirectory.test_cleanup_with_symlink_modes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tempfile.TestTemporaryDirectory.test_cleanup_with_symlink_to_a_directory @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

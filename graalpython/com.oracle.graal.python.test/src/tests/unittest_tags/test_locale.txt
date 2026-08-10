@@ -1,5 +1,5 @@
 test.test_locale.NormalizeTest.test_c @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_locale.NormalizeTest.test_c_utf8 @ linux-x86_64-github
+test.test_locale.NormalizeTest.test_c_utf8 @ linux-aarch64-github,linux-x86_64-github
 test.test_locale.NormalizeTest.test_devanagari_modifier @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.NormalizeTest.test_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.NormalizeTest.test_english @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -38,9 +38,9 @@ test.test_locale.TestLocaleFormatString.test_mapping @ darwin-arm64,linux-aarch6
 test.test_locale.TestLocaleFormatString.test_percent_escape @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestMiscellaneous.test_defaults_UTF8 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestMiscellaneous.test_getencoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_locale.TestMiscellaneous.test_getencoding_fallback @ linux-x86_64-github
+test.test_locale.TestMiscellaneous.test_getencoding_fallback @ linux-aarch64-github,linux-x86_64-github
 test.test_locale.TestMiscellaneous.test_getpreferredencoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_locale.TestMiscellaneous.test_getsetlocale_issue1813 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_locale.TestMiscellaneous.test_getsetlocale_issue1813 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_locale.TestMiscellaneous.test_invalid_iterable_in_localetuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestMiscellaneous.test_invalid_locale_format_in_localetuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestMiscellaneous.test_setlocale_category @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -52,7 +52,7 @@ test.test_locale.TestNumberFormatting.test_integer_grouping @ darwin-arm64,linux
 test.test_locale.TestNumberFormatting.test_integer_grouping_and_padding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestNumberFormatting.test_padding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestNumberFormatting.test_simple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_locale.TestRealLocales.test_getsetlocale_issue1813 @ linux-x86_64-github
+test.test_locale.TestRealLocales.test_getsetlocale_issue1813 @ linux-aarch64-github,linux-x86_64-github
 test.test_locale.TestfrFRDelocalizeTest.test_atof @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestfrFRDelocalizeTest.test_atoi @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_locale.TestfrFRDelocalizeTest.test_delocalize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

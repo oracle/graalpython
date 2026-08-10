@@ -22,7 +22,7 @@ test.test_support.TestSupport.test_has_strftime_extensions @ win32-AMD64,win32-A
 test.test_support.TestSupport.test_ignored_deprecations_are_silent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_import_fresh_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_import_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_support.TestSupport.test_linked_to_musl @ linux-x86_64-github
+test.test_support.TestSupport.test_linked_to_musl @ linux-aarch64-github,linux-x86_64-github
 test.test_support.TestSupport.test_make_bad_fd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_parse_memlimit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_print_warning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

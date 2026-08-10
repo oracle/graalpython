@@ -8,7 +8,7 @@ test.test_codecencodings_cn.Test_GB18030.test_chunkcoding @ darwin-arm64,linux-a
 test.test_codecencodings_cn.Test_GB18030.test_incrementaldecoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB18030.test_incrementalencoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB18030.test_incrementalencoder_error_callback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_codecencodings_cn.Test_GB18030.test_null_terminator @ linux-x86_64-github
+test.test_codecencodings_cn.Test_GB18030.test_null_terminator @ linux-aarch64-github,linux-x86_64-github
 test.test_codecencodings_cn.Test_GB18030.test_streamwriter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB18030.test_streamwriter_reset_no_pending @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB2312.test_callback_None_index @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -23,7 +23,7 @@ test.test_codecencodings_cn.Test_GB2312.test_errorhandle @ darwin-arm64,linux-aa
 test.test_codecencodings_cn.Test_GB2312.test_incrementaldecoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB2312.test_incrementalencoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB2312.test_incrementalencoder_error_callback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_codecencodings_cn.Test_GB2312.test_null_terminator @ linux-x86_64-github
+test.test_codecencodings_cn.Test_GB2312.test_null_terminator @ linux-aarch64-github,linux-x86_64-github
 test.test_codecencodings_cn.Test_GB2312.test_streamwriter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB2312.test_streamwriter_reset_no_pending @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GB2312.test_xmlcharrefreplace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -39,7 +39,7 @@ test.test_codecencodings_cn.Test_GBK.test_errorhandle @ darwin-arm64,linux-aarch
 test.test_codecencodings_cn.Test_GBK.test_incrementaldecoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GBK.test_incrementalencoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GBK.test_incrementalencoder_error_callback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_codecencodings_cn.Test_GBK.test_null_terminator @ linux-x86_64-github
+test.test_codecencodings_cn.Test_GBK.test_null_terminator @ linux-aarch64-github,linux-x86_64-github
 test.test_codecencodings_cn.Test_GBK.test_streamwriter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GBK.test_streamwriter_reset_no_pending @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecencodings_cn.Test_GBK.test_xmlcharrefreplace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

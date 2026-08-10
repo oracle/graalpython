@@ -62,7 +62,7 @@ DocTestCase.decimal.Decimal.__new__ @ darwin-arm64,linux-aarch64,linux-aarch64-g
 DocTestCase.decimal.Decimal.__round__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.decimal.Decimal.as_integer_ratio @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.decimal.Decimal.from_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-DocTestCase.decimal._decimal_lshift_exact @ linux-x86_64-github
+DocTestCase.decimal._decimal_lshift_exact @ linux-aarch64-github,linux-x86_64-github
 DocTestCase.decimal.localcontext @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decimal.PyArithmeticOperatorsTest.test_addition @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decimal.PyArithmeticOperatorsTest.test_copy_sign @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -178,7 +178,7 @@ test.test_decimal.PyExplicitConstructionTest.test_explicit_from_string @ darwin-
 test.test_decimal.PyExplicitConstructionTest.test_explicit_from_tuples @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decimal.PyExplicitConstructionTest.test_unicode_digits @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decimal.PyFormatTest.test_decimal_from_float_argument_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_decimal.PyFormatTest.test_deprecated_N_format @ linux-x86_64-github
+test.test_decimal.PyFormatTest.test_deprecated_N_format @ linux-aarch64-github,linux-x86_64-github
 test.test_decimal.PyFormatTest.test_formatting @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decimal.PyFormatTest.test_n_format @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decimal.PyFormatTest.test_negative_zero_bad_format @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

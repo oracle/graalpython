@@ -2,9 +2,9 @@ test.test_rlcompleter.TestRlcompleter.test_complete @ darwin-arm64,linux-aarch64
 test.test_rlcompleter.TestRlcompleter.test_duplicate_globals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_rlcompleter.TestRlcompleter.test_excessive_getattr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_rlcompleter.TestRlcompleter.test_global_matches @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_rlcompleter.TestRlcompleter.test_member_descriptor_not_evaluated @ linux-x86_64-github
+test.test_rlcompleter.TestRlcompleter.test_member_descriptor_not_evaluated @ linux-aarch64-github,linux-x86_64-github
 test.test_rlcompleter.TestRlcompleter.test_namespace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_rlcompleter.TestRlcompleter.test_property_method_not_called @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_rlcompleter.TestRlcompleter.test_raising_descriptor_completion_works @ linux-x86_64-github
-test.test_rlcompleter.TestRlcompleter.test_released_memoryview_completion_works @ linux-x86_64-github
+test.test_rlcompleter.TestRlcompleter.test_raising_descriptor_completion_works @ linux-aarch64-github,linux-x86_64-github
+test.test_rlcompleter.TestRlcompleter.test_released_memoryview_completion_works @ linux-aarch64-github,linux-x86_64-github
 test.test_rlcompleter.TestRlcompleter.test_uncreated_attr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

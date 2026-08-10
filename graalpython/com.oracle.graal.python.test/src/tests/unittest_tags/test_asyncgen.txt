@@ -21,7 +21,7 @@ test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_05 @ darwin-
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_stopiteration @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple_no_exceptions @ linux-x86_64-github
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple_no_exceptions @ linux-aarch64-github,linux-x86_64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_03 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -40,7 +40,7 @@ test.test_asyncgen.AsyncGenAsyncioTest.test_async_generator_anext @ linux-aarch6
 test.test_asyncgen.AsyncGenAsyncioTest.test_asyncgen_nonstarted_hooks_are_cancellable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_python_async_iterator_anext @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_python_async_iterator_types_coroutine_anext @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
-test.test_asyncgen.AsyncGenAsyncioTest.test_sync_anext_raises_exception @ linux-x86_64-github
+test.test_asyncgen.AsyncGenAsyncioTest.test_sync_anext_raises_exception @ linux-aarch64-github,linux-x86_64-github
 test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_03 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -56,5 +56,5 @@ test.test_asyncgen.AsyncGenTest.test_async_gen_exception_11 @ darwin-arm64,linux
 test.test_asyncgen.AsyncGenTest.test_async_gen_exception_12 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_asyncgen.TestUnawaitedWarnings.test_aclose_throw @ linux-x86_64-github
-test.test_asyncgen.TestUnawaitedWarnings.test_asend_send_already_running @ linux-x86_64-github
+test.test_asyncgen.TestUnawaitedWarnings.test_aclose_throw @ linux-aarch64-github,linux-x86_64-github
+test.test_asyncgen.TestUnawaitedWarnings.test_asend_send_already_running @ linux-aarch64-github,linux-x86_64-github

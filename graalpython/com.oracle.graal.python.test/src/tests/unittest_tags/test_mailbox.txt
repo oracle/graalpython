@@ -96,8 +96,8 @@ test.test_mailbox.TestMH.test_keys @ darwin-arm64,linux-aarch64,linux-aarch64-gi
 test.test_mailbox.TestMH.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMH.test_list_folders @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMH.test_lock_unlock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMH.test_lock_unlock_no_dot_mh_sequences_file @ linux-x86_64-github
-test.test_mailbox.TestMH.test_no_dot_mh_sequences_file @ linux-x86_64-github
+test.test_mailbox.TestMH.test_lock_unlock_no_dot_mh_sequences_file @ linux-aarch64-github,linux-x86_64-github
+test.test_mailbox.TestMH.test_no_dot_mh_sequences_file @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMH.test_pack @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMH.test_pop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMH.test_popitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -187,7 +187,7 @@ test.test_mailbox.TestMaildir.test_add_StringIO_warns @ darwin-arm64,linux-aarch
 test.test_mailbox.TestMaildir.test_add_and_remove_folders @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMaildir.test_add_binary_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_add_binary_nonascii_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMaildir.test_add_flag @ linux-x86_64-github
+test.test_mailbox.TestMaildir.test_add_flag @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_add_invalid_8bit_bytes_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_add_nonascii_StringIO_raises @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMaildir.test_add_nonascii_string_header_raises @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -204,7 +204,7 @@ test.test_mailbox.TestMaildir.test_directory_in_folder @ darwin-arm64,linux-aarc
 test.test_mailbox.TestMaildir.test_discard @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_dump_message @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMaildir.test_file_permissions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMaildir.test_filename_leading_dot @ linux-x86_64-github
+test.test_mailbox.TestMaildir.test_filename_leading_dot @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_flush @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_folder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMaildir.test_folder_file_perms @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -213,9 +213,9 @@ test.test_mailbox.TestMaildir.test_get_MM @ darwin-arm64,linux-aarch64,linux-aar
 test.test_mailbox.TestMaildir.test_get_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_get_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_get_file_can_be_closed_twice @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMaildir.test_get_flags @ linux-x86_64-github
+test.test_mailbox.TestMaildir.test_get_flags @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_get_folder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMaildir.test_get_info @ linux-x86_64-github
+test.test_mailbox.TestMaildir.test_get_info @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_get_message @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_get_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_getitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -238,11 +238,11 @@ test.test_mailbox.TestMaildir.test_popitem_and_flush_twice @ darwin-arm64,linux-
 test.test_mailbox.TestMaildir.test_refresh @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_refresh_after_safety_period @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_remove @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMaildir.test_remove_flag @ linux-x86_64-github
+test.test_mailbox.TestMaildir.test_remove_flag @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_reread @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mailbox.TestMaildir.test_set_MM @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_mailbox.TestMaildir.test_set_flags @ linux-x86_64-github
-test.test_mailbox.TestMaildir.test_set_info @ linux-x86_64-github
+test.test_mailbox.TestMaildir.test_set_flags @ linux-aarch64-github,linux-x86_64-github
+test.test_mailbox.TestMaildir.test_set_info @ linux-aarch64-github,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_set_item @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_update @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mailbox.TestMaildir.test_values @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

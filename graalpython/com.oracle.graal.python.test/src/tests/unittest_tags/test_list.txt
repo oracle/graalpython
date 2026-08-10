@@ -1,9 +1,9 @@
-test.test_list.ListTest.test_add @ linux-x86_64-github
-test.test_list.ListTest.test_addmul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_list.ListTest.test_add @ linux-aarch64-github,linux-x86_64-github
+test.test_list.ListTest.test_addmul @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_append @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_clear @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_list.ListTest.test_cmp @ linux-x86_64-github
+test.test_list.ListTest.test_cmp @ linux-aarch64-github,linux-x86_64-github
 test.test_list.ListTest.test_constructor_exception_handling @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_constructors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_contains @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -14,8 +14,8 @@ test.test_list.ListTest.test_count @ darwin-arm64,linux-aarch64,linux-aarch64-gi
 test.test_list.ListTest.test_count_index_remove_crashes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_delitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_delslice @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_list.ListTest.test_deopt_from_append_list @ linux-x86_64-github
-test.test_list.ListTest.test_empty_slice @ linux-x86_64-github
+test.test_list.ListTest.test_deopt_from_append_list @ linux-aarch64-github,linux-x86_64-github
+test.test_list.ListTest.test_empty_slice @ linux-aarch64-github,linux-x86_64-github
 test.test_list.ListTest.test_equal_operator_modifying_operand @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_exhausted_iterator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_extend @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -36,7 +36,7 @@ test.test_list.ListTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-gith
 test.test_list.ListTest.test_list_resize_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_lt_operator_modifying_operand @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_minmax @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_list.ListTest.test_mul @ linux-x86_64-github
+test.test_list.ListTest.test_mul @ linux-aarch64-github,linux-x86_64-github
 test.test_list.ListTest.test_no_comdat_folding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -59,5 +59,5 @@ test.test_list.ListTest.test_slice_assign_iterator @ darwin-arm64,linux-aarch64,
 test.test_list.ListTest.test_sort @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_step_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_list.ListTest.test_subscript @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_list.ListTest.test_tier2_invalidates_iterator @ linux-x86_64-github
+test.test_list.ListTest.test_tier2_invalidates_iterator @ linux-aarch64-github,linux-x86_64-github
 test.test_list.ListTest.test_truth @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

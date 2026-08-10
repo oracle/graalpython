@@ -16,7 +16,7 @@ test.test_float.GeneralFloatCases.test_floatasratio @ darwin-arm64,linux-aarch64
 test.test_float.GeneralFloatCases.test_floatconversion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_float.GeneralFloatCases.test_hash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_float.GeneralFloatCases.test_is_integer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_float.GeneralFloatCases.test_issue_gh143006 @ linux-x86_64-github
+test.test_float.GeneralFloatCases.test_issue_gh143006 @ linux-aarch64-github,linux-x86_64-github
 test.test_float.GeneralFloatCases.test_keyword_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_float.GeneralFloatCases.test_noargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_float.GeneralFloatCases.test_non_numeric_input_types @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

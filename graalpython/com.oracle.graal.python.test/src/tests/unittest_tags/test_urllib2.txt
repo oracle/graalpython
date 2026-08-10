@@ -35,7 +35,7 @@ test.test_urllib2.HandlerTests.test_proxy_no_proxy_all @ darwin-arm64,linux-aarc
 test.test_urllib2.HandlerTests.test_redirect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib2.HandlerTests.test_redirect_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib2.HandlerTests.test_redirect_fragment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urllib2.HandlerTests.test_redirect_head_request @ linux-x86_64-github
+test.test_urllib2.HandlerTests.test_redirect_head_request @ linux-aarch64-github,linux-x86_64-github
 test.test_urllib2.HandlerTests.test_redirect_no_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib2.HandlerTests.test_relative_redirect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib2.HandlerTests.test_unsupported_auth_basic_handler @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

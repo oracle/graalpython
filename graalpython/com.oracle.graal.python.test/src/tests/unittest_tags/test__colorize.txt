@@ -1,3 +1,3 @@
-test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_environment_variables @ linux-x86_64-github
-test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_file @ linux-x86_64-github
-test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_std_streams @ linux-x86_64-github
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_environment_variables @ linux-aarch64-github,linux-x86_64-github
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_file @ linux-aarch64-github,linux-x86_64-github
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_std_streams @ linux-aarch64-github,linux-x86_64-github

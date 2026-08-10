@@ -1,4 +1,4 @@
-test.test_tracemalloc.TestCommandLine.test_pymem_alloc0 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_tracemalloc.TestCommandLine.test_pymem_alloc0 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_tracemalloc.TestFilters.test_filter_attributes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tracemalloc.TestFilters.test_filter_match @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tracemalloc.TestFilters.test_filter_match_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -31,11 +31,11 @@ test.test_descr.ClassPropertiesAndMethods.test_ex5_from_c3_switch @ darwin-arm64
 test.test_descr.ClassPropertiesAndMethods.test_file_fault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_funny_new @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_getattr_hooks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_descr.ClassPropertiesAndMethods.test_gh55664 @ linux-x86_64-github
+test.test_descr.ClassPropertiesAndMethods.test_gh55664 @ linux-aarch64-github,linux-x86_64-github
 test.test_descr.ClassPropertiesAndMethods.test_hash_inheritance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_imul_bug @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_descr.ClassPropertiesAndMethods.test_instance_method_get_behavior @ linux-x86_64-github
+test.test_descr.ClassPropertiesAndMethods.test_instance_method_get_behavior @ linux-aarch64-github,linux-x86_64-github
 test.test_descr.ClassPropertiesAndMethods.test_ipow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_ipow_exception_text @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_ipow_returns_not_implemented @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -73,7 +73,7 @@ test.test_descr.ClassPropertiesAndMethods.test_python_lists @ darwin-arm64,linux
 test.test_descr.ClassPropertiesAndMethods.test_qualname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_qualname_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_recursive_call @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_descr.ClassPropertiesAndMethods.test_remove_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_descr.ClassPropertiesAndMethods.test_remove_subclass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_repr_as_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_repr_with_module_str_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_descr.ClassPropertiesAndMethods.test_restored_object_new @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

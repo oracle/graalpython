@@ -78,7 +78,7 @@ test.test_compileall.CompileallTestsWithSourceEpoch.test_multiple_optimization_l
 test.test_compileall.CompileallTestsWithSourceEpoch.test_no_pycache_in_non_package @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_optimize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_prepend_only @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compileall.CompileallTestsWithSourceEpoch.test_strip_only_invalid @ linux-x86_64-github
+test.test_compileall.CompileallTestsWithSourceEpoch.test_strip_only_invalid @ linux-aarch64-github,linux-x86_64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_strip_prepend_and_ddir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_year_2038_mtime_compilation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_compile_dir_maxlevels @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -105,7 +105,7 @@ test.test_compileall.CompileallTestsWithoutSourceEpoch.test_multiple_optimizatio
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_no_pycache_in_non_package @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_optimize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_prepend_only @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compileall.CompileallTestsWithoutSourceEpoch.test_strip_only_invalid @ linux-x86_64-github
+test.test_compileall.CompileallTestsWithoutSourceEpoch.test_strip_only_invalid @ linux-aarch64-github,linux-x86_64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_strip_prepend_and_ddir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_year_2038_mtime_compilation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.EncodingTest.test_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

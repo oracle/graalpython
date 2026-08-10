@@ -1,7 +1,7 @@
 test.test_wave.MiscTestCase.test__all__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_wave.MiscTestCase.test_read_deprecations @ linux-x86_64-github
-test.test_wave.MiscTestCase.test_write_deprecations @ linux-x86_64-github
-test.test_wave.WaveLowLevelTest.test_open_in_write_raises @ linux-x86_64-github
+test.test_wave.MiscTestCase.test_read_deprecations @ linux-aarch64-github,linux-x86_64-github
+test.test_wave.MiscTestCase.test_write_deprecations @ linux-aarch64-github,linux-x86_64-github
+test.test_wave.WaveLowLevelTest.test_open_in_write_raises @ linux-aarch64-github,linux-x86_64-github
 test.test_wave.WaveLowLevelTest.test_read_no_chunks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wave.WaveLowLevelTest.test_read_no_data_chunk @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wave.WaveLowLevelTest.test_read_no_fmt_chunk @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
