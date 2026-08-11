@@ -34,30 +34,60 @@ index 5ae2a4e..951aacc 100644
 -watermark = str(version)
 +watermark = f'{version}-graalpy'
 diff --git a/Cython/Includes/cpython/array.pxd b/Cython/Includes/cpython/array.pxd
-index 4bc0438..72c0360 100644
+index 4bc0438..67dcff9 100644
 --- a/Cython/Includes/cpython/array.pxd
 +++ b/Cython/Includes/cpython/array.pxd
-@@ -133,7 +133,7 @@ cdef extern from *:  # Hard-coded utility code hack.
+@@ -98,7 +98,10 @@ cdef extern from *:  # Hard-coded utility code hack.
+ 
+         cdef:
+             Py_ssize_t ob_size
+-            arraydescr* ob_descr    # struct arraydescr *ob_descr;
++
++        @property
++        cdef inline arraydescr* ob_descr(self) noexcept nogil:
++            return __Pyx_PyArray_Descr(self)
+ 
+         @property
+         cdef inline __data_union data(self) noexcept nogil:
+@@ -133,8 +136,8 @@ cdef extern from *:  # Hard-coded utility code hack.
              PyObject_Free(info.shape)
  
      array newarrayobject(PyTypeObject* type, Py_ssize_t size, arraydescr *descr)
 -
-+    array clonearray(object template_array, Py_ssize_t size)
      __data_union __Pyx_PyArray_Data(array self) noexcept nogil
++    arraydescr* __Pyx_PyArray_Descr(array self) noexcept nogil
      # fast resize/realloc
      # not suitable for small increments; reallocation 'to the point'
-@@ -146,10 +146,7 @@ cdef inline array clone(array template, Py_ssize_t length, bint zero):
+     int resize(array self, Py_ssize_t n) except -1
+@@ -146,15 +149,18 @@ cdef inline array clone(array template, Py_ssize_t length, bint zero):
      """ fast creation of a new array, given a template array.
      type will be same as template.
      if zero is true, new array will be initialized with zeroes."""
 -    cdef array op = newarrayobject(Py_TYPE(template), length, template.ob_descr)
--    if zero and op is not None:
++    cdef arraydescr* descr = template.ob_descr
++    cdef array op = newarrayobject(Py_TYPE(template), length, descr)
+     if zero and op is not None:
 -        memset(op.data.as_chars, 0, length * op.ob_descr.itemsize)
--    return op
-+    return clonearray(template, length)
++        memset(op.data.as_chars, 0, <size_t> length * descr.itemsize)
+     return op
  
  cdef inline array copy(array self):
      """ make a copy of an array. """
+-    cdef array op = newarrayobject(Py_TYPE(self), Py_SIZE(self), self.ob_descr)
+-    memcpy(op.data.as_chars, self.data.as_chars, Py_SIZE(op) * op.ob_descr.itemsize)
++    cdef Py_ssize_t length = Py_SIZE(self)
++    cdef arraydescr* descr = self.ob_descr
++    cdef array op = newarrayobject(Py_TYPE(self), length, descr)
++    memcpy(op.data.as_chars, self.data.as_chars, <size_t> length * descr.itemsize)
+     return op
+ 
+ cdef inline int extend_buffer(array self, char* stuff, Py_ssize_t n) except -1:
+@@ -175,4 +181,4 @@ cdef inline int extend(array self, array other) except -1:
+ 
+ cdef inline void zero(array self) noexcept:
+     """ set all elements of array to zero. """
+-    memset(self.data.as_chars, 0, Py_SIZE(self) * self.ob_descr.itemsize)
++    memset(self.data.as_chars, 0, <size_t> Py_SIZE(self) * self.ob_descr.itemsize)
 diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
 index 8131c86..aa67eda 100644
 --- a/Cython/Utility/CythonFunction.c
@@ -264,43 +294,51 @@ index b731f74..300758b 100644
              return iterable;
  #endif
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
-index 2f7f0a5..b131885 100644
+index 2f7f0a5..ba32c0f 100644
 --- a/Cython/Utility/arrayarray.h
 +++ b/Cython/Utility/arrayarray.h
-@@ -106,6 +106,36 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
-     struct arraydescr *descr);
- #endif /* ifndef NO_NEWARRAY_INLINE */
+@@ -23,7 +23,7 @@
+ // below.  That's defined later because the appropriate get and set
+ // functions aren't visible yet.
+ typedef struct arraydescr {
+-    int typecode;
++    char typecode;
+     int itemsize;
+     PyObject * (*getitem)(struct arrayobject *, Py_ssize_t);
+     int (*setitem)(struct arrayobject *, Py_ssize_t, PyObject *);
+@@ -64,10 +64,27 @@ struct arrayobject {
+     int ob_exports;  /* Number of exported buffers */
+ };
  
-+static CYTHON_INLINE PyObject* clonearray(PyObject *template_array, Py_ssize_t size) {
-+#if CYTHON_COMPILING_IN_GRAAL
-+    PyObject* op = NULL;
-+    PyObject* module = NULL;
-+    PyObject* typecode = PyObject_GetAttrString(template_array, "typecode");
-+    if (typecode == NULL) {
-+        goto cleanup;
-+    }
-+    module = PyImport_ImportModule("array");
-+    if (module == NULL) {
-+        goto cleanup;
-+    }
-+    op = PyObject_CallMethod(module, "array", "O", typecode);
-+    if (op == NULL) {
-+        goto cleanup;
-+    }
-+    if (GraalPyArray_Resize(op, size) < 0) {
-+        Py_DECREF(op);
-+        op = NULL;
-+    }
-+cleanup:
-+    Py_XDECREF(typecode);
-+    Py_XDECREF(module);
-+    return op;
++#if CYTHON_COMPILING_IN_GRAAL && defined(GRAALPY_VERSION_NUM) && GRAALPY_VERSION_NUM >= 0x190304a0
++#define __PYX_USE_GRAALPY_ARRAY_API 1
 +#else
-+    arrayobject *array = (arrayobject *) template_array;
-+    return newarrayobject(Py_TYPE(template_array), size, array->ob_descr);
++#define __PYX_USE_GRAALPY_ARRAY_API 0
++#endif
++
++static CYTHON_INLINE struct arraydescr *__Pyx_PyArray_Descr(arrayobject *self) {
++#if __PYX_USE_GRAALPY_ARRAY_API
++    return (struct arraydescr *)GraalPyArray_GetDescriptor((PyObject*)self);
++#else
++    return self->ob_descr;
 +#endif
 +}
 +
- static CYTHON_INLINE __Pyx_data_union __Pyx_PyArray_Data(arrayobject *self) {
- #if CYTHON_COMPILING_IN_GRAAL
-     __Pyx_data_union data;
+ #ifndef NO_NEWARRAY_INLINE
+ //  fast creation of a new array
+ static CYTHON_INLINE PyObject * newarrayobject(PyTypeObject *type, Py_ssize_t size,
+     struct arraydescr *descr) {
++#if __PYX_USE_GRAALPY_ARRAY_API
++    return GraalPyArray_New((PyObject*)type, size, (GraalPyArray_Descriptor*)descr);
++#else
+     arrayobject *op;
+     size_t nbytes;
+ 
+@@ -100,6 +117,7 @@ static CYTHON_INLINE PyObject * newarrayobject(PyTypeObject *type, Py_ssize_t si
+         }
+     }
+     return (PyObject *) op;
++#endif
+ }
+ #else
+ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,

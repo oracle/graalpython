@@ -57,6 +57,17 @@ PyAPI_FUNC(int) GraalPyArray_Resize(PyObject* array, Py_ssize_t new_size);
  */
 PyAPI_FUNC(char*) GraalPyArray_Data(PyObject* array);
 
+typedef struct GraalPyArray_Descriptor {
+    char typecode;
+    int itemsize;
+} GraalPyArray_Descriptor;
+
+/*
+ * GraalPy public API used by Cython's array module. Available since GraalPy 25.3.4.
+ */
+PyAPI_FUNC(GraalPyArray_Descriptor*) GraalPyArray_GetDescriptor(PyObject* array);
+PyAPI_FUNC(PyObject*) GraalPyArray_New(PyObject* type, Py_ssize_t size, GraalPyArray_Descriptor* descriptor);
+
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_LISTOBJECT_H
 #  include "cpython/listobject.h"
