@@ -13,7 +13,6 @@ The following software may be included in this product:
 
 ================================================================================
 
-<<<<<<< HEAD
 hpy ef4faf0
 
 MIT License
@@ -40,10 +39,7 @@ SOFTWARE.
 
 ================================================================================
 
-Bouncy Castle Crypto API 1.84
-=======
 Bouncy Castle Crypto API 1.85
->>>>>>> f1b0fab09a ([GR-78216] Update Bouncy Castle artifacts to 1.85)
 
 MIT License (https://opensource.org/licenses/MIT)
 
