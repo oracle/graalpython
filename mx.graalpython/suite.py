@@ -111,15 +111,9 @@ suite = {
             "digest": "sha512:33bbcbc3ad823898bda1fec8cea270fffa4688886b1c351afd93e713f41d29afd71aae9982cbe896d510aa98fece8b9a66c132536625801fe2c1af283a76e2b5",
             "sourceDigest": "sha512:5b2a7ba8fd37595716b6892def4278f420cd713c235d125afde081856abd50c4012a8fc8f039713a53f60d171dfa4d85f658ea9f4fbf7724e4e6913c46065c6b",
             "maven": {
-<<<<<<< HEAD
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcprov-jdk18on",
-                "version": "1.84",
-=======
-              "groupId": "org.bouncycastle",
-              "artifactId": "bcprov-jdk18on",
-              "version": "1.85",
->>>>>>> f1b0fab09a ([GR-78216] Update Bouncy Castle artifacts to 1.85)
+                "version": "1.85",
             },
             "moduleName": "org.bouncycastle.provider",
         },
