@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
@@ -156,6 +157,12 @@ public final class PythonCextDictBuiltins {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextDictBuiltins.class);
 
     private static final CApiTiming TIMING_PYDICT_NEW = CApiTiming.create(false, "PyDict_New");
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
+    static long GraalPyDict_GET_SIZE(long dictPtr) {
+        PDict dict = (PDict) NativeToPythonInternalNode.executeUncached(dictPtr, false);
+        return HashingStorageLen.executeUncached(dict.getDictStorage());
+    }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct, acquireGil = false)
     static long PyDict_New() {

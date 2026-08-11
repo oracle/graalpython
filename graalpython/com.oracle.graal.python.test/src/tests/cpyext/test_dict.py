@@ -176,6 +176,11 @@ class SubDict(dict):
     pass
 
 
+class DictWithOverriddenLen(dict):
+    def __len__(self):
+        return 42
+
+
 ExampleDict = {}
 
 
@@ -588,6 +593,20 @@ class TestPyDict(CPyExtTestCase):
     test_PyDict_Size = CPyExtFunction(
         lambda args: len(args[0]),
         lambda: (({},), ({'a': "hello"},), ({'a': "hello", 'b': "world"},)),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* dict"],
+    )
+
+    test_PyDict_GET_SIZE = CPyExtFunction(
+        lambda args: dict.__len__(args[0]),
+        lambda: (
+            ({},),
+            ({'a': "hello"},),
+            ({'a': "hello", 'b': "world"},),
+            (SubDict({'a': "hello"}),),
+            (DictWithOverriddenLen({'a': "hello", 'b': "world"}),),
+        ),
         resultspec="n",
         argspec='O',
         arguments=["PyObject* dict"],
