@@ -5,27 +5,46 @@ import types
 import collections
 import io
 
-# GraalPy change: remove all the _opcode imports and dependent stuff
-
-# GraalPy change: add dummy opcode metadata for coverage.py
-opmap = {
-    "EXTENDED_ARG": -1,
-    "JUMP_FORWARD": -1,
-    "RETURN_VALUE": -1,
-    "YIELD_VALUE": -1,
-    "YIELD_FROM": -1,
-}
-opname = []
-hasjabs = []
-hasjrel = []
+# GraalPy change: expose the stub opcode metadata without importing _opcode
+from opcode import *
+from opcode import __all__ as _opcodes_all
 
 __all__ = ["code_info", "dis", "disassemble", "distb", "disco",
            "findlinestarts", "findlabels", "show_code",
-           "get_instructions", "Instruction", "Bytecode"]
+           "get_instructions", "Instruction", "Bytecode"] + _opcodes_all
+del _opcodes_all
 
 _have_code = (types.MethodType, types.FunctionType, types.CodeType,
               classmethod, staticmethod, type)
 
+CONVERT_VALUE = opmap['CONVERT_VALUE']
+
+SET_FUNCTION_ATTRIBUTE = opmap['SET_FUNCTION_ATTRIBUTE']
+FUNCTION_ATTR_FLAGS = ('defaults', 'kwdefaults', 'annotations', 'closure')
+
+ENTER_EXECUTOR = opmap['ENTER_EXECUTOR']
+LOAD_CONST = opmap['LOAD_CONST']
+RETURN_CONST = opmap['RETURN_CONST']
+LOAD_GLOBAL = opmap['LOAD_GLOBAL']
+BINARY_OP = opmap['BINARY_OP']
+JUMP_BACKWARD = opmap['JUMP_BACKWARD']
+FOR_ITER = opmap['FOR_ITER']
+SEND = opmap['SEND']
+LOAD_ATTR = opmap['LOAD_ATTR']
+LOAD_SUPER_ATTR = opmap['LOAD_SUPER_ATTR']
+CALL_INTRINSIC_1 = opmap['CALL_INTRINSIC_1']
+CALL_INTRINSIC_2 = opmap['CALL_INTRINSIC_2']
+LOAD_FAST_LOAD_FAST = opmap['LOAD_FAST_LOAD_FAST']
+STORE_FAST_LOAD_FAST = opmap['STORE_FAST_LOAD_FAST']
+STORE_FAST_STORE_FAST = opmap['STORE_FAST_STORE_FAST']
+
+CACHE = opmap["CACHE"]
+
+_all_opname = list(opname)
+_all_opmap = dict(opmap)
+
+# GraalPy change
+deoptmap = {}
 
 def _try_compile(source, name):
     """Attempts to compile the given source, first as an expression and
