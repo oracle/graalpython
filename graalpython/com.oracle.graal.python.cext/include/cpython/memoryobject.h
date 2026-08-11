@@ -42,14 +42,18 @@ typedef struct {
 
 #define _PyMemoryView_CAST(op) _Py_CAST(PyMemoryViewObject*, op)
 
+/* GraalPy public API functions replacing direct PyMemoryViewObject field access. */
+PyAPI_FUNC(Py_buffer *) GraalPyMemoryView_GET_BUFFER(PyObject *op);
+PyAPI_FUNC(PyObject *) GraalPyMemoryView_GET_BASE(PyObject *op);
+
 /* Get a pointer to the memoryview's private copy of the exporter's buffer. */
 static inline Py_buffer* PyMemoryView_GET_BUFFER(PyObject *op) {
-    return (&_PyMemoryView_CAST(op)->view);
+    return GraalPyMemoryView_GET_BUFFER(op);
 }
 #define PyMemoryView_GET_BUFFER(op) PyMemoryView_GET_BUFFER(_PyObject_CAST(op))
 
 /* Get a pointer to the exporting object (this may be NULL!). */
 static inline PyObject* PyMemoryView_GET_BASE(PyObject *op) {
-    return _PyMemoryView_CAST(op)->view.obj;
+    return GraalPyMemoryView_GET_BASE(op);
 }
 #define PyMemoryView_GET_BASE(op) PyMemoryView_GET_BASE(_PyObject_CAST(op))

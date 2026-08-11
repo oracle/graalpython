@@ -3520,3 +3520,16 @@ GraalPyPrivate_ReleaseBuffer(Py_buffer* buffer)
     }
     free(buffer);
 }
+
+// GraalPy additions
+Py_buffer *
+GraalPyMemoryView_GET_BUFFER(PyObject *op)
+{
+    return &_PyMemoryView_CAST(op)->view;
+}
+
+PyObject *
+GraalPyMemoryView_GET_BASE(PyObject *op)
+{
+    return _PyMemoryView_CAST(op)->view.obj;
+}

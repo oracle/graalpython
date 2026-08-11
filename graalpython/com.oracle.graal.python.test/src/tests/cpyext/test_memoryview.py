@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -320,6 +320,29 @@ class TestPyMemoryView(CPyExtTestCase):
         cmpfunc=unhandled_error_compare_with_message,
     )
 
+    test_memoryview_accessors = CPyExtFunction(
+        lambda args: (True, bytes(args[0])),
+        lambda: ((bytearray(b'12345678'),),),
+        code='''
+            static PyObject* test_accessors(PyObject* obj) {
+                PyObject *mv = PyMemoryView_FromObject(obj);
+                if (!mv)
+                    return NULL;
+                Py_buffer *view = PyMemoryView_GET_BUFFER(mv);
+                PyObject *result = Py_BuildValue(
+                    "NN",
+                    PyBool_FromLong(PyMemoryView_GET_BASE(mv) == obj),
+                    PyBytes_FromStringAndSize(view->buf, view->len));
+                Py_DECREF(mv);
+                return result;
+            }
+        ''',
+        resultspec='O',
+        argspec='O',
+        arguments=["PyObject* obj"],
+        callfunction="test_accessors",
+    )
+
     ignored_test_memoryview_slice = CPyExtFunction(
         lambda args: bytes((5, 6, 255, 128, 99))[args[0]][args[1]][args[2]],
         lambda: list(itertools.product(slices, slices, range(-2, 5))),
@@ -378,7 +401,7 @@ class TestPyMemoryView(CPyExtTestCase):
                     0,
                     "l",
             };
-    
+
             static PyObject* test_read(PyObject *key, PyObject* expected) {
                 PyObject *mv = PyMemoryView_FromBuffer(&buffer);
                 if (!mv)
