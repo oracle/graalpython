@@ -60,6 +60,19 @@ def example_function():
     return 1
 
 
+def make_closure_function():
+    first = 1
+    second = 2
+
+    def closure_function():
+        return first + second
+
+    return closure_function
+
+
+closure_function = make_closure_function()
+
+
 def reference_PyCode_Addr2Line(args):
     code, lasti = args
     if lasti >= 0:
@@ -79,6 +92,23 @@ DictInstance = {}
 class TestCodeobject(CPyExtTestCase):
 
     testmod = type(sys)("foo")
+
+    test_PyCode_GetNumFree = CPyExtFunction(
+        lambda args: len(args[0].co_freevars),
+        lambda: (
+            (example_function.__code__,),
+            (closure_function.__code__,),
+        ),
+        code="""
+            static Py_ssize_t wrap_PyCode_GetNumFree(PyObject *code) {
+                return PyCode_GetNumFree((PyCodeObject *)code);
+            }
+        """,
+        resultspec="n",
+        argspec="O",
+        arguments=["PyObject* code"],
+        callfunction="wrap_PyCode_GetNumFree",
+    )
 
     test_PyCode_NewEmpty = CPyExtFunction(
         lambda args: args,

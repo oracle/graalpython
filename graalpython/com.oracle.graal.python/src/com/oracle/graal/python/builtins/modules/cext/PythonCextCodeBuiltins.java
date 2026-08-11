@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -60,6 +61,18 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodeBuiltins {
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyCodeObjectRawPointer}, call = Direct)
+    static long GraalPyCode_GetNumFree(long codePtr) {
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        return code.getFreeVars().length;
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyCodeObjectRawPointer}, call = Direct)
+    static int GraalPyCode_GetFirstFree(long codePtr) {
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        return code.getVarnames().length + code.getCellVars().length;
+    }
 
     @CApiBuiltin(ret = PyCodeObjectRawPointer, args = {Int, Int, Int, Int, Int, Int, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer,
                     PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, Int, PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
