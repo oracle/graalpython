@@ -649,9 +649,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t,
                     ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_Repr", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCell_Get", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCell_New", ret = PyObject, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCell_Set", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCode_Addr2Location", ret = Int, args = {PyCodeObject, Int, INT_LIST, INT_LIST, INT_LIST, INT_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "PyCode_GetCellvars", ret = PyObject, args = {PyCodeObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCode_GetCode", ret = PyObject, args = {PyCodeObject}, call = NotImplemented)

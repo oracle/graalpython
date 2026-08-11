@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -83,6 +85,55 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextFuncBuiltins {
+
+    private static PCell getCell(long cellPtr) {
+        return (PCell) NativeToPythonInternalNode.executeUncached(cellPtr, false);
+    }
+
+    private static Object getPromotedCellRef(long cellPtr) {
+        PCell cell = getCell(cellPtr);
+        Object ref = cell.getRef();
+        if (ref == null) {
+            return null;
+        }
+        Object promotedRef = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), ref, false);
+        if (promotedRef != ref) {
+            cell.setRef(promotedRef);
+        }
+        return promotedRef;
+    }
+
+    private static void checkCell(long cellPtr) {
+        Object cell = NativeToPythonInternalNode.executeUncached(cellPtr, false);
+        if (!(cell instanceof PCell)) {
+            throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    static long PyCell_Get(long cellPtr) {
+        checkCell(cellPtr);
+        Object ref = getPromotedCellRef(cellPtr);
+        return ref == null ? NULLPTR : PythonToNativeInternalNode.executeNewRefUncached(ref);
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    static int PyCell_Set(long cellPtr, long valuePtr) {
+        checkCell(cellPtr);
+        getCell(cellPtr).setRef(valuePtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(valuePtr, false));
+        return 0;
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    static long GraalPyCell_GET(long cellPtr) {
+        Object ref = getPromotedCellRef(cellPtr);
+        return ref == null ? NULLPTR : ToNativeBorrowedNode.executeUncached(ref);
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, PyObjectTransfer}, call = Direct)
+    static void GraalPyCell_SET(long cellPtr, long valuePtr) {
+        getCell(cellPtr).setRef(valuePtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(valuePtr, true));
+    }
 
     private static void checkFunction(long functionPtr) {
         Object function = NativeToPythonInternalNode.executeUncached(functionPtr, false);

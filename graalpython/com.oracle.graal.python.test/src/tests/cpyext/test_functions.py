@@ -39,6 +39,7 @@
 
 import os
 import sys
+import types
 import unittest
 
 from . import (
@@ -98,6 +99,27 @@ def function_without_optional_fields():
     pass
 
 
+def _reference_cell_get(args):
+    cell = args[0]
+    if not isinstance(cell, types.CellType):
+        raise SystemError
+    return cell.cell_contents
+
+
+def _reference_cell_set(args):
+    cell, value, clear = args
+    if not isinstance(cell, types.CellType):
+        raise SystemError
+    if clear:
+        del cell.cell_contents
+    else:
+        cell.cell_contents = value
+    try:
+        return False, cell.cell_contents
+    except ValueError:
+        return True, None
+
+
 class TypeWithAttr:
     attr = "str"
 
@@ -138,6 +160,97 @@ class DelItemMapping:
 
 
 class TestPyObject(CPyExtTestCase):
+    test_PyCell_Get = CPyExtFunction(
+        _reference_cell_get,
+        lambda: (
+            (types.CellType(42),),
+            (types.CellType(["value"]),),
+            (42,),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_Get(PyObject* cell) {
+                return PyCell_Get(cell);
+            }
+        """,
+        argspec="O",
+        arguments=["PyObject* cell"],
+        resultspec="N",
+        callfunction="wrap_PyCell_Get",
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyCell_GET = CPyExtFunction(
+        lambda args: (args[0].cell_contents, True),
+        lambda: (
+            (types.CellType(42),),
+            (types.CellType(["value"]),),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_GET(PyObject* cell) {
+                PyObject *contents = PyCell_GET(cell);
+                PyObject *contents_attr = PyObject_GetAttrString(cell, "cell_contents");
+                PyObject *result;
+
+                if (contents_attr == NULL) {
+                    return NULL;
+                }
+                result = PyTuple_Pack(2, contents, contents == contents_attr ? Py_True : Py_False);
+                Py_DECREF(contents_attr);
+                return result;
+            }
+        """,
+        argspec="O",
+        arguments=["PyObject* cell"],
+        callfunction="wrap_PyCell_GET",
+    )
+
+    test_PyCell_Set = CPyExtFunction(
+        _reference_cell_set,
+        lambda: (
+            (types.CellType(), 42, False),
+            (types.CellType("old"), ["new"], False),
+            (types.CellType("old"), None, True),
+            (42, "new", False),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_Set(PyObject* cell, PyObject* value, int clear) {
+                PyObject *contents;
+                if (PyCell_Set(cell, clear ? NULL : value) < 0) {
+                    return NULL;
+                }
+                contents = PyCell_GET(cell);
+                return Py_BuildValue("(iO)", contents == NULL, contents == NULL ? Py_None : contents);
+            }
+        """,
+        argspec="OOp",
+        arguments=["PyObject* cell", "PyObject* value", "int clear"],
+        callfunction="wrap_PyCell_Set",
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyCell_SET = CPyExtFunction(
+        _reference_cell_set,
+        lambda: (
+            (types.CellType(), 42, False),
+            (types.CellType("old"), ["new"], False),
+            (types.CellType("old"), None, True),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_SET(PyObject* cell, PyObject* value, int clear) {
+                PyObject *contents;
+                if (!clear) {
+                    Py_INCREF(value);
+                }
+                PyCell_SET(cell, clear ? NULL : value);
+                contents = PyCell_GET(cell);
+                return Py_BuildValue("(iO)", contents == NULL, contents == NULL ? Py_None : contents);
+            }
+        """,
+        argspec="OOp",
+        arguments=["PyObject* cell", "PyObject* value", "int clear"],
+        callfunction="wrap_PyCell_SET",
+    )
+
 
     test_Py_TYPE = CPyExtFunction(
         type,
