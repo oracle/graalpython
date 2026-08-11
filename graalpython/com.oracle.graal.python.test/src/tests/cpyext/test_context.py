@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -71,13 +71,26 @@ ContextHelper = CPyExtType(
     static PyObject* context_copy_current(PyObject* unused, PyObject* args) {
         return PyContext_CopyCurrent();
     }
+    static PyObject* context_is_exact_type(PyObject* unused, PyObject* args) {
+        PyObject *obj;
+        int kind;
+        if (!PyArg_ParseTuple(args, "Oi", &obj, &kind))
+            return NULL;
+        PyTypeObject *expected_types[] = {
+            &PyContext_Type,
+            &PyContextVar_Type,
+            &PyContextToken_Type,
+        };
+        return PyBool_FromLong(Py_IS_TYPE(obj, expected_types[kind]));
+    }
     ''',
     tp_methods='''
         {"enter", (PyCFunction)context_enter, METH_VARARGS | METH_STATIC, ""},
         {"exit", (PyCFunction)context_exit, METH_VARARGS | METH_STATIC, ""},
         {"copy", (PyCFunction)context_copy, METH_VARARGS | METH_STATIC, ""},
         {"new", (PyCFunction)context_new, METH_VARARGS | METH_STATIC, ""},
-        {"copy_current", (PyCFunction)context_copy_current, METH_VARARGS | METH_STATIC, ""}
+        {"copy_current", (PyCFunction)context_copy_current, METH_VARARGS | METH_STATIC, ""},
+        {"is_exact_type", (PyCFunction)context_is_exact_type, METH_VARARGS | METH_STATIC, ""}
     '''
 )
 
@@ -90,6 +103,10 @@ def test_cext_context_management():
 
     assert v.get() == 'new value'
     current_copy = ContextHelper.copy_current()
+
+    assert ContextHelper.is_exact_type(current_copy, 0)
+    assert ContextHelper.is_exact_type(v, 1)
+    assert ContextHelper.is_exact_type(token, 2)
 
     assert v.get() == 'new value'
     assert current_copy.run(v.get) == 'new value'
