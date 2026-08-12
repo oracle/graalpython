@@ -833,8 +833,8 @@ public final class PFactory {
         return new PReferenceType(cls, shape, object, callback, queue);
     }
 
-    public static PCell createCell(Assumption effectivelyFinal) {
-        return new PCell(effectivelyFinal);
+    public static PCell createCell(PythonLanguage language, Assumption effectivelyFinal) {
+        return new PCell(PythonBuiltinClassType.PCell, PythonBuiltinClassType.PCell.getInstanceShape(language), effectivelyFinal);
     }
 
     /*

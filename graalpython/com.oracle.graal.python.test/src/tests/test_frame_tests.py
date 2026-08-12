@@ -434,6 +434,20 @@ def test_f_locals_proxy_cellvar_and_freevar():
     assert update_freevar() == (2, 2)
 
 
+def test_f_locals_proxy_cell_parameter_after_return():
+    def get_frame(cell_parameter):
+        def read_cell_parameter():
+            return cell_parameter
+
+        return sys._getframe(), read_cell_parameter
+
+    frame, read_cell_parameter = get_frame(1)
+    locals_proxy = frame.f_locals
+    assert locals_proxy['cell_parameter'] == 1
+    locals_proxy['cell_parameter'] = 2
+    assert read_cell_parameter() == 2
+
+
 OTHER_RUNNING_INNER = 'running_inner'
 OTHER_RUNNING_OUTER = 'running_outer'
 OTHER_TERMINATED = 'terminated'

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -26,19 +26,19 @@ PyAPI_FUNC(PyObject *) PyCell_New(PyObject *);
 PyAPI_FUNC(PyObject *) PyCell_Get(PyObject *);
 PyAPI_FUNC(int) PyCell_Set(PyObject *, PyObject *);
 
+/* GraalPy public API functions replacing direct PyCellObject field access. */
+PyAPI_FUNC(PyObject *) GraalPyCell_GET(PyObject *op);
+PyAPI_FUNC(void) GraalPyCell_SET(PyObject *op, PyObject *value);
+
 static inline PyObject* PyCell_GET(PyObject *op) {
-    PyCellObject *cell;
     assert(PyCell_Check(op));
-    cell = _Py_CAST(PyCellObject*, op);
-    return cell->ob_ref;
+    return GraalPyCell_GET(op);
 }
 #define PyCell_GET(op) PyCell_GET(_PyObject_CAST(op))
 
 static inline void PyCell_SET(PyObject *op, PyObject *value) {
-    PyCellObject *cell;
     assert(PyCell_Check(op));
-    cell = _Py_CAST(PyCellObject*, op);
-    cell->ob_ref = value;
+    GraalPyCell_SET(op, value);
 }
 #define PyCell_SET(op, value) PyCell_SET(_PyObject_CAST(op), (value))
 

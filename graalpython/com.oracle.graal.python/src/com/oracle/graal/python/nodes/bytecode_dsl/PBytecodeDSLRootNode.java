@@ -3382,7 +3382,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void doCreateCells(VirtualFrame frame, LocalRangeAccessor locals,
                         @Bind PBytecodeDSLRootNode rootNode) {
             for (int i = 0; i < locals.getLength(); i++) {
-                PCell cell = new PCell(rootNode.cellEffectivelyFinalAssumptions[i]);
+                PCell cell = PFactory.createCell(rootNode.getLanguage(), rootNode.cellEffectivelyFinalAssumptions[i]);
                 locals.setObject(rootNode.getBytecodeNode(), frame, i, cell);
             }
         }

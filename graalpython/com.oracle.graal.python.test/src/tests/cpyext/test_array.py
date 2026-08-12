@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,22 @@ def reference_getbuffer(args):
     return a, bytes(a), len(a) * a.itemsize, a.itemsize, 0, 1, a.typecode, len(a), a.itemsize
 
 
+def reference_array_new(args):
+    array_type, size, template = args
+    result = array_type(template.typecode, [0] * size)
+    return type(result) is array_type, result
+
+
+def reference_array_descriptor(args):
+    array_obj, other = args
+    return array_obj.typecode, True, array_obj.typecode == other.typecode
+
+
 TEST_ARRAY = array('i', [1, 2, 3])
+
+
+class ArraySubclass(array):
+    pass
 
 
 class TestPyArray(CPyExtTestCase):
@@ -102,6 +117,106 @@ class TestPyArray(CPyExtTestCase):
             arguments=["PyObject* array", "Py_ssize_t size"],
             cmpfunc=unhandled_error_compare,
         )
+
+        test_GraalPyArray_New = CPyExtFunction(
+            reference_array_new,
+            lambda: (
+                (array, 0, array('b')),
+                (array, 3, array('i')),
+                (ArraySubclass, 2, array('d')),
+            ),
+            code="""
+            PyObject* wrap_GraalPyArray_New(PyObject* type, Py_ssize_t size, PyObject* template) {
+                GraalPyArray_Descriptor* descriptor = GraalPyArray_GetDescriptor(template);
+                if (descriptor == NULL)
+                    return NULL;
+                PyObject* result = GraalPyArray_New(type, size, descriptor);
+                if (result == NULL)
+                    return NULL;
+                PyObject* is_requested_type = PyBool_FromLong(Py_TYPE(result) == (PyTypeObject*)type);
+                if (is_requested_type == NULL) {
+                    Py_DECREF(result);
+                    return NULL;
+                }
+                return Py_BuildValue("NN", is_requested_type, result);
+            }
+            """,
+            callfunction="wrap_GraalPyArray_New",
+            resultspec="O",
+            argspec="OnO",
+            arguments=["PyObject* type", "Py_ssize_t size", "PyObject* template"],
+            cmpfunc=unhandled_error_compare,
+        )
+
+        test_GraalPyArray_Descriptor = CPyExtFunction(
+            reference_array_descriptor,
+            lambda: (
+                (array('b'), array('b')),
+                (array('B'), array('B')),
+                (array('u'), array('u')),
+                (array('w'), array('w')),
+                (array('h'), array('h')),
+                (array('H'), array('H')),
+                (array('i'), array('I')),
+                (array('I'), array('I')),
+                (array('l'), array('l')),
+                (array('L'), array('L')),
+                (array('q'), array('q')),
+                (array('Q'), array('Q')),
+                (array('f'), array('f')),
+                (array('d'), array('d')),
+            ),
+            code="""
+            PyObject* wrap_GraalPyArray_Descriptor(PyObject* array, PyObject* other) {
+                GraalPyArray_Descriptor* descriptor = GraalPyArray_GetDescriptor(array);
+                GraalPyArray_Descriptor* other_descriptor = GraalPyArray_GetDescriptor(other);
+                PyObject* typecode;
+                PyObject* itemsize;
+                long itemsize_value;
+                if (descriptor == NULL || other_descriptor == NULL)
+                    return NULL;
+                typecode = PyUnicode_FromOrdinal((unsigned char)descriptor->typecode);
+                if (typecode == NULL)
+                    return NULL;
+                itemsize = PyObject_GetAttrString(array, "itemsize");
+                if (itemsize == NULL) {
+                    Py_DECREF(typecode);
+                    return NULL;
+                }
+                itemsize_value = PyLong_AsLong(itemsize);
+                Py_DECREF(itemsize);
+                if (itemsize_value == -1 && PyErr_Occurred()) {
+                    Py_DECREF(typecode);
+                    return NULL;
+                }
+                return Py_BuildValue("Nii", typecode, descriptor->itemsize == itemsize_value,
+                                     descriptor == other_descriptor);
+            }
+            """,
+            callfunction="wrap_GraalPyArray_Descriptor",
+            resultspec="O",
+            argspec="OO",
+            arguments=["PyObject* array", "PyObject* other"],
+            cmpfunc=unhandled_error_compare,
+        )
+
+    test_array_Py_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (array('b'),),
+            (array('i', [1, 2, 3]),),
+            (ArraySubclass('d', [1, 2]),),
+        ),
+        code="""
+        Py_ssize_t wrap_array_Py_SIZE(PyObject* array) {
+            return Py_SIZE(array);
+        }
+        """,
+        callfunction="wrap_array_Py_SIZE",
+        resultspec="n",
+        argspec="O",
+        arguments=["PyObject* array"],
+    )
 
     test_array_getbuffer = CPyExtFunction(
         reference_getbuffer,

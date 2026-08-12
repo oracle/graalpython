@@ -56,18 +56,15 @@ PyAPI_FUNC(PyObject *) PyDict_SetDefault(
 //    1 if `key` was present and `default_value` was not inserted
 PyAPI_FUNC(int) PyDict_SetDefaultRef(PyObject *mp, PyObject *key, PyObject *default_value, PyObject **result);
 
+/* GraalPy public API function replacing direct PyDictObject field access. */
+PyAPI_FUNC(Py_ssize_t) GraalPyDict_GET_SIZE(PyObject *op);
+
 /* Get the number of items of a dictionary. */
 static inline Py_ssize_t PyDict_GET_SIZE(PyObject *op) {
-    PyDictObject *mp;
     assert(PyDict_Check(op));
-    mp = _Py_CAST(PyDictObject*, op);
-#ifdef Py_GIL_DISABLED
-    return _Py_atomic_load_ssize_relaxed(&mp->ma_used);
-#else
-    return mp->ma_used;
-#endif
+    return GraalPyDict_GET_SIZE(op);
 }
-#define PyDict_GET_SIZE(mp)  (assert(PyDict_Check(mp)),PyObject_Size((PyObject*) mp))
+#define PyDict_GET_SIZE(op) PyDict_GET_SIZE(_PyObject_CAST(op))
 
 PyAPI_FUNC(int) PyDict_ContainsString(PyObject *mp, const char *key);
 

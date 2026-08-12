@@ -91,7 +91,38 @@ def _reference_builtins(args):
     return type(__global_builtins_dict)
 
 
+async def _async_generator():
+    yield None
+
+
 class TestMisc(CPyExtTestCase):
+
+    test_builtin_type_objects = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (_async_generator().__anext__(), 0),
+            (iter(lambda: None, None), 1),
+            (classmethod(lambda: None), 2),
+            (dict.__dict__["fromkeys"], 3),
+            (staticmethod(lambda: None), 4),
+        ),
+        callfunction="check_builtin_type_object",
+        code='''
+        static int check_builtin_type_object(PyObject* obj, int kind) {
+            PyTypeObject* expected_types[] = {
+                &_PyAsyncGenASend_Type,
+                &PyCallIter_Type,
+                &PyClassMethod_Type,
+                &PyClassMethodDescr_Type,
+                &PyStaticMethod_Type,
+            };
+            return Py_IS_TYPE(obj, expected_types[kind]);
+        }
+        ''',
+        resultspec="i",
+        argspec="Oi",
+        arguments=["PyObject* obj", "int kind"],
+    )
 
     test_PyEllipsis_isSingleton = CPyExtFunction(
         lambda args: 1,

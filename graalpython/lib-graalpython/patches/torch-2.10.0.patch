@@ -767,7 +767,7 @@ index 6a8bbe990..d77fde704 100644
    if (!m)
      throw python_error();
 diff --git a/torch/csrc/dynamo/cpython_defs.c b/torch/csrc/dynamo/cpython_defs.c
-index e0cb3bfe2..c98d75851 100644
+index e0cb3bfe2..d837740b9 100644
 --- a/torch/csrc/dynamo/cpython_defs.c
 +++ b/torch/csrc/dynamo/cpython_defs.c
 @@ -28,6 +28,7 @@ void init_THPCaches() {}
@@ -787,19 +787,57 @@ index e0cb3bfe2..c98d75851 100644
  // As a simple way to reduce the impact of ABI changes on the CPython side, this
  // check forces us to manually re-check that the function didn't change on the
  // next major version
-@@ -349,9 +352,11 @@ void THP_PyFrame_Clear(_PyInterpreterFrame* frame) {
+@@ -204,12 +207,15 @@ PyFrameObject* THP_PyFrame_MakeAndSetFrameObject(_PyInterpreterFrame* frame) {
+ // https://github.com/python/cpython/blob/e715da6db1d1d70cd779dc48e1ba8110c51cc1bf/Include/internal/pycore_frame.h#L163
+ static inline PyFrameObject* THP_PyFrame_GetFrameObject(
+     _PyInterpreterFrame* frame) {
++#if 0 // GraalPy change
+   CHECK(!_PyFrame_IsIncomplete(frame));
+   PyFrameObject* res = frame->frame_obj;
+   if (res != NULL) {
+     return res;
+   }
+   return THP_PyFrame_MakeAndSetFrameObject(frame);
++#endif // GraalPy change
++  abort();
+ }
+ 
+ #if IS_PYTHON_3_14_PLUS
+@@ -262,6 +268,7 @@ static void THP_take_ownership(PyFrameObject* f, _PyInterpreterFrame* frame) {
+ // From
+ // https://github.com/python/cpython/blob/e715da6db1d1d70cd779dc48e1ba8110c51cc1bf/Python/frame.c#L79
+ static void THP_take_ownership(PyFrameObject* f, _PyInterpreterFrame* frame) {
++#if 0 // GraalPy change
+   CHECK(frame->owner != FRAME_OWNED_BY_FRAME_OBJECT);
+   CHECK(frame->owner != FRAME_CLEARED);
+   Py_ssize_t size = ((char*)&frame->localsplus[frame->stacktop]) - (char*)frame;
+@@ -299,6 +306,8 @@ static void THP_take_ownership(PyFrameObject* f, _PyInterpreterFrame* frame) {
+   if (!PyObject_GC_IsTracked((PyObject*)f)) {
+     PyObject_GC_Track((PyObject*)f);
+   }
++#endif // GraalPy change
++  abort();
+ }
+ 
+ #endif
+@@ -347,6 +356,7 @@ void THP_PyFrame_Clear(_PyInterpreterFrame* frame) {
+ // From
+ // https://github.com/python/cpython/blob/e715da6db1d1d70cd779dc48e1ba8110c51cc1bf/Python/frame.c#L120
  void THP_PyFrame_Clear(_PyInterpreterFrame* frame) {
++#if 0 // GraalPy change
    /* It is the responsibility of the owning generator/coroutine
     * to have cleared the enclosing generator, if any. */
-+#if 0 // GraalPy change
    CHECK(
-       frame->owner != FRAME_OWNED_BY_GENERATOR ||
-       _PyFrame_GetGenerator(frame)->gi_frame_state == FRAME_CLEARED);
+@@ -382,6 +392,8 @@ void THP_PyFrame_Clear(_PyInterpreterFrame* frame) {
+   Py_DECREF(frame->f_func);
+ #endif
+   Py_DECREF(F_CODE(frame));
 +#endif // GraalPy change
-   // GH-99729: Clearing this frame can expose the stack (via finalizers). It's
-   // crucial that this frame has been unlinked, and is no longer visible:
- #if IS_PYTHON_3_13_PLUS
-@@ -496,7 +501,7 @@ void THP_PyThreadState_PopFrame(
++  abort();
+ }
+ 
+ #endif
+@@ -496,7 +508,7 @@ void THP_PyThreadState_PopFrame(
  const uint8_t* THP_PyOpcode_Caches = NULL;
  int THP_PyOpcode_Caches_size = 0;
  void init_THPCaches() {

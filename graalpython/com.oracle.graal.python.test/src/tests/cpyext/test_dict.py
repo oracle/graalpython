@@ -176,6 +176,11 @@ class SubDict(dict):
     pass
 
 
+class DictWithOverriddenLen(dict):
+    def __len__(self):
+        return 42
+
+
 ExampleDict = {}
 
 
@@ -593,6 +598,20 @@ class TestPyDict(CPyExtTestCase):
         arguments=["PyObject* dict"],
     )
 
+    test_PyDict_GET_SIZE = CPyExtFunction(
+        lambda args: dict.__len__(args[0]),
+        lambda: (
+            ({},),
+            ({'a': "hello"},),
+            ({'a': "hello", 'b': "world"},),
+            (SubDict({'a': "hello"}),),
+            (DictWithOverriddenLen({'a': "hello", 'b': "world"}),),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* dict"],
+    )
+
     # PyDict_Copy
     test_PyDict_Copy = CPyExtFunction(
         _reference_copy,
@@ -657,6 +676,48 @@ class TestPyDict(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
+    )
+
+    test_PyDictView_Type = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ({}.keys(), 0),
+            ({}.items(), 1),
+            ({}.values(), 2),
+        ),
+        code='''int wrap_PyDictView_Type(PyObject* view, int kind) {
+            PyTypeObject* expected_types[] = {
+                &PyDictKeys_Type,
+                &PyDictItems_Type,
+                &PyDictValues_Type,
+            };
+            return Py_IS_TYPE(view, expected_types[kind]);
+        }''',
+        resultspec="i",
+        argspec="Oi",
+        arguments=["PyObject* view", "int kind"],
+        callfunction="wrap_PyDictView_Type",
+    )
+
+    test_PyDictIter_Type = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (iter({}), 0),
+            (iter({}.values()), 1),
+            (iter({}.items()), 2),
+        ),
+        code='''int wrap_PyDictIter_Type(PyObject* iterator, int kind) {
+            PyTypeObject* expected_types[] = {
+                &PyDictIterKey_Type,
+                &PyDictIterValue_Type,
+                &PyDictIterItem_Type,
+            };
+            return Py_IS_TYPE(iterator, expected_types[kind]);
+        }''',
+        resultspec="i",
+        argspec="Oi",
+        arguments=["PyObject* iterator", "int kind"],
+        callfunction="wrap_PyDictIter_Type",
     )
 
     test_PyDict_Update = CPyExtFunction(

@@ -40,12 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
@@ -55,6 +58,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.malloc;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
@@ -65,11 +69,35 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextArrayBuiltins {
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Int}, call = Ignored)
+    static long GraalPyPrivate_Array_New(long clsPtr, long size, int typeCode) {
+        Object cls = NativeToPythonInternalNode.executeUncached(clsPtr, false);
+        TruffleString typeCodeString = TruffleString.fromCodePointUncached(typeCode, TS_ENCODING);
+        BufferFormat format = BufferFormat.forArray(typeCodeString, TruffleString.CodePointLengthNode.getUncached(),
+                        TruffleString.CodePointAtIndexUTF32Node.getUncached());
+        try {
+            PArray array = PFactory.createArray(cls, TypeNodes.GetInstanceShape.executeUncached(cls), typeCodeString, format, Math.toIntExact(size));
+            return PythonToNativeInternalNode.executeUncached(array, true);
+        } catch (ArithmeticException | OverflowException e) {
+            throw PRaiseNode.raiseStatic(null, MemoryError);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
+    static int GraalPyPrivate_Array_TypeCode(long arrayPtr) {
+        return expectArray(arrayPtr, "GraalPyArray_GetDescriptor").getFormatString().codePointAtIndexUncached(0, TS_ENCODING);
+    }
 
     /**
      * Graalpy-specific function implemented for Cython

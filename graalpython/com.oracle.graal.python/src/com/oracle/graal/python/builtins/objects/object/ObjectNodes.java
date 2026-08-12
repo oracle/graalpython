@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
@@ -385,11 +384,6 @@ public abstract class ObjectNodes {
                 return id(self.getMaterialized(), inliningTarget);
             }
             return getObjectIdNode.execute(inliningTarget, self);
-        }
-
-        @Specialization
-        Object id(PCell self) {
-            return PythonContext.get(this).getNextObjectId(self);
         }
 
         protected static boolean isDefaultCase(PythonObject object) {

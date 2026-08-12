@@ -105,7 +105,9 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
     private static int findSlot(VirtualFrame frame, Node inliningTarget, PFrameLocalsProxy self, Object key, PyObjectRichCompareBool equals) {
         BytecodeFrame bytecodeFrame = self.getBytecodeFrame();
         BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
-        for (int i = 0; i < info.getVariableCount(); i++) {
+        // Cell parameters occur in both varnames and cellvars. The function prologue moves their
+        // value to the cell slot and clears the regular slot, so prefer the later cell slot.
+        for (int i = info.getVariableCount() - 1; i >= 0; i--) {
             if (equals.executeEq(frame, inliningTarget, info.getVariableName(i), key)) {
                 return i;
             }

@@ -39,6 +39,7 @@
 
 import os
 import sys
+import types
 import unittest
 
 from . import (
@@ -82,6 +83,52 @@ def identCallResult(arg):
         return ident(arg)
 
 
+def _make_function_with_fields():
+    closed_over = 42
+
+    def function(positional="default", *, keyword="kwdefault") -> int:
+        return closed_over
+
+    return function
+
+
+def _function_get_fields_arguments():
+    function_with_fields = _make_function_with_fields()
+    # CPython 3.13 initially stores annotations as a compact tuple internally.
+    # Accessing __annotations__ materializes the dictionary that the public C
+    # getter is expected to expose.
+    function_with_fields.__annotations__
+
+    def function_without_optional_fields():
+        pass
+
+    return (
+        (function_with_fields,),
+        (function_without_optional_fields,),
+    )
+
+
+def _reference_cell_get(args):
+    cell = args[0]
+    if not isinstance(cell, types.CellType):
+        raise SystemError
+    return cell.cell_contents
+
+
+def _reference_cell_set(args):
+    cell, value, clear = args
+    if not isinstance(cell, types.CellType):
+        raise SystemError
+    if clear:
+        del cell.cell_contents
+    else:
+        cell.cell_contents = value
+    try:
+        return False, cell.cell_contents
+    except ValueError:
+        return True, None
+
+
 class TypeWithAttr:
     attr = "str"
 
@@ -122,6 +169,97 @@ class DelItemMapping:
 
 
 class TestPyObject(CPyExtTestCase):
+    test_PyCell_Get = CPyExtFunction(
+        _reference_cell_get,
+        lambda: (
+            (types.CellType(42),),
+            (types.CellType(["value"]),),
+            (42,),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_Get(PyObject* cell) {
+                return PyCell_Get(cell);
+            }
+        """,
+        argspec="O",
+        arguments=["PyObject* cell"],
+        resultspec="N",
+        callfunction="wrap_PyCell_Get",
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyCell_GET_macro = CPyExtFunction(
+        lambda args: (args[0].cell_contents, True),
+        lambda: (
+            (types.CellType(42),),
+            (types.CellType(["value"]),),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_GET(PyObject* cell) {
+                PyObject *contents = PyCell_GET(cell);
+                PyObject *contents_attr = PyObject_GetAttrString(cell, "cell_contents");
+                PyObject *result;
+
+                if (contents_attr == NULL) {
+                    return NULL;
+                }
+                result = PyTuple_Pack(2, contents, contents == contents_attr ? Py_True : Py_False);
+                Py_DECREF(contents_attr);
+                return result;
+            }
+        """,
+        argspec="O",
+        arguments=["PyObject* cell"],
+        callfunction="wrap_PyCell_GET",
+    )
+
+    test_PyCell_Set = CPyExtFunction(
+        _reference_cell_set,
+        lambda: (
+            (types.CellType(), 42, False),
+            (types.CellType("old"), ["new"], False),
+            (types.CellType("old"), None, True),
+            (42, "new", False),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_Set(PyObject* cell, PyObject* value, int clear) {
+                PyObject *contents;
+                if (PyCell_Set(cell, clear ? NULL : value) < 0) {
+                    return NULL;
+                }
+                contents = PyCell_GET(cell);
+                return Py_BuildValue("(iO)", contents == NULL, contents == NULL ? Py_None : contents);
+            }
+        """,
+        argspec="OOp",
+        arguments=["PyObject* cell", "PyObject* value", "int clear"],
+        callfunction="wrap_PyCell_Set",
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyCell_SET_macro = CPyExtFunction(
+        _reference_cell_set,
+        lambda: (
+            (types.CellType(), 42, False),
+            (types.CellType("old"), ["new"], False),
+            (types.CellType("old"), None, True),
+        ),
+        code="""
+            static PyObject* wrap_PyCell_SET(PyObject* cell, PyObject* value, int clear) {
+                PyObject *contents;
+                if (!clear) {
+                    Py_INCREF(value);
+                }
+                PyCell_SET(cell, clear ? NULL : value);
+                contents = PyCell_GET(cell);
+                return Py_BuildValue("(iO)", contents == NULL, contents == NULL ? Py_None : contents);
+            }
+        """,
+        argspec="OOp",
+        arguments=["PyObject* cell", "PyObject* value", "int clear"],
+        callfunction="wrap_PyCell_SET",
+    )
+
 
     test_Py_TYPE = CPyExtFunction(
         type,
@@ -651,6 +789,54 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* func"],
         callfunction="wrapGraalPyCFunction_GetMethodDef",
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyFunction_GET_FIELDS = CPyExtFunction(
+        lambda args: (
+            args[0].__code__,
+            args[0].__globals__,
+            args[0].__module__,
+            args[0].__defaults__,
+            args[0].__kwdefaults__,
+            args[0].__closure__,
+            args[0].__annotations__ or None,
+            True,
+        ),
+        _function_get_fields_arguments,
+        code="""
+            static PyObject* wrap_PyFunction_GET_FIELDS(PyObject* function) {
+                PyObject *module = PyFunction_GET_MODULE(function);
+                PyObject *defaults = PyFunction_GET_DEFAULTS(function);
+                PyObject *kwdefaults = PyFunction_GET_KW_DEFAULTS(function);
+                PyObject *closure = PyFunction_GET_CLOSURE(function);
+                PyObject *annotations = PyFunction_GET_ANNOTATIONS(function);
+                PyObject *module_attr = PyObject_GetAttrString(function, "__module__");
+                PyObject *result;
+                int stable_module;
+
+                if (module_attr == NULL) {
+                    return NULL;
+                }
+                stable_module = module == module_attr;
+                Py_DECREF(module_attr);
+
+                result = PyTuple_Pack(
+                    8,
+                    PyFunction_GET_CODE(function),
+                    PyFunction_GET_GLOBALS(function),
+                    module,
+                    defaults != NULL ? defaults : Py_None,
+                    kwdefaults != NULL ? kwdefaults : Py_None,
+                    closure != NULL ? closure : Py_None,
+                    annotations != NULL ? annotations : Py_None,
+                    stable_module ? Py_True : Py_False
+                );
+                return result;
+            }
+        """,
+        argspec="O",
+        arguments=["PyObject* function"],
+        callfunction="wrap_PyFunction_GET_FIELDS",
     )
     # create function from PyMethodDef
     # test PyMethodDef is same

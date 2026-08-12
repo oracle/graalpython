@@ -186,14 +186,18 @@ PyAPI_DATA(PyTypeObject) PyCode_Type;
 
 #define PyCode_Check(op) Py_IS_TYPE((op), &PyCode_Type)
 
+/* GraalPy public API functions replacing direct PyCodeObject field access. */
+PyAPI_FUNC(Py_ssize_t) GraalPyCode_GetNumFree(PyCodeObject *op);
+PyAPI_FUNC(int) GraalPyCode_GetFirstFree(PyCodeObject *op);
+
 static inline Py_ssize_t PyCode_GetNumFree(PyCodeObject *op) {
     assert(PyCode_Check(op));
-    return op->co_nfreevars;
+    return GraalPyCode_GetNumFree(op);
 }
 
 static inline int PyUnstable_Code_GetFirstFree(PyCodeObject *op) {
     assert(PyCode_Check(op));
-    return op->co_nlocalsplus - op->co_nfreevars;
+    return GraalPyCode_GetFirstFree(op);
 }
 
 Py_DEPRECATED(3.13) static inline int PyCode_GetFirstFree(PyCodeObject *op) {

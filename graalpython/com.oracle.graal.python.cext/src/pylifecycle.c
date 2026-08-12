@@ -74,6 +74,13 @@ Py_IsFinalizing(void)
     return graalpy_finalizing;
 }
 
+// GraalPy change: compatibility alias for pybind11
+int
+_Py_IsFinalizing(void)
+{
+    return Py_IsFinalizing();
+}
+
 static void
 graalpy_fork_not_supported(void)
 {

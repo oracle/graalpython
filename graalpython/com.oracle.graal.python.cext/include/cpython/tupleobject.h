@@ -39,9 +39,8 @@ PyAPI_FUNC(void) GraalPyTuple_SET_ITEM(PyObject*, Py_ssize_t, PyObject*);
 /* Function *only* to be used to fill in brand new tuples */
 static inline void
 PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    PyTupleObject *tuple = _PyTuple_CAST(op);
     assert(0 <= index);
-    assert(index < Py_SIZE(tuple));
+    assert(index < Py_SIZE(_PyTuple_CAST(op)));
     GraalPyTuple_SET_ITEM(op, index, value);
 }
 #define PyTuple_SET_ITEM(op, index, value) \

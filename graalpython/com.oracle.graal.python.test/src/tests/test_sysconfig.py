@@ -52,7 +52,8 @@ def test_platform_sysconfigdata():
     import sysconfig
     mod = importlib.import_module(sysconfig._get_sysconfigdata_name())
     # These flags are parsed directly from the file by maturin
-    for key in ("ABIFLAGS", "EXT_SUFFIX", "SOABI", "VERSION"):
+    for key in ("ABIFLAGS", "EXT_SUFFIX", "INSTSONAME", "SOABI", "VERSION"):
         assert key in mod.build_time_vars
     assert mod.build_time_vars["ABIFLAGS"] == sys.abiflags
+    assert mod.build_time_vars["INSTSONAME"] == mod.build_time_vars["LDLIBRARY"]
     assert sys.abiflags in sysconfig.get_config_var("INCLUDEPY")
