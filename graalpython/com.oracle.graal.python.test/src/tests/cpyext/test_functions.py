@@ -188,7 +188,7 @@ class TestPyObject(CPyExtTestCase):
         cmpfunc=unhandled_error_compare,
     )
 
-    test_PyCell_GET = CPyExtFunction(
+    test_PyCell_GET_macro = CPyExtFunction(
         lambda args: (args[0].cell_contents, True),
         lambda: (
             (types.CellType(42),),
@@ -237,7 +237,7 @@ class TestPyObject(CPyExtTestCase):
         cmpfunc=unhandled_error_compare,
     )
 
-    test_PyCell_SET = CPyExtFunction(
+    test_PyCell_SET_macro = CPyExtFunction(
         _reference_cell_set,
         lambda: (
             (types.CellType(), 42, False),

@@ -50,7 +50,7 @@ _Static_assert(sizeof(((GraalPyArray_Descriptor *)0)->typecode) == 3,
 
 static GraalPyArray_Descriptor array_descriptor_b = GRAALPY_ARRAY_DESCRIPTOR('b', signed char);
 static GraalPyArray_Descriptor array_descriptor_B = GRAALPY_ARRAY_DESCRIPTOR('B', unsigned char);
-static GraalPyArray_Descriptor array_descriptor_u = GRAALPY_ARRAY_DESCRIPTOR('u', wchar_t);
+static GraalPyArray_Descriptor array_descriptor_u = GRAALPY_ARRAY_DESCRIPTOR('u', Py_UCS4);
 static GraalPyArray_Descriptor array_descriptor_w = GRAALPY_ARRAY_DESCRIPTOR('w', Py_UCS4);
 static GraalPyArray_Descriptor array_descriptor_h = GRAALPY_ARRAY_DESCRIPTOR('h', short);
 static GraalPyArray_Descriptor array_descriptor_H = GRAALPY_ARRAY_DESCRIPTOR('H', unsigned short);
