@@ -92,11 +92,20 @@ def _make_function_with_fields():
     return function
 
 
-function_with_fields = _make_function_with_fields()
+def _function_get_fields_arguments():
+    function_with_fields = _make_function_with_fields()
+    # CPython 3.13 initially stores annotations as a compact tuple internally.
+    # Accessing __annotations__ materializes the dictionary that the public C
+    # getter is expected to expose.
+    function_with_fields.__annotations__
 
+    def function_without_optional_fields():
+        pass
 
-def function_without_optional_fields():
-    pass
+    return (
+        (function_with_fields,),
+        (function_without_optional_fields,),
+    )
 
 
 def _reference_cell_get(args):
@@ -793,10 +802,7 @@ class TestPyObject(CPyExtTestCase):
             args[0].__annotations__ or None,
             True,
         ),
-        lambda: (
-            (function_with_fields,),
-            (function_without_optional_fields,),
-        ),
+        _function_get_fields_arguments,
         code="""
             static PyObject* wrap_PyFunction_GET_FIELDS(PyObject* function) {
                 PyObject *module = PyFunction_GET_MODULE(function);
