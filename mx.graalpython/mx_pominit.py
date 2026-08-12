@@ -58,8 +58,8 @@ ROOT_VERSION = "1.0-SNAPSHOT"
 LOCAL_GROUP_ID = "${project.groupId}"
 LOCAL_VERSION = "${project.version}"
 GRAALVM_VERSION = "${graalvm.version}"
-DEFAULT_GRAALVM_VERSION = "25.2.4"
-CURRENT_GRAALVM_VERSION = "25.3.4"
+DEFAULT_GRAALVM_VERSION = "25.3.4"
+CURRENT_GRAALVM_VERSION = "25.3.4.1"
 
 XML_UPL_HEADER = """<!--
 Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
@@ -143,7 +143,7 @@ ANNOTATION_PROCESSOR_ALIASES = {
     "GRAALPYTHON_PROCESSOR": ["com.oracle.graal.python.processor"],
 }
 
-GRAALVM_VERSION_RE = re.compile(r"\d+\.\d+\.\d+")
+GRAALVM_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:\.\d+)?")
 
 
 @dataclass(frozen=True)
@@ -166,7 +166,7 @@ def load_projects(mx_suite) -> dict:
     return {project.name: project for project in mx_suite.projects}
 
 
-def parse_graalvm_version(version: str) -> tuple[int, int, int]:
+def parse_graalvm_version(version: str) -> tuple[int, ...]:
     if not GRAALVM_VERSION_RE.fullmatch(version):
         mx.abort(f"Cannot parse Maven IDE facade GraalVM version {version!r}")
     return tuple(int(part) for part in version.split("."))
