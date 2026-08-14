@@ -494,8 +494,12 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             /* Read everything */
             Object bytes = callMethod.execute(frame, inliningTarget, self.getBuffer(), T_READ);
             TruffleString decoded = decodeNode.execute(frame, self.getDecoder(), bytes, true);
-            TruffleString result = self.consumeAllDecodedChars(substringNode, !decoded.isEmpty());
-            result = concatNode.execute(result, decoded, TS_ENCODING, false);
+            TruffleString result;
+            if (decoded.isEmpty()) {
+                result = self.consumeAllDecodedChars(substringNode, false);
+            } else {
+                result = concatNode.execute(self.consumeAllDecodedChars(substringNode, true), decoded, TS_ENCODING, false);
+            }
             self.clearDecodedChars();
             self.clearSnapshot();
             return result;
@@ -528,7 +532,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     appendStringNode.execute(chunks, result);
                 }
 
-                result = self.consumeDecodedChars(remaining, substringNode, chunks != null);
+                if (chunks != null) {
+                    result = self.consumeDecodedChars(remaining, substringNode, true);
+                } else {
+                    result = self.consumeDecodedChars(remaining, substringNode, false);
+                }
                 remaining -= codePointLengthNode.execute(result, TS_ENCODING);
             }
             if (chunks != null) {
