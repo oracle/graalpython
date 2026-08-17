@@ -92,7 +92,7 @@ SOFTWARE.
             </goals>
             <configuration>
               <sources>
-                <source>../../mxbuild/jdk25/com.oracle.graal.python.bouncycastle/src_gen</source>
+                <source>../../mxbuild/graalpython/com.oracle.graal.python.bouncycastle/src_gen</source>
               </sources>
             </configuration>
           </execution>

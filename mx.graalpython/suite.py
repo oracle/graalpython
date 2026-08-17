@@ -1123,6 +1123,11 @@ suite = {
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
             ],
+            "optionalDependencies": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
+            ],
             "description": "Optional GraalPy BouncyCastle integration.",
             "maven": {
                 "artifactId": "python-bouncycastle-support",
