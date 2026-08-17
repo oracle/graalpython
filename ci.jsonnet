@@ -167,6 +167,13 @@
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_JVM_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
         }),
+        "python-unittest-bouncycastle": gpgate + task_spec({
+            environment +: {
+                GRAALPY_WITH_BOUNCYCASTLE: "true",
+            },
+        }) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier2,
+        }),
         "python-unittest-native-debug-build": gpgate + platform_spec(no_jobs) + native_debug_build_gate("python-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
         }),

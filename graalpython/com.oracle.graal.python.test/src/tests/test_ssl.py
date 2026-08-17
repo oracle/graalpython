@@ -126,7 +126,11 @@ class CertTests(unittest.TestCase):
     @unittest.skipUnless(IS_OPENSSL_3_0_0, "test requires RFC 5280 check added in OpenSSL 3.0+")
     def test_verify_x509_strict(self):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        server_context.load_cert_chain(cpython_cert_data("leaf-missing-aki.keycert.pem"))
+        try:
+            server_context.load_cert_chain(cpython_cert_data("leaf-missing-aki.keycert.pem"))
+        except ssl.SSLError as e:
+            self.assertIn("require BouncyCastle support", str(e))
+            return
 
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.check_hostname = False
@@ -404,7 +408,11 @@ class CertTests(unittest.TestCase):
 
     def check_keypair(self, signed_cert, signing_ca, password=None):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        server_context.load_cert_chain(data_file(signed_cert), password=password)
+        try:
+            server_context.load_cert_chain(data_file(signed_cert), password=password)
+        except ssl.SSLError as e:
+            self.assertIn("require BouncyCastle support", str(e))
+            return
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.load_verify_locations(data_file(signing_ca))
         check_handshake(server_context, client_context)
@@ -421,17 +429,26 @@ class CertTests(unittest.TestCase):
     def test_private_key_pkcs1_password(self):
         self.check_keypair("signed_cert_pkcs1_password.pem", "signing_ca.pem", password="password")
 
-    def test_private_key_ec_legacy(self):
+    def load_legacy_cert_chain(self, certfile, keyfile):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        server_context.load_cert_chain(data_file("keycertecc.pem"), keyfile=data_file("pk_ecc_legacy.pem"))
+        try:
+            server_context.load_cert_chain(data_file(certfile), keyfile=data_file(keyfile))
+        except ssl.SSLError as e:
+            self.assertIn("require BouncyCastle support", str(e))
+            return None
+        return server_context
+
+    def test_private_key_ec_legacy(self):
+        server_context = self.load_legacy_cert_chain("keycertecc.pem", "pk_ecc_legacy.pem")
+        if server_context is None:
+            return
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.check_hostname = False
         client_context.verify_mode = ssl.CERT_NONE
         check_handshake(server_context, client_context)
 
     def test_private_key_dsa_legacy(self):
-        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        server_context.load_cert_chain(data_file("cert_dsa.pem"), keyfile=data_file("pk_dsa_legacy.pem"))
+        self.load_legacy_cert_chain("cert_dsa.pem", "pk_dsa_legacy.pem")
 
     def test_alpn(self):
         signed_cert = data_file("signed_cert.pem")

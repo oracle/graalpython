@@ -71,7 +71,6 @@ import mx_pominit
 import mx_graalpython_python_benchmarks
 
 # re-export custom mx project classes so they can be used from suite.py
-from mx import MavenProject #pylint: disable=unused-import
 from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 
 from mx_gate import Task
@@ -1091,6 +1090,7 @@ class GraalPythonTags(object):
     junit_maven_isolates = 'python-junit-polyglot-isolates'
     jvmbuild = 'python-jvm-build'
     unittest = 'python-unittest'
+    unittest_bouncycastle = 'python-unittest-bouncycastle'
     unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
     unittest_multi = 'python-unittest-multi-context'
@@ -1124,7 +1124,7 @@ def python_gate(args):
         for x in dir(GraalPythonTags):
             v = getattr(GraalPythonTags, x)
             if isinstance(v, str) and v.startswith("python-"):
-                if "sandboxed" not in v:
+                if "sandboxed" not in v and "bouncycastle" not in v:
                     tags.append(v)
         args.append(",".join(tags))
     mx.log("Running mx python-gate " + " ".join(args))
@@ -1376,7 +1376,7 @@ def use_local_maven_repo_settings(repo_path):
               </snapshots>
             </{element_name}>""")
 
-    repositories = [
+    repositories: list[tuple[str, str]] = [
         ('graalpy-local', pathlib.Path(repo_path).resolve().as_uri()),
         ('graalpy-central', mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')),
     ]
@@ -1539,7 +1539,7 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
     return local_repo_path, version, env
 
 
-def deploy_graalpy_extensions_to_local_maven_repo_wrapper(*args):
+def deploy_graalpy_extensions_to_local_maven_repo_wrapper(*_):
     deploy_graalpy_extensions_to_local_maven_repo()
 
 def deploy_local_maven_repo_wrapper(args):
@@ -1992,6 +1992,46 @@ def graalpython_gate_runner(_, tasks):
                 parallel=6,
             )
 
+    with Task('GraalPython BouncyCastle unittests', tasks, tags=[GraalPythonTags.unittest_bouncycastle]) as task:
+        if task:
+            bc_unit_tests = [
+                f"graalpython/com.oracle.graal.python.test/src/tests/test_ssl.py::tests.test_ssl.CertTests.test_{t}"
+                for t in (
+                        "private_key_pkcs1_password",
+                        "private_key_ec_legacy",
+                        "private_key_dsa_legacy",
+                        "verify_x509_strict",
+                )
+            ]
+            bc_stdlib_tests = [
+                f"graalpython/lib-python/3/test/test_hashlib.py::test.test_hashlib.HashLibTestCase.test_{t}"
+                for t in (
+                        "algorithms_available",
+                        "blocksize_name_blake2",
+                        "blocksize_name_sha3",
+                        "case_blake2b_0",
+                        "case_blake2b_1",
+                        "case_blake2s_0",
+                        "case_blake2s_1",
+                        "clinic_signature",
+                        "digest_length_overflow",
+                        "gil",
+                        "hash_array",
+                        "hexdigest",
+                        "large_update",
+                        "name_attribute",
+                        "usedforsecurity_false",
+                        "usedforsecurity_true",
+                )
+            ] + [
+                "graalpython/lib-python/3/test/test_ssl.py::test.test_ssl.ThreadedTests.test_verify_strict",
+            ]
+            assert GRAALPY_WITH_BOUNCYCASTLE, "This gate only makes sense when bouncycastle was enabled using the envvar GRAALPY_WITH_BOUNCYCASTLE"
+            graalpy = graalpy_standalone_jvm()
+            run_python_unittests(graalpy, paths=bc_unit_tests, report=report())
+            stdlib_test_args = [f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}', '--all']
+            run_python_unittests(graalpy, paths=bc_stdlib_tests, runner_args=stdlib_test_args, report=report())
+
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
@@ -2109,8 +2149,8 @@ def graalpython_gate_runner(_, tasks):
                 on_fail = mx.abort
             else:
                 def on_fail(codeOrMessage, context=None, killsig=signal.SIGTERM):
-                    mx.warn(codeOrMessage)
-                    assert False, "GraalOS build and test failed"
+                    mx.warn(codeOrMessage, context=context)
+                    assert False, f"GraalOS build and test failed, signal {killsig} ignored"
             try:
                 mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report(), on_fail=on_fail)
             except AssertionError:
@@ -3591,7 +3631,7 @@ def run_downstream_test(args):
 
 
 def _get_github_unittest_tag_pr_commits():
-    import urllib
+    import urllib.request, urllib.parse
 
     params = {
         'q': "repo:oracle/graalpython is:pr in:title Weekly Retagger: Update tags",

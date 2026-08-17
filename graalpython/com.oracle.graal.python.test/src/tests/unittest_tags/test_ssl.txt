@@ -114,7 +114,6 @@ test.test_ssl.ThreadedTests.test_ssl_cert_verify_error @ darwin-arm64,linux-aarc
 test.test_ssl.ThreadedTests.test_starttls @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_thread_recv_while_main_thread_sends @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_tls1_3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_ssl.ThreadedTests.test_verify_strict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_version_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_wrong_cert_tls12 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_wrong_cert_tls13 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
