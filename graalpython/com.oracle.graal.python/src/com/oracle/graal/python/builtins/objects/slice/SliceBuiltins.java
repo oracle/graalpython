@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.slice;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -46,11 +45,13 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToObjectS
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceCastToToBigInt;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceExactCastToInt;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -63,6 +64,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -122,9 +125,22 @@ public final class SliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        static TruffleString repr(VirtualFrame frame, PSlice self,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return reprBoundary(self);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
         @TruffleBoundary
-        public static TruffleString repr(PSlice self) {
-            return toTruffleStringUncached(self.toString());
+        private static TruffleString reprBoundary(PSlice self) {
+            return SimpleTruffleStringFormatNode.getUncached().format("slice(%s, %s, %s)",
+                            PyObjectReprAsTruffleStringNode.executeUncached(self.getStart()),
+                            PyObjectReprAsTruffleStringNode.executeUncached(self.getStop()),
+                            PyObjectReprAsTruffleStringNode.executeUncached(self.getStep()));
         }
     }
 
