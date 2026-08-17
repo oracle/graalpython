@@ -1,0 +1,16 @@
+test.test_dis.BytecodeTests.test_bytecode_co_positions @ linux-x86_64-github
+test.test_dis.BytecodeTests.test_from_traceback @ linux-x86_64-github
+test.test_dis.BytecodeTests.test_instantiation @ linux-x86_64-github
+test.test_dis.CodeInfoTests.test_code_info_object @ linux-x86_64-github
+test.test_dis.CodeInfoTests.test_pretty_flags_no_flags @ linux-x86_64-github
+test.test_dis.DisTests.test__try_compile_no_context_exc_on_error @ linux-x86_64-github
+test.test_dis.DisTests.test_boundaries @ linux-x86_64-github
+test.test_dis.DisTests.test_dis_none @ linux-x86_64-github
+test.test_dis.DisTests.test_opname @ linux-x86_64-github
+test.test_dis.DisWithFileTests.test__try_compile_no_context_exc_on_error @ linux-x86_64-github
+test.test_dis.DisWithFileTests.test_boundaries @ linux-x86_64-github
+test.test_dis.DisWithFileTests.test_dis_none @ linux-x86_64-github
+test.test_dis.DisWithFileTests.test_opname @ linux-x86_64-github
+test.test_dis.InstructionTests.test_oparg_alias @ linux-x86_64-github
+test.test_dis.TestDisTraceback.test_distb_empty @ linux-x86_64-github
+test.test_dis.TestDisTracebackWithFile.test_distb_empty @ linux-x86_64-github

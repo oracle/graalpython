@@ -9,5 +9,6 @@ test.test_tomllib.test_misc.TestMiscellaneous.test_deepcopy @ darwin-arm64,linux
 test.test_tomllib.test_misc.TestMiscellaneous.test_incorrect_load @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tomllib.test_misc.TestMiscellaneous.test_inline_array_recursion_limit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tomllib.test_misc.TestMiscellaneous.test_inline_table_recursion_limit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tomllib.test_misc.TestMiscellaneous.test_key_recursion_limit @ linux-x86_64-github
 test.test_tomllib.test_misc.TestMiscellaneous.test_load @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tomllib.test_misc.TestMiscellaneous.test_parse_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

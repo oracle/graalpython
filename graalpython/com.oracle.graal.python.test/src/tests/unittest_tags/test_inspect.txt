@@ -11,10 +11,17 @@ test.test_inspect.test_inspect.TestBoundArguments.test_signature_bound_arguments
 test.test_inspect.test_inspect.TestBuggyCases.test_class_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_class_definition_in_multiline_comment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_class_definition_in_multiline_string_definition @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_class_definition_same_name_diff_methods @ linux-x86_64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_class_inside_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_class_with_method_from_other_module @ linux-x86_64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_comment_or_empty_line_after_decorator @ linux-x86_64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_findsource_code_in_linecache @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_inspect.test_inspect.TestBuggyCases.test_findsource_with_out_of_bounds_lineno @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_findsource_on_class_with_out_of_bounds_lineno @ linux-x86_64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_findsource_on_func_with_out_of_bounds_lineno @ linux-x86_64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_findsource_with_out_of_bounds_lineno @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_findsource_without_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_generator_expression @ linux-x86_64-github
+test.test_inspect.test_inspect.TestBuggyCases.test_getsource_on_class_code_object @ linux-x86_64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_getsource_on_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_method_in_dynamic_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_multiline_sig @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -67,6 +74,7 @@ test.test_inspect.test_inspect.TestDecorators.test_decorator_with_lambda @ darwi
 test.test_inspect.test_inspect.TestDecorators.test_getsource_unwrap @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestDecorators.test_replacing_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestDecorators.test_wrapped_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestFormatAnnotation.test_formatannotationrelativeto @ linux-x86_64-github
 test.test_inspect.test_inspect.TestFormatAnnotation.test_typing_replacement @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetAsyncGenState.test_easy_debugging @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -98,6 +106,7 @@ test.test_inspect.test_inspect.TestGetGeneratorState.test_getgeneratorlocals_emp
 test.test_inspect.test_inspect.TestGetGeneratorState.test_getgeneratorlocals_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetGeneratorState.test_running @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetGeneratorState.test_suspended @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestGetGeneratorState.test_types_coroutine_wrapper_state @ linux-x86_64-github
 test.test_inspect.test_inspect.TestGetattrStatic.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetattrStatic.test_classAttribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetattrStatic.test_classVirtualAttribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -142,6 +151,10 @@ test.test_inspect.test_inspect.TestGetcallargsUnboundMethods.test_varargs @ darw
 test.test_inspect.test_inspect.TestGetcallargsUnboundMethods.test_varkw @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetcallargsUnboundMethods.test_varkw_only @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetsourceInteractive.test_getclasses_interactive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestGetsourceStdlib.test_getsource_stdlib_abc @ linux-x86_64-github
+test.test_inspect.test_inspect.TestGetsourceStdlib.test_getsource_stdlib_collections_abc @ linux-x86_64-github
+test.test_inspect.test_inspect.TestGetsourceStdlib.test_getsource_stdlib_decimal @ linux-x86_64-github
+test.test_inspect.test_inspect.TestGetsourceStdlib.test_getsource_stdlib_tomllib @ linux-x86_64-github
 test.test_inspect.test_inspect.TestGettingSourceOfToplevelFrames.test_range_toplevel_frame @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGettingSourceOfToplevelFrames.test_range_traceback_toplevel_frame @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestInterpreterStack.test__all__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -154,6 +167,10 @@ test.test_inspect.test_inspect.TestIsDataDescriptor.test_custom_descriptors @ da
 test.test_inspect.test_inspect.TestIsDataDescriptor.test_functions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestIsDataDescriptor.test_property @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestIsDataDescriptor.test_slot @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestIsMethodDescriptor.test_builtin_descriptors @ linux-x86_64-github
+test.test_inspect.test_inspect.TestIsMethodDescriptor.test_custom_descriptors @ linux-x86_64-github
+test.test_inspect.test_inspect.TestIsMethodDescriptor.test_descriptor_being_a_class @ linux-x86_64-github
+test.test_inspect.test_inspect.TestIsMethodDescriptor.test_non_descriptors @ linux-x86_64-github
 test.test_inspect.test_inspect.TestMain.test_builtins @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestMain.test_custom_getattr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestMain.test_details @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -161,8 +178,11 @@ test.test_inspect.test_inspect.TestMain.test_only_source @ darwin-arm64,linux-aa
 test.test_inspect.test_inspect.TestMain.test_qualname_source @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestNoEOL.test_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestOneliners.test_anonymous @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestOneliners.test_dataclass @ linux-x86_64-github
+test.test_inspect.test_inspect.TestOneliners.test_enum @ linux-x86_64-github
 test.test_inspect.test_inspect.TestOneliners.test_lambda_in_list @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestOneliners.test_manyargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestOneliners.test_namedtuple @ linux-x86_64-github
 test.test_inspect.test_inspect.TestOneliners.test_nested_lambda @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestOneliners.test_oneline_lambda @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestOneliners.test_onelinefunc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -171,6 +191,7 @@ test.test_inspect.test_inspect.TestOneliners.test_post_line_parenthesized_lambda
 test.test_inspect.test_inspect.TestOneliners.test_threeline_lambda @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestOneliners.test_twoline_indented_lambda @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestOneliners.test_twolinefunc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestOneliners.test_typeddict @ linux-x86_64-github
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_equality @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_hashable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_immutability @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -187,6 +208,7 @@ test.test_inspect.test_inspect.TestPredicates.test_isawaitable @ darwin-arm64,li
 test.test_inspect.test_inspect.TestPredicates.test_isclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestPredicates.test_iscoroutine @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestPredicates.test_isroutine @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestPredicates.test_isroutine_singledispatch @ linux-x86_64-github
 test.test_inspect.test_inspect.TestReload.test_getsource_reload @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_cleandoc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_finddoc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -204,7 +226,10 @@ test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getmodule @ darwin-
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getmodule_file_not_found @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getmodule_recursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getsource @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getsource_empty_file @ linux-x86_64-github
+test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getsource_on_class_without_firstlineno @ linux-x86_64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getsource_on_code_object @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getsource_on_generated_class @ linux-x86_64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_getsourcefile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_proceed_with_fake_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_args_and_kwargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -228,6 +253,8 @@ test.test_inspect.test_inspect.TestSignatureObject.test_signature_as_str @ darwi
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_definition_order_preserved_on_kwonly @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_equality @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_eval_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_format @ linux-x86_64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_format_all_arg_types @ linux-x86_64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_from_callable_builtin_obj @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_from_callable_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_from_callable_python_obj @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -240,8 +267,11 @@ test.test_inspect.test_inspect.TestSignatureObject.test_signature_object @ darwi
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_object_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_builtin_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_callable_objects @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_callable_objects_with_text_signature_attr @ linux-x86_64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class_with_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class_with_wrapped_metaclass_call @ linux-x86_64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class_with_wrapped_new @ linux-x86_64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class_without_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_classmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_complex_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -264,7 +294,9 @@ test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_subclass @ 
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_wargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_wkwonly @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_wrapper @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_parsing_with_defaults @ linux-x86_64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_replace_anno @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_replace_parameters @ linux-x86_64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_replaced @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_str_positional_only @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -3,23 +3,30 @@ test.test_plistlib.TestBinaryPlistlib.test_cycles @ darwin-arm64,linux-aarch64,l
 # Disabled due to transient stack overflow that fails to get caught and crashes the VM
 !test.test_plistlib.TestBinaryPlistlib.test_deep_nesting
 test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestBinaryPlistlib.test_dump_utc_aware_datetime_without_aware_datetime_option @ linux-x86_64-github
 test.test_plistlib.TestBinaryPlistlib.test_identity @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestBinaryPlistlib.test_invalid_binary @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestBinaryPlistlib.test_large_timestamp @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestBinaryPlistlib.test_load_aware_datetime @ linux-x86_64-github
 test.test_plistlib.TestBinaryPlistlib.test_load_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestBinaryPlistlib.test_load_singletons @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestBinaryPlistlib.test_nonstandard_refs_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestBinaryPlistlib.test_truncated_large_data @ linux-x86_64-github
 test.test_plistlib.TestBinaryPlistlib.test_unsupported @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestKeyedArchive.test_keyed_archive_data @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_appleformatting @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_appleformattingfromliteral @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_bytearray @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestPlistlib.test_bytes_indent @ linux-x86_64-github
 test.test_plistlib.TestPlistlib.test_bytesio @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_controlcharacters @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_create @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_dict_members @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_dump_invalid_format @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestPlistlib.test_dump_naive_datetime_with_aware_datetime_option @ linux-x86_64-github
+test.test_plistlib.TestPlistlib.test_dump_utc_aware_datetime @ linux-x86_64-github
+test.test_plistlib.TestPlistlib.test_dump_utc_aware_datetime_without_aware_datetime_option @ linux-x86_64-github
 test.test_plistlib.TestPlistlib.test_indentation_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_indentation_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_indentation_dict_mix @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -36,7 +43,10 @@ test.test_plistlib.TestPlistlib.test_keys_no_string @ darwin-arm64,linux-aarch64
 test.test_plistlib.TestPlistlib.test_keysort @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_keysort_bytesio @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_list_members @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestPlistlib.test_load_aware_datetime @ linux-x86_64-github
 test.test_plistlib.TestPlistlib.test_load_invalid_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_plistlib.TestPlistlib.test_loads_str_with_binary_fmt @ linux-x86_64-github
+test.test_plistlib.TestPlistlib.test_loads_str_with_xml_fmt @ linux-x86_64-github
 test.test_plistlib.TestPlistlib.test_lone_surrogates @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_modified_uid_huge @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_plistlib.TestPlistlib.test_modified_uid_negative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

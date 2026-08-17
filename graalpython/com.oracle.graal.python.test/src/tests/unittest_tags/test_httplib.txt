@@ -16,6 +16,8 @@ test.test_httplib.BasicTest.test_host_port @ darwin-arm64,linux-aarch64,linux-aa
 test.test_httplib.BasicTest.test_httpstatus_category @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_httpstatus_range @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_incomplete_read @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_httplib.BasicTest.test_large_content_length @ linux-x86_64-github
+test.test_httplib.BasicTest.test_large_content_length_truncated @ linux-x86_64-github
 test.test_httplib.BasicTest.test_mixed_reads @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_negative_content_length @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_overflowing_chunked_line @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -94,6 +96,8 @@ test.test_httplib.HeaderTests.test_auto_headers @ darwin-arm64,linux-aarch64,lin
 test.test_httplib.HeaderTests.test_content_length_0 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_headers_debuglevel @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_invalid_headers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_httplib.HeaderTests.test_invalid_tunnel_headers @ linux-x86_64-github
+test.test_httplib.HeaderTests.test_invalid_tunnel_host @ linux-x86_64-github
 test.test_httplib.HeaderTests.test_ipv6host_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_malformed_headers_coped_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_parse_all_octets @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

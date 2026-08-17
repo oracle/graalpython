@@ -9,6 +9,7 @@ test.test_base64.BaseXYTestCase.test_b16encode @ darwin-arm64,linux-aarch64,linu
 test.test_base64.BaseXYTestCase.test_b32decode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b32decode_casefold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b32decode_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_base64.BaseXYTestCase.test_b32decode_map01 @ linux-x86_64-github
 test.test_base64.BaseXYTestCase.test_b32encode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b32hexdecode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b32hexdecode_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -16,6 +17,7 @@ test.test_base64.BaseXYTestCase.test_b32hexdecode_other_types @ darwin-arm64,lin
 test.test_base64.BaseXYTestCase.test_b32hexencode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b32hexencode_other_types @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b64decode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_base64.BaseXYTestCase.test_b64decode_altchars @ linux-x86_64-github
 test.test_base64.BaseXYTestCase.test_b64decode_invalid_chars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b64decode_padding_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b64encode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -24,6 +26,9 @@ test.test_base64.BaseXYTestCase.test_b85decode @ darwin-arm64,linux-aarch64,linu
 test.test_base64.BaseXYTestCase.test_b85decode_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_b85encode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.BaseXYTestCase.test_decode_nonascii_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_base64.BaseXYTestCase.test_z85decode @ linux-x86_64-github
+test.test_base64.BaseXYTestCase.test_z85decode_errors @ linux-x86_64-github
+test.test_base64.BaseXYTestCase.test_z85encode @ linux-x86_64-github
 test.test_base64.LegacyBase64TestCase.test_decode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.LegacyBase64TestCase.test_decodebytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_base64.LegacyBase64TestCase.test_encode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

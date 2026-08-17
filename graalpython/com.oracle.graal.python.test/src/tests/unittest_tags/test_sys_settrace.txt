@@ -32,6 +32,7 @@ test.test_sys_settrace.SkipLineEventsTraceTestCase.test_break_to_continue2 @ dar
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_class_creation_with_docstrings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sys_settrace.SkipLineEventsTraceTestCase.test_correct_tracing_quickened_call_class_init @ linux-x86_64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_early_exit_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -94,6 +95,7 @@ test.test_sys_settrace.TestLinesAfterTraceStarted.test_break_to_continue1 @ darw
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sys_settrace.TestLinesAfterTraceStarted.test_correct_tracing_quickened_call_class_init @ linux-x86_64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_early_exit_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_events @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -155,6 +157,7 @@ test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue1 @ darwin-arm64,
 test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sys_settrace.TestSetLocalTrace.test_correct_tracing_quickened_call_class_init @ linux-x86_64-github
 test.test_sys_settrace.TestSetLocalTrace.test_early_exit_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -216,6 +219,7 @@ test.test_sys_settrace.TraceTestCase.test_break_to_continue1 @ darwin-arm64,linu
 test.test_sys_settrace.TraceTestCase.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sys_settrace.TraceTestCase.test_correct_tracing_quickened_call_class_init @ linux-x86_64-github
 test.test_sys_settrace.TraceTestCase.test_early_exit_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

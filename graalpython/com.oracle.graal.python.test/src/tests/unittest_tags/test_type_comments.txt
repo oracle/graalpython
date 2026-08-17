@@ -10,6 +10,7 @@ test.test_type_comments.TypeCommentTests.test_inappropriate_type_comments @ darw
 test.test_type_comments.TypeCommentTests.test_longargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_comments.TypeCommentTests.test_matmul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_comments.TypeCommentTests.test_nonasciidef @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_type_comments.TypeCommentTests.test_parenthesized_withstmt @ linux-x86_64-github
 test.test_type_comments.TypeCommentTests.test_redundantdef @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_comments.TypeCommentTests.test_underscorednumber @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_comments.TypeCommentTests.test_vardecl @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

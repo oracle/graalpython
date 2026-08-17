@@ -21,6 +21,7 @@ test.test_shutil.TestArchives.test_unpack_archive_gztar @ darwin-arm64,linux-aar
 test.test_shutil.TestArchives.test_unpack_archive_tar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestArchives.test_unpack_archive_xztar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestArchives.test_unpack_archive_zip @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_shutil.TestArchives.test_unpack_archive_zip_badpaths @ linux-x86_64-github
 test.test_shutil.TestArchives.test_unpack_registry @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestArchives.test_unzip_zipfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestArchives.test_zipfile_vs_zip @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -70,6 +71,7 @@ test.test_shutil.TestGetTerminalSize.test_os_environ_first @ darwin-arm64,linux-
 test.test_shutil.TestMisc.test_disk_usage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_destinsrc_false_negative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_destinsrc_false_positive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_shutil.TestMove.test_destinsrc_symlink_bypass @ linux-x86_64-github
 test.test_shutil.TestMove.test_dont_move_dir_in_itself @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_existing_file_inside_dest_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_move_as_rename_return_value @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -99,8 +101,10 @@ test.test_shutil.TestRmTree.test_both_onerror_and_onexc @ darwin-arm64,linux-aar
 test.test_shutil.TestRmTree.test_on_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_shutil.TestRmTree.test_on_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_shutil.TestRmTree.test_rmtree_above_recursion_limit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_shutil.TestRmTree.test_rmtree_deleted_race_condition @ linux-x86_64-github
 test.test_shutil.TestRmTree.test_rmtree_does_not_choke_on_failing_lstat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestRmTree.test_rmtree_dont_delete_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_shutil.TestRmTree.test_rmtree_errors @ linux-x86_64-github
 test.test_shutil.TestRmTree.test_rmtree_errors_onerror @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestRmTree.test_rmtree_errors_onexc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestRmTree.test_rmtree_fails_on_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

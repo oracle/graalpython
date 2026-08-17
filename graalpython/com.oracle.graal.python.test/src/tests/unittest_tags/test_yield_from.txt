@@ -14,6 +14,8 @@ test.test_yield_from.TestPEP380Operation.test_conversion_of_sendNone_to_next @ d
 test.test_yield_from.TestPEP380Operation.test_custom_iterator_return @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_yield_from.TestPEP380Operation.test_delegating_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_yield_from.TestPEP380Operation.test_delegating_generators_claim_to_be_running @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_yield_from.TestPEP380Operation.test_delegating_generators_claim_to_be_running_with_close @ linux-x86_64-github
+test.test_yield_from.TestPEP380Operation.test_delegating_generators_claim_to_be_running_with_throw @ linux-x86_64-github
 test.test_yield_from.TestPEP380Operation.test_delegating_throw @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_yield_from.TestPEP380Operation.test_delegating_throw_to_non_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_yield_from.TestPEP380Operation.test_delegation_of_close_to_non_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

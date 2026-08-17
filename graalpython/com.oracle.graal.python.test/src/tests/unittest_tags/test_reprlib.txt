@@ -25,5 +25,6 @@ test.test_reprlib.ReprTests.test_tuple @ darwin-arm64,linux-aarch64,linux-aarch6
 test.test_reprlib.ReprTests.test_unsortable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_reprlib.ReprTests.test_valid_indent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_reprlib.TestRecursiveRepr.test__type_params__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_reprlib.TestRecursiveRepr.test__wrapped__ @ linux-x86_64-github
 test.test_reprlib.TestRecursiveRepr.test_assigned_attributes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_reprlib.TestRecursiveRepr.test_recursive_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

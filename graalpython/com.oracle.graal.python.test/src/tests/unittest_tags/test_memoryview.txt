@@ -28,6 +28,7 @@ test.test_memoryview.ArrayMemorySliceTest.test_tobytes @ darwin-arm64,linux-aarc
 test.test_memoryview.ArrayMemorySliceTest.test_toreadonly @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.ArrayMemoryviewTest.test_array_assign @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.ArrayMemoryviewTest.test_attributes_writable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_memoryview.ArrayMemoryviewTest.test_boolean_format @ linux-x86_64-github
 test.test_memoryview.ArrayMemoryviewTest.test_compare @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.ArrayMemoryviewTest.test_contextmanager @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.ArrayMemoryviewTest.test_delitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -105,5 +106,6 @@ test.test_memoryview.BytesMemoryviewTest.test_writable_readonly @ darwin-arm64,l
 test.test_memoryview.OtherTest.test_copy @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.OtherTest.test_half_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.OtherTest.test_memoryview_hex @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_memoryview.OtherTest.test_memoryview_hex_separator @ linux-x86_64-github
 test.test_memoryview.OtherTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_memoryview.OtherTest.test_picklebuffer_reference_loop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

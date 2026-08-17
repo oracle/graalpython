@@ -37,6 +37,8 @@ test.test_ftplib.TestFTPClass.test_storlines @ darwin-arm64,linux-aarch64,linux-
 test.test_ftplib.TestFTPClass.test_storlines_too_long @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ftplib.TestFTPClass.test_voidcmd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ftplib.TestFTPClass.test_with_statement @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ftplib.TestFtpcpSecurity.test_ftpcp_ignores_untrusted_pasv_host @ linux-x86_64-github
+test.test_ftplib.TestFtpcpSecurity.test_ftpcp_trust_server_pasv_ipv4_address @ linux-x86_64-github
 test.test_ftplib.TestIPv6Environment.test_af @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ftplib.TestIPv6Environment.test_makepasv @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ftplib.TestIPv6Environment.test_makeport @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

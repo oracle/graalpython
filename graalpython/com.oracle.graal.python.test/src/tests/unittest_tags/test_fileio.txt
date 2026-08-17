@@ -29,6 +29,7 @@ test.test_fileio.CAutoFileTests.test_reject @ darwin-arm64,linux-aarch64,linux-a
 test.test_fileio.COtherFileTests.testAbles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.COtherFileTests.testAppend @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.COtherFileTests.testBadModeArgument @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_fileio.COtherFileTests.testBooleanFd @ linux-x86_64-github
 test.test_fileio.COtherFileTests.testBytesOpen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.COtherFileTests.testConstructorHandlesNULChars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.COtherFileTests.testInvalidFd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -70,9 +71,11 @@ test.test_fileio.PyAutoFileTests.testWritelinesList @ darwin-arm64,linux-aarch64
 test.test_fileio.PyAutoFileTests.testWritelinesUserList @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.PyAutoFileTests.test_none_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.PyAutoFileTests.test_reject @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_fileio.PyAutoFileTests.test_subclass_repr @ linux-x86_64-github
 test.test_fileio.PyOtherFileTests.testAbles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.PyOtherFileTests.testAppend @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.PyOtherFileTests.testBadModeArgument @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_fileio.PyOtherFileTests.testBooleanFd @ linux-x86_64-github
 test.test_fileio.PyOtherFileTests.testBytesOpen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.PyOtherFileTests.testConstructorHandlesNULChars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_fileio.PyOtherFileTests.testInvalidFd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

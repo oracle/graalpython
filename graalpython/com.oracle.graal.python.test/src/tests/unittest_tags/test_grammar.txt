@@ -16,6 +16,7 @@ test.test_grammar.GrammarTests.test_break_stmt @ darwin-arm64,linux-aarch64,linu
 test.test_grammar.GrammarTests.test_classdef @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_grammar.GrammarTests.test_comparison @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_grammar.GrammarTests.test_comparison_is_literal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_grammar.GrammarTests.test_complex_lambda @ linux-x86_64-github
 test.test_grammar.GrammarTests.test_comprehension_specials @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_grammar.GrammarTests.test_continue_in_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_grammar.GrammarTests.test_continue_in_finally_after_return @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

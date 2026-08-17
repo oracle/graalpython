@@ -21,8 +21,10 @@ test.test_posixpath.PosixCommonTest.test_abspath @ darwin-arm64,linux-aarch64,li
 test.test_posixpath.PosixCommonTest.test_abspath_issue3426 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixCommonTest.test_commonprefix @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixCommonTest.test_exists @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_posixpath.PosixCommonTest.test_exists_bool @ linux-x86_64-github
 test.test_posixpath.PosixCommonTest.test_exists_fd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixCommonTest.test_expandvars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_posixpath.PosixCommonTest.test_expandvars_large @ linux-x86_64-github
 test.test_posixpath.PosixCommonTest.test_expandvars_nonascii @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixCommonTest.test_filetime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixCommonTest.test_getsize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -55,9 +57,11 @@ test.test_posixpath.PosixPathTest.test_expanduser_pwd2 @ darwin-arm64,linux-aarc
 test.test_posixpath.PosixPathTest.test_isabs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixPathTest.test_isjunction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixPathTest.test_islink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_islink_invalid_paths @ linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_ismount @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_ismount_different_device @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_ismount_directory_not_readable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_ismount_invalid_paths @ linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_ismount_non_existent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixPathTest.test_ismount_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posixpath.PosixPathTest.test_join @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -65,6 +69,11 @@ test.test_posixpath.PosixPathTest.test_normpath @ darwin-arm64,linux-aarch64,lin
 test.test_posixpath.PosixPathTest.test_realpath_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_realpath_curdir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_realpath_deep_recursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_realpath_invalid_paths @ linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_realpath_missing_pardir @ linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_realpath_nonterminal_file @ linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_realpath_nonterminal_symlink_to_file @ linux-x86_64-github
+test.test_posixpath.PosixPathTest.test_realpath_nonterminal_symlink_to_symlinks_to_file @ linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_realpath_pardir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_realpath_relative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posixpath.PosixPathTest.test_realpath_repeated_indirect_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

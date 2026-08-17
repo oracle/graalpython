@@ -65,6 +65,7 @@ test.test_collections.TestCounter.test_subtract @ darwin-arm64,linux-aarch64,lin
 test.test_collections.TestCounter.test_total @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestCounter.test_unary @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestCounter.test_update @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_collections.TestCounter.test_update_reentrant_add_clears_counter @ linux-x86_64-github
 test.test_collections.TestNamedTuple.test_copy @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestNamedTuple.test_defaults @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestNamedTuple.test_factory @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -72,6 +73,7 @@ test.test_collections.TestNamedTuple.test_factory_doc_attr @ darwin-arm64,linux-
 test.test_collections.TestNamedTuple.test_field_doc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestNamedTuple.test_instance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestNamedTuple.test_keyword_only_arguments @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_collections.TestNamedTuple.test_large_size @ linux-x86_64-github
 test.test_collections.TestNamedTuple.test_match_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestNamedTuple.test_module_parameter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_collections.TestNamedTuple.test_name_conflicts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -12,6 +12,7 @@ test.test_memoryio.CBytesIOTest.test_getstate @ darwin-arm64,linux-aarch64,linux
 test.test_memoryio.CBytesIOTest.test_getvalue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.CBytesIOTest.test_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.CBytesIOTest.test_instance_dict_leak @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_memoryio.CBytesIOTest.test_issue141311 @ linux-x86_64-github
 test.test_memoryio.CBytesIOTest.test_issue5449 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.CBytesIOTest.test_iterator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.CBytesIOTest.test_overseek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -93,6 +94,7 @@ test.test_memoryio.PyBytesIOTest.test_getbuffer_gc_collect @ darwin-arm64,linux-
 test.test_memoryio.PyBytesIOTest.test_getvalue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.PyBytesIOTest.test_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.PyBytesIOTest.test_instance_dict_leak @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_memoryio.PyBytesIOTest.test_issue141311 @ linux-x86_64-github
 test.test_memoryio.PyBytesIOTest.test_issue5449 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.PyBytesIOTest.test_iterator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_memoryio.PyBytesIOTest.test_overseek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -11,8 +11,8 @@ test.test_urllib2_localnet.TestUrlopen.test_basic @ darwin-arm64,linux-aarch64,l
 test.test_urllib2_localnet.TestUrlopen.test_chunked @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_urllib2_localnet.TestUrlopen.test_geturl @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_urllib2_localnet.TestUrlopen.test_https @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_urllib2_localnet.TestUrlopen.test_https_with_cadefault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_urllib2_localnet.TestUrlopen.test_https_with_cafile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_urllib2_localnet.TestUrlopen.test_https_with_cadefault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_https_with_cafile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_urllib2_localnet.TestUrlopen.test_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_urllib2_localnet.TestUrlopen.test_issue16464 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_urllib2_localnet.TestUrlopen.test_iteration @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -9,6 +9,7 @@ test.test_posix.PosixTester.test_chown @ darwin-arm64,linux-aarch64,linux-aarch6
 test.test_posix.PosixTester.test_dup @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posix.PosixTester.test_dup2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posix.PosixTester.test_environ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_posix.PosixTester.test_fchmod_file @ linux-x86_64-github
 test.test_posix.PosixTester.test_fchown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posix.PosixTester.test_fs_holes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posix.PosixTester.test_fstat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -32,8 +33,10 @@ test.test_posix.PosixTester.test_pipe @ darwin-arm64,linux-aarch64,linux-aarch64
 test.test_posix.PosixTester.test_putenv @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posix.PosixTester.test_rtld_constants @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_posix.PosixTester.test_stat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_posix.PosixTester.test_stat_fd_zero_follow_symlinks @ linux-x86_64-github
 test.test_posix.PosixTester.test_statvfs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posix.PosixTester.test_strerror @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_posix.PosixTester.test_sysconf @ linux-x86_64-github
 test.test_posix.PosixTester.test_truncate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posix.PosixTester.test_umask @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_posix.PosixTester.test_utime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

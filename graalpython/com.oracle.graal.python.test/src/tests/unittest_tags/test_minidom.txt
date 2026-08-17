@@ -4,6 +4,7 @@ test.test_minidom.MinidomTest.testAddAttr @ darwin-arm64,linux-aarch64,linux-aar
 test.test_minidom.MinidomTest.testAltNewline @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testAppendChild @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testAppendChildFragment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_minidom.MinidomTest.testAppendChildNoQuadraticComplexity @ linux-x86_64-github
 test.test_minidom.MinidomTest.testAttrListItem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testAttrListItemNS @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testAttrListItems @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -49,7 +50,7 @@ test.test_minidom.MinidomTest.testElementReprAndStrUnicodeNS @ darwin-arm64,linu
 test.test_minidom.MinidomTest.testEmptyXMLNSValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testExceptionOnSpacesInXMLNSValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testFirstChild @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_minidom.MinidomTest.testGetAttrLength @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_minidom.MinidomTest.testGetAttrLength @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testGetAttrList @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testGetAttrValues @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testGetAttribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -105,12 +106,13 @@ test.test_minidom.MinidomTest.testReplaceWholeText @ darwin-arm64,linux-aarch64,
 test.test_minidom.MinidomTest.testSchemaType @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testSerializeCommentNodeWithDoubleHyphen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testSetAttrValueandNodeValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_minidom.MinidomTest.testSetAttributeNodeWithoutOwnerDocument @ linux-x86_64-github
 test.test_minidom.MinidomTest.testSetIdAttribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testSetIdAttributeNS @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testSetIdAttributeNode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testSiblings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testStandalone @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_minidom.MinidomTest.testTextNodeRepr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_minidom.MinidomTest.testTextNodeRepr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testTextRepr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testTooManyDocumentElements @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.testUnlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -125,4 +127,6 @@ test.test_minidom.MinidomTest.test_toprettyxml_with_adjacent_text_nodes @ darwin
 test.test_minidom.MinidomTest.test_toprettyxml_with_attributes_ordered @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.test_toprettyxml_with_cdata @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_minidom.MinidomTest.test_toprettyxml_with_text_nodes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_minidom.MinidomTest.test_toxml_quote_attrib @ linux-x86_64-github
+test.test_minidom.MinidomTest.test_toxml_quote_text @ linux-x86_64-github
 test.test_minidom.MinidomTest.test_toxml_with_attributes_ordered @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

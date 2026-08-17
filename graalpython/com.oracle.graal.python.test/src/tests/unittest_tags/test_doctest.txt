@@ -13,6 +13,7 @@ DocTestCase.doctest.__test__.whitespace normalization @ darwin-arm64,linux-aarch
 DocTestCase.doctest._ellipsis_match @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.doctest.script_from_examples @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.doctest.set_unittest_reportflags @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_doctest.test_doctest.TestDocTest.test_run @ linux-x86_64-github
 test.test_doctest.test_doctest.TestDocTestFinder.test_empty_namespace_package @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_doctest.test_doctest.TestDocTestFinder.test_issue35753 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_doctest.test_doctest2.Test.test_testmod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

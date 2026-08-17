@@ -69,7 +69,7 @@ test.test_os.FDInheritanceTests.test_get_set_inheritable @ darwin-arm64,linux-aa
 test.test_os.FDInheritanceTests.test_get_set_inheritable_badf @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.FDInheritanceTests.test_get_set_inheritable_o_path @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.FDInheritanceTests.test_open @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_os.FDInheritanceTests.test_openpty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_os.FDInheritanceTests.test_openpty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_os.FDInheritanceTests.test_pipe @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.FSEncodingTests.test_identity @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.FSEncodingTests.test_nop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -113,6 +113,7 @@ test.test_os.Pep383Tests.test_open @ darwin-arm64,linux-aarch64,linux-aarch64-gi
 test.test_os.Pep383Tests.test_stat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.Pep383Tests.test_statvfs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.PidTests.test_getppid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_os.PseudoterminalTests.test_openpty @ linux-x86_64-github
 test.test_os.ReadlinkTests.test_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.ReadlinkTests.test_missing_link @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.ReadlinkTests.test_not_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -158,6 +159,7 @@ test.test_os.TestPEP519.test_fsencode_fsdecode @ darwin-arm64,linux-aarch64,linu
 test.test_os.TestPEP519.test_garbage_in_exception_out @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519.test_pathlike @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519.test_pathlike_class_getitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_os.TestPEP519.test_pathlike_subclass_slots @ linux-x86_64-github
 test.test_os.TestPEP519.test_pathlike_subclasshook @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519.test_return_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519.test_return_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -167,6 +169,7 @@ test.test_os.TestPEP519PurePython.test_fsencode_fsdecode @ darwin-arm64,linux-aa
 test.test_os.TestPEP519PurePython.test_garbage_in_exception_out @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519PurePython.test_pathlike @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519PurePython.test_pathlike_class_getitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_os.TestPEP519PurePython.test_pathlike_subclass_slots @ linux-x86_64-github
 test.test_os.TestPEP519PurePython.test_pathlike_subclasshook @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519PurePython.test_return_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.TestPEP519PurePython.test_return_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -36,6 +36,7 @@ test.test_strptime.StrptimeTests.test_mar1_comes_after_feb29_even_when_omitting_
 test.test_strptime.StrptimeTests.test_minute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_strptime.StrptimeTests.test_month @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_strptime.StrptimeTests.test_month_locale @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_strptime.StrptimeTests.test_month_locale2 @ linux-x86_64-github
 test.test_strptime.StrptimeTests.test_offset @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_strptime.StrptimeTests.test_percent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_strptime.StrptimeTests.test_second @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

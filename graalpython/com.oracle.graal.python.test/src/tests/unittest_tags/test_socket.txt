@@ -57,6 +57,7 @@ test.test_socket.GeneralModuleTests.testCrucialIpProtoConstants @ darwin-arm64,l
 test.test_socket.GeneralModuleTests.testDefaultTimeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testGetServBy @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_socket.GeneralModuleTests.testGetSockOpt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_socket.GeneralModuleTests.testGetaddrinfo @ linux-x86_64-github
 test.test_socket.GeneralModuleTests.testHostnameRes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testIPv4_inet_aton_fourbytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testIPv4toString @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

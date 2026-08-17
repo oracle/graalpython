@@ -1,7 +1,9 @@
 test.test_regrtest.ParseArgsTestCase.test_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_arg_option_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_bisect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_regrtest.ParseArgsTestCase.test_coverage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_regrtest.ParseArgsTestCase.test_ci_no_randomize @ linux-x86_64-github
+test.test_regrtest.ParseArgsTestCase.test_coverage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_coverage_sequential @ linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_coverdir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_dont_add_python_opts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_exclude @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -9,6 +11,7 @@ test.test_regrtest.ParseArgsTestCase.test_failfast @ darwin-arm64,linux-aarch64,
 test.test_regrtest.ParseArgsTestCase.test_fast_ci @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_fast_ci_python_cmd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_fast_ci_resource @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_regrtest.ParseArgsTestCase.test_fast_ci_verbose @ linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_forever @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_fromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -18,6 +21,7 @@ test.test_regrtest.ParseArgsTestCase.test_long_option__partial @ darwin-arm64,li
 test.test_regrtest.ParseArgsTestCase.test_match @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_memlimit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_multiprocess @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_regrtest.ParseArgsTestCase.test_no_randomize @ linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_nocoverdir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_nowindows @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_option_and_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -28,6 +32,7 @@ test.test_regrtest.ParseArgsTestCase.test_randseed @ darwin-arm64,linux-aarch64,
 test.test_regrtest.ParseArgsTestCase.test_rerun @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_runleaks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_single @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_regrtest.ParseArgsTestCase.test_single_process @ linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_slow_ci @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_slowest @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_regrtest.ParseArgsTestCase.test_start @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

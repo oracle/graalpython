@@ -1,0 +1,4 @@
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_builder @ linux-x86_64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_entity_resolver @ linux-x86_64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_parse_uri @ linux-x86_64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_parse_with_systemId @ linux-x86_64-github

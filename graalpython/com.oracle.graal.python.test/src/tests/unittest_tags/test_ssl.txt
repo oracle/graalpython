@@ -13,6 +13,7 @@ test.test_ssl.BasicSocketTests.test_private_init @ darwin-arm64,linux-aarch64,li
 test.test_ssl.BasicSocketTests.test_purpose_enum @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.BasicSocketTests.test_read_write_zero @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.BasicSocketTests.test_server_side @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ssl.BasicSocketTests.test_ssl_types @ linux-x86_64-github
 test.test_ssl.BasicSocketTests.test_str_for_enums @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.BasicSocketTests.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.BasicSocketTests.test_unknown_channel_binding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -30,6 +31,7 @@ test.test_ssl.ContextTests.test_get_ca_certs @ darwin-arm64,linux-aarch64,linux-
 test.test_ssl.ContextTests.test_get_ciphers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.ContextTests.test_hostname_checks_common_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.ContextTests.test_load_cert_chain @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ssl.ContextTests.test_load_cert_chain_thread_safety @ linux-x86_64-github
 test.test_ssl.ContextTests.test_load_default_certs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.ContextTests.test_load_default_certs_env @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ContextTests.test_load_verify_cadata @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -91,6 +93,7 @@ test.test_ssl.ThreadedTests.test_ecc_cert @ darwin-arm64,linux-aarch64,linux-aar
 test.test_ssl.ThreadedTests.test_getpeercert @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_getpeercert_enotconn @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.ThreadedTests.test_handshake_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ssl.ThreadedTests.test_hostname_checks_common_name @ linux-x86_64-github
 test.test_ssl.ThreadedTests.test_legacy_server_connect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_no_legacy_server_connect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_nonblocking_send @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -109,7 +112,9 @@ test.test_ssl.ThreadedTests.test_shared_ciphers @ darwin-arm64,linux-aarch64,lin
 test.test_ssl.ThreadedTests.test_socketserver @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_ssl_cert_verify_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_starttls @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ssl.ThreadedTests.test_thread_recv_while_main_thread_sends @ linux-x86_64-github
 test.test_ssl.ThreadedTests.test_tls1_3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ssl.ThreadedTests.test_verify_strict @ linux-x86_64-github
 test.test_ssl.ThreadedTests.test_version_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_wrong_cert_tls12 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.ThreadedTests.test_wrong_cert_tls13 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

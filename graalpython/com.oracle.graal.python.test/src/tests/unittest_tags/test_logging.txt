@@ -119,7 +119,9 @@ test.test_logging.FormatterTest.test_dollars @ darwin-arm64,linux-aarch64,linux-
 test.test_logging.FormatterTest.test_format_validate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.FormatterTest.test_invalid_style @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.FormatterTest.test_issue_89047 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_logging.FormatterTest.test_msecs_has_no_floating_point_precision_loss @ linux-x86_64-github
 test.test_logging.FormatterTest.test_percent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_logging.FormatterTest.test_relativeCreated_has_higher_precision @ linux-x86_64-github
 test.test_logging.FormatterTest.test_time @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.HTTPHandlerTest.test_output @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_logging.HandlerTest.test_builtin_handlers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -140,6 +142,9 @@ test.test_logging.LoggerAdapterTest.test_critical @ darwin-arm64,linux-aarch64,l
 test.test_logging.LoggerAdapterTest.test_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.LoggerAdapterTest.test_exception_excinfo @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.LoggerAdapterTest.test_extra_in_records @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_logging.LoggerAdapterTest.test_extra_merged @ linux-x86_64-github
+test.test_logging.LoggerAdapterTest.test_extra_merged_log_call_has_precedence @ linux-x86_64-github
+test.test_logging.LoggerAdapterTest.test_extra_merged_without_extra @ linux-x86_64-github
 test.test_logging.LoggerAdapterTest.test_extra_not_merged_by_default @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.LoggerAdapterTest.test_find_caller_with_stacklevel @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.LoggerAdapterTest.test_has_handlers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -185,6 +190,7 @@ test.test_logging.ModuleLevelMiscTest.test_warning @ darwin-arm64,linux-aarch64,
 test.test_logging.QueueHandlerTest.test_formatting @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueHandlerTest.test_queue_handler @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueHandlerTest.test_queue_listener @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_logging.QueueHandlerTest.test_queue_listener_multi_start @ linux-x86_64-github
 test.test_logging.QueueHandlerTest.test_queue_listener_with_StreamHandler @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueHandlerTest.test_queue_listener_with_multiple_handlers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueListenerTest.test_calls_task_done_after_stop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
