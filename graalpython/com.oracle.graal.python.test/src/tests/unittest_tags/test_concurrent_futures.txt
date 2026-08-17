@@ -64,6 +64,7 @@ test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecut
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_shutdown_race_issue12456 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_submit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_submit_keyword @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_swallows_falsey_exceptions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_traceback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_cancel_futures @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_context_manager_shutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -73,6 +74,8 @@ test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTe
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_hang_issue12364 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_processes_terminate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_run_after_shutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_shutdown_gh_132969_case_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_shutdown_gh_132969_case_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_shutdown_no_wait @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Transiently times out GR-52666
 !test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown
@@ -100,6 +103,7 @@ test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_satura
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_shutdown_race_issue12456 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_submit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_submit_keyword @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_swallows_falsey_exceptions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_wait.ProcessPoolSpawnWaitTest.test_20369 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_wait.ProcessPoolSpawnWaitTest.test_all_completed @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_wait.ProcessPoolSpawnWaitTest.test_first_completed @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

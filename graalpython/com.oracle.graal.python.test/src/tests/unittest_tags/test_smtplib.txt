@@ -54,6 +54,8 @@ test.test_smtplib.SMTPGeneralTests.test_debuglevel @ darwin-arm64,linux-aarch64,
 test.test_smtplib.SMTPGeneralTests.test_debuglevel_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.testAUTH_BUGGY @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.testAUTH_CRAM_MD5 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_smtplib.SMTPSimTests.testAUTH_CRAM_MD5_blocked @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_smtplib.SMTPSimTests.testAUTH_CRAM_MD5_blocked_and_fallback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_smtplib.SMTPSimTests.testAUTH_LOGIN @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.testAUTH_LOGIN_initial_response_notok @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.testAUTH_LOGIN_initial_response_ok @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -68,6 +70,7 @@ test.test_smtplib.SMTPSimTests.test_421_from_mail_cmd @ darwin-arm64,linux-aarch
 test.test_smtplib.SMTPSimTests.test_421_from_rcpt_cmd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.test__rest_from_mail_cmd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.test_auth_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_smtplib.SMTPSimTests.test_lowercase_mail_from_rcpt_to @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_smtplib.SMTPSimTests.test_name_field_not_included_in_envelop_addresses @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.test_quit_resets_greeting @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_smtplib.SMTPSimTests.test_send_message_error_on_non_ascii_addrs_if_no_smtputf8 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

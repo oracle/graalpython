@@ -279,14 +279,12 @@ if [ -n "$cli_run_snapshot" ]; then
     else
         "$graalhost" \
             ${graalhost_args[@]+"${graalhost_args[@]}"} \
-            --musl_path "$libc" \
             --run "$cli_run_snapshot"
         status=$?
     fi
 else
     "$graalhost" \
         ${graalhost_args[@]+"${graalhost_args[@]}"} \
-        --musl_path "$libc" \
         --run_config=@"$endpoint_config" \
         --run_virtual "$virtual_executable" \
         "${python_args[@]}"

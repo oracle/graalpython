@@ -14,9 +14,13 @@ test.test_ensurepip.TestBootstrap.test_pip_environment_variables_removed @ darwi
 test.test_ensurepip.TestBootstrappingMainFunction.test_basic_bootstrapping @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ensurepip.TestBootstrappingMainFunction.test_bootstrap_version @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ensurepip.TestBootstrappingMainFunction.test_bootstrapping_error_code @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_ensurepip.TestPackages.test_get_packages_no_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_ensurepip.TestPackages.test_get_packages_with_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ensurepip.TestPackages.test_get_packages_no_dir @ win32-AMD64,win32-AMD64-github
+test.test_ensurepip.TestPackages.test_get_packages_with_dir @ win32-AMD64,win32-AMD64-github
+test.test_ensurepip.TestPackages.test_selected_wheel_path_no_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ensurepip.TestPackages.test_selected_wheel_path_with_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ensurepip.TestPackages.test_version @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ensurepip.TestPackages.test_version_no_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ensurepip.TestPackages.test_wheel_pkg_dir_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ensurepip.TestUninstall.test_pip_config_file_disabled @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ensurepip.TestUninstall.test_pip_environment_variables_removed @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ensurepip.TestUninstall.test_uninstall @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

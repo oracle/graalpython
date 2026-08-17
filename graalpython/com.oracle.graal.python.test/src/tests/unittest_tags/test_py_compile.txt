@@ -17,6 +17,7 @@ test.test_py_compile.PyCompileTestsWithSourceEpoch.test_optimization_path @ darw
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_quiet @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_relative_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_source_date_epoch @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_py_compile.PyCompileTestsWithSourceEpoch.test_utf7_decoded_cr_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_absolute_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_bad_coding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_cache_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -30,3 +31,4 @@ test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_optimization_path @ d
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_quiet @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_relative_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_source_date_epoch @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_utf7_decoded_cr_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

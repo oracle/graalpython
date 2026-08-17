@@ -52,6 +52,7 @@ test.test_urllib.urlopen_DataTests.test_geturl @ darwin-arm64,linux-aarch64,linu
 test.test_urllib.urlopen_DataTests.test_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_DataTests.test_interface @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_DataTests.test_invalid_base64_data @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_urllib.urlopen_DataTests.test_invalid_mediatype @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_urllib.urlopen_DataTests.test_missing_comma @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_DataTests.test_read_image @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_DataTests.test_read_text @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -71,7 +72,7 @@ test.test_urllib.urlopen_FileTests.test_relativelocalfile @ darwin-arm64,linux-a
 test.test_urllib.urlopen_FileTests.test_status @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_FileTests.test_url @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_URLopener_deprecation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urllib.urlopen_HttpTests.test_cafile_and_context @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_urllib.urlopen_HttpTests.test_cafile_and_context @ win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_empty_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_file_notexists @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_ftp_cache_pruning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -1,3 +1,4 @@
+test.test_type_params.DefaultsTest.test_starred_invalid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_type_params.DynamicClassTest.test_types_new_class_no_callback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.DynamicClassTest.test_types_new_class_with_callback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_class_access_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -9,16 +10,22 @@ test.test_type_params.TypeParamsAccessTest.test_class_scope_interaction_01 @ dar
 test.test_type_params.TypeParamsAccessTest.test_class_scope_interaction_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_comprehension_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_comprehension_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_type_params.TypeParamsAccessTest.test_comprehension_03 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_type_params.TypeParamsAccessTest.test_function_access_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_function_access_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_function_access_03 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_gen_exp_in_generic_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_gen_exp_in_nested_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_gen_exp_in_nested_generic_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_type_params.TypeParamsAccessTest.test_lambda_in_alias_in_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_type_params.TypeParamsAccessTest.test_lambda_in_alias_in_generic_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_type_params.TypeParamsAccessTest.test_lambda_in_generic_alias_in_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_type_params.TypeParamsAccessTest.test_lambda_in_generic_alias_in_generic_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_type_params.TypeParamsAccessTest.test_listcomp_in_nested_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_listcomp_in_nested_generic_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_method_access_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_nested_access_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_type_params.TypeParamsAccessTest.test_nested_scope_in_generic_alias @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_type_params.TypeParamsAccessTest.test_out_of_scope_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_out_of_scope_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsAccessTest.test_reference_previous_typevar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
