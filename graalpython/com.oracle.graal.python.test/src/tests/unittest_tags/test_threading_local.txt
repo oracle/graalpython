@@ -1,4 +1,4 @@
-DocTestCase._threading_local @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+DocTestCase._threading_local @ win32-AMD64,win32-AMD64-github
 test.test_threading_local.PyThreadingLocalTest.test_arguments @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading_local.PyThreadingLocalTest.test_derived @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading_local.PyThreadingLocalTest.test_derived_cycle_dealloc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

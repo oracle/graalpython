@@ -43,6 +43,7 @@ test.test_zipfile._path.test_path.TestPath.test_read @ darwin-arm64,linux-aarch6
 test.test_zipfile._path.test_path.TestPath.test_read_does_not_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_relative_to @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_root_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile._path.test_path.TestPath.test_root_on_disk @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile._path.test_path.TestPath.test_root_parent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_root_unnamed @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_stem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -129,6 +130,7 @@ test.test_zipfile.test_core.DeflateWriterTests.test_close_after_close @ darwin-a
 test.test_zipfile.test_core.DeflateWriterTests.test_issue44439 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.DeflateWriterTests.test_write_after_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.DeflateWriterTests.test_zipwritefile_attrs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.EncodedMetadataTests.test_add_comment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.EncodedMetadataTests.test_cli_with_metadata_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.EncodedMetadataTests.test_cli_with_metadata_encoding_extract @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.EncodedMetadataTests.test_read_after_append @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -198,7 +200,10 @@ test.test_zipfile.test_core.OtherTests.test_decompress_without_3rd_party_library
 test.test_zipfile.test_core.OtherTests.test_empty_file_raises_BadZipFile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_empty_zipfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_exclusive_create_zip_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_zipfile.test_core.OtherTests.test_full_overlap @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.OtherTests.test_full_overlap @ win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.OtherTests.test_full_overlap_different_names @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipfile.test_core.OtherTests.test_full_overlap_different_names2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipfile.test_core.OtherTests.test_full_overlap_same_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.OtherTests.test_is_zip_erroneous_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_is_zip_valid_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_negative_central_directory_offset_raises_BadZipFile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -208,6 +213,8 @@ test.test_zipfile.test_core.OtherTests.test_open_conflicting_handles @ darwin-ar
 test.test_zipfile.test_core.OtherTests.test_open_empty_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_open_non_existent_item @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_open_via_zip_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.OtherTests.test_overlap_with_archive_comment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipfile.test_core.OtherTests.test_overlap_with_central_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.OtherTests.test_quoted_overlap @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_read0 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_read_after_seek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -218,12 +225,15 @@ test.test_zipfile.test_core.OtherTests.test_read_zipfile_error @ darwin-arm64,li
 test.test_zipfile.test_core.OtherTests.test_read_zipfile_warning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_seek_tell @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_struct_sizes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.OtherTests.test_uncompressed_interleaved_seek_read @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.OtherTests.test_unicode_comment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_unsupported_compression @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_unsupported_version @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_write_unicode_filenames @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_writestr_extended_local_header_issue1202 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.OtherTests.test_zipfile_with_short_extra_field @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.OverwriteTests.test_concurrent_extract_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipfile.test_core.OverwriteTests.test_concurrent_extract_implicit_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.OverwriteTests.test_overwrite_broken_dir_symlink_as_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.OverwriteTests.test_overwrite_broken_dir_symlink_as_implicit_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.OverwriteTests.test_overwrite_broken_file_symlink_as_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -249,6 +259,7 @@ test.test_zipfile.test_core.StoredBadCrcTests.test_read_with_bad_crc @ darwin-ar
 test.test_zipfile.test_core.StoredBadCrcTests.test_testzip_with_bad_crc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_absolute_arcnames @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_append @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_bad_zip64_end_of_central_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_bad_zip64_extra @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_force_zip64 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -258,6 +269,8 @@ test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_too_many_files @ da
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_too_many_files_append @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_unseekable_zip_known_filesize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_unseekable_zip_unknown_filesize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_zip64_end_of_central_dir_record_not_found @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_zip64_extensible_data @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.StoredTestZip64InSmallFiles.test_zip64_required_not_allowed_fail @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_open @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -298,6 +311,7 @@ test.test_zipfile.test_core.StoredWriterTests.test_close_after_close @ darwin-ar
 test.test_zipfile.test_core.StoredWriterTests.test_issue44439 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredWriterTests.test_write_after_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredWriterTests.test_zipwritefile_attrs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.StoredZipExtFileRandomReadTest.test_stored_seek_and_read @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.StripExtraTests.test_multiples @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StripExtraTests.test_no_data @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StripExtraTests.test_too_short @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -325,6 +339,7 @@ test.test_zipfile.test_core.TestsWithMultipleOpens.test_write_while_reading @ da
 test.test_zipfile.test_core.UnseekableTests.test_open_write @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.UnseekableTests.test_write @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.UnseekableTests.test_writestr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.ZipInfoTests.test_compresslevel_property @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile.test_core.ZipInfoTests.test_from_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.ZipInfoTests.test_from_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.ZipInfoTests.test_from_file_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

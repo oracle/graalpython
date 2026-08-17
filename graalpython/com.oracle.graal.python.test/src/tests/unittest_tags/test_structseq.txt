@@ -2,6 +2,7 @@ test.test_structseq.StructSeqTest.test_cmp @ darwin-arm64,linux-aarch64,linux-aa
 test.test_structseq.StructSeqTest.test_concat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_constructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_contains @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_structseq.StructSeqTest.test_copy_replace_with_unnamed_fields @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_structseq.StructSeqTest.test_copying @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_copying_with_unnamed_fields @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_eviltuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -11,5 +12,6 @@ test.test_structseq.StructSeqTest.test_hash @ darwin-arm64,linux-aarch64,linux-a
 test.test_structseq.StructSeqTest.test_pickling @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_pickling_with_unnamed_fields @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_repeat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_structseq.StructSeqTest.test_replace_gc_tracked @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_structseq.StructSeqTest.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_structseq.StructSeqTest.test_tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

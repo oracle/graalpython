@@ -1,3 +1,4 @@
+test.test_mimetypes.MimeTypesTestCase.test_bytes_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mimetypes.MimeTypesTestCase.test_case_sensitivity @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mimetypes.MimeTypesTestCase.test_data_urls @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mimetypes.MimeTypesTestCase.test_default_data @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
