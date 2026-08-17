@@ -10,11 +10,11 @@ test.test_wsgiref.HandlerTests.testEnviron @ darwin-arm64,linux-aarch64,linux-aa
 test.test_wsgiref.HandlerTests.testErrorAfterOutput @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wsgiref.HandlerTests.testHeaderFormats @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wsgiref.HandlerTests.testPartialWrite @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_wsgiref.HandlerTests.testRaisesControlCharacters @ linux-x86_64-github
+test.test_wsgiref.HandlerTests.testRaisesControlCharacters @ linux-aarch64-github,linux-x86_64-github
 test.test_wsgiref.HandlerTests.testScheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wsgiref.HeaderTests.testExtras @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wsgiref.HeaderTests.testMappingInterface @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_wsgiref.HeaderTests.testRaisesControlCharacters @ linux-x86_64-github
+test.test_wsgiref.HeaderTests.testRaisesControlCharacters @ linux-aarch64-github,linux-x86_64-github
 test.test_wsgiref.HeaderTests.testRequireList @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wsgiref.IntegrationTests.test_bytes_validation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_wsgiref.IntegrationTests.test_cp1252_url @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

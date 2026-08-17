@@ -2,9 +2,9 @@ test.test_termios.TestFunctions.test_tcdrain @ darwin-arm64,linux-aarch64,linux-
 test.test_termios.TestFunctions.test_tcdrain_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_termios.TestFunctions.test_tcflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_termios.TestFunctions.test_tcflow_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_termios.TestFunctions.test_tcflow_suspend_and_resume_output @ linux-x86_64-github
+test.test_termios.TestFunctions.test_tcflow_suspend_and_resume_output @ linux-aarch64-github,linux-x86_64-github
 test.test_termios.TestFunctions.test_tcflush @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_termios.TestFunctions.test_tcflush_clear_input_or_output @ linux-x86_64-github
+test.test_termios.TestFunctions.test_tcflush_clear_input_or_output @ linux-aarch64-github,linux-x86_64-github
 test.test_termios.TestFunctions.test_tcflush_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_termios.TestFunctions.test_tcgetattr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_termios.TestFunctions.test_tcgetattr_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

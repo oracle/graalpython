@@ -15,12 +15,12 @@ test.test_urlparse.UrlParseTestCase.test_RFC1808 @ darwin-arm64,linux-aarch64,li
 test.test_urlparse.UrlParseTestCase.test_RFC2368 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_RFC2396 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_RFC2732 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urlparse.UrlParseTestCase.test_RFC2732_invalid @ linux-x86_64-github
+test.test_urlparse.UrlParseTestCase.test_RFC2732_invalid @ linux-aarch64-github,linux-x86_64-github
 test.test_urlparse.UrlParseTestCase.test_RFC3986 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_anyscheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urlparse.UrlParseTestCase.test_attributes_bad_port @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
-test.test_urlparse.UrlParseTestCase.test_attributes_bad_scheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_urlparse.UrlParseTestCase.test_attributes_bad_port @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_urlparse.UrlParseTestCase.test_attributes_bad_scheme @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_attributes_without_netloc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_clear_cache_for_code_coverage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_default_scheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -45,7 +45,7 @@ test.test_urlparse.UrlParseTestCase.test_qsl @ darwin-arm64,linux-aarch64,linux-
 test.test_urlparse.UrlParseTestCase.test_quote_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_quote_from_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_result_pairs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urlparse.UrlParseTestCase.test_roundtrips @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_urlparse.UrlParseTestCase.test_roundtrips @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_roundtrips_normalization @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_splitting_bracketed_hosts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_telurl_params @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -57,7 +57,7 @@ test.test_urlparse.UrlParseTestCase.test_urlencode_sequences @ darwin-arm64,linu
 test.test_urlparse.UrlParseTestCase.test_urljoins @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_urllib_parse_getattr_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_urlsplit_attributes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urlparse.UrlParseTestCase.test_urlsplit_normalization @ linux-x86_64-github
+test.test_urlparse.UrlParseTestCase.test_urlsplit_normalization @ linux-aarch64-github,linux-x86_64-github
 test.test_urlparse.UrlParseTestCase.test_urlsplit_remove_unsafe_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_urlsplit_scoped_IPv6 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urlparse.UrlParseTestCase.test_urlsplit_strip_url @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

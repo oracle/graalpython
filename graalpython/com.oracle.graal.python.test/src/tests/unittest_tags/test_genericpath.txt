@@ -8,7 +8,7 @@ test.test_genericpath.PathLikeTests.test_path_isfile @ darwin-arm64,linux-aarch6
 test.test_genericpath.PathLikeTests.test_path_samefile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericpath.TestGenericTest.test_commonprefix @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericpath.TestGenericTest.test_exists @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_genericpath.TestGenericTest.test_exists_bool @ linux-x86_64-github
+test.test_genericpath.TestGenericTest.test_exists_bool @ linux-aarch64-github,linux-x86_64-github
 test.test_genericpath.TestGenericTest.test_exists_fd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericpath.TestGenericTest.test_filetime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericpath.TestGenericTest.test_getsize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

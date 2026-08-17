@@ -1,9 +1,9 @@
-test.test_repl.TestAsyncioREPL.test_multiple_statements_fail_early @ linux-x86_64-github
-test.test_repl.TestAsyncioREPL.test_pythonstartup_failure @ linux-x86_64-github
-test.test_repl.TestAsyncioREPL.test_quiet_mode @ linux-x86_64-github
-test.test_repl.TestAsyncioREPL.test_toplevel_contextvars_sync @ linux-x86_64-github
-test.test_repl.TestAsyncioREPLContextVars.test_toplevel_contextvars_sync @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
-test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_is_ok @ linux-x86_64-github
-test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_reaches_python_startup_script @ linux-x86_64-github
-test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_respects_isolated_mode @ linux-x86_64-github
+test.test_repl.TestAsyncioREPL.test_multiple_statements_fail_early @ linux-aarch64-github,linux-x86_64-github
+test.test_repl.TestAsyncioREPL.test_pythonstartup_failure @ linux-aarch64-github,linux-x86_64-github
+test.test_repl.TestAsyncioREPL.test_quiet_mode @ linux-aarch64-github,linux-x86_64-github
+test.test_repl.TestAsyncioREPL.test_toplevel_contextvars_sync @ linux-aarch64-github,linux-x86_64-github
+test.test_repl.TestAsyncioREPLContextVars.test_toplevel_contextvars_sync @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_is_ok @ linux-aarch64-github,linux-x86_64-github
+test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_reaches_python_startup_script @ linux-aarch64-github,linux-x86_64-github
+test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_respects_isolated_mode @ linux-aarch64-github,linux-x86_64-github
 test.test_repl.TestInteractiveInterpreter.test_close_stdin @ win32-AMD64,win32-AMD64-github

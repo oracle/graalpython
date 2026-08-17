@@ -24,14 +24,14 @@ test.test_time.TimeTestCase.test_monotonic @ darwin-arm64,linux-aarch64,linux-aa
 test.test_time.TimeTestCase.test_perf_counter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_process_time @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_sleep @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_time.TimeTestCase.test_sleep_exceptions @ linux-x86_64-github
+test.test_time.TimeTestCase.test_sleep_exceptions @ linux-aarch64-github,linux-x86_64-github
 test.test_time.TimeTestCase.test_strftime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_strftime_bounding_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_strftime_format_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_strptime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_strptime_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_strptime_exception_context @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_time.TimeTestCase.test_strptime_leap_year @ linux-x86_64-github
+test.test_time.TimeTestCase.test_strptime_leap_year @ linux-aarch64-github,linux-x86_64-github
 test.test_time.TimeTestCase.test_thread_time @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_time @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TimeTestCase.test_time_ns_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

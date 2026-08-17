@@ -16,9 +16,9 @@ test.test_cmd_line_script.CmdLineTest.test_package_error @ darwin-arm64,linux-aa
 test.test_cmd_line_script.CmdLineTest.test_package_recursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmd_line_script.CmdLineTest.test_pep_409_verbiage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmd_line_script.CmdLineTest.test_script_as_dev_fd @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_cmd_line_script.CmdLineTest.test_source_lines_are_shown_when_running_source @ linux-x86_64-github
-test.test_cmd_line_script.CmdLineTest.test_syntaxerror_does_not_crash @ linux-x86_64-github
-test.test_cmd_line_script.CmdLineTest.test_syntaxerror_indented_caret_position @ linux-x86_64-github
+test.test_cmd_line_script.CmdLineTest.test_source_lines_are_shown_when_running_source @ linux-aarch64-github,linux-x86_64-github
+test.test_cmd_line_script.CmdLineTest.test_syntaxerror_does_not_crash @ linux-aarch64-github,linux-x86_64-github
+test.test_cmd_line_script.CmdLineTest.test_syntaxerror_indented_caret_position @ linux-aarch64-github,linux-x86_64-github
 test.test_cmd_line_script.CmdLineTest.test_syntaxerror_multi_line_fstring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_cmd_line_script.CmdLineTest.test_syntaxerror_unindented_caret_position @ linux-x86_64-github
+test.test_cmd_line_script.CmdLineTest.test_syntaxerror_unindented_caret_position @ linux-aarch64-github,linux-x86_64-github
 test.test_cmd_line_script.CmdLineTest.test_zipfile_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -1,4 +1,4 @@
-DocTestCase.itertools.batched @ linux-x86_64-github
+DocTestCase.itertools.batched @ linux-aarch64-github,linux-x86_64-github
 test.test_itertools.LengthTransparency.test_repeat @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.LengthTransparency.test_repeat_with_negative_times @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.RegressionTests.test_issue30347_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -9,7 +9,7 @@ test.test_itertools.RegressionTests.test_sf_950057 @ darwin-arm64,linux-aarch64,
 test.test_itertools.SubclassWithKwargsTest.test_keywords_in_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_StopIteration @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_accumulate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_itertools.TestBasicOps.test_batched @ linux-x86_64-github
+test.test_itertools.TestBasicOps.test_batched @ linux-aarch64-github,linux-x86_64-github
 test.test_itertools.TestBasicOps.test_bug_7244 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_chain @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_chain_from_iterable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -20,10 +20,10 @@ test.test_itertools.TestBasicOps.test_combinations_with_replacement @ darwin-arm
 test.test_itertools.TestBasicOps.test_combinatorics @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_compress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_itertools.TestBasicOps.test_count_threading @ linux-x86_64-github
-test.test_itertools.TestBasicOps.test_count_with_step @ linux-x86_64-github
-test.test_itertools.TestBasicOps.test_count_with_step_threading @ linux-x86_64-github
-test.test_itertools.TestBasicOps.test_count_with_stride @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_itertools.TestBasicOps.test_count_threading @ linux-aarch64-github,linux-x86_64-github
+test.test_itertools.TestBasicOps.test_count_with_step @ linux-aarch64-github,linux-x86_64-github
+test.test_itertools.TestBasicOps.test_count_with_step_threading @ linux-aarch64-github,linux-x86_64-github
+test.test_itertools.TestBasicOps.test_count_with_stride @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_cycle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_cycle_copy_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_cycle_setstate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -32,7 +32,7 @@ test.test_itertools.TestBasicOps.test_dropwhile @ darwin-arm64,linux-aarch64,lin
 test.test_itertools.TestBasicOps.test_filter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_filterfalse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_groupby @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_itertools.TestBasicOps.test_groupby_reentrant_eq_does_not_crash @ linux-x86_64-github
+test.test_itertools.TestBasicOps.test_groupby_reentrant_eq_does_not_crash @ linux-aarch64-github,linux-x86_64-github
 test.test_itertools.TestBasicOps.test_islice @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_map @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestBasicOps.test_pairwise @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -102,7 +102,7 @@ test.test_itertools.TestGC.test_starmap @ darwin-arm64,linux-aarch64,linux-aarch
 test.test_itertools.TestGC.test_takewhile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestGC.test_zip @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestGC.test_zip_longest @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_itertools.TestPurePythonRoughEquivalents.test_batched_recipe @ linux-x86_64-github
+test.test_itertools.TestPurePythonRoughEquivalents.test_batched_recipe @ linux-aarch64-github,linux-x86_64-github
 test.test_itertools.TestPurePythonRoughEquivalents.test_islice_recipe @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestPurePythonRoughEquivalents.test_tee_recipe @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_itertools.TestVariousIteratorArgs.test_accumulate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

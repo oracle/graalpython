@@ -16,13 +16,13 @@ test.test_thread.LockTests.test_weakref_exists @ darwin-arm64,linux-aarch64,linu
 test.test_thread.LockTests.test_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 # Transient [GR-65187]
 !test.test_thread.ThreadRunningTests.test__count
-test.test_thread.ThreadRunningTests.test_join_several_times @ linux-x86_64-github
-test.test_thread.ThreadRunningTests.test_join_thread @ linux-x86_64-github
-test.test_thread.ThreadRunningTests.test_join_thread_already_exited @ linux-x86_64-github
-test.test_thread.ThreadRunningTests.test_join_with_timeout @ linux-x86_64-github
-test.test_thread.ThreadRunningTests.test_joinable_not_joined @ linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_join_several_times @ linux-aarch64-github,linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_join_thread @ linux-aarch64-github,linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_join_thread_already_exited @ linux-aarch64-github,linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_join_with_timeout @ linux-aarch64-github,linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_joinable_not_joined @ linux-aarch64-github,linux-x86_64-github
 test.test_thread.ThreadRunningTests.test_nt_and_posix_stack_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_thread.ThreadRunningTests.test_stack_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_thread.ThreadRunningTests.test_start_duplicate_handle @ linux-x86_64-github
-test.test_thread.ThreadRunningTests.test_start_with_none_handle @ linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_start_duplicate_handle @ linux-aarch64-github,linux-x86_64-github
+test.test_thread.ThreadRunningTests.test_start_with_none_handle @ linux-aarch64-github,linux-x86_64-github
 test.test_thread.ThreadRunningTests.test_starting_threads @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

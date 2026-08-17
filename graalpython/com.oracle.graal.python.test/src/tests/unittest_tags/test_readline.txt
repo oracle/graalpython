@@ -2,4 +2,4 @@ test.test_readline.TestReadline.test_auto_history_disabled @ darwin-arm64,linux-
 test.test_readline.TestReadline.test_auto_history_enabled @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_readline.TestReadline.test_gh123321_threadsafe @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_readline.TestReadline.test_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_readline.TestReadline.test_set_complete_delims @ linux-x86_64-github
+test.test_readline.TestReadline.test_set_complete_delims @ linux-aarch64-github,linux-x86_64-github

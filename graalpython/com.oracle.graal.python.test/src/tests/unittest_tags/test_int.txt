@@ -39,5 +39,5 @@ test.test_int.IntTestCases.test_unicode @ darwin-arm64,linux-aarch64,linux-aarch
 test.test_int.PyLongModuleTests.test_pylong_int_divmod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_int.PyLongModuleTests.test_pylong_int_to_decimal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_int.PyLongModuleTests.test_pylong_int_to_decimal_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_int.PyLongModuleTests.test_pylong_roundtrip @ linux-x86_64-github
+test.test_int.PyLongModuleTests.test_pylong_roundtrip @ linux-aarch64-github,linux-x86_64-github
 test.test_int.PyLongModuleTests.test_pylong_str_to_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
