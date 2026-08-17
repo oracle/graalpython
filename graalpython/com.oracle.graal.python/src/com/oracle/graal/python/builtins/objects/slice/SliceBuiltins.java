@@ -64,8 +64,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -123,13 +126,21 @@ public final class SliceBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PSlice self,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectReprAsTruffleStringNode reprNode,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("slice(%s, %s, %s)",
-                            reprNode.execute(frame, inliningTarget, self.getStart()),
-                            reprNode.execute(frame, inliningTarget, self.getStop()),
-                            reprNode.execute(frame, inliningTarget, self.getStep()));
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return reprBoundary(self);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private static TruffleString reprBoundary(PSlice self) {
+            return SimpleTruffleStringFormatNode.getUncached().format("slice(%s, %s, %s)",
+                            PyObjectReprAsTruffleStringNode.executeUncached(self.getStart()),
+                            PyObjectReprAsTruffleStringNode.executeUncached(self.getStop()),
+                            PyObjectReprAsTruffleStringNode.executeUncached(self.getStep()));
         }
     }
 
