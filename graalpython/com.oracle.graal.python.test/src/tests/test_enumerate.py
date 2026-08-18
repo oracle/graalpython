@@ -1,10 +1,20 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 from unittest import TestCase, skipUnless
 import operator
 import sys
+
+
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
 
 class G:
     'Sequence using __getitem__'
@@ -235,3 +245,51 @@ class TestLongStart(EnumerateStartTestCase):
     enum = lambda self, i: enumerate(i, start=sys.maxsize+1)
     seq, res = 'abc', [(sys.maxsize+1,'a'), (sys.maxsize+2,'b'),
                        (sys.maxsize+3,'c')]
+
+
+def test_explicit_none_start():
+    # GH-1074: start defaults to 0 only when the argument is omitted; an
+    # explicitly passed None goes through PyNumber_Index and raises
+    assert_raises(TypeError, enumerate, 'abc', None)
+    assert_raises(TypeError, enumerate, 'abc', start=None)
+
+
+def test_omitted_start_after_rejected_start():
+    # GH-1074: the specializations are shared, so rejecting a bad start must
+    # not break a later call that omits it
+    assert_raises(TypeError, enumerate, 'abc', 'x')
+    assert list(enumerate('abc')) == [(0, 'a'), (1, 'b'), (2, 'c')]
+
+
+def test_bool_start():
+    # GH-1074: bool is an int subclass, so True is a start of 1
+    assert list(enumerate('abc', True)) == [(1, 'a'), (2, 'b'), (3, 'c')]
+    assert list(enumerate('abc', False)) == [(0, 'a'), (1, 'b'), (2, 'c')]
+
+
+def test_index_start():
+    # GH-1074: any object implementing __index__ is accepted as start
+    class Idx:
+        def __index__(self):
+            return 3
+
+    assert list(enumerate([9, 8, 7], Idx())) == [(3, 9), (4, 8), (5, 7)]
+
+
+def test_huge_index_start():
+    # GH-1074: an __index__ result too large for a Java long still works
+    class BigIdx:
+        def __index__(self):
+            return 2 ** 70
+
+    assert list(enumerate('a', BigIdx())) == [(1180591620717411303424, 'a')]
+
+
+def test_float_start_is_rejected():
+    assert_raises(TypeError, enumerate, 'abc', 1.0)
+
+
+def test_omitted_start_after_coerced_start():
+    # GH-1074: coercing a start must not break a later call that omits it
+    assert list(enumerate('abc', True)) == [(1, 'a'), (2, 'b'), (3, 'c')]
+    assert list(enumerate('abc')) == [(0, 'a'), (1, 'b'), (2, 'c')]
