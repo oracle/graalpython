@@ -126,11 +126,10 @@ class CertTests(unittest.TestCase):
     @unittest.skipUnless(IS_OPENSSL_3_0_0, "test requires RFC 5280 check added in OpenSSL 3.0+")
     def test_verify_x509_strict(self):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        try:
-            server_context.load_cert_chain(cpython_cert_data("leaf-missing-aki.keycert.pem"))
-        except ssl.SSLError as e:
-            self.assertIn("require BouncyCastle support", str(e))
-            return
+        server_context.load_cert_chain(
+            cpython_cert_data("leaf-missing-aki.keycert.pem"),
+            keyfile=data_file("leaf-missing-aki.pkcs8.pem"),
+        )
 
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.check_hostname = False
