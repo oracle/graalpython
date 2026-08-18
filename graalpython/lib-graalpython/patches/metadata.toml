@@ -387,6 +387,11 @@ patch = 'orjson-3.10.18.patch'
 license = 'Apache-2.0 OR MIT'
 
 [[orjson.rules]]
+version = '== 3.11.5'
+patch = 'orjson-3.11.5.patch'
+license = 'Apache-2.0 OR MIT'
+
+[[orjson.rules]]
 version = '== 3.11.9'
 patch = 'orjson-3.11.9.patch'
 license = 'Apache-2.0 OR MIT'
