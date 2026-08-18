@@ -305,10 +305,15 @@ def _bisect_benchmark(argv, bisect_id):
         if repo_path == DIR:
             mx.run_mx(['sforceimports'], suite=str(DIR))
         if args.enterprise:
+            # Keep the Graal revision selected by the current bisection point. The
+            # enterprise suite imports Graal, so its sforceimports would otherwise
+            # replace that revision with the one recorded in graal-enterprise.
+            graal_commit = get_commit(GRAAL_DIR)
             if repo_path.name != 'graal-enterprise':
                 mx.run_mx(['--quiet', 'checkout-downstream', 'vm', 'vm-enterprise', '--no-fetch'],
                           suite=str(VM_ENTERPRISE_DIR))
             mx.run_mx(['--dy', 'substratevm-enterprise-gcs', 'sforceimports'], suite=str(VM_ENTERPRISE_DIR))
+            GIT.update_to_branch(GRAAL_DIR, graal_commit)
         debug_str = f"debug: {SUITE.name}={get_commit(SUITE.vc_dir)} graal={get_commit(GRAAL_DIR)}"
         if args.enterprise:
             debug_str += f" graal-enterprise={get_commit(GRAAL_ENTERPRISE_DIR)}"
@@ -343,7 +348,7 @@ def _bisect_benchmark(argv, bisect_id):
         build_command = shlex.split(args.build_command)
         if not args.no_clean:
             try:
-                clean_command = build_command[:build_command.index('build')] + ['clean']
+                clean_command = build_command[:build_command.index('build')] + ['clean', '--all', '--aggressive']
                 retcode = mx.run(clean_command, nonZeroIsFatal=False)
                 if retcode:
                     print("Warning: clean command failed")

@@ -78,6 +78,7 @@ git diff --stat GOOD..BAD
 - In the attributed section, use this header format: `abcd1234efgh | author@oracle.com | Full subject`
 - Unattributed changes that look plausible go to "to bisect", flaky ones go to "to watch"
 - In the "to bisect" section, add an invocation (don't execute yet) of `scripts/bisect_benchmark_regression.py` that can bisect it (use unabbreviated commits in this case)
+- The positional benchmark name identifies the result to compare. If the harness runs that result through a differently named parent or group, pass the runnable name with `--benchmark-selector`. For example, use result `pyperformance-suite.scimark_fft` with `--benchmark-selector scimark`, because pyperformance runs the `scimark` group and reports `scimark_fft` separately.
 - In the "to watch" section, say whether the item looks flaky, or likely the same cause as another attributed item.
 - Do not abbreviate commit subjects.
 - Keep author emails.
