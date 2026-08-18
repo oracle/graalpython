@@ -72,6 +72,7 @@ GRAALPYTHON_DIR = DIR.parent.parent.resolve()
 UNIT_TEST_ROOT = (DIR / 'tests').resolve()
 TAGGED_TEST_ROOT = (GRAALPYTHON_DIR / 'lib-python' / '3' / 'test').resolve()
 IS_GRAALPY = sys.implementation.name == 'graalpy'
+IS_WINDOWS = sys.platform == 'win32'
 
 PLATFORM_KEYS = {sys.platform, platform.machine(), sys.implementation.name}
 if IS_GRAALPY:
@@ -549,6 +550,21 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
 
 
 def interrupt_process(process: subprocess.Popen):
+    if IS_WINDOWS:
+        # Timed-out tests may leave descendants holding the worker's redirected output file open. Kill the whole
+        # process tree because Windows cannot remove that file while any descendant still has an open handle to it.
+        # Do this before trying SIGINT: if the parent exits first, taskkill can no longer discover its descendants.
+        try:
+            subprocess.run(
+                ['taskkill', '/PID', str(process.pid), '/T', '/F'],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            process.wait()
+            return
+        except (OSError, subprocess.CalledProcessError):
+            pass
     if hasattr(signal, 'SIGINT'):
         try:
             process.send_signal(signal.SIGINT)
@@ -790,7 +806,10 @@ class SubprocessWorker:
     def run_in_subprocess_and_watch(self):
         self.thread = threading.current_thread()
         with (
-            tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir,
+            # Do not lose the test report if a leaked Windows process still has the diagnostic output file open.
+            tempfile.TemporaryDirectory(
+                prefix='graalpytest-', ignore_cleanup_errors=IS_WINDOWS
+            ) as tmp_dir,
             socket.create_server((WORKER_SERVER_HOST, 0)) as server,
         ):
             tmp_dir = Path(tmp_dir)
