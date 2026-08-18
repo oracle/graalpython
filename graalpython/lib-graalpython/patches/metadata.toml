@@ -413,7 +413,7 @@ patch = 'packaging.patch'
 license = 'Apache-2.0 OR BSD-2-Clause'
 
 [[pandas.rules]]
-version = '>= 3.0, < 3.0.3'
+version = '>= 3.0, < 3.0.6'
 patch = 'pandas-3.0.2.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
