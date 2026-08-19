@@ -44,7 +44,6 @@ import static com.oracle.graal.python.PythonLanguage.GRAALVM_MAJOR;
 import static com.oracle.graal.python.PythonLanguage.GRAALVM_MICRO;
 import static com.oracle.graal.python.PythonLanguage.GRAALVM_MINOR;
 import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
-import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER;
 import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER_BYTES;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
@@ -527,7 +526,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 // Note that mtime-based validation is the default, hashing is opt-in
                 if (hashBased) {
                     boolean checkSource = (flags & 0b10) != 0;
-                    cacheKey = ARRAY_ACCESSOR_LE.getLong(bytes, 16);
+                    cacheKey = ARRAY_ACCESSOR_LE.getLong(bytes, 8);
                     String checkHashBasedPycs = "";
                     try {
                         checkHashBasedPycs = CastToJavaStringNode.getUncached().execute(context.lookupBuiltinModule(T__IMP).getAttribute(T_CHECK_HASH_BASED_PYCS));
@@ -539,7 +538,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         TruffleString strSourcePath = PyObjectStrAsTruffleStringNode.executeUncached(sourcePath);
                         TruffleFile sourceFile = context.getEnv().getPublicTruffleFile(strSourcePath.toJavaStringUncached()).getAbsoluteFile().normalize();
                         byte[] sourceBytes = sourceFile.readAllBytes();
-                        long sourceHash = ARRAY_ACCESSOR_LE.getLong(ImpModuleBuiltins.SourceHashNode.hashSource(MAGIC_NUMBER, sourceBytes, sourceBytes.length), 0);
+                        long rawMagicNumber = Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(MAGIC_NUMBER_BYTES, 0));
+                        long sourceHash = ARRAY_ACCESSOR_LE.getLong(ImpModuleBuiltins.SourceHashNode.hashSource(rawMagicNumber, sourceBytes, sourceBytes.length), 0);
                         // _validate_hash_pyc
                         if (cacheKey != sourceHash) {
                             return PNone.NONE;
