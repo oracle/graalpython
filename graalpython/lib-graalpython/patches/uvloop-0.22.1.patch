@@ -1,0 +1,68 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index a8b0f32..229dc48 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -45,6 +45,7 @@ test = [
+     'mypy>=0.800',
+ ]
+ dev = [
++    'packaging>=20',
+     'setuptools>=60',
+     'Cython~=3.0',
+ ]
+@@ -56,6 +57,7 @@ docs = [
+ 
+ [build-system]
+ requires = [
++    "packaging>=20",
+     "setuptools>=60",
+     "wheel",
+     "Cython~=3.1",
+diff --git a/setup.py b/setup.py
+index 32d94ae..dbe19ee 100644
+--- a/setup.py
++++ b/setup.py
+@@ -84,7 +84,7 @@ class uvloop_build_ext(build_ext):
+     def initialize_options(self):
+         super().initialize_options()
+         self.use_system_libuv = False
+-        self.cython_always = False
++        self.cython_always = True
+         self.cython_annotate = None
+         self.cython_directives = None
+ 
+@@ -108,7 +108,7 @@ class uvloop_build_ext(build_ext):
+                         need_cythonize = True
+ 
+         if need_cythonize:
+-            import pkg_resources
++            from packaging.requirements import Requirement
+ 
+             # Double check Cython presence in case setup_requires
+             # didn't go into effect (most likely because someone
+@@ -121,8 +121,8 @@ class uvloop_build_ext(build_ext):
+                     'please install {} to compile uvloop from source'.format(
+                         CYTHON_DEPENDENCY))
+ 
+-            cython_dep = pkg_resources.Requirement.parse(CYTHON_DEPENDENCY)
+-            if Cython.__version__ not in cython_dep:
++            cython_dep = Requirement(CYTHON_DEPENDENCY)
++            if not cython_dep.specifier.contains(Cython.__version__):
+                 raise RuntimeError(
+                     'uvloop requires {}, got Cython=={}'.format(
+                         CYTHON_DEPENDENCY, Cython.__version__
+diff --git a/uvloop/includes/compat.h b/uvloop/includes/compat.h
+index 0c408c9..1d2085f 100644
+--- a/uvloop/includes/compat.h
++++ b/uvloop/includes/compat.h
+@@ -6,6 +6,10 @@
+ #include "Python.h"
+ #include "uv.h"
+ 
++void PyOS_BeforeFork(void);
++void PyOS_AfterFork_Parent(void);
++void PyOS_AfterFork_Child(void);
++
+ 
+ #ifndef EWOULDBLOCK
+ #define EWOULDBLOCK EAGAIN
