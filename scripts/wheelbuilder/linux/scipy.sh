@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,10 +39,9 @@
 
 if [ -n "$GITHUB_RUN_ID" ]; then
     dnf install -y gcc-toolset-12-gcc-gfortran openblas-devel
-fi
-export FFLAGS=-fallow-argument-mismatch
-if [ -n "$1" ]; then
-    pip wheel "scipy==$1"
-else
-    pip wheel scipy
+    if [ -n "$1" ]; then
+        scl enable gcc-toolset-12 "FFLAGS=-fallow-argument-mismatch pip wheel \"scipy==$1\""
+    else
+        scl enable gcc-toolset-12 "FFLAGS=-fallow-argument-mismatch pip wheel scipy"
+    fi
 fi
