@@ -749,7 +749,8 @@ version = '>= 2, < 2.0.3'
 install-priority = 0
 
 [[uvloop.rules]]
-patch = 'uvloop.patch'
+version = '== 0.22.1'
+patch = 'uvloop-0.22.1.patch'
 license = 'MIT'
 
 [[watchfiles.rules]]
