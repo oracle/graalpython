@@ -224,6 +224,129 @@ static void set_win_errno(DWORD error) {
     error_source_capture = ERROR_CAPTURE_WINAPI;
 }
 
+/*
+ * Most Windows filesystem APIs still impose MAX_PATH unless the executable opts in to long path
+ * support. python-libposix can also be loaded into an embedding executable whose manifest we do not
+ * control, so make long paths independent of that process-wide setting by using extended paths.
+ *
+ * Keep short paths unchanged. Apart from avoiding an allocation in the common case, this preserves
+ * Win32 handling of special names such as NUL. GetFullPathNameW resolves relative paths and dot
+ * components before we add the extended path prefix, which requires an absolute normalized path.
+ */
+#define WIN_LONG_PATH_THRESHOLD (MAX_PATH - 12)
+#define WIN_LONG_PATH_LIMIT 32767
+
+typedef struct {
+    const wchar_t *value;
+    wchar_t *allocated;
+} win_path_t;
+
+static int win_path_init(win_path_t *result, const wchar_t *path) {
+    result->value = path;
+    result->allocated = NULL;
+    if (path[0] == L'\0' ||
+                    (path[0] == L'\\' && path[1] == L'\\' && (path[2] == L'?' || path[2] == L'.') && path[3] == L'\\') ||
+                    (path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\')) {
+        return 0;
+    }
+
+    DWORD full_size = GetFullPathNameW(path, 0, NULL, NULL);
+    if (full_size == 0) {
+        // Let the actual filesystem operation report the error for this path.
+        return 0;
+    }
+    wchar_t *full_path = NULL;
+    DWORD full_len;
+    for (;;) {
+        if (full_size > WIN_LONG_PATH_LIMIT || full_size > SIZE_MAX / sizeof(wchar_t)) {
+            free(full_path);
+            set_win_errno(ERROR_FILENAME_EXCED_RANGE);
+            return -1;
+        }
+        wchar_t *resized = (wchar_t *) realloc(full_path, (size_t) full_size * sizeof(wchar_t));
+        if (resized == NULL) {
+            free(full_path);
+            set_posix_errno(ENOMEM);
+            return -1;
+        }
+        full_path = resized;
+        full_len = GetFullPathNameW(path, full_size, full_path, NULL);
+        if (full_len == 0) {
+            free(full_path);
+            // As above, preserve the error behavior of the actual filesystem operation.
+            return 0;
+        }
+        if (full_len < full_size) {
+            break;
+        }
+        if (full_len >= WIN_LONG_PATH_LIMIT) {
+            free(full_path);
+            set_win_errno(ERROR_FILENAME_EXCED_RANGE);
+            return -1;
+        }
+        full_size = full_len + 1;
+    }
+
+    if (full_len < WIN_LONG_PATH_THRESHOLD) {
+        free(full_path);
+        return 0;
+    }
+
+    const wchar_t *prefix;
+    size_t prefix_len;
+    size_t source_offset;
+    if (full_len >= 2 && full_path[0] == L'\\' && full_path[1] == L'\\') {
+        prefix = L"\\\\?\\UNC\\";
+        prefix_len = 8;
+        source_offset = 2;
+    } else {
+        prefix = L"\\\\?\\";
+        prefix_len = 4;
+        source_offset = 0;
+    }
+    size_t extended_len = prefix_len + full_len - source_offset;
+    if (extended_len >= WIN_LONG_PATH_LIMIT || extended_len + 1 > SIZE_MAX / sizeof(wchar_t)) {
+        free(full_path);
+        set_win_errno(ERROR_FILENAME_EXCED_RANGE);
+        return -1;
+    }
+    wchar_t *extended = (wchar_t *) malloc((extended_len + 1) * sizeof(wchar_t));
+    if (extended == NULL) {
+        free(full_path);
+        set_posix_errno(ENOMEM);
+        return -1;
+    }
+    memcpy(extended, prefix, prefix_len * sizeof(wchar_t));
+    memcpy(extended + prefix_len, full_path + source_offset, (full_len - source_offset + 1) * sizeof(wchar_t));
+    for (size_t i = prefix_len; i < extended_len; i++) {
+        if (extended[i] == L'/') {
+            extended[i] = L'\\';
+        }
+    }
+    free(full_path);
+    result->value = extended;
+    result->allocated = extended;
+    return 0;
+}
+
+static void win_path_clear(win_path_t *path) {
+    free(path->allocated);
+}
+
+static DWORD win_path_remove_extended_prefix(wchar_t *path, DWORD len) {
+    if (len >= 8 && wcsncmp(path, L"\\\\?\\UNC\\", 8) == 0) {
+        path[0] = L'\\';
+        path[1] = L'\\';
+        memmove(path + 2, path + 8, (len - 8 + 1) * sizeof(wchar_t));
+        return len - 6;
+    }
+    if (len >= 4 && wcsncmp(path, L"\\\\?\\", 4) == 0) {
+        memmove(path, path + 4, (len - 4 + 1) * sizeof(wchar_t));
+        return len - 4;
+    }
+    return len;
+}
+
 static int ensure_winsock(void) {
     static int initialized = 0;
     if (!initialized) {
@@ -668,16 +791,22 @@ static int set_file_times(HANDLE handle, int64_t *times, int32_t nanosecond_reso
 }
 
 static int set_path_times(const wchar_t *path, int64_t *times, int32_t nanosecond_resolution, int32_t followSymlinks) {
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
     DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
     if (!followSymlinks) {
         flags |= FILE_FLAG_OPEN_REPARSE_POINT;
     }
-    HANDLE handle = CreateFileW(path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+    HANDLE handle = CreateFileW(prepared.value, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                     NULL, OPEN_EXISTING, flags, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
         set_win_errno(GetLastError());
+        win_path_clear(&prepared);
         return -1;
     }
+    win_path_clear(&prepared);
     int result = set_file_times(handle, times, nanosecond_resolution);
     CloseHandle(handle);
     return result;
@@ -732,16 +861,23 @@ static int statvfs_from_root(const wchar_t *root, int64_t *out) {
 }
 
 static int statvfs_from_path(const wchar_t *path, int64_t *out) {
-    DWORD attributes = GetFileAttributesW(path);
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    DWORD attributes = GetFileAttributesW(prepared.value);
     if (attributes == INVALID_FILE_ATTRIBUTES) {
         set_win_errno(GetLastError());
+        win_path_clear(&prepared);
         return -1;
     }
 
     wchar_t root[MAX_PATH];
-    if (root_path_from_path(path, root, MAX_PATH) != 0) {
+    if (root_path_from_path(prepared.value, root, MAX_PATH) != 0) {
+        win_path_clear(&prepared);
         return -1;
     }
+    win_path_clear(&prepared);
     return statvfs_from_root(root, out);
 }
 
@@ -960,11 +1096,15 @@ GP_EXPORT int32_t call_openat(int32_t dirFd, const wchar_t *pathname, int32_t fl
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
+    win_path_t path;
+    if (win_path_init(&path, pathname) != 0) {
+        return -1;
+    }
     int open_flags = flags | _O_NOINHERIT;
     if ((open_flags & _O_TEXT) == 0) {
         open_flags |= _O_BINARY;
     }
-    int result = _wopen(pathname, open_flags, mode);
+    int result = _wopen(path.value, open_flags, mode);
     // The following _setmode is defensive enforcement; _wopen(..., _O_BINARY, ...) should already set this mode.
     if (result < 0) {
         capture_errno();
@@ -972,8 +1112,10 @@ GP_EXPORT int32_t call_openat(int32_t dirFd, const wchar_t *pathname, int32_t fl
         int error = errno;
         close_noraise(result);
         set_posix_errno(error);
+        win_path_clear(&path);
         return -1;
     }
+    win_path_clear(&path);
     return result;
 }
 
@@ -1167,11 +1309,17 @@ GP_EXPORT int32_t call_ftruncate(int32_t fd, int64_t length) {
 }
 
 GP_EXPORT int32_t call_truncate(const wchar_t *path, int64_t length) {
-    int fd = _wopen(path, _O_RDWR | _O_BINARY | _O_NOINHERIT);
-    if (fd < 0) {
-        capture_errno();
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
         return -1;
     }
+    int fd = _wopen(prepared.value, _O_RDWR | _O_BINARY | _O_NOINHERIT);
+    if (fd < 0) {
+        capture_errno();
+        win_path_clear(&prepared);
+        return -1;
+    }
+    win_path_clear(&prepared);
     int result = call_ftruncate(fd, length);
     int error = result != 0 ? errno_capture : 0;
     close_noraise(fd);
@@ -1231,14 +1379,20 @@ GP_EXPORT int32_t call_fstatat(int32_t dirFd, const wchar_t *path, int32_t follo
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
     struct __stat64 st;
-    int result = _wstat64(path, &st);
+    int result = _wstat64(prepared.value, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
-        stat_path_handle_to_longs(path, followSymlinks, out);
-        return 0;
+        stat_path_handle_to_longs(prepared.value, followSymlinks, out);
+    } else {
+        result = stat_path_attributes_to_longs(prepared.value, out);
     }
-    return stat_path_attributes_to_longs(path, out);
+    win_path_clear(&prepared);
+    return result;
 }
 
 GP_EXPORT int32_t call_fstat(int32_t fd, int64_t *out) {
@@ -1275,11 +1429,8 @@ GP_EXPORT int32_t call_fstatvfs(int32_t fd, int64_t *out) {
         set_win_errno(GetLastError());
         return -1;
     }
-    const wchar_t *path_for_volume = path;
-    if (wcsncmp(path, L"\\\\?\\", 4) == 0) {
-        path_for_volume = path + 4;
-    }
-    return statvfs_from_path(path_for_volume, out);
+    win_path_remove_extended_prefix(path, len);
+    return statvfs_from_path(path, out);
 }
 GP_EXPORT int32_t call_uname(char *sysname, char *nodename, char *release, char *version, char *machine, int32_t size) { return unsupported(); }
 
@@ -1287,23 +1438,26 @@ GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t 
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
+    win_path_t path;
+    if (win_path_init(&path, pathname) != 0) {
+        return -1;
+    }
+    int result;
     if (rmdir) {
-        int result = _wrmdir(pathname);
+        result = _wrmdir(path.value);
         if (result != 0 && errno == EINVAL) {
-            DWORD attributes = GetFileAttributesW(pathname);
+            DWORD attributes = GetFileAttributesW(path.value);
             if (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 errno = ENOTDIR;
             }
         }
-        if (result != 0) {
-            capture_errno();
-        }
-        return result;
+    } else {
+        result = _wunlink(path.value);
     }
-    int result = _wunlink(pathname);
     if (result != 0) {
         capture_errno();
     }
+    win_path_clear(&path);
     return result;
 }
 
@@ -1314,10 +1468,15 @@ GP_EXPORT int32_t call_mkdirat(int32_t dirFd, const wchar_t *pathname, int32_t m
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    int result = _wmkdir(pathname);
+    win_path_t path;
+    if (win_path_init(&path, pathname) != 0) {
+        return -1;
+    }
+    int result = _wmkdir(path.value);
     if (result != 0) {
         capture_errno();
     }
+    win_path_clear(&path);
     return result;
 }
 
@@ -1331,13 +1490,19 @@ GP_EXPORT int32_t call_getcwd(wchar_t *buf, uint64_t size) {
         set_posix_errno(ERANGE);
         return -1;
     }
+    win_path_remove_extended_prefix(buf, len);
     return 0;
 }
 GP_EXPORT int32_t call_chdir(const wchar_t *path) {
-    int result = _wchdir(path);
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    int result = _wchdir(prepared.value);
     if (result != 0) {
         capture_errno();
     }
+    win_path_clear(&prepared);
     return result;
 }
 GP_EXPORT int32_t call_fchdir(int32_t fd) {
@@ -1355,15 +1520,20 @@ GP_EXPORT intptr_t call_opendir(const wchar_t *name) {
         set_posix_errno(ENOENT);
         return 0;
     }
-    size_t len = wcslen(name);
-    int needs_separator = len > 0 && name[len - 1] != L'\\' && name[len - 1] != L'/' && name[len - 1] != L':';
+    win_path_t path;
+    if (win_path_init(&path, name) != 0) {
+        return 0;
+    }
+    size_t len = wcslen(path.value);
+    int needs_separator = len > 0 && path.value[len - 1] != L'\\' && path.value[len - 1] != L'/' && path.value[len - 1] != L':';
     size_t pattern_len = len + (needs_separator ? 4 : 3) + 1;
     wchar_t *pattern = (wchar_t *) malloc(pattern_len * sizeof(wchar_t));
     if (!pattern) {
+        win_path_clear(&path);
         set_posix_errno(ENOMEM);
         return 0;
     }
-    wcscpy(pattern, name);
+    wcscpy(pattern, path.value);
     if (needs_separator) {
         pattern[len++] = L'\\';
     }
@@ -1372,6 +1542,7 @@ GP_EXPORT intptr_t call_opendir(const wchar_t *name) {
     win_dir_t *dir = (win_dir_t *) calloc(1, sizeof(win_dir_t));
     if (!dir) {
         free(pattern);
+        win_path_clear(&path);
         set_posix_errno(ENOMEM);
         return 0;
     }
@@ -1381,9 +1552,10 @@ GP_EXPORT intptr_t call_opendir(const wchar_t *name) {
     if (dir->handle == INVALID_HANDLE_VALUE) {
         DWORD error = GetLastError();
         if (error == ERROR_FILE_NOT_FOUND) {
-            DWORD attributes = GetFileAttributesW(name);
+            DWORD attributes = GetFileAttributesW(path.value);
             if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 dir->exhausted = 1;
+                win_path_clear(&path);
                 return (intptr_t) dir;
             }
             if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -1391,9 +1563,11 @@ GP_EXPORT intptr_t call_opendir(const wchar_t *name) {
             }
         }
         free(dir);
+        win_path_clear(&path);
         set_win_errno(error);
         return 0;
     }
+    win_path_clear(&path);
     return (intptr_t) dir;
 }
 
@@ -1488,10 +1662,21 @@ GP_EXPORT int32_t call_renameat(int32_t oldDirFd, const wchar_t *oldPath, int32_
     if (!is_default_dir_fd(oldDirFd) || !is_default_dir_fd(newDirFd)) {
         return unsupported();
     }
-    int result = _wrename(oldPath, newPath);
+    win_path_t oldPrepared;
+    win_path_t newPrepared;
+    if (win_path_init(&oldPrepared, oldPath) != 0) {
+        return -1;
+    }
+    if (win_path_init(&newPrepared, newPath) != 0) {
+        win_path_clear(&oldPrepared);
+        return -1;
+    }
+    int result = _wrename(oldPrepared.value, newPrepared.value);
     if (result != 0) {
         capture_errno();
     }
+    win_path_clear(&oldPrepared);
+    win_path_clear(&newPrepared);
     return result;
 }
 
@@ -1499,8 +1684,19 @@ GP_EXPORT int32_t call_replaceat(int32_t oldDirFd, const wchar_t *oldPath, int32
     if (!is_default_dir_fd(oldDirFd) || !is_default_dir_fd(newDirFd)) {
         return unsupported();
     }
-    BOOL result = MoveFileExW(oldPath, newPath, MOVEFILE_REPLACE_EXISTING);
+    win_path_t oldPrepared;
+    win_path_t newPrepared;
+    if (win_path_init(&oldPrepared, oldPath) != 0) {
+        return -1;
+    }
+    if (win_path_init(&newPrepared, newPath) != 0) {
+        win_path_clear(&oldPrepared);
+        return -1;
+    }
+    BOOL result = MoveFileExW(oldPrepared.value, newPrepared.value, MOVEFILE_REPLACE_EXISTING);
     DWORD error = result ? ERROR_SUCCESS : GetLastError();
+    win_path_clear(&oldPrepared);
+    win_path_clear(&newPrepared);
     if (!result) {
         set_win_errno(error);
         return -1;
@@ -1512,10 +1708,15 @@ GP_EXPORT int32_t call_faccessat(int32_t dirFd, const wchar_t *path, int32_t mod
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    int result = _waccess(path, mode);
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    int result = _waccess(prepared.value, mode);
     if (result != 0) {
         capture_errno();
     }
+    win_path_clear(&prepared);
     return result;
 }
 
@@ -1523,10 +1724,15 @@ GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const wchar_t *path, int32_t mode
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    int result = _wchmod(path, mode);
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    int result = _wchmod(prepared.value, mode);
     if (result != 0) {
         capture_errno();
     }
+    win_path_clear(&prepared);
     return result;
 }
 
@@ -1541,8 +1747,13 @@ GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *b
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    DWORD attributes = GetFileAttributesW(path);
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    DWORD attributes = GetFileAttributesW(prepared.value);
     DWORD error = attributes == INVALID_FILE_ATTRIBUTES ? GetLastError() : ERROR_SUCCESS;
+    win_path_clear(&prepared);
     if (attributes == INVALID_FILE_ATTRIBUTES) {
         set_win_errno(error);
         return -1;
