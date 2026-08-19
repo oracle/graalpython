@@ -549,13 +549,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     // _validate_timestamp_pyc
                     Object mTimeObj = PyNumberLongNode.executeUncached(PyObjectGetItem.executeUncached(statResult, T_MTIME));
                     long mTime = CastToJavaLongLossyNode.executeUncached(mTimeObj);
-                    if (Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(bytes, 8)) != mTime) {
+                    if (Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(bytes, 8)) != (mTime & 0xFFFFFFFFL)) {
                         return PNone.NONE;
                     }
                     Object sizeObj = PyObjectGetItem.executeUncached(statResult, T_SIZE);
                     if (sizeObj != PNone.NONE) {
                         long size = CastToJavaLongLossyNode.executeUncached(sizeObj);
-                        if (Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(bytes, 12)) != size) {
+                        if (Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(bytes, 12)) != (size & 0xFFFFFFFFL)) {
                             return PNone.NONE;
                         }
                     }
