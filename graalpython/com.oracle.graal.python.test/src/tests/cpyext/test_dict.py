@@ -159,6 +159,13 @@ def _reference_clear(args):
     return d
 
 
+def _reference_update(args):
+    target, mapping = args
+    for key in mapping.keys():
+        target[key] = mapping[key]
+    return 0
+
+
 def _reference_merge(args):
     try:
         a, b, override = args
@@ -721,9 +728,10 @@ class TestPyDict(CPyExtTestCase):
     )
 
     test_PyDict_Update = CPyExtFunction(
-        lambda args: 1 if args[0].update(args[1]) else 0,
+        _reference_update,
         lambda: (
             (fresh_dict(), {"a": 1}),
+            ({}, [("a", 1)]),
         ),
         resultspec="O",
         argspec="OO",

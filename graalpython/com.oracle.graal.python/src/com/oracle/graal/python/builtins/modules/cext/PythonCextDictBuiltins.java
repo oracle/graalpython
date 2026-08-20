@@ -738,8 +738,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Update extends CApiBinaryBuiltinNode {
         @Specialization
         static int update(PDict dict, Object other,
-                        @Cached DictNodes.UpdateNode updateNode) {
-            updateNode.execute(null, dict, other);
+                        @Bind Node inliningTarget,
+                        @Cached PyDictMerge mergeNode) {
+            mergeNode.execute(null, inliningTarget, dict, other);
             return 0;
         }
 
