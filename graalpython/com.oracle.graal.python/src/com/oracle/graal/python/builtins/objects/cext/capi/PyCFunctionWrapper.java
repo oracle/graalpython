@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -118,7 +117,7 @@ public abstract class PyCFunctionWrapper {
     private final long pointer;
 
     /**
-     * Built-in functions may appear as {@link CExtContext#METH_VARARGS} etc. but we implement them
+     * Built-in functions may appear as {@link PyMethodFlags#METH_VARARGS} etc. but we implement them
      * as nodes where the specializations have a fixed arity and then sometimes allow optional
      * arguments (specified with {@link Builtin#minNumOfPositionalArgs()},
      * {@link Builtin#maxNumOfPositionalArgs()}, and similar). This is usually not a problem because
@@ -182,13 +181,13 @@ public abstract class PyCFunctionWrapper {
         RootCallTarget ct = builtinFunction.getCallTarget();
         Signature signature = builtinFunction.getSignature();
         Object[] defaults = builtinFunction.getDefaults();
-        if (CExtContext.isMethNoArgs(flags)) {
+        if (PyMethodFlags.isMethNoArgs(flags)) {
             return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionUnaryWrapper(k, signature, defaults));
-        } else if (CExtContext.isMethO(flags)) {
+        } else if (PyMethodFlags.isMethO(flags)) {
             return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionBinaryWrapper(k, signature, defaults));
-        } else if (CExtContext.isMethVarargs(flags)) {
+        } else if (PyMethodFlags.isMethVarargs(flags)) {
             return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionVarargsWrapper(k, signature, defaults));
-        } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
+        } else if (PyMethodFlags.isMethVarargsWithKeywords(flags)) {
             return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionKeywordsWrapper(k, signature, defaults));
         } else {
             throw shouldNotReachHere("other signature " + Integer.toHexString(flags));

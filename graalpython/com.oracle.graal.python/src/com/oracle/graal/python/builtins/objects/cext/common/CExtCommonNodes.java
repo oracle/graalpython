@@ -99,6 +99,7 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.TruffleLogger;
@@ -590,7 +591,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtCommonNodes.class);
 
     /**
      * Binds a native pointer with a signature to a typed native function pointer.
@@ -600,8 +601,8 @@ public abstract class CExtCommonNodes {
      * access} is not allowed
      * </p>
      */
-    @TruffleBoundary
     public static NativeFunctionPointer bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
+        CompilerAsserts.neverPartOfCompilation();
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
             LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to a native callable but native access is not allowed", pointer));

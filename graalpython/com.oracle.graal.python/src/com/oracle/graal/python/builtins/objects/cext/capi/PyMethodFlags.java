@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,27 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
-
-public abstract class CExtContext {
+public final class PyMethodFlags {
     public static final int METH_VARARGS = 0x0001;
     public static final int METH_KEYWORDS = 0x0002;
     public static final int METH_NOARGS = 0x0004;
@@ -68,32 +51,10 @@ public abstract class CExtContext {
     public static final int METH_COEXIST = 0x0040;
     public static final int METH_FASTCALL = 0x0080;
     public static final int METH_METHOD = 0x0200;
-
     // Filter out only the base convention, without orthogonal modifiers
     private static final int CALL_CONVENTION_MASK = METH_VARARGS | METH_KEYWORDS | METH_NOARGS | METH_O | METH_FASTCALL | METH_METHOD;
 
-    private final PythonContext context;
-
-    /** The library object representing 'libpython.*.so' or similar. */
-    private final NativeLibrary library;
-    private final String libraryName;
-
-    public CExtContext(PythonContext context, NativeLibrary library, String libraryName) {
-        this.context = context;
-        this.library = library;
-        this.libraryName = libraryName;
-    }
-
-    public final PythonContext getContext() {
-        return context;
-    }
-
-    public final NativeLibrary getLibrary() {
-        return library;
-    }
-
-    public final String getLibraryName() {
-        return libraryName;
+    private PyMethodFlags() {
     }
 
     public static boolean isMethVarargs(int flags) {
@@ -130,33 +91,5 @@ public abstract class CExtContext {
 
     public static boolean isMethClass(int flags) {
         return (flags & METH_CLASS) != 0;
-    }
-
-    public static boolean isClassOrStaticMethod(int flags) {
-        return isMethClass(flags) || isMethStatic(flags);
-    }
-
-    @TruffleBoundary
-    protected static TruffleString getBaseName(TruffleString name) {
-        int len = TruffleString.CodePointLengthNode.getUncached().execute(name, TS_ENCODING);
-        if (len == 1) {
-            return name.equalsUncached(T_DOT, TS_ENCODING) ? T_EMPTY_STRING : name;
-        }
-        int idx = name.lastIndexOfStringUncached(T_DOT, len, 0, TS_ENCODING);
-        if (idx < 0) {
-            return name;
-        }
-        if (idx == len - 1) {
-            return T_EMPTY_STRING;
-        }
-        return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
-    }
-
-    @TruffleBoundary
-    public static PException wrapJavaException(Throwable e, Node raisingNode) {
-        TruffleString message = toTruffleStringUncached(e.getMessage());
-        PBaseException excObject = PFactory.createBaseException(PythonLanguage.get(null), SystemError, message != null ? message : toTruffleStringUncached(e.toString()),
-                        PythonUtils.EMPTY_OBJECT_ARRAY);
-        return ExceptionUtils.wrapJavaException(e, raisingNode, excObject);
     }
 }

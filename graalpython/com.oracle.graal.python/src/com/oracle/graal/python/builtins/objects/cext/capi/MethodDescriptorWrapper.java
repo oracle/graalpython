@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -173,7 +172,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
             return null;
         }
 
-        PRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, CExtContext.isMethStatic(flags));
+        PRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, PyMethodFlags.isMethStatic(flags));
 
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.bindFunctionPointer(callable, methodDescriptorWrapper));
 
@@ -187,29 +186,29 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     /**
      * See {@code PyDescr_NewMethod}
      *
-     * @param flags The method flags {@link CExtContext#METH_VARARGS} and others.
+     * @param flags The method flags {@link PyMethodFlags#METH_VARARGS} and others.
      * @return
      */
     static MethodDescriptorWrapper fromMethodFlags(int flags) {
-        if (CExtContext.isMethVarargs(flags)) {
+        if (PyMethodFlags.isMethVarargs(flags)) {
             return VARARGS;
         }
-        if (CExtContext.isMethVarargsWithKeywords(flags)) {
+        if (PyMethodFlags.isMethVarargsWithKeywords(flags)) {
             return KEYWORDS;
         }
-        if (CExtContext.isMethFastcall(flags)) {
+        if (PyMethodFlags.isMethFastcall(flags)) {
             return FASTCALL;
         }
-        if (CExtContext.isMethFastcallWithKeywords(flags)) {
+        if (PyMethodFlags.isMethFastcallWithKeywords(flags)) {
             return FASTCALL_WITH_KEYWORDS;
         }
-        if (CExtContext.isMethNoArgs(flags)) {
+        if (PyMethodFlags.isMethNoArgs(flags)) {
             return NOARGS;
         }
-        if (CExtContext.isMethO(flags)) {
+        if (PyMethodFlags.isMethO(flags)) {
             return O;
         }
-        if (CExtContext.isMethMethod(flags)) {
+        if (PyMethodFlags.isMethMethod(flags)) {
             return METHOD;
         }
         throw CompilerDirectives.shouldNotReachHere("illegal method flags");

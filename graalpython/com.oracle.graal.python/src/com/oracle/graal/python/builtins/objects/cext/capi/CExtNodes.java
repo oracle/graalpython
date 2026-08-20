@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -1189,7 +1188,7 @@ public abstract class CExtNodes {
         // CPy-style methods
         // TODO(fa) support static and class methods
         MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
-        PRootNode rootNode = MethodDescriptorWrapper.getOrCreateRootNode(language, sig, methodName, CExtContext.isMethStatic(flags));
+        PRootNode rootNode = MethodDescriptorWrapper.getOrCreateRootNode(language, sig, methodName, PyMethodFlags.isMethStatic(flags));
         NativeFunctionPointer fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, rootNode);
