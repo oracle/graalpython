@@ -174,6 +174,11 @@ public final class CApiContext extends CExtContext {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
+    private static final String COULD_NOT_LOAD_MODULE_FORMAT = """
+            could not load module %s (real path: %s) from virtual file system.
+            
+            !!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!
+            See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting""";
 
     /** Native pointers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final long[] singletonNativePtrs;
@@ -1154,24 +1159,21 @@ public final class CApiContext extends CExtContext {
             dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
         }
 
+        String format = String.format(COULD_NOT_LOAD_MODULE_FORMAT, spec.path, realPath);
         try {
             library = context.ensureNativeContext().loadLibrary(loadPath, dlopenFlags);
         } catch (PException e) {
             throw e;
         } catch (NativeLibraryLoadException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
-                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
-                                "See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting", spec.path, realPath));
+                getLogger(CApiContext.class).severe(format);
             }
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.CANNOT_LOAD, spec.path, e.getMessage());
         } catch (AbstractTruffleException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
                 // file does not exist and it is from VirtualFileSystem
                 // => we probably failed to extract it due to unconventional libs location
-                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
-                                "See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting", spec.path, realPath));
+                getLogger(CApiContext.class).severe(format);
 
             }
 
