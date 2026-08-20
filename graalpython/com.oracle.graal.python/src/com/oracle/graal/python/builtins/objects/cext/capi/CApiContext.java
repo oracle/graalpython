@@ -68,7 +68,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1145,20 +1144,6 @@ public final class CApiContext {
                     "_sqlite3",
                     "termios",
                     "pyexpat");
-
-    private static String dlopenFlagsToString(int flags) {
-        String str = "RTLD_NOW";
-        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
-            str = "RTLD_LAZY";
-        }
-        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
-            str += "|RTLD_GLOBAL";
-        }
-        if ((flags & PosixConstants.RTLD_LOCAL.value) != 0) {
-            str += "|RTLD_LOCAL";
-        }
-        return str;
-    }
 
     /**
      * This method loads a C extension module (C API) and will initialize the corresponding native
