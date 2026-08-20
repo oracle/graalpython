@@ -57,9 +57,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntA
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShortArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.SURROGATE_CODE_POINT_SET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.nio.charset.Charset;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -227,49 +225,6 @@ public abstract class CExtCommonNodes {
 
         private static boolean isSurrogate(int codePoint) {
             return Character.MIN_SURROGATE <= codePoint && codePoint <= Character.MAX_SURROGATE;
-        }
-    }
-
-    public abstract static class Charsets {
-        private static final int NATIVE_ORDER = 0;
-        private static Charset UTF32;
-        private static Charset UTF32LE;
-        private static Charset UTF32BE;
-
-        private static final TruffleString T_UTF_32 = tsLiteral("UTF-32");
-        private static final TruffleString T_UTF_32LE = tsLiteral("UTF-32LE");
-        private static final TruffleString T_UTF_32BE = tsLiteral("UTF-32BE");
-
-        @TruffleBoundary
-        public static Charset getUTF32Charset(int byteorder) {
-            String utf32Name = getUTF32Name(byteorder).toJavaStringUncached();
-            if (byteorder == NATIVE_ORDER) {
-                if (UTF32 == null) {
-                    UTF32 = Charset.forName(utf32Name);
-                }
-                return UTF32;
-            } else if (byteorder < NATIVE_ORDER) {
-                if (UTF32LE == null) {
-                    UTF32LE = Charset.forName(utf32Name);
-                }
-                return UTF32LE;
-            }
-            if (UTF32BE == null) {
-                UTF32BE = Charset.forName(utf32Name);
-            }
-            return UTF32BE;
-        }
-
-        public static TruffleString getUTF32Name(int byteorder) {
-            TruffleString csName;
-            if (byteorder == 0) {
-                csName = T_UTF_32;
-            } else if (byteorder < 0) {
-                csName = T_UTF_32LE;
-            } else {
-                csName = T_UTF_32BE;
-            }
-            return csName;
         }
     }
 
