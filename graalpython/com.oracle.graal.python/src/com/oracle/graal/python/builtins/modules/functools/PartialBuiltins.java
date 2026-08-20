@@ -72,7 +72,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddKeywords;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -237,10 +237,9 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
-                        @Exclusive @Cached HashingStorage.InitNode initNode,
                         @Exclusive @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
                         @Exclusive @Cached HashingStorageCopy copyHashingStorageNode,
-                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached HashingStorageAddKeywords addKeywordsNode,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             assert args[0] instanceof PPartial;
@@ -249,7 +248,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
             HashingStorage storage = copyHashingStorageNode.execute(inliningTarget, function.getKw().getDictStorage());
             PDict result = PFactory.createDict(language, storage);
-            addAllToOtherNode.execute(frame, inliningTarget, initNode.execute(frame, PNone.NO_VALUE, keywords), result);
+            addKeywordsNode.execute(frame, inliningTarget, keywords, result);
 
             return PFactory.createPartial(cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, result);
         }

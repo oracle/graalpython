@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
@@ -55,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddKeywords;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageClear;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -180,38 +179,30 @@ public final class DictBuiltins extends PythonBuiltins {
     @SlotSignature(name = "dict", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
-        @Child private HashingStorage.InitNode initNode;
-
-        private HashingStorage.InitNode getInitNode() {
-            if (initNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                initNode = insert(HashingStorage.InitNode.create());
-            }
-            return initNode;
-        }
-
         @Specialization(guards = {"args.length == 1"})
-        Object doVarargs(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
+        static Object doVarargs(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
                         @Shared @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Shared @Cached DictNodes.UpdateDictStorageNode updateDictStorageNode,
-                        @Shared @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            HashingStorage add = getInitNode().execute(frame, args[0], kwargs);
-            var storage = getStorageNode.execute(inliningTarget, self);
-            var newStorage = addAllToOtherNode.execute(frame, inliningTarget, add, storage);
-            updateDictStorageNode.execute(inliningTarget, self, storage, newStorage);
+                        @Shared @Cached HashingStorageAddKeywords addKeywordsNode,
+                        @Cached DictNodes.UpdateNode updateNode) {
+            updateNode.execute(frame, self, args[0]);
+            if (kwargs.length > 0) {
+                var storage = getStorageNode.execute(inliningTarget, self);
+                var newStorage = addKeywordsNode.execute(frame, inliningTarget, kwargs, storage);
+                updateDictStorageNode.execute(inliningTarget, self, storage, newStorage);
+            }
             return PNone.NONE;
         }
 
         @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
-        Object doKeywords(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
+        static Object doKeywords(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
                         @Shared @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Shared @Cached DictNodes.UpdateDictStorageNode updateDictStorageNode,
-                        @Shared @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            HashingStorage add = getInitNode().execute(frame, NO_VALUE, kwargs);
+                        @Shared @Cached HashingStorageAddKeywords addKeywordsNode) {
             var storage = getStorageNode.execute(inliningTarget, self);
-            var newStorage = addAllToOtherNode.execute(frame, inliningTarget, add, storage);
+            var newStorage = addKeywordsNode.execute(frame, inliningTarget, kwargs, storage);
             updateDictStorageNode.execute(inliningTarget, self, storage, newStorage);
             return PNone.NONE;
         }
@@ -580,14 +571,12 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached DictNodes.UpdateDictStorageNode updateDictStorageNode,
                         @Shared("updateNode") @Cached DictNodes.UpdateNode updateNode,
-                        @Cached HashingStorage.InitNode initNode,
-                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
+                        @Cached HashingStorageAddKeywords addKeywordsNode) {
             if (args.length > 0) {
                 updateNode.execute(frame, self, args[0]);
             }
-            HashingStorage kwargsStorage = initNode.execute(frame, NO_VALUE, kwargs);
             var storage = getStorageNode.execute(inliningTarget, self);
-            var newStorage = addAllToOtherNode.execute(frame, inliningTarget, kwargsStorage, storage);
+            var newStorage = addKeywordsNode.execute(frame, inliningTarget, kwargs, storage);
             updateDictStorageNode.execute(inliningTarget, self, storage, newStorage);
             return PNone.NONE;
         }

@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.CachedHashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageForEachNodeGen;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -1724,6 +1726,38 @@ public class HashingStorageNodes {
                         @Cached HashingStorageForEach forEach,
                         @Cached HashingStorageTransferItem transferItem) {
             return forEach.execute(frame, inliningTarget, source, transferItem, dest);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HashingStorageAddKeywords extends Node {
+
+        /**
+         * The caller must use dest.setDictStorage(result) or use DictNodes.UpdateDictStorageNode.
+         */
+        public abstract HashingStorage execute(Frame frame, Node inliningTarget, PKeyword[] keywords, HashingStorage dest);
+
+        public final void execute(Frame frame, Node inliningTarget, PKeyword[] keywords, PHashingCollection dest) {
+            dest.setDictStorage(execute(frame, inliningTarget, keywords, dest.getDictStorage()));
+        }
+
+        public static HashingStorage executeUncached(PKeyword[] keywords, HashingStorage dest) {
+            return HashingStorageAddKeywordsNodeGen.getUncached().execute(null, null, keywords, dest);
+        }
+
+        @Specialization
+        static HashingStorage doIt(Frame frame, Node inliningTarget, PKeyword[] keywords, HashingStorage dest,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
+            HashingStorage result = dest;
+            loopProfile.profileCounted(inliningTarget, keywords.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < keywords.length); i++) {
+                PKeyword keyword = keywords[i];
+                result = setItem.execute(frame, inliningTarget, result, keyword.getName(), keyword.getValue());
+            }
+            return result;
         }
     }
 }

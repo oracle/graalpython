@@ -1402,10 +1402,91 @@ def test_decorated_method_dict():
     A().f()
 
 def test_update():
-    x = {1: 0, 2: 1}
-    y = {}
-    y.update(x)
-    assert y == x
+    class DictSubclass(dict):
+        pass
+
+    class Mapping:
+        def keys(self):
+            return ("mapping",)
+
+        def __getitem__(self, key):
+            assert key == "mapping"
+            return 3
+
+    class Pair:
+        def __iter__(self):
+            yield "generic pair"
+            yield 6
+
+    d = {}
+    assert d.update() is None
+    assert d.update(d) is None
+    assert d.update({"dict": 1}) is None
+    assert d.update(DictSubclass({"dict subclass": 2})) is None
+    assert d.update(Mapping()) is None
+    assert d.update([("tuple pair", 4), ["list pair", 5], Pair()]) is None
+    assert d.update({"positional": 7}, keyword=8) is None
+    assert d.update(keyword_only=9) is None
+    assert d == {
+        "dict": 1,
+        "dict subclass": 2,
+        "mapping": 3,
+        "tuple pair": 4,
+        "list pair": 5,
+        "generic pair": 6,
+        "positional": 7,
+        "keyword": 8,
+        "keyword_only": 9,
+    }
+    assert_raises(TypeError, d.update, {}, {})
+
+
+def test_update_is_incremental():
+    d = {}
+
+    def pairs():
+        yield ("tuple pair", 1)
+        assert d["tuple pair"] == 1
+        yield ["list pair", 2]
+        assert d["list pair"] == 2
+
+        class Pair:
+            def __iter__(self):
+                yield "generic pair"
+                yield 3
+
+        yield Pair()
+        assert d["generic pair"] == 3
+
+    d.update(pairs())
+    assert d == {"tuple pair": 1, "list pair": 2, "generic pair": 3}
+
+
+def test_update_materializes_mapping_keys():
+    events = []
+
+    class Mapping:
+        def keys(self):
+            events.append("keys")
+
+            def keys_iterator():
+                events.append("yield a")
+                yield "a"
+                events.append("yield b")
+                yield "b"
+
+            return keys_iterator()
+
+        def __getitem__(self, key):
+            events.append("get " + key)
+            return key.upper()
+
+    result = {}
+    result.update(Mapping())
+
+    assert result == {"a": "A", "b": "B"}
+    assert events == ["keys", "yield a", "yield b", "get a", "get b"]
+
 
 def test_module_dict():
     import sys

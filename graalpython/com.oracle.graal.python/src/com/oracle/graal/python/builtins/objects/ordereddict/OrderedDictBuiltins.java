@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.ordereddict;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
@@ -50,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
@@ -82,17 +84,20 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyDictMerge;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -119,10 +124,10 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -209,33 +214,45 @@ public class OrderedDictBuiltins extends PythonBuiltins {
 
         abstract void execute(VirtualFrame frame, Node inliningTarget, Object self, Object mapping, PKeyword[] kwargs);
 
-        @GenerateInline(false)
-        abstract static class ForEachNode extends HashingStorageNodes.HashingStorageForEachCallback<Object> {
-
-            @Override
-            public abstract Object execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, Object dict);
-
-            @Specialization
-            static Object each(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, Object dict,
-                            @Bind Node inliningTarget,
-                            @Cached HashingStorageNodes.HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageNodes.HashingStorageIteratorValue itValue,
-                            @Cached PyObjectSetItem setItem) {
-                Object key = itKey.execute(inliningTarget, storage, it);
-                Object value = itValue.execute(inliningTarget, storage, it);
-                setItem.execute(frame, inliningTarget, dict, key, value);
-                return dict;
-            }
-        }
-
         @Specialization
         static void update(VirtualFrame frame, Node inliningTarget, Object self, Object mapping, PKeyword[] kwargs,
-                        @Cached(inline = false) HashingStorage.InitNode initNode,
-                        @Cached HashingStorageNodes.HashingStorageForEach forEach,
-                        @Cached(inline = false) ForEachNode callbackNode) {
-            // Utilize the fact that normal dict is also ordered
-            HashingStorage newStorage = initNode.execute(frame, mapping, kwargs);
-            forEach.execute(frame, inliningTarget, newStorage, callbackNode, self);
+                        @Cached PyObjectLookupAttr lookupKeys,
+                        @Cached PyDictMerge.MappingNode updateMapping,
+                        @Cached PyDictMerge.FromSeq2Node updateFromSequence,
+                        @Cached PyObjectSetItem setItem,
+                        @Cached HashingStorageNodes.HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageNodes.HashingStorageIteratorNext iteratorNext,
+                        @Cached HashingStorageNodes.HashingStorageIteratorKey iteratorKey,
+                        @Cached HashingStorageNodes.HashingStorageIteratorValue iteratorValue,
+                        @Cached HashingStorageNodes.HashingStorageLen lenNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached InlinedConditionProfile builtinDictProfile) {
+            if (mapping != PNone.NO_VALUE) {
+                if (builtinDictProfile.profile(inliningTarget, mapping instanceof PDict dict && PGuards.isBuiltinDict(dict))) {
+                    PDict dict = (PDict) mapping;
+                    HashingStorage storage = dict.getDictStorage();
+                    int initialSize = lenNode.execute(inliningTarget, storage);
+                    HashingStorageNodes.HashingStorageIterator iterator = getIterator.execute(inliningTarget, storage);
+                    while (iteratorNext.execute(inliningTarget, storage, iterator)) {
+                        Object key = iteratorKey.execute(inliningTarget, storage, iterator);
+                        Object value = iteratorValue.execute(inliningTarget, storage, iterator);
+                        setItem.execute(frame, inliningTarget, self, key, value);
+                        if (initialSize != lenNode.execute(inliningTarget, storage)) {
+                            throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
+                        }
+                    }
+                } else {
+                    Object keysAttribute = lookupKeys.execute(frame, inliningTarget, mapping, T_KEYS);
+                    if (keysAttribute != PNone.NO_VALUE) {
+                        updateMapping.execute(frame, inliningTarget, self, mapping, keysAttribute);
+                    } else {
+                        updateFromSequence.execute(frame, inliningTarget, self, mapping);
+                    }
+                }
+            }
+            for (PKeyword keyword : kwargs) {
+                setItem.execute(frame, inliningTarget, self, keyword.getName(), keyword.getValue());
+            }
         }
     }
 

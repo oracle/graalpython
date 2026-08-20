@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -142,7 +143,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         @Specialization
         static Object init(VirtualFrame frame, PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Cached HashingStorage.InitNode initNode,
+                        @Cached DictNodes.UpdateNode updateNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext iteratorNext,
                         @Cached HashingStorageIteratorKey iteratorKey,
@@ -155,9 +156,14 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                                 self, args.length);
             }
             if (args.length == 1) {
-                // CPython first creates a temporary dict so that conversion and key validation
-                // finish before the namespace is modified.
-                HashingStorage storage = initNode.execute(frame, args[0], PKeyword.EMPTY_KEYWORDS);
+                PDict dict;
+                if (args[0] instanceof PDict dictArg && PGuards.isBuiltinDict(dictArg)) {
+                    dict = dictArg;
+                } else {
+                    dict = PFactory.createDict(PythonLanguage.get(inliningTarget));
+                    updateNode.execute(frame, dict, args[0]);
+                }
+                HashingStorage storage = dict.getDictStorage();
                 HashingStorageIterator iterator = getIterator.execute(inliningTarget, storage);
                 while (iteratorNext.execute(inliningTarget, storage, iterator)) {
                     Object key = iteratorKey.execute(inliningTarget, storage, iterator);

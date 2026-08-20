@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.ObjectToArrayPairNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageTransferItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.lib.PyDictMerge;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -135,62 +129,39 @@ public abstract class DictNodes {
     public abstract static class UpdateNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Object self, Object other);
 
+        public static void executeUncached(Frame frame, Object self, Object other) {
+            DictNodesFactory.UpdateNodeGen.getUncached().execute(frame, self, other);
+        }
+
         @Specialization
         static void updateDictGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isDictNode,
-                        @Cached DictNodes.GetDictStorageNode getStorageNode,
-                        @Cached UpdateInnerNode updateInnerNode) {
+                        @Cached PyObjectLookupAttr lookupKeys,
+                        @Cached PyDictMerge.BuiltinDictNode mergeBuiltinDict,
+                        @Cached PyDictMerge.MappingNode mergeMapping,
+                        @Cached PyDictMerge.FromSeq2Node mergeFromSeq2,
+                        @Cached GetPythonObjectClassNode getClassNode,
+                        @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached InlinedConditionProfile builtinDictProfile) {
             if (self != other) {
-                var selfStorage = getStorageNode.execute(inliningTarget, self);
-                boolean isDict = isDictNode.profileObject(inliningTarget, other, PythonBuiltinClassType.PDict);
-                HashingStorage otherStorage = isDict ? getStorageNode.execute(inliningTarget, other) : null;
-                updateInnerNode.execute(frame, inliningTarget, self, selfStorage, other, otherStorage);
+                boolean hasDictIter = other instanceof PDict dict && (PGuards.isBuiltinDict(dict) || PGuards.hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots));
+                if (builtinDictProfile.profile(inliningTarget, hasDictIter)) {
+                    PDict dict = (PDict) other;
+                    mergeBuiltinDict.execute(frame, inliningTarget, self, dict);
+                } else {
+                    Object keysAttribute = lookupKeys.execute(frame, inliningTarget, other, T_KEYS);
+                    if (keysAttribute != PNone.NO_VALUE) {
+                        mergeMapping.execute(frame, inliningTarget, self, other, keysAttribute);
+                    } else {
+                        mergeFromSeq2.execute(frame, inliningTarget, self, other);
+                    }
+                }
             }
         }
 
         @NeverDefault
         public static UpdateNode create() {
             return DictNodesFactory.UpdateNodeGen.create();
-        }
-    }
-
-    @GenerateInline
-    @GenerateUncached
-    @GenerateCached(false)
-    public abstract static class UpdateInnerNode extends PNodeWithContext {
-        public abstract void execute(Frame frame, Node inliningTarget, Object self, HashingStorage selfStorage, Object other, Object otherStorage);
-
-        @Specialization
-        public static void updateDictGeneric(VirtualFrame frame, Node inliningTarget, Object self, HashingStorage selfStorage, Object other, HashingStorage otherStorage,
-                        @Exclusive @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
-                        @Cached HashingStorageTransferItem transferItem,
-                        @Cached HashingStorageGetIterator getOtherIter,
-                        @Cached HashingStorageIteratorNext iterNext,
-                        @Cached HashingStorageLen otherLenNode,
-                        @Cached PRaiseNode raiseNode) {
-            int initialSize = otherLenNode.execute(inliningTarget, otherStorage);
-            HashingStorageIterator itOther = getOtherIter.execute(inliningTarget, otherStorage);
-            var newStorage = selfStorage;
-            while (iterNext.execute(inliningTarget, otherStorage, itOther)) {
-                newStorage = transferItem.execute(frame, inliningTarget, otherStorage, itOther, newStorage);
-                if (initialSize != otherLenNode.execute(inliningTarget, otherStorage)) {
-                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
-                }
-            }
-            updateStorageNode.execute(inliningTarget, self, selfStorage, newStorage);
-        }
-
-        @Specialization(guards = "otherStorage == null")
-        public static void updateArg(VirtualFrame frame, Node inliningTarget, Object self, HashingStorage selfStorage, Object other, Object otherStorage,
-                        @Exclusive @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
-                        @Cached HashingStorageSetItem setItem,
-                        @Cached PyObjectLookupAttr lookupKeys,
-                        @Cached(inline = false) ObjectToArrayPairNode toArrayPair) {
-            Object keyAttr = lookupKeys.execute(frame, inliningTarget, other, T_KEYS);
-            HashingStorage newStorage = HashingStorage.addKeyValuesToStorage(frame, selfStorage, other, keyAttr,
-                            inliningTarget, toArrayPair, setItem);
-            updateStorageNode.execute(inliningTarget, self, selfStorage, newStorage);
         }
     }
 }
