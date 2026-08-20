@@ -3372,6 +3372,104 @@ def abi_check(_args):
         ], nonZeroIsFatal=True)
 
 
+def _read_abi3t_symbols(path):
+    symbols = {}
+    with open(path, encoding='utf-8') as file:
+        for line_number, line in enumerate(file, 1):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            fields = line.split()
+            if len(fields) != 2 or fields[0] not in ('FUNC', 'OBJECT'):
+                mx.abort(f"Invalid ABI3T manifest entry at {path}:{line_number}: {line}")
+            kind, name = fields
+            if name in symbols:
+                mx.abort(f"Duplicate ABI3T symbol at {path}:{line_number}: {name}")
+            symbols[name] = kind
+    if list(symbols) != sorted(symbols):
+        mx.abort(f"ABI3T symbols are not sorted by name: {path}")
+    return symbols
+
+
+def _read_elf_dynamic_exports(shared_library):
+    output = mx.OutputCapture()
+    run(['readelf', '--dyn-syms', '--wide', shared_library], out=output)
+    exports = {}
+    for line in output.data.splitlines():
+        fields = line.split()
+        if len(fields) < 8 or not fields[0].rstrip(':').isdigit():
+            continue
+        kind, binding, visibility, section, name = fields[3:8]
+        if section == 'UND' or binding not in ('GLOBAL', 'WEAK') or visibility not in ('DEFAULT', 'PROTECTED'):
+            continue
+        name = name.split('@', 1)[0]
+        # GNU indirect functions have function semantics for ABI purposes.
+        if kind == 'IFUNC':
+            kind = 'FUNC'
+        exports.setdefault(name, set()).add(kind)
+    return exports
+
+
+def abi3t_check(raw_args):
+    parser = ArgumentParser(prog='mx abi3t-check')
+    parser.add_argument('--library', help='libpython-native.so to inspect; builds a JVM standalone by default')
+    parser.add_argument('--update', action='store_true', help='update the checked-in missing-symbol report')
+    args = parser.parse_args(raw_args)
+
+    if not shutil.which('readelf'):
+        mx.abort("Required tool 'readelf' was not found on PATH")
+
+    if args.library:
+        shared_library = os.path.abspath(args.library)
+    else:
+        standalone_home = graalpy_standalone_home('jvm', dev=True, build=True)
+        shared_library = os.path.join(
+            standalone_home,
+            'lib',
+            f'graalpy{graal_version_short("major_minor")}',
+            'libpython-native.so',
+        )
+    if not os.path.exists(shared_library):
+        mx.abort(f"Could not find shared library to check: {shared_library}")
+
+    manifest = os.path.join(SUITE.dir, 'abi', 'abi3t-linux.txt')
+    report = os.path.join(SUITE.dir, 'abi', 'abi3t-missing-linux.txt')
+    if not os.path.exists(manifest):
+        mx.abort(f"Could not find ABI3T export manifest: {manifest}")
+
+    expected = _read_abi3t_symbols(manifest)
+    exports = _read_elf_dynamic_exports(shared_library)
+    gaps = {}
+    wrong_kinds = []
+    for name, expected_kind in expected.items():
+        actual_kinds = exports.get(name)
+        if not actual_kinds or expected_kind not in actual_kinds:
+            gaps[name] = expected_kind
+            if actual_kinds:
+                wrong_kinds.append((name, expected_kind, sorted(actual_kinds)))
+
+    generated_report = ''.join(f'{kind} {name}\n' for name, kind in gaps.items())
+    if args.update:
+        with open(report, 'w', encoding='utf-8') as file:
+            file.write(generated_report)
+        mx.log(f"Updated ABI3T missing-symbol report: {report}")
+    else:
+        if not os.path.exists(report):
+            mx.abort(f"Could not find ABI3T missing-symbol report: {report}; run mx abi3t-check --update")
+        with open(report, encoding='utf-8') as file:
+            checked_in_report = file.read()
+        if checked_in_report != generated_report:
+            mx.abort(
+                f"ABI3T missing-symbol report is out of date: {report}\n"
+                "Run mx abi3t-check --update and commit the result."
+            )
+
+    for index, (name, expected_kind, actual_kinds) in enumerate(wrong_kinds, 1):
+        mx.warn(f"{index}. {name}: expected {expected_kind}, found {', '.join(actual_kinds)}")
+    satisfied = len(expected) - len(gaps)
+    mx.log(f"ABI3T exports satisfied: {satisfied}/{len(expected)}; remaining gaps: {len(gaps)}")
+
+
 class GraalpythonBuildTask(mx.ProjectBuildTask):
     class PrefixingOutput():
         def __init__(self, prefix, printfunc):
@@ -3860,6 +3958,7 @@ mx.update_commands(SUITE, {
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
     'abi-check': [abi_check, ''],
+    'abi3t-check': [abi3t_check, '[--library LIBPYTHON_NATIVE_SO] [--update]'],
     'punittest': [punittest, ''],
     'graalpytest': [graalpytest, '[-h] [--python PYTHON] [TESTS]'],
     'clean': [python_clean, '[--just-pyc]'],
