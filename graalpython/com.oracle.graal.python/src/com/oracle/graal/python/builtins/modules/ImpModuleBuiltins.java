@@ -50,6 +50,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ABI3T_EXT_SO;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ABI3T_MULTIARCH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
@@ -830,9 +832,16 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
-        Object run(
-                        @Bind PythonLanguage language) {
-            return PFactory.createList(language, new Object[]{PythonContext.get(this).getExtensionSuffix(), T_EXT_SO, T_EXT_PYD});
+        @TruffleBoundary
+        static Object run(
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context) {
+            if (context.getOption(PythonOptions.EnableAbi3t)) {
+                TruffleString multiarch = PythonLanguage.getPlatformInfo().multiarch();
+                TruffleString abi3tMultiarch = T_ABI3T_MULTIARCH.concatUncached(multiarch, TS_ENCODING, false).concatUncached(T_EXT_SO, TS_ENCODING, false);
+                return PFactory.createList(language, new Object[]{context.getExtensionSuffix(), abi3tMultiarch, T_ABI3T_EXT_SO, T_EXT_SO, T_EXT_PYD});
+            }
+            return PFactory.createList(language, new Object[]{context.getExtensionSuffix(), T_EXT_SO, T_EXT_PYD});
         }
     }
 
