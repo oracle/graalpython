@@ -254,9 +254,11 @@ static int win_path_init(win_path_t *result, const wchar_t *path) {
         return 0;
     }
 
-    // GetFullPathNameW can reject a zero-sized probe for long paths when process-wide long-path
-    // support is unavailable, so begin with MAX_PATH and grow from its insufficient-buffer result.
-    DWORD full_size = MAX_PATH;
+    DWORD full_size = GetFullPathNameW(path, 0, NULL, NULL);
+    if (full_size == 0) {
+        // Let the actual filesystem operation report the error for this path.
+        return 0;
+    }
     wchar_t *full_path = NULL;
     DWORD full_len;
     for (;;) {
