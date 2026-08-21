@@ -241,12 +241,16 @@ typedef struct {
     wchar_t *allocated;
 } win_path_t;
 
+static int is_windows_namespace_path(const wchar_t *path) {
+    return wcsncmp(path, L"\\\\?\\", 4) == 0 ||
+                    wcsncmp(path, L"\\\\.\\", 4) == 0 ||
+                    wcsncmp(path, L"\\??\\", 4) == 0;
+}
+
 static int win_path_init(win_path_t *result, const wchar_t *path) {
     result->value = path;
     result->allocated = NULL;
-    if (path[0] == L'\0' ||
-                    (path[0] == L'\\' && path[1] == L'\\' && (path[2] == L'?' || path[2] == L'.') && path[3] == L'\\') ||
-                    (path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\')) {
+    if (path[0] == L'\0' || is_windows_namespace_path(path)) {
         return 0;
     }
 
@@ -270,6 +274,7 @@ static int win_path_init(win_path_t *result, const wchar_t *path) {
         full_path = resized;
         full_len = GetFullPathNameW(path, full_size, full_path, NULL);
         if (full_len == 0) {
+            capture_errors();
             free(full_path);
             // As above, preserve the error behavior of the actual filesystem operation.
             return 0;
@@ -290,7 +295,7 @@ static int win_path_init(win_path_t *result, const wchar_t *path) {
         return 0;
     }
 
-    if (full_len >= 4 && full_path[0] == L'\\' && full_path[1] == L'\\' && full_path[2] == L'?' && full_path[3] == L'\\') {
+    if (is_windows_namespace_path(full_path)) {
         result->value = full_path;
         result->allocated = full_path;
         return 0;
