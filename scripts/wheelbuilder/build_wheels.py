@@ -110,10 +110,10 @@ def create_venv(basedir):
     subprocess.check_call([binary, "-m", "venv", "graalpy"])
     print("Installing wheel with", pip, flush=True)
     subprocess.check_call([pip, "install", "wheel"])
-    print("Installing paatch to provide patch.exe", flush=True)
-    p = subprocess.run([pip, "install", "paatch"])
-    if p.returncode != 0:
-        print("Installing paatch failed, assuming a GNU patch compatible binary is on PATH", flush=True)
+    patch_executable = "patch.exe" if sys.platform == "win32" else "patch"
+    if not shutil.which(patch_executable):
+        print(f"{patch_executable} not found on PATH, installing paatch as a fallback", flush=True)
+        subprocess.check_call([pip, "install", "paatch"])
     return pip
 
 

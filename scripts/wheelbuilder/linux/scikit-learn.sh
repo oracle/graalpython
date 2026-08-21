@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,27 +38,10 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y gcc-toolset-12-gcc-c++ gcc-toolset-12-libatomic-devel \
-        libffi-devel \
-        boost-devel \
-        snappy-devel \
-        brotli-devel \
-        openssl-devel \
-        thrift-devel \
-        jemalloc-devel \
-        xsimd-devel \
-        libzstd-devel \
-        re2-devel \
-        mimalloc-devel \
-        lz4-devel \
-        bzip2-devel \
-        llvm llvm-libs llvm-devel \
-        llvm-cmake-utils \
-        lld lld-devel \
-        clang clang-libs clang-devel
+    dnf install -y gcc-toolset-12-gcc-gfortran gcc-toolset-12-gcc-c++ openblas-devel
     if [ -n "$1" ]; then
-        scl enable gcc-toolset-12 "pip wheel \"pyarrow==$1\""
+        scl enable gcc-toolset-12 "pip wheel \"scikit-learn==$1\""
     else
-        scl enable gcc-toolset-12 "pip wheel pyarrow"
+        scl enable gcc-toolset-12 "pip wheel scikit-learn"
     fi
 fi
