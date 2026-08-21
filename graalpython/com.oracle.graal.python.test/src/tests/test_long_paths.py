@@ -38,10 +38,19 @@
 # SOFTWARE.
 
 import os
+import platform
 import shutil
 import stat
 import tempfile
 import unittest
+
+
+def expected_failure_on_old_windows(test):
+    # Despite the documented Windows 10 1607 cutoff, SetCurrentDirectoryW still rejects long paths
+    # on Windows Server 2016 (build 14393), even when RtlAreLongPathsEnabled() returns true.
+    if os.name == 'nt' and int(platform.version().split('.')[2]) <= 14393:
+        return unittest.expectedFailure(test)
+    return test
 
 
 class LongPathTests(unittest.TestCase):
@@ -83,14 +92,6 @@ class LongPathTests(unittest.TestCase):
             with os.scandir(long_dir) as entries:
                 self.assertIn(os.path.basename(renamed), [entry.name for entry in entries])
 
-            # Short relative paths also need conversion when the current directory is long.
-            os.chdir(long_dir)
-            self.assertEqual(long_dir, os.getcwd())
-            relative_to_long_cwd = 'relative-file.txt'
-            fd = os.open(relative_to_long_cwd, os.O_CREAT | os.O_WRONLY)
-            os.close(fd)
-            os.unlink(relative_to_long_cwd)
-
             # Exercise a relative path whose text itself exceeds MAX_PATH.
             os.chdir(root)
             relative_long_file = os.path.relpath(renamed, root)
@@ -107,3 +108,25 @@ class LongPathTests(unittest.TestCase):
             os.chdir(old_cwd)
             if root is not None:
                 shutil.rmtree(root)
+
+    @expected_failure_on_old_windows
+    def test_long_path_chdir(self):
+        root = tempfile.mkdtemp()
+        old_cwd = os.getcwd()
+        try:
+            long_dir = root
+            component = 'long-path-component-' + 'x' * 80
+            while len(long_dir) < 300:
+                long_dir = os.path.join(long_dir, component)
+                os.mkdir(long_dir)
+
+            # Short relative paths also need conversion when the current directory is long.
+            os.chdir(long_dir)
+            self.assertEqual(long_dir, os.getcwd())
+            relative_file = 'relative-file.txt'
+            fd = os.open(relative_file, os.O_CREAT | os.O_WRONLY)
+            os.close(fd)
+            os.unlink(relative_file)
+        finally:
+            os.chdir(old_cwd)
+            shutil.rmtree(root)
