@@ -321,7 +321,7 @@ public enum ArgDescriptor {
     VA_LIST(ArgBehavior.Pointer, "va_list"),
     VA_LIST_PTR(ArgBehavior.Pointer, "va_list*"),
     VARARGS("..."),
-    VOID_PTR_LIST("void**"),
+    VOID_PTR_LIST(ArgBehavior.Pointer, "void**"),
     WCHAR_T_PTR(ArgBehavior.Pointer, "wchar_t*"),
     WCHAR_T_CONST_PTR(ArgBehavior.Pointer, "wchar_t*const*"),
     WCHAR_T_PTR_LIST(ArgBehavior.Pointer, "wchar_t**"),

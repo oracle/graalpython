@@ -222,3 +222,44 @@ index 251600e..2c1b1a7 100644
              if self.version:
                  params.append(self.version)
          path = os.path.join(base[0], *params)  # noqa: PTH118
+
+diff --git a/pip/_vendor/packaging/tags.py b/pip/_vendor/packaging/tags.py
+--- a/pip/_vendor/packaging/tags.py
++++ b/pip/_vendor/packaging/tags.py
+@@ -844,0 +845,21 @@
++def _graalpy_abi3t_tags(
++    python_version: PythonVersion | None = None,
++    platforms: Iterable[str] | None = None,
++) -> Iterator[Tag]:
++    try:
++        import __graalpython__
++    except ImportError:
++        return
++    if not getattr(__graalpython__, "abi3t_enabled", False):
++        return
++    if python_version is None:
++        python_version = sys.version_info[:2]
++    if len(python_version) < 2 or tuple(python_version) < (3, 2):
++        return
++    platforms = list(platforms or platform_tags())
++    for minor_version in range(python_version[1], 1, -1):
++        interpreter = f"cp{_version_nodot((python_version[0], minor_version))}"
++        for platform_ in platforms:
++            yield Tag(interpreter, "abi3t", platform_)
++
++
+@@ -878,0 +900 @@
++        yield from _graalpy_abi3t_tags()
+diff --git a/pip/_internal/utils/compatibility_tags.py b/pip/_internal/utils/compatibility_tags.py
+--- a/pip/_internal/utils/compatibility_tags.py
++++ b/pip/_internal/utils/compatibility_tags.py
+@@ -9,0 +10 @@
++    _graalpy_abi3t_tags,
+@@ -192,0 +194,7 @@
++        if impl is None and (abis is None or "abi3t" in abis):
++            supported.extend(
++                _graalpy_abi3t_tags(
++                    python_version=python_version,
++                    platforms=platforms,
++                )
++            )

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ from copy import deepcopy
 from io import StringIO
 from string import Formatter
 
-from .. import ccompile, compile_module_from_file, compile_module_from_string, DIR
+from .. import ccompile, compile_module_from_file, compile_module_from_string, compile_module_from_string_no_import, DIR
 
 
 GRAALPYTHON = sys.implementation.name == "graalpy"

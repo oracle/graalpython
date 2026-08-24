@@ -286,6 +286,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute(tsLiteral("core_home"), coreHome);
         mod.setAttribute(tsLiteral("stdlib_home"), stdlibHome);
         mod.setAttribute(tsLiteral("capi_home"), capiHome);
+        mod.setAttribute(tsLiteral("abi3t_enabled"), context.getOption(PythonOptions.EnableAbi3t));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PFactory.createList(language, arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
