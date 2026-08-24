@@ -59,6 +59,17 @@ def test_module_docstring():
     assert moduleA.__doc__ == "MODULE A DOC"
 
 
+def test_imp_override_multi_interp_extensions_check_is_rejected_in_main_interpreter():
+    import _imp
+
+    try:
+        _imp._override_multi_interp_extensions_check(1)
+    except RuntimeError as e:
+        assert str(e) == "_imp._override_multi_interp_extensions_check() cannot be used in the main interpreter"
+    else:
+        raise AssertionError("expected RuntimeError in the main interpreter")
+
+
 def test_dotted_import():
     # this is to prevent ides from optimising out the unused import
     try:

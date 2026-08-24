@@ -1636,4 +1636,5 @@ public abstract class ErrorMessages {
 
     public static final TruffleString S_MUST_BE_CALLABLE = tsLiteral("%s must be callable");
     public static final TruffleString METHOD_CANNOT_BE_BOTH_CLASS_AND_STATIC = tsLiteral("method cannot be both class and static");
+    public static final TruffleString CANNOT_BE_USED_IN_MAIN_INTERP = tsLiteral("_imp._override_multi_interp_extensions_check() cannot be used in the main interpreter");
 }

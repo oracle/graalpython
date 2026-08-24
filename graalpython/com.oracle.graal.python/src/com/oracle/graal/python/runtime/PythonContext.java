@@ -837,6 +837,13 @@ public final class PythonContext extends Python3Core {
     // Used by CPython tests to selectively enable or disable frozen modules.
     private TriState overrideFrozenModules = TriState.UNDEFINED;
 
+    /**
+     * Per-interpreter override for checking legacy extension modules.
+     * Subinterpreters are not supported yet, but keeping this state on the context makes the
+     * eventual implementation independent for each interpreter.
+     */
+    private int overrideMultiInterpExtensionsCheck;
+
     // the full module name for package imports
     private TruffleString pyPackageContext;
 
@@ -905,6 +912,19 @@ public final class PythonContext extends Python3Core {
 
     public void setOverrideFrozenModules(TriState overrideFrozenModules) {
         this.overrideFrozenModules = overrideFrozenModules;
+    }
+
+    public int getOverrideMultiInterpExtensionsCheck() {
+        return overrideMultiInterpExtensionsCheck;
+    }
+
+    public void setOverrideMultiInterpExtensionsCheck(int override) {
+        this.overrideMultiInterpExtensionsCheck = override;
+    }
+
+    /** GraalPy does not support subinterpreters yet, so every context is currently the main one. */
+    public boolean isMainInterpreter() {
+        return true;
     }
 
     @TruffleBoundary

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_DISABLED;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_EXCLUDED;
@@ -916,6 +917,30 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ImpModuleBuiltinsClinicProviders.OverrideFrozenModulesForTestsClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "_override_multi_interp_extensions_check", minNumOfPositionalArgs = 1, parameterNames = {"override"})
+    @ArgumentClinic(name = "override", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class OverrideMultiInterpExtensionsCheck extends PythonUnaryClinicBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static Object doInt(int override,
+                        @Bind Node node,
+                        @Bind PythonContext context) {
+            if (context.isMainInterpreter()) {
+                throw PRaiseNode.raiseStatic(node, RuntimeError, ErrorMessages.CANNOT_BE_USED_IN_MAIN_INTERP);
+            }
+            int old = context.getOverrideMultiInterpExtensionsCheck();
+            context.setOverrideMultiInterpExtensionsCheck(override);
+            return old;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.OverrideMultiInterpExtensionsCheckClinicProviderGen.INSTANCE;
         }
     }
 }
