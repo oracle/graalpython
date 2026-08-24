@@ -1031,6 +1031,8 @@ public abstract class ErrorMessages {
     public static final TruffleString INPUT_LOST_SYS_S = tsLiteral("input(): lost sys.%s");
     public static final TruffleString EOF_WHEN_READING_A_LINE = tsLiteral("EOF when reading a line");
     public static final TruffleString OBJECT_READLINE_RETURNED_NON_STRING = tsLiteral("object.readline() returned non-string");
+    public static final TruffleString MODULE_EXPORT_HOOK_FAILED = tsLiteral("module export hook for module %s failed without setting an exception");
+    public static final TruffleString MODULE_EXPORT_HOOK_RAISED_EXCEPTION = tsLiteral("module export hook for module %s raised unreported exception");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1317,12 +1319,34 @@ public abstract class ErrorMessages {
     public static final TruffleString CREATION_RAISED_EXCEPTION = tsLiteral("creation of module %s raised unreported exception");
     public static final TruffleString NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE = tsLiteral("module %s is not a module object, but requests module state");
     public static final TruffleString MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE = tsLiteral("module %s specifies execution slots, but did not create a ModuleType instance");
+    public static final TruffleString MODULE_SPECIFIES_TOKEN_BUT_DIDNT_CREATE_INSTANCE = tsLiteral("module %s specifies token, but did not create a ModuleType instance");
+    public static final TruffleString MODULE_S_DOES_NOT_SUPPORT_LOADING_IN_SUBINTERPRETERS = tsLiteral("module %s does not support loading in subinterpreters");
     public static final TruffleString EXECUTION_FAILED_WITHOUT_EXCEPTION = tsLiteral("execution of module %s failed without setting an exception");
     public static final TruffleString EXECUTION_RAISED_EXCEPTION = tsLiteral("execution of module %s raised unreported exception");
     public static final TruffleString MODULE_INITIALIZED_WITH_UNKNOWN_SLOT = tsLiteral("module %s initialized with unknown slot %i");
     public static final TruffleString M_SIZE_CANNOT_BE_NEGATIVE = tsLiteral("module %s: m_size may not be negative for multi-phase initialization");
     public static final TruffleString MODULE_HAS_MULTIPLE_CREATE_SLOTS = tsLiteral("module %s has multiple create slots");
+    public static final TruffleString MODULE_HAS_MULTIPLE_EXEC_SLOTS = tsLiteral("module %s has multiple Py_mod_exec slots");
+    public static final TruffleString MODULE_HAS_MULTIPLE_SLOT = tsLiteral("module %s has multiple slot %i entries");
     public static final TruffleString MODULE_USES_UNKNOW_SLOT_ID = tsLiteral("module %s uses unknown slot ID %i");
+    public static final TruffleString MODULE_DOES_NOT_DEFINE_ABI = tsLiteral("module %s does not define Py_mod_abi, which is mandatory for modules defined from slots only");
+    public static final TruffleString MODULE_SLOTS_TOO_DEEPLY_NESTED = tsLiteral("module %s has too many levels of nested slots");
+    public static final TruffleString INVALID_FLAGS_FOR_SLOT_END = tsLiteral("invalid flags for Py_slot_end: 0x%x");
+    public static final TruffleString MODULE_METHODS_SLOT_REQUIRES_STATIC = tsLiteral("module %s: Py_mod_methods requires PySlot_STATIC");
+    public static final TruffleString NULL_NOT_ALLOWED_FOR_MODULE_SLOT = tsLiteral("module %s: NULL not allowed for slot %i");
+    public static final TruffleString NULL_VALUE_IN_SLOT_DEPRECATED = tsLiteral("NULL value in slot %i is deprecated");
+    public static final TruffleString SLOTS_INCLUDED_FROM_MODULE_DEF_MUST_BE_STATIC = tsLiteral("slots included from PyModuleDef must be static");
+    public static final TruffleString MODULE_ARBITRARY_TOKEN_WITH_MODULE_DEF = tsLiteral("module %s: arbitrary Py_mod_token not allowed with PyModuleDef");
+    public static final TruffleString MODULE_SLOT_CONFLICTS_WITH_MODULE_DEF = tsLiteral("module %s: slot conflicts with PyModuleDef.%s");
+    public static final TruffleString MODULE_NULL_ABI_INFO = tsLiteral("%s: NULL PyABIInfo");
+    public static final TruffleString MODULE_ABI_INFO_VERSION_TOO_HIGH = tsLiteral("%s: PyABIInfo version too high");
+    public static final TruffleString MODULE_INTERNAL_ABI_UNSUPPORTED = tsLiteral("%s: internal CPython ABI is not supported by GraalPy");
+    public static final TruffleString MODULE_NON_STABLE_ABI_UNSUPPORTED = tsLiteral("%s: non-stable CPython ABI is not supported by GraalPy");
+    public static final TruffleString MODULE_FUTURE_STABLE_ABI = tsLiteral("%s: incompatible future stable ABI version (%d.%d)");
+    public static final TruffleString MODULE_INVALID_STABLE_ABI = tsLiteral("%s: invalid stable ABI version (%d.%d)");
+    public static final TruffleString MODULE_ONLY_FREETHREADED = tsLiteral("%s: only compatible with free-threaded CPython");
+    public static final TruffleString PYMODULE_FROMSLOTS_NULL_SLOTS = tsLiteral("PyModule_FromSlotsAndSpec called with NULL slots");
+    public static final TruffleString EXPECTED_MODULE_GOT_T = tsLiteral("expected module, got %T");
     public static final TruffleString CANNOT_DELETE = tsLiteral("cannot delete attribute");
     public static final TruffleString MV_UNDERLYING_BUF_ISNT_WRITABLE = tsLiteral("memoryview: underlying buffer is not writable");
     public static final TruffleString MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS = tsLiteral("memoryview: underlying buffer is not C-contiguous");

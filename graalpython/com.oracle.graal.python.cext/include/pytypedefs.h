@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -19,6 +19,8 @@ typedef struct PyModuleDef_Slot PyModuleDef_Slot;
 typedef struct PyMethodDef PyMethodDef;
 typedef struct PyGetSetDef PyGetSetDef;
 typedef struct PyMemberDef PyMemberDef;
+// GraalPy change: added _Py_ANONYMOUS from 3.15
+typedef struct PySlot PySlot;
 
 typedef struct _object PyObject;
 typedef struct _longobject PyLongObject;

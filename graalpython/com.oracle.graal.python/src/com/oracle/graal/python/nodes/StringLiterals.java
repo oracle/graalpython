@@ -117,7 +117,7 @@ public abstract class StringLiterals {
     public static final String J_ABI3T_MULTIARCH = ".abi3t-";
     public static final TruffleString T_ABI3T_MULTIARCH = tsLiteral(J_ABI3T_MULTIARCH);
     public static final String J_ABI3T_EXT_SO = ".abi3t.so";
-    public static final TruffleString T_ABI3T_EXT_SO= tsLiteral(J_ABI3T_EXT_SO);
+    public static final TruffleString T_ABI3T_EXT_SO = tsLiteral(J_ABI3T_EXT_SO);
     public static final String J_EXT_SO = ".so";
     public static final TruffleString T_EXT_SO = tsLiteral(J_EXT_SO);
     public static final String J_EXT_PYD = ".pyd";

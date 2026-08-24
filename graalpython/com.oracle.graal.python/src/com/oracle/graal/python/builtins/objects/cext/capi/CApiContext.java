@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ReferenceQueueCoordinator;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -164,6 +165,8 @@ import sun.misc.Unsafe;
 public final class CApiContext {
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
     private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
+    private static final TruffleString T_PY_MOD_EXPORT = tsLiteral("PyModExport_");
+    private static final TruffleString T_PY_MOD_EXPORT_U = tsLiteral("PyModExportU_");
     private static final TruffleString T_GRAALPY_TEST_CAPI = tsLiteral("_testcapi");
     private static final TruffleString T_GRAALPY_TEST_CAPI_NAME = tsLiteral("__graalpython__._testcapi");
 
@@ -318,12 +321,17 @@ public final class CApiContext {
 
         @TruffleBoundary
         public TruffleString getInitFunctionName() {
-            /*
-             * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
-             * is queried
-             */
+            // 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii' is queried
             TruffleString s = getEncodedName();
             return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
+        }
+
+        public TruffleString getModExecFunctionName() {
+            CompilerAsserts.neverPartOfCompilation();
+            assert PythonContext.get(null).getOption(PythonOptions.EnableAbi3t);
+            // 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii' is queried
+            TruffleString s = getEncodedName();
+            return StringUtils.cat((ascii ? T_PY_MOD_EXPORT : T_PY_MOD_EXPORT_U), s);
         }
     }
 
@@ -1211,7 +1219,7 @@ public final class CApiContext {
 
             throw new ImportException(CApiContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
         }
-        return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec);
+        return cApiContext.initCApiModule(location, library, spec);
     }
 
     /**
@@ -1355,12 +1363,22 @@ public final class CApiContext {
         }
     }
 
-    public Object initCApiModule(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
+    public Object initCApiModule(Node node, NativeLibrary sharedLibrary, ModuleSpec spec) throws ImportException {
         CompilerAsserts.neverPartOfCompilation();
-        PythonContext context = getContext();
-        CApiContext cApiContext = context.getCApiContext();
+        if (context.getOption(PythonOptions.EnableAbi3t)) {
+            TruffleString modExportFuncName = spec.getModExecFunctionName();
+            long modExportFunc = sharedLibrary.lookupOptionalSymbol(modExportFuncName.toJavaStringUncached());
+            if (modExportFunc != NULLPTR) {
+                return initAbi3tCApiModule(node, sharedLibrary, modExportFunc, spec);
+            }
+        }
+        return initLegacyCApiModule(node, sharedLibrary, spec.getInitFunctionName(), spec);
+    }
+
+    private Object initLegacyCApiModule(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
+        CompilerAsserts.neverPartOfCompilation();
         long pyinitFunc = sharedLibrary.lookupOptionalSymbol(initFuncName.toJavaStringUncached());
-        if (pyinitFunc == 0L) {
+        if (pyinitFunc == NULLPTR) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
         NativeContext nativeContext = context.ensureNativeContext();
@@ -1368,7 +1386,7 @@ public final class CApiContext {
                         ExternalFunctionSignature.MODINIT.bind(nativeContext, pyinitFunc));
 
         Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonInternalNode.executeUncached(nativeResult, false));
-        if (!(result instanceof PythonModule)) {
+        if (!(result instanceof PythonModule module)) {
             // Multi-phase extension module initialization
 
             /*
@@ -1383,10 +1401,9 @@ public final class CApiContext {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CExtNodes.createModule(node, cApiContext, spec, nativeResult, sharedLibrary);
+            return CExtNodes.createModuleFromDefAndSpec(node, this, spec, nativeResult, sharedLibrary);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
-            PythonModule module = (PythonModule) result;
             module.setAttribute(T___FILE__, spec.path);
             addLoadedExtensionLibrary(sharedLibrary);
 
@@ -1406,6 +1423,24 @@ public final class CApiContext {
             extensions.put(Pair.create(spec.path, spec.name), module);
             return result;
         }
+    }
+
+    // import.c: import_run_modexport
+    private Object initAbi3tCApiModule(Node node, NativeLibrary library, long modExportFunc, ModuleSpec spec) {
+        CompilerAsserts.neverPartOfCompilation();
+        NativeContext nativeContext = context.ensureNativeContext();
+        PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        // return value is of type 'PySlot *'
+        long slots = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nativeContext, BoundaryCallData.getUncached(), threadState,
+                        ExternalFunctionSignature.MODINIT.bind(nativeContext, modExportFunc));
+        TransformExceptionFromNativeNode.getUncached().execute(node, threadState, spec.name, slots == NULLPTR, true,
+                        ErrorMessages.MODULE_EXPORT_HOOK_FAILED, ErrorMessages.MODULE_EXPORT_HOOK_RAISED_EXCEPTION);
+        Object module = CExtNodes.createModuleFromSlotsAndSpec(node, context.getCApiContext(), library, slots, spec);
+        if (module instanceof PythonModule pythonModule && pythonModule.getNativeModuleToken() == NULLPTR) {
+            // import_run_modexport uses the static top-level slots array as the default token.
+            pythonModule.setNativeModuleToken(slots);
+        }
+        return module;
     }
 
     @TruffleBoundary

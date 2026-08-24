@@ -53,6 +53,7 @@ public enum CStructs {
     PyModuleDef,
     PyModuleDef_Slot,
     PyMethodDef,
+    PySlot,
     PyObject,
     GraalPyObject,
     PyBytesObject,

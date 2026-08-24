@@ -263,21 +263,17 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            long nativeModuleDef = extensionModule.getNativeModuleDef();
-            if (nativeModuleDef == NULLPTR) {
-                return 0;
-            }
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
-                return doExec(inliningTarget, context, extensionModule, nativeModuleDef);
+                return doExec(inliningTarget, context, extensionModule);
             } finally {
                 BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private static int doExec(Node node, PythonContext context, PythonModule extensionModule, long nativeModuleDef) {
+        private static int doExec(Node node, PythonContext context, PythonModule extensionModule) {
             /*
              * Check if module is already initialized. CPython does that by testing if 'md_state !=
              * NULL'. So, we do the same.
@@ -295,7 +291,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
              * ExecModuleNode will run the module definition's exec function which may run arbitrary
              * C code. So we need to setup an indirect call.
              */
-            return CExtNodes.execModule(node, context.getCApiContext(), extensionModule, nativeModuleDef);
+            return CExtNodes.execModule(node, context.getCApiContext(), extensionModule);
         }
 
         @Fallback

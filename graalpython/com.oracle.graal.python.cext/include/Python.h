@@ -82,6 +82,7 @@ struct timeval;
 #include "lock.h"
 #include "object.h"
 #include "objimpl.h"
+#include "slots.h"
 #include "typeslots.h"
 #include "pyhash.h"
 #include "cpython/pydebug.h"

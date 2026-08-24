@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PYPRECONFIG_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SLOT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UINT8_T_PTR;
@@ -80,6 +82,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYSTATUS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWIDESTRINGLIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_AUDITHOOKFUNCTION;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_ABI_INFO_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPILER_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPLEX;
@@ -185,6 +188,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
  */
 public final class CApiFunction {
 
+    @CApiBuiltin(name = "PyABIInfo_Check", ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct)
     @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
@@ -359,11 +363,17 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyModule_Create2", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "PyModule_FromDefAndSpec2", ret = PyObject, args = {PyModuleDef, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyModule_ExecDef", ret = Int, args = {PyObject, PyModuleDef}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_Exec", ret = Int, args = {PyObject}, call = Direct)
+    @CApiBuiltin(name = "PyModule_FromSlotsAndSpec", ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct)
     @CApiBuiltin(name = "PyModule_GetDef", ret = PyModuleDef, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetDict", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetFilename", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetName", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetState", ret = Pointer, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_GetStateSize", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct)
+    @CApiBuiltin(name = "PyModule_GetState_DuringGC", ret = Pointer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(name = "PyModule_GetToken", ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
+    @CApiBuiltin(name = "PyModule_GetToken_DuringGC", ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
     @CApiBuiltin(name = "PyNumber_Absolute", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_Add", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_And", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)

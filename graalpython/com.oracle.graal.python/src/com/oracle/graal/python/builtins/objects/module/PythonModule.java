@@ -51,10 +51,20 @@ public final class PythonModule extends PythonObject {
 
     /**
      * Stores the native {@code PyModuleDef *} structure if this module was created via the
-     * multiphase extension module initialization mechanism.
+     * multiphase extension module initialization mechanism. Will be non-null only for legacy definitions.
      */
     private long nativeModuleDef;
     private long nativeModuleState;
+
+    private long nativeModuleStateSize;
+    private long nativeModuleTraverse;
+    private long nativeModuleClear;
+    private long nativeModuleFree;
+
+    private long nativeModuleExec;      // direct PySlot[] modules
+    private long nativeModuleToken;
+    private boolean nativeModuleTokenIsDef;
+    private boolean nativeModuleRequiresGil;
 
     /**
      * Replicates the native references of this module's native state in Java.
@@ -153,6 +163,70 @@ public final class PythonModule extends PythonObject {
 
     public void setNativeModuleState(long nativeModuleState) {
         this.nativeModuleState = nativeModuleState;
+    }
+
+    public long getNativeModuleStateSize() {
+        return nativeModuleStateSize;
+    }
+
+    public void setNativeModuleStateSize(long nativeModuleStateSize) {
+        this.nativeModuleStateSize = nativeModuleStateSize;
+    }
+
+    public long getNativeModuleTraverse() {
+        return nativeModuleTraverse;
+    }
+
+    public void setNativeModuleTraverse(long nativeModuleTraverse) {
+        this.nativeModuleTraverse = nativeModuleTraverse;
+    }
+
+    public long getNativeModuleClear() {
+        return nativeModuleClear;
+    }
+
+    public void setNativeModuleClear(long nativeModuleClear) {
+        this.nativeModuleClear = nativeModuleClear;
+    }
+
+    public long getNativeModuleFree() {
+        return nativeModuleFree;
+    }
+
+    public void setNativeModuleFree(long nativeModuleFree) {
+        this.nativeModuleFree = nativeModuleFree;
+    }
+
+    public long getNativeModuleExec() {
+        return nativeModuleExec;
+    }
+
+    public void setNativeModuleExec(long nativeModuleExec) {
+        this.nativeModuleExec = nativeModuleExec;
+    }
+
+    public long getNativeModuleToken() {
+        return nativeModuleToken;
+    }
+
+    public void setNativeModuleToken(long nativeModuleToken) {
+        this.nativeModuleToken = nativeModuleToken;
+    }
+
+    public boolean isNativeModuleTokenIsDef() {
+        return nativeModuleTokenIsDef;
+    }
+
+    public void setNativeModuleTokenIsDef(boolean nativeModuleTokenIsDef) {
+        this.nativeModuleTokenIsDef = nativeModuleTokenIsDef;
+    }
+
+    public boolean isNativeModuleRequiresGil() {
+        return nativeModuleRequiresGil;
+    }
+
+    public void setNativeModuleRequiresGil(boolean nativeModuleRequiresGil) {
+        this.nativeModuleRequiresGil = nativeModuleRequiresGil;
     }
 
     /**

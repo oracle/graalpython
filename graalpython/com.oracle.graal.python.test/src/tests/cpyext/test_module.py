@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, compile_module_from_string, unhandled_error_compare
 
 
 ModuleType = type(sys)
@@ -71,6 +71,46 @@ module_with_broken_file.__file__ = 1
 
 
 class TestPyModule(CPyExtTestCase):
+
+    def test_multiple_exec_slots(self):
+        module = compile_module_from_string(r'''
+            #include <Python.h>
+
+            static int first_exec(PyObject *module) {
+                int *state = PyModule_GetState(module);
+                *state = 1;
+                return 0;
+            }
+
+            static int second_exec(PyObject *module) {
+                int *state = PyModule_GetState(module);
+                *state = *state * 10 + 2;
+                return PyModule_AddIntConstant(module, "exec_order", *state);
+            }
+
+            static PyModuleDef_Slot slots[] = {
+                {Py_mod_exec, first_exec},
+                {Py_mod_exec, second_exec},
+                {0, NULL}
+            };
+
+            static PyModuleDef module_def = {
+                PyModuleDef_HEAD_INIT,
+                "multiple_exec_slots",
+                NULL,
+                sizeof(int),
+                NULL,
+                slots,
+                NULL,
+                NULL,
+                NULL
+            };
+
+            PyMODINIT_FUNC PyInit_multiple_exec_slots(void) {
+                return PyModuleDef_Init(&module_def);
+            }
+        ''', "multiple_exec_slots")
+        self.assertEqual(module.exec_order, 12)
 
     test_PyModule_Check = CPyExtFunction(
         lambda args: isinstance(args[0], ModuleType),

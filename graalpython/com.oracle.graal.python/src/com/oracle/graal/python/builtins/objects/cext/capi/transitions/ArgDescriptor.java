@@ -80,6 +80,7 @@ enum ArgBehavior {
     Char8(NativeSimpleType.SINT8),
     UChar8(NativeSimpleType.SINT8),
     Char16(NativeSimpleType.SINT16),
+    UInt16(NativeSimpleType.SINT16),
     Int32(NativeSimpleType.SINT32),
     UInt32(NativeSimpleType.SINT32),
     Int64(NativeSimpleType.SINT64),
@@ -189,6 +190,7 @@ public enum ArgDescriptor {
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),
     INITTAB("struct _inittab*"),
+    UINT16_T(ArgBehavior.UInt16, "uint16_t"),
     INT32_T(ArgBehavior.Int32, "int32_t"),
     INT_LIST("int*"),
     INT8_T_PTR(ArgBehavior.Pointer, "int8_t*"),
@@ -203,6 +205,7 @@ public enum ArgDescriptor {
     Py_buffer("Py_buffer"),
     PY_BUFFER_PTR(ArgBehavior.Pointer, "Py_buffer*"),
     CONST_PY_BUFFER_PTR(ArgBehavior.Pointer, "const Py_buffer*"),
+    CONST_PY_SLOT_PTR(ArgBehavior.Pointer, "const PySlot*"),
     PY_C_FUNCTION(ArgBehavior.Pointer, "PyCFunction"),
     PyByteArrayObject(ArgBehavior.PyObject, "PyByteArrayObject*"),
     PyCFunctionObject(ArgBehavior.PyObject, "PyCFunctionObject*"),
@@ -229,6 +232,7 @@ public enum ArgDescriptor {
     PY_GEN_OBJECT(ArgBehavior.PyObject, "PyGenObject*"),
     PyGetSetDef(ArgBehavior.Pointer, "PyGetSetDef*"),
     PY_GIL_STATE_STATE(ArgBehavior.Int32, "PyGILState_STATE"),
+    PY_ABI_INFO_PTR(ArgBehavior.Pointer, "PyABIInfo*"),
     PY_HASH_T_PTR(ArgBehavior.Pointer, "Py_hash_t*"),
     PY_IDENTIFIER("_Py_Identifier*"),
     PyInterpreterState(ArgBehavior.Pointer, "PyInterpreterState*"),
@@ -477,7 +481,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isI16() {
-        return behavior == ArgBehavior.Char16;
+        return behavior == ArgBehavior.Char16 || behavior == ArgBehavior.UInt16;
     }
 
     public boolean isFloat() {
