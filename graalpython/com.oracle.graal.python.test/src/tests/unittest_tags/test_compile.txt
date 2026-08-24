@@ -8,7 +8,7 @@ test.test_compile.TestExpressionStackSize.test_func_and @ darwin-arm64,linux-aar
 test.test_compile.TestExpressionStackSize.test_or @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestExpressionStackSize.test_stack_3050 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestExpressionStackSize.test_stack_3050_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestInstructionSequence.test_static_attributes_are_sorted @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestInstructionSequence.test_static_attributes_are_sorted @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_compile.TestSourcePositions.test_multiline_assert_rewritten_as_method_call @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSourcePositions.test_simple_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSourcePositions.test_weird_attribute_position_regressions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -24,13 +24,13 @@ test.test_compile.TestSpecifics.test_cold_block_moved_to_end @ darwin-arm64,linu
 test.test_compile.TestSpecifics.test_compile_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_compile_invalid_namedexpr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_compile_invalid_typealias @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestSpecifics.test_compile_redundant_jump_after_convert_pseudo_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_compile_redundant_jumps_and_nops_after_moving_cold_blocks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_compile_warnings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_condition_expression_with_dead_blocks_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_condition_expression_with_redundant_comparisons_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_dead_code_with_except_handler_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_debug_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestSpecifics.test_compile_redundant_jump_after_convert_pseudo_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_compile_redundant_jumps_and_nops_after_moving_cold_blocks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_compile_warnings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_condition_expression_with_dead_blocks_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_condition_expression_with_redundant_comparisons_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_dead_code_with_except_handler_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_debug_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_compile.TestSpecifics.test_dict_evaluation_order @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_duplicate_global_local @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_duplicated_small_exit_block @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -44,10 +44,10 @@ test.test_compile.TestSpecifics.test_if_expression_expression_empty_block @ darw
 test.test_compile.TestSpecifics.test_import @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_indentation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_lambda_doc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestSpecifics.test_line_number_synthetic_jump_multiple_predecessors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_line_number_synthetic_jump_multiple_predecessors_more_nested @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_line_number_synthetic_jump_multiple_predecessors_nested @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestSpecifics.test_lineno_of_backward_jump_conditional_in_loop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestSpecifics.test_line_number_synthetic_jump_multiple_predecessors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_line_number_synthetic_jump_multiple_predecessors_more_nested @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_line_number_synthetic_jump_multiple_predecessors_nested @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_lineno_of_backward_jump_conditional_in_loop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_compile.TestSpecifics.test_lineno_procedure_call @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_literals_with_leading_zeroes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_mangling @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -59,7 +59,7 @@ test.test_compile.TestSpecifics.test_none_keyword_arg @ darwin-arm64,linux-aarch
 test.test_compile.TestSpecifics.test_null_terminated @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_other_newlines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_path_like_objects @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestSpecifics.test_regression_gh_120225 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestSpecifics.test_regression_gh_120225 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_compile.TestSpecifics.test_remove_empty_basic_block_with_jump_target_label @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_remove_redundant_nop_edge_case @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_sequence_unpacking_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -67,9 +67,9 @@ test.test_compile.TestSpecifics.test_single_statement @ darwin-arm64,linux-aarch
 test.test_compile.TestSpecifics.test_stack_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_subscripts @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_syntax_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestSpecifics.test_try_except_in_while_with_chained_condition_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestSpecifics.test_try_except_in_while_with_chained_condition_compiles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_compile.TestSpecifics.test_unary_minus @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestSpecifics.test_variable_dependent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestSpecifics.test_variable_dependent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 # TODO: GR-64479 scope temporary variables
 !test.test_compile.TestStackSizeStability.test_async_for @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_async_for_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -98,7 +98,7 @@ test.test_compile.TestStackSizeStability.test_if_else @ darwin-arm64,linux-aarch
 !test.test_compile.TestStackSizeStability.test_try_finally @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestStackSizeStability.test_while_else @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 !test.test_compile.TestStackSizeStability.test_with @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_compile.TestStaticAttributes.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestStaticAttributes.test_nested_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestStaticAttributes.test_nested_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_compile.TestStaticAttributes.test_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compile.TestStaticAttributes.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestStaticAttributes.test_nested_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestStaticAttributes.test_nested_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestStaticAttributes.test_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github

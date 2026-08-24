@@ -1,4 +1,4 @@
-test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_builder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_entity_resolver @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_parse_uri @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_parse_with_systemId @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_builder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_entity_resolver @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_parse_uri @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_xml_dom_xmlbuilder.XMLBuilderTest.test_parse_with_systemId @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github

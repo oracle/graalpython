@@ -1,9 +1,9 @@
-test.test_repl.TestAsyncioREPL.test_multiple_statements_fail_early @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_repl.TestAsyncioREPL.test_pythonstartup_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_repl.TestAsyncioREPL.test_quiet_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_repl.TestAsyncioREPL.test_toplevel_contextvars_sync @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_repl.TestAsyncioREPLContextVars.test_toplevel_contextvars_sync @ win32-AMD64,win32-AMD64-github
+test.test_repl.TestAsyncioREPL.test_multiple_statements_fail_early @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_repl.TestAsyncioREPL.test_pythonstartup_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_repl.TestAsyncioREPL.test_quiet_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_repl.TestAsyncioREPL.test_toplevel_contextvars_sync @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_repl.TestAsyncioREPLContextVars.test_toplevel_contextvars_sync @ win32-AMD64
 test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_is_ok @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_reaches_python_startup_script @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_respects_isolated_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_reaches_python_startup_script @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_repl.TestInteractiveInterpreter.test_asyncio_repl_respects_isolated_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_repl.TestInteractiveInterpreter.test_close_stdin @ win32-AMD64,win32-AMD64-github
