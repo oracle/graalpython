@@ -77,6 +77,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.ABI;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -315,7 +316,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct, abi = ABI.ABI3T)
     public static long PyModule_FromSlotsAndSpec(long slots, long specPtr) {
         if (slots == NULLPTR) {
             throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.PYMODULE_FROMSLOTS_NULL_SLOTS);
@@ -327,7 +328,7 @@ public final class PythonCextModuleBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(module);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, abi = ABI.ABI3T)
     public static int PyModule_Exec(long modulePtr) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -336,7 +337,7 @@ public final class PythonCextModuleBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct, abi = ABI.ABI3T)
     public static int PyModule_GetStateSize(long modulePtr, long result) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -347,7 +348,7 @@ public final class PythonCextModuleBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct, abi = ABI.ABI3T)
     public static int PyModule_GetToken(long modulePtr, long result) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -358,7 +359,7 @@ public final class PythonCextModuleBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct, abi = ABI.ABI3T)
     public static int PyModule_GetToken_DuringGC(long modulePtr, long result) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -369,7 +370,7 @@ public final class PythonCextModuleBuiltins {
         return -1;
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct, abi = ABI.ABI3T)
     public static long PyModule_GetState_DuringGC(long modulePtr) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -378,7 +379,7 @@ public final class PythonCextModuleBuiltins {
         return NULLPTR;
     }
 
-    @CApiBuiltin(ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct, abi = ABI.ABI3T)
     public static int PyABIInfo_Check(long info, long moduleName) {
         TruffleString name = moduleName == NULLPTR ? T_EMPTY_STRING : (TruffleString) CharPtrToPythonNode.executeUncached(moduleName);
         return CExtNodes.checkAbiInfo(null, info, name);

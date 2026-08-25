@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
@@ -52,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PYPRECONFIG_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SLOT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UINT8_T_PTR;
@@ -67,7 +65,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.FILE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INITTAB;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT32_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT32_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
@@ -82,7 +82,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYSTATUS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWIDESTRINGLIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_AUDITHOOKFUNCTION;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_ABI_INFO_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPILER_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPLEX;
@@ -92,7 +91,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GEN_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GIL_STATE_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_IDENTIFIER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_INTERPRETER_GUARD_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_INTERPRETER_VIEW_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_LOCK_STATUS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_LONG_EXPORT_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_LONG_WRITER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_MONITORING_STATE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_MUTEX_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_OPENCODEHOOKFUNCTION;
@@ -100,10 +103,13 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_REF_TRACER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_STRUCT_SEQUENCE_DESC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_STATE_TOKEN_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_TRACEFUNC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_TSS_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_TYPE_SPEC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SLOT_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_TYPE_OBJECT_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -143,10 +149,13 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_LONG_LAYOUT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT64_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT32_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT32_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
@@ -178,6 +187,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.visitproc;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.ABI;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 
@@ -188,7 +198,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
  */
 public final class CApiFunction {
 
-    @CApiBuiltin(name = "PyABIInfo_Check", ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct)
     @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
@@ -363,17 +372,11 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyModule_Create2", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "PyModule_FromDefAndSpec2", ret = PyObject, args = {PyModuleDef, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyModule_ExecDef", ret = Int, args = {PyObject, PyModuleDef}, call = CImpl)
-    @CApiBuiltin(name = "PyModule_Exec", ret = Int, args = {PyObject}, call = Direct)
-    @CApiBuiltin(name = "PyModule_FromSlotsAndSpec", ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct)
     @CApiBuiltin(name = "PyModule_GetDef", ret = PyModuleDef, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetDict", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetFilename", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetName", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetState", ret = Pointer, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyModule_GetStateSize", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct)
-    @CApiBuiltin(name = "PyModule_GetState_DuringGC", ret = Pointer, args = {PyObject}, call = Direct)
-    @CApiBuiltin(name = "PyModule_GetToken", ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
-    @CApiBuiltin(name = "PyModule_GetToken_DuringGC", ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
     @CApiBuiltin(name = "PyNumber_Absolute", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_Add", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_And", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
@@ -1062,6 +1065,55 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_NewInterpreterFromConfig", ret = PYSTATUS, args = {PyThreadStatePtr, ConstPyInterpreterConfig}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_FromDigits", ret = PyLongObject, args = {PrimitiveResult32, Py_ssize_t, DIGIT_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_NewReferenceNoTotal", ret = Void, args = {PyObjectRawPointer}, call = CImpl)
+
+    // ABI3T-only functions that are not supported yet. Use Ignored to validate their signatures
+    // without generating C stubs against the 3.13 headers, which lack ABI3T declarations.
+    @CApiBuiltin(name = "PyInterpreterGuard_Close", ret = Void, args = {PY_INTERPRETER_GUARD_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyInterpreterGuard_FromCurrent", ret = PY_INTERPRETER_GUARD_PTR, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyInterpreterGuard_FromView", ret = PY_INTERPRETER_GUARD_PTR, args = {PY_INTERPRETER_VIEW_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyInterpreterView_Close", ret = Void, args = {PY_INTERPRETER_VIEW_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyInterpreterView_FromCurrent", ret = PY_INTERPRETER_VIEW_PTR, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyInterpreterView_FromMain", ret = PY_INTERPRETER_VIEW_PTR, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyIter_NextItem", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectPtr}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLongWriter_Create", ret = PY_LONG_WRITER_PTR, args = {PrimitiveResult32, Py_ssize_t, VOID_PTR_LIST}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLongWriter_Discard", ret = Void, args = {PY_LONG_WRITER_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLongWriter_Finish", ret = PyObjectReturn, args = {PY_LONG_WRITER_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_AsInt32", ret = PrimitiveResult32, args = {PyObjectReturn, INT32_T_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_AsInt64", ret = PrimitiveResult32, args = {PyObjectReturn, INT64_T_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_AsUInt32", ret = PrimitiveResult32, args = {PyObjectReturn, UINT32_T_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_AsUInt64", ret = PrimitiveResult32, args = {PyObjectReturn, UINT64_T_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_Export", ret = PrimitiveResult32, args = {PyObjectReturn, PY_LONG_EXPORT_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_FreeExport", ret = Void, args = {PY_LONG_EXPORT_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_FromInt32", ret = PyObjectReturn, args = {INT32_T}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_FromInt64", ret = PyObjectReturn, args = {INT64_T}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_FromUInt32", ret = PyObjectReturn, args = {UINT32_T}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_FromUInt64", ret = PyObjectReturn, args = {UINT64_T}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyLong_GetNativeLayout", ret = CONST_PY_LONG_LAYOUT_PTR, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyObject_GetTypeData_DuringGC", ret = Pointer, args = {PyObjectReturn, PyTypeObjectRawPointer}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PySys_GetAttr", ret = PyObjectReturn, args = {PyObjectReturn}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PySys_GetAttrString", ret = PyObjectReturn, args = {ConstCharPtr}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PySys_GetOptionalAttr", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectPtr}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PySys_GetOptionalAttrString", ret = PrimitiveResult32, args = {ConstCharPtr, PyObjectPtr}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyThreadState_Ensure", ret = PY_THREAD_STATE_TOKEN_PTR, args = {PY_INTERPRETER_GUARD_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyThreadState_EnsureFromView", ret = PY_THREAD_STATE_TOKEN_PTR, args = {PY_INTERPRETER_VIEW_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyThreadState_Release", ret = Void, args = {PY_THREAD_STATE_TOKEN_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_Freeze", ret = PrimitiveResult32, args = {PyTypeObjectRawPointer}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_FromSlots", ret = PyObjectReturn, args = {PY_SLOT_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_GetBaseByToken", ret = PrimitiveResult32, args = {PyTypeObjectRawPointer, Pointer, PY_TYPE_OBJECT_PTR_LIST}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_GetBaseByToken_DuringGC", ret = PrimitiveResult32, args = {PyTypeObjectRawPointer, Pointer, PY_TYPE_OBJECT_PTR_LIST}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_GetModuleByToken", ret = PyObjectReturn, args = {PyTypeObjectRawPointer, CONST_VOID_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_GetModuleByToken_DuringGC", ret = PyObjectReturn, args = {PyTypeObjectRawPointer, CONST_VOID_PTR}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_GetModuleState_DuringGC", ret = Pointer, args = {PyTypeObjectRawPointer}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyType_GetModule_DuringGC", ret = PyObjectReturn, args = {PyTypeObjectRawPointer}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "PyUnicode_Equal", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_IS_TYPE", ret = PrimitiveResult32, args = {PyObjectReturn, PyTypeObjectRawPointer}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_PACK_FULL_VERSION", ret = UINT32_T, args = {PrimitiveResult32, PrimitiveResult32, PrimitiveResult32, PrimitiveResult32,
+                    PrimitiveResult32}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_PACK_VERSION", ret = UINT32_T, args = {PrimitiveResult32, PrimitiveResult32}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_REFCNT", ret = Py_ssize_t, args = {PyObjectReturn}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_SET_SIZE", ret = Void, args = {PyVarObject, Py_ssize_t}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_SIZE", ret = Py_ssize_t, args = {PyObjectReturn}, call = Ignored, abi = ABI.ABI3T)
+    @CApiBuiltin(name = "Py_TYPE", ret = PyTypeObjectRawPointer, args = {PyObjectReturn}, call = Ignored, abi = ABI.ABI3T)
 
     // Windows only functions
     @CApiBuiltin(name = "PyUnicode_DecodeMBCS", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr}, call = NotImplemented)

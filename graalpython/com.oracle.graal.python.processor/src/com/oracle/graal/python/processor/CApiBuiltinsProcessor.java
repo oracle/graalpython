@@ -245,9 +245,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final boolean canRaise;
         public final String call;
         public final String factory;
+        /** ABIs explicitly named by the annotation. Parent availability is computed at validation. */
+        public final Set<String> abis;
         public int id;
 
-        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, boolean acquireGil, boolean canRaise, String call, String factory) {
+        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, boolean acquireGil, boolean canRaise, String call, String factory,
+                        Set<String> abis) {
             this.origin = origin;
             this.name = name;
             this.returnType = returnType;
@@ -256,6 +259,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             this.canRaise = canRaise;
             this.call = call;
             this.factory = factory;
+            this.abis = new HashSet<>(abis);
         }
     }
 
@@ -466,6 +470,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
+    private static Set<String> abiNames(List<VariableElement> abis) {
+        return abis.stream().map(CApiBuiltinsProcessor::name).collect(Collectors.toSet());
+    }
+
     private void addCApiBuiltins(RoundEnvironment re, List<CApiBuiltinDesc> javaBuiltins, List<CApiBuiltinDesc> additionalBuiltins) {
         for (var root : re.getRootElements()) {
             for (var element : root.getEnclosedElements()) {
@@ -495,10 +503,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         continue;
                     }
                     String call = name(findValue(builtin, "call", VariableElement.class));
+                    Set<String> abis = abiNames(findValues(builtin, "abi", VariableElement.class));
                     // boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
                     if (element instanceof TypeElement te && te.getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
-                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, canRaise, call, null));
+                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, canRaise, call, null, abis));
                     } else {
                         if (!isValidReturnType(ret)) {
                             processingEnv.getMessager().printError(
@@ -529,7 +538,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         } else {
                             verifyStaticMethod((ExecutableElement) element, builtin);
                         }
-                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, canRaise, call, genName));
+                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, canRaise, call, genName, abis));
                     }
                 }
             }
@@ -1232,6 +1241,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     "PyUnicode_DecodeCodePageStateful", "PyUnicode_DecodeMBCSStateful",
     };
 
+    private static final Map<String, String> ABI_PARENTS = Map.of("ABI3T", "GRAALPY");
+
+    private static boolean isAvailableIn(CApiBuiltinDesc builtin, String profile) {
+        for (String current = profile; current != null; current = ABI_PARENTS.get(current)) {
+            if (builtin.abis.contains(current)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String resolveArgDescriptor(String sig) {
         switch (sig) {
             case "struct _typeobject*":
@@ -1266,7 +1286,13 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * suggests the appropriate @CApiBuiltin specification.
      */
     private void checkImports(List<CApiBuiltinDesc> builtins) throws IOException {
-        var path = resolvePath(Path.of("com.oracle.graal.python.cext", "CAPIFunctions.txt"));
+        checkImports(builtins, "GRAALPY");
+        checkImports(builtins, "ABI3T");
+    }
+
+    private void checkImports(List<CApiBuiltinDesc> builtins, String profile) throws IOException {
+        String filename = profile.equals("GRAALPY") ? "CAPIFunctions.txt" : "CAPIFunctions-" + profile + ".txt";
+        var path = resolvePath(Path.of("com.oracle.graal.python.cext", filename));
         if (path == null) {
             return;
         }
@@ -1274,7 +1300,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         TreeSet<String> newBuiltins = new TreeSet<>();
         TreeSet<String> names = new TreeSet<>();
-        builtins.forEach(n -> names.add(n.name));
+        builtins.stream().filter(n -> n.abis.contains(profile)).forEach(n -> names.add(n.name));
 
         for (String line : lines) {
             String[] s = line.split(";");
@@ -1285,23 +1311,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             String[] argSplit = s[2].isBlank() || "void".equals(s[2]) ? new String[0] : s[2].trim().split("\\|");
             String[] args = Arrays.stream(argSplit).map(this::resolveArgDescriptor).toArray(String[]::new);
 
-            Optional<CApiBuiltinDesc> existing = findBuiltin(builtins, name);
+            Optional<CApiBuiltinDesc> existing = builtins.stream().filter(n -> n.name.equals(name) && isAvailableIn(n, profile)).findFirst();
             if (existing.isPresent()) {
                 compareFunction(name, existing.get().returnType, retSig, existing.get().arguments, argSplit);
             } else {
                 String argString = Arrays.stream(args).map(t -> String.valueOf(t)).collect(Collectors.joining(", "));
-                newBuiltins.add("    @CApiBuiltin(name = \"" + name + "\", ret = " + ret + ", args = {" + argString + "}, call = NotImplemented)");
+                String abi = profile.equals("GRAALPY") ? "" : ", abi = ABI." + profile;
+                newBuiltins.add("    @CApiBuiltin(name = \"" + name + "\", ret = " + ret + ", args = {" + argString + "}, call = NotImplemented" + abi + ")");
             }
         }
         if (!newBuiltins.isEmpty()) {
-            processingEnv.getMessager().printError("missing builtins (defined in CPython, but not in GraalPy):");
+            processingEnv.getMessager().printError("missing " + profile + " builtins (defined in CPython, but not in GraalPy):");
             newBuiltins.stream().forEach(processingEnv.getMessager()::printError);
         }
 
         names.removeIf(n -> n.startsWith("GraalPy"));
         names.removeAll(Arrays.asList(ADDITIONAL));
         if (!names.isEmpty()) {
-            processingEnv.getMessager().printError("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");
+            processingEnv.getMessager().printError("extra explicitly " + profile +
+                            " builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");
             processingEnv.getMessager().printError("    " + names.stream().collect(Collectors.joining(", ")));
         }
     }
@@ -2233,6 +2261,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             Optional<CApiBuiltinDesc> existing1 = findBuiltin(allBuiltins, entry.name);
             if (existing1.isPresent()) {
                 compareFunction(entry.name, entry.returnType, existing1.get().returnType, entry.arguments, existing1.get().arguments);
+                existing1.get().abis.addAll(entry.abis);
             } else {
                 allBuiltins.add(entry);
             }

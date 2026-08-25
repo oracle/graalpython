@@ -52,6 +52,10 @@ import mx_graalpython_benchmark
 import mx_urlrewrites
 
 import tempfile
+try:
+    import tomllib
+except ModuleNotFoundError:
+    from pip._vendor import tomli as tomllib
 from argparse import ArgumentParser
 from dataclasses import dataclass
 
@@ -3372,7 +3376,7 @@ def abi_check(_args):
         ], nonZeroIsFatal=True)
 
 
-def _read_abi3t_symbols(path):
+def _read_stable_abi_symbols(path):
     symbols = {}
     with open(path, encoding='utf-8') as file:
         for line_number, line in enumerate(file, 1):
@@ -3381,13 +3385,13 @@ def _read_abi3t_symbols(path):
                 continue
             fields = line.split()
             if len(fields) != 2 or fields[0] not in ('FUNC', 'OBJECT'):
-                mx.abort(f"Invalid ABI3T manifest entry at {path}:{line_number}: {line}")
+                mx.abort(f"Invalid stable ABI manifest entry at {path}:{line_number}: {line}")
             kind, name = fields
             if name in symbols:
-                mx.abort(f"Duplicate ABI3T symbol at {path}:{line_number}: {name}")
+                mx.abort(f"Duplicate stable ABI symbol at {path}:{line_number}: {name}")
             symbols[name] = kind
     if list(symbols) != sorted(symbols):
-        mx.abort(f"ABI3T symbols are not sorted by name: {path}")
+        mx.abort(f"Stable ABI symbols are not sorted by name: {path}")
     return symbols
 
 
@@ -3410,11 +3414,21 @@ def _read_elf_dynamic_exports(shared_library):
     return exports
 
 
-def abi3t_check(raw_args):
-    parser = ArgumentParser(prog='mx abi3t-check')
+def stable_abi_check(raw_args, default_profile=None):
+    parser = ArgumentParser(prog='mx stable-abi-check')
+    parser.add_argument('--profile', default=default_profile, help='ABI profile from capi-abis.toml')
     parser.add_argument('--library', help='libpython-native.so to inspect; builds a JVM standalone by default')
     parser.add_argument('--update', action='store_true', help='update the checked-in missing-symbol report')
     args = parser.parse_args(raw_args)
+
+    if not args.profile:
+        mx.abort("Specify --profile")
+    config_path = os.path.join(SUITE.dir, 'capi-abis.toml')
+    with open(config_path, 'rb') as file:
+        profiles = tomllib.load(file)['profiles']
+    profile = profiles.get(args.profile)
+    if profile is None or profile.get('mode') != 'stable':
+        mx.abort(f"{args.profile} is not a stable ABI profile in {config_path}")
 
     if not shutil.which('readelf'):
         mx.abort("Required tool 'readelf' was not found on PATH")
@@ -3432,12 +3446,12 @@ def abi3t_check(raw_args):
     if not os.path.exists(shared_library):
         mx.abort(f"Could not find shared library to check: {shared_library}")
 
-    manifest = os.path.join(SUITE.dir, 'abi', 'abi3t-linux.txt')
-    report = os.path.join(SUITE.dir, 'abi', 'abi3t-missing-linux.txt')
+    manifest = os.path.join(SUITE.dir, profile['export_manifest'])
+    report = os.path.join(SUITE.dir, profile['missing_symbols'])
     if not os.path.exists(manifest):
-        mx.abort(f"Could not find ABI3T export manifest: {manifest}")
+        mx.abort(f"Could not find {args.profile} export manifest: {manifest}")
 
-    expected = _read_abi3t_symbols(manifest)
+    expected = _read_stable_abi_symbols(manifest)
     exports = _read_elf_dynamic_exports(shared_library)
     gaps = {}
     wrong_kinds = []
@@ -3452,22 +3466,27 @@ def abi3t_check(raw_args):
     if args.update:
         with open(report, 'w', encoding='utf-8') as file:
             file.write(generated_report)
-        mx.log(f"Updated ABI3T missing-symbol report: {report}")
+        mx.log(f"Updated {args.profile} missing-symbol report: {report}")
     else:
         if not os.path.exists(report):
-            mx.abort(f"Could not find ABI3T missing-symbol report: {report}; run mx abi3t-check --update")
+            mx.abort(f"Could not find {args.profile} missing-symbol report: {report}; run mx stable-abi-check --profile {args.profile} --update")
         with open(report, encoding='utf-8') as file:
             checked_in_report = file.read()
         if checked_in_report != generated_report:
             mx.abort(
-                f"ABI3T missing-symbol report is out of date: {report}\n"
-                "Run mx abi3t-check --update and commit the result."
+                f"{args.profile} missing-symbol report is out of date: {report}\n"
+                f"Run mx stable-abi-check --profile {args.profile} --update and commit the result."
             )
 
     for index, (name, expected_kind, actual_kinds) in enumerate(wrong_kinds, 1):
         mx.warn(f"{index}. {name}: expected {expected_kind}, found {', '.join(actual_kinds)}")
     satisfied = len(expected) - len(gaps)
-    mx.log(f"ABI3T exports satisfied: {satisfied}/{len(expected)}; remaining gaps: {len(gaps)}")
+    mx.log(f"{args.profile} exports satisfied: {satisfied}/{len(expected)}; remaining gaps: {len(gaps)}")
+
+
+def abi3t_check(raw_args):
+    """Compatibility alias for the profile-driven stable ABI export check."""
+    stable_abi_check(raw_args, default_profile='ABI3T')
 
 
 class GraalpythonBuildTask(mx.ProjectBuildTask):
@@ -3958,6 +3977,7 @@ mx.update_commands(SUITE, {
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
     'abi-check': [abi_check, ''],
+    'stable-abi-check': [stable_abi_check, '--profile PROFILE [--library LIBPYTHON_NATIVE_SO] [--update]'],
     'abi3t-check': [abi3t_check, '[--library LIBPYTHON_NATIVE_SO] [--update]'],
     'punittest': [punittest, ''],
     'graalpytest': [graalpytest, '[-h] [--python PYTHON] [TESTS]'],

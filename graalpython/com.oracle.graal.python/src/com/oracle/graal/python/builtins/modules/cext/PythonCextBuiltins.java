@@ -764,8 +764,24 @@ public final class PythonCextBuiltins {
     }
 
     public enum ABI {
-        GRAALPY,
-        ABI3T
+        GRAALPY(null),
+        ABI3T(GRAALPY);
+
+        private final ABI parent;
+
+        ABI(ABI parent) {
+            this.parent = parent;
+        }
+
+        /** Whether this profile includes implementations declared for {@code candidate}. */
+        public boolean inherits(ABI candidate) {
+            for (ABI current = this; current != null; current = current.parent) {
+                if (current == candidate) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     @Target({ElementType.TYPE, ElementType.METHOD})
