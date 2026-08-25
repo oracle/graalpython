@@ -1597,9 +1597,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         byte[] getBytecodeFromFile() {
             try (SeekableByteChannel channel = bytecodeFile.newByteChannel(Set.of(StandardOpenOption.READ))) {
                 ByteBuffer buffer = ByteBuffer.allocate(16);
-                int read = channel.read(buffer);
+                boolean headerRead = readFully(channel, buffer);
                 byte[] header = buffer.array();
-                if (read != 16) {
+                if (!headerRead) {
                     throw new ReparseError("EOF when reparsing: " + bytecodeFile);
                 }
                 if (!Arrays.equals(header, 0, 4, MAGIC_NUMBER_BYTES, 0, 4)) {
@@ -1610,14 +1610,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 }
                 buffer = ByteBuffer.allocate(bytecodeSize);
                 channel.position(bytecodeOffset);
-                read = channel.read(buffer);
-                if (read != bytecodeSize) {
+                if (!readFully(channel, buffer)) {
                     throw new ReparseError("EOF when reparsing: " + bytecodeFile);
                 }
                 return buffer.array();
             } catch (IOException e) {
                 throw new ReparseError("IOError when reparsing: " + bytecodeFile);
             }
+        }
+
+        private static boolean readFully(SeekableByteChannel channel, ByteBuffer buffer) throws IOException {
+            while (buffer.hasRemaining()) {
+                if (channel.read(buffer) < 0) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private byte[] getBytecode() {

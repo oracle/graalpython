@@ -40,6 +40,7 @@
 import compileall
 import contextlib
 import os
+import py_compile
 import re
 import socket
 import subprocess
@@ -51,6 +52,12 @@ from pathlib import Path
 
 SYNC_HOST = "127.0.0.1"
 SYNC_TIMEOUT = 180.0
+
+INVALIDATION_MODES = (
+    py_compile.PycInvalidationMode.TIMESTAMP,
+    py_compile.PycInvalidationMode.CHECKED_HASH,
+    py_compile.PycInvalidationMode.UNCHECKED_HASH,
+)
 
 SYNC_PREAMBLE = f'''
 import sys
@@ -76,7 +83,7 @@ def _terminate_and_collect(proc):
 
 
 @contextlib.contextmanager
-def pyc_reparse(test_content, expect_success=True, python_options=()):
+def pyc_reparse(test_content, expect_success=True, python_options=(), invalidation_mode=None):
     if sys.implementation.name != "graalpy":
         raise unittest.SkipTest("Reparsing tests are only meaningful on bytecode DSL interpreter")
     with tempfile.TemporaryDirectory() as tempdir:
@@ -87,7 +94,7 @@ def pyc_reparse(test_content, expect_success=True, python_options=()):
             f.write(test_content)
         # Change mtime of the example module source to the past a bit to avoid mtime resolution issues
         os.utime(example_module_path, (time.time() - 1000, time.time() - 1000))
-        compileall.compile_file(example_module_path, force=True, quiet=True)
+        compileall.compile_file(example_module_path, force=True, quiet=True, invalidation_mode=invalidation_mode)
         pyc_files = list((tempdir_path / '__pycache__').glob('*.pyc'))
         assert len(pyc_files) == 1, "Didn't find a .pyc file"
         with socket.create_server((SYNC_HOST, 0)) as server:
@@ -150,41 +157,63 @@ assert lines == [firstlineno + 1, firstlineno + 2], "Code didn't trace when expe
 
 
 def test_reparse():
-    with pyc_reparse(TRACING_TEST):
-        pass
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(TRACING_TEST, invalidation_mode=invalidation_mode):
+            pass
 
 
 def test_reparse_deleted():
-    with pyc_reparse(TRACING_TEST, expect_success=False) as (example_file, pyc_file):
-        pyc_file.unlink()
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
+            example_file,
+            pyc_file,
+        ):
+            pyc_file.unlink()
 
 
 def test_reparse_truncated():
-    with pyc_reparse(TRACING_TEST, expect_success=False) as (example_file, pyc_file):
-        with open(pyc_file, 'r+') as f:
-            f.truncate()
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
+            example_file,
+            pyc_file,
+        ):
+            with open(pyc_file, 'r+') as f:
+                f.truncate()
 
 
 def test_reparse_truncated_part():
-    with pyc_reparse(TRACING_TEST, expect_success=False) as (example_file, pyc_file):
-        with open(pyc_file, 'r+') as f:
-            f.truncate(30)
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
+            example_file,
+            pyc_file,
+        ):
+            with open(pyc_file, 'r+') as f:
+                f.truncate(30)
 
 
 def test_reparse_modified():
-    with pyc_reparse(TRACING_TEST, expect_success=False) as (example_file, pyc_file):
-        pyc_file.unlink()
-        with open(example_file, 'w') as f:
-            f.write(SYNC_PREAMBLE)
-            f.write(TRACING_TEST.replace('a = 42', 'a = 32'))
-        compileall.compile_file(example_file, force=True, quiet=True)
-        assert pyc_file.exists()
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
+            example_file,
+            pyc_file,
+        ):
+            pyc_file.unlink()
+            with open(example_file, 'w') as f:
+                f.write(SYNC_PREAMBLE)
+                f.write(TRACING_TEST.replace('a = 42', 'a = 32'))
+            compileall.compile_file(example_file, force=True, quiet=True, invalidation_mode=invalidation_mode)
+            assert pyc_file.exists()
 
 
 def test_reparse_disabled():
-    with pyc_reparse(TRACING_TEST, python_options=["--experimental-options=true", "--python.KeepBytecodeInMemory"], expect_success=True) \
-            as (example_file, pyc_file):
-        pyc_file.unlink()
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(
+            TRACING_TEST,
+            python_options=["--experimental-options=true", "--python.KeepBytecodeInMemory"],
+            expect_success=True,
+            invalidation_mode=invalidation_mode,
+        ) as (example_file, pyc_file):
+            pyc_file.unlink()
 
 
 CO_CODE_TEST = '''
@@ -205,10 +234,15 @@ except SystemError as e:
 
 
 def test_reparse_co_code():
-    with pyc_reparse(CO_CODE_TEST):
-        pass
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(CO_CODE_TEST, invalidation_mode=invalidation_mode):
+            pass
 
 
 def test_reparse_co_code_deleted():
-    with pyc_reparse(CO_CODE_TEST, expect_success=False) as (example_file, pyc_file):
-        pyc_file.unlink()
+    for invalidation_mode in INVALIDATION_MODES:
+        with pyc_reparse(CO_CODE_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
+            example_file,
+            pyc_file,
+        ):
+            pyc_file.unlink()
