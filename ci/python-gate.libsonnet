@@ -517,7 +517,7 @@
                                             $.overlay_imports.BUILDBOT_COMMIT_SERVICE + '?repoName=graal&target=weekly&before-ts=${MAIN_COMMIT_TS}']],
             ["git", "clone", $.overlay_imports.GRAAL_ENTERPRISE_GIT, "../graal-enterprise"],
             ['git', '-C', '../graal', 'checkout', '${GRAAL_COMMIT}'],
-            ['mx', '-p', '../graal', 'fetch-jdk', '-A', 'labsjdk-ce-latest'],
+            ['mx', '-p', '../graal', 'fetch-jdk', '-A', '--strip-contents-home', 'labsjdk-ce-latest'],
             ['set-export', 'JAVA_HOME', ['mx', '-p', '../graal', 'get-jdk-path', 'labsjdk-ce-latest']],
             // NOTE: this will checkout older graalpy. We need to live with that to ensure consistency with graal
             ['mx', '-p', '../graal/vm', '--dynamicimports', 'graalpython', 'sforceimports'],
