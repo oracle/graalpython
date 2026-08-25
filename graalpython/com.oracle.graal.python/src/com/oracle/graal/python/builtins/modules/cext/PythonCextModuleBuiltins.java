@@ -44,8 +44,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SLOT_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_ABI_INFO_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
@@ -54,17 +58,19 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VOID_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.bindFunctionPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.ErrorMessages.NAMELESS_MODULE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -75,10 +81,12 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -91,8 +99,8 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -102,8 +110,12 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -303,38 +315,94 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Module_Traverse extends CApiTernaryBuiltinNode {
-        private static final CApiTiming TIMING_INVOKE_TRAVERSE_PROC = CApiTiming.create(true, "invokeTraverseProc");
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct)
+    public static long PyModule_FromSlotsAndSpec(long slots, long specPtr) {
+        if (slots == NULLPTR) {
+            throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.PYMODULE_FROMSLOTS_NULL_SLOTS);
+        }
+        Object spec = NativeToPythonInternalNode.executeUncached(specPtr, false);
+        TruffleString name = CastToTruffleStringNode.executeUncached(PyObjectGetAttr.executeUncached(spec, T_NAME));
+        ModuleSpec moduleSpec = new ModuleSpec(name, T_EMPTY_STRING, spec);
+        Object module = CExtNodes.createModuleFromSlotsAndSpec(null, PythonContext.get(null).getCApiContext(), null, slots, moduleSpec);
+        return PythonToNativeInternalNode.executeNewRefUncached(module);
+    }
 
-        @Specialization
-        static int doGeneric(PythonModule self, long visitFun, long arg,
-                        @Bind Node inliningTarget,
-                        @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
-                        @Cached PythonToNativeInternalNode toNativeNode) {
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    public static int PyModule_Exec(long modulePtr) {
+        Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
+        if (object instanceof PythonModule module) {
+            return CExtNodes.execModule(null, PythonContext.get(null).getCApiContext(), module);
+        }
+        throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
+    }
 
-            /*
-             * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&
-             * (m->md_def->m_size <= 0 || m->md_state != NULL))'
-             */
-            long mdDef = self.getNativeModuleDef();
-            if (mdDef != NULLPTR) {
-                long mTraverse = readPtrField(mdDef, CFields.PyModuleDef__m_traverse);
-                if (mTraverse != NULLPTR) {
-                    long mSize = readLongField(mdDef, CFields.PyModuleDef__m_size);
-                    long mdState = self.getNativeModuleState();
-                    if (mSize <= 0 || mdState != NULLPTR) {
-                        PythonContext ctx = PythonContext.get(inliningTarget);
-                        NativeFunctionPointer traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
-                        int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNativeContext(), BoundaryCallData.getUncached(),
-                                        ctx.getThreadState(PythonLanguage.get(inliningTarget)), traverseExecutable, toNativeNode.execute(inliningTarget, self), visitFun, arg);
-                        checkPrimitiveFunctionResultNode.executeLong(inliningTarget, ctx.getThreadState(PythonLanguage.get(inliningTarget)), StringLiterals.T_VISIT, ires);
-                        return ires;
-                    }
-                }
-            }
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct)
+    public static int PyModule_GetStateSize(long modulePtr, long result) {
+        Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
+        if (object instanceof PythonModule module) {
+            NativeMemory.writeLong(result, module.getNativeModuleStateSize());
             return 0;
         }
+        NativeMemory.writeLong(result, -1);
+        throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
+    public static int PyModule_GetToken(long modulePtr, long result) {
+        Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
+        if (object instanceof PythonModule module) {
+            NativeMemory.writeLong(result, module.getNativeModuleToken());
+            return 0;
+        }
+        NativeMemory.writeLong(result, NULLPTR);
+        throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct)
+    public static int PyModule_GetToken_DuringGC(long modulePtr, long result) {
+        Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
+        if (object instanceof PythonModule module) {
+            NativeMemory.writeLong(result, module.getNativeModuleToken());
+            return 0;
+        }
+        NativeMemory.writeLong(result, NULLPTR);
+        return -1;
+    }
+
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
+    public static long PyModule_GetState_DuringGC(long modulePtr) {
+        Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
+        if (object instanceof PythonModule module) {
+            return module.getNativeModuleState();
+        }
+        return NULLPTR;
+    }
+
+    @CApiBuiltin(ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct)
+    public static int PyABIInfo_Check(long info, long moduleName) {
+        TruffleString name = moduleName == NULLPTR ? T_EMPTY_STRING : (TruffleString) CharPtrToPythonNode.executeUncached(moduleName);
+        return CExtNodes.checkAbiInfo(null, info, name);
+    }
+
+    private static final CApiTiming TIMING_INVOKE_TRAVERSE_PROC = CApiTiming.create(true, "invokeTraverseProc");
+
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
+    public static int GraalPyPrivate_Module_Traverse(long selfPtr, long visitFun, long arg) {
+
+        PythonModule self = (PythonModule) NativeToPythonInternalNode.executeUncached(selfPtr, false);
+        long traverse = self.getNativeModuleTraverse();
+        long stateSize = self.getNativeModuleStateSize();
+        long state = self.getNativeModuleState();
+        if (traverse != NULLPTR && (stateSize <= 0 || state != NULLPTR)) {
+            PythonContext ctx = PythonContext.get(null);
+            PythonThreadState threadState = ctx.getThreadState(ctx.getLanguage());
+            NativeFunctionPointer traverseExecutable = bindFunctionPointer(traverse, ExternalFunctionSignature.TRAVERSEPROC);
+            int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNativeContext(), BoundaryCallData.getUncached(),
+                            threadState, traverseExecutable, PythonToNativeInternalNode.executeUncached(self, false), visitFun, arg);
+            CheckPrimitiveFunctionResultNodeGen.getUncached().executeLong(null, threadState, StringLiterals.T_VISIT, ires);
+            return ires;
+        }
+        return 0;
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
@@ -360,20 +428,14 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
-    abstract static class GraalPyPrivate_Module_SetDef extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object set(PythonModule object, long value) {
-            object.setNativeModuleDef(value);
-            return PNone.NO_VALUE;
-        }
+    public static void GraalPyPrivate_Module_SetDef(long object, long value) {
+        PythonModule module = (PythonModule) NativeToPythonInternalNode.executeUncached(object, false);
+        module.setNativeModuleDef(value);
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Module_SetState extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object set(PythonModule object, long value) {
-            object.setNativeModuleState(value);
-            return PNone.NO_VALUE;
-        }
+    public static void GraalPyPrivate_Module_SetState(long object, long value) {
+        PythonModule module = (PythonModule) NativeToPythonInternalNode.executeUncached(object, false);
+        module.setNativeModuleState(value);
     }
 }
