@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -57,16 +57,26 @@ def call_in_subprocess(method, argument):
     return subprocess.run(args, env=env, capture_output=True, text=True)
 
 
+def describe_subprocess_result(proc):
+    return (
+        f"returncode={proc.returncode}\n"
+        f"stdout={proc.stdout!r}\n"
+        f"stderr={proc.stderr!r}"
+    )
+
+
 def test_fatal_error():
     proc = call_in_subprocess("Py_FatalError", "my fatal error")
-    assert proc.returncode != 0
-    assert "my fatal error" in proc.stderr, proc.stderr
+    diagnostics = describe_subprocess_result(proc)
+    assert proc.returncode != 0, diagnostics
+    assert "my fatal error" in proc.stderr, diagnostics
 
 
 def test_assert_failed():
     proc = call_in_subprocess("_PyObject_ASSERT_WITH_MSG", "some assert failed")
-    assert proc.returncode != 0
-    assert "some assert failed" in proc.stderr, proc.stderr
-    assert "refcount" in proc.stderr, proc.stderr
-    assert "object type" in proc.stderr, proc.stderr
-    assert "object type name" in proc.stderr, proc.stderr
+    diagnostics = describe_subprocess_result(proc)
+    assert proc.returncode != 0, diagnostics
+    assert "some assert failed" in proc.stderr, diagnostics
+    assert "refcount" in proc.stderr, diagnostics
+    assert "object type" in proc.stderr, diagnostics
+    assert "object type name" in proc.stderr, diagnostics

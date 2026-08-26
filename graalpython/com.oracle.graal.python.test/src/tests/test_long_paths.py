@@ -61,7 +61,8 @@ class LongPathTests(unittest.TestCase):
         try:
             long_dir = root
             component = 'long-path-component-' + 'x' * 80
-            while len(long_dir) < 300:
+            relative_file_name = 'renamed-long-path-file.txt'
+            while len(os.path.relpath(os.path.join(long_dir, relative_file_name), root)) <= 260:
                 long_dir = os.path.join(long_dir, component)
                 os.mkdir(long_dir)
                 directories.append(long_dir)
@@ -81,7 +82,7 @@ class LongPathTests(unittest.TestCase):
             os.truncate(long_file, 3)
             self.assertEqual(3, os.stat(long_file).st_size)
 
-            renamed = os.path.join(long_dir, 'renamed-long-path-file.txt')
+            renamed = os.path.join(long_dir, relative_file_name)
             os.rename(long_file, renamed)
             replacement = os.path.join(long_dir, 'replacement-long-path-file.txt')
             fd = os.open(replacement, os.O_CREAT | os.O_WRONLY)
