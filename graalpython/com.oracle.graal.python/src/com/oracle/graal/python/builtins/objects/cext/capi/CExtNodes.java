@@ -51,10 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_flags;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_clear;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_doc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_free;
@@ -68,10 +64,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
-import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
@@ -86,8 +79,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.CFunctionDocUtils;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -106,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -115,11 +106,8 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -141,12 +129,10 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1213,15 +1199,7 @@ public abstract class CExtNodes {
         }
 
         if (definition.methods != NULLPTR) {
-            for (int i = 0;; i++) {
-                PBuiltinFunction fun = createLegacyMethod(definition.methods, i, context.getLanguage());
-                if (fun == null) {
-                    break;
-                }
-                PBuiltinMethod method = PFactory.createBuiltinMethod(context.getLanguage(), module, fun);
-                WriteAttributeToPythonObjectNode.executeUncached(method, SpecialAttributeNames.T___MODULE__, moduleSpec.name);
-                WriteAttributeToObjectNode.getUncached().execute(module, fun.getName(), method);
-            }
+            PythonCextMethodBuiltins.addMethodsToObject(context.getLanguage(), definition.methods, module, moduleSpec.name);
         }
 
         Object mDoc;
@@ -1373,49 +1351,6 @@ public abstract class CExtNodes {
                         PythonToNativeInternalNode.executeUncached(module, false));
         TransformExceptionFromNativeNode.getUncached().execute(node, threadState, moduleName, result != 0, true,
                         ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
-    }
-
-    /**
-     * TODO(fa): overlaps with
-     * {@link com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins#GraalPyPrivate_Module_AddFunctions(long, long)}.
-     *
-     * <pre>
-     *     struct PyMethodDef {
-     *         const char * ml_name;
-     *         PyCFunction  ml_meth;
-     *         int          ml_flags;
-     *         const char * ml_doc;
-     *     };
-     * </pre>
-     */
-    @TruffleBoundary
-    static PBuiltinFunction createLegacyMethod(long methodDefPtr, int element, PythonLanguage language) {
-        long methodNamePtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_name);
-        if (methodNamePtr == NULLPTR) {
-            return null;
-        }
-        TruffleString methodName = FromCharPointerNode.executeUncached(methodNamePtr);
-        // note: 'ml_doc' may be NULL; in this case, we would store 'None'
-        Object methodDoc = PNone.NONE;
-        long methodDocPtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_doc);
-        if (methodDocPtr != NULLPTR) {
-            methodDoc = FromCharPointerNode.executeUncached(methodDocPtr);
-        }
-
-        int flags = readStructArrayIntField(methodDefPtr, element, PyMethodDef__ml_flags);
-        long mlMethObj = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_meth);
-        // CPy-style methods
-        // TODO(fa) support static and class methods
-        MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
-        PRootNode rootNode = MethodDescriptorWrapper.getOrCreateRootNode(language, sig, methodName, PyMethodFlags.isMethStatic(flags));
-        NativeFunctionPointer fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
-        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
-        PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, rootNode);
-        HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
-
-        CFunctionDocUtils.writeDocAndTextSignature(function, methodName, methodDoc, flags);
-
-        return function;
     }
 
     @GenerateInline

@@ -163,7 +163,7 @@ public class CStructAccess {
         writePtrField(getArrayElementPtr(arrayPtr, index, field.struct), field, value);
     }
 
-    private static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
+    public static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
         return arrayPtr + index * struct.size();
     }
 

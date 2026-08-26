@@ -60,8 +60,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VOID_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.bindFunctionPointer;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.nodes.ErrorMessages.NAMELESS_MODULE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -94,11 +92,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -278,7 +273,7 @@ public final class PythonCextModuleBuiltins {
             return PRaiseNativeNodeGen.getUncached().raiseIntWithoutFrame(-1, SystemError, NAMELESS_MODULE, EMPTY_OBJECT_ARRAY);
         }
 
-        addMethodsToObject(functions, module, modName);
+        PythonCextMethodBuiltins.addMethodsToObject(PythonLanguage.get(null), functions, module, modName);
         return 0;
     }
 
@@ -287,33 +282,8 @@ public final class PythonCextModuleBuiltins {
         CompilerAsserts.neverPartOfCompilation();
         Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
         Object name = NativeToPythonInternalNode.executeUncached(nameRaw, false);
-        addMethodsToObject(functions, module, name);
+        PythonCextMethodBuiltins.addMethodsToObject(PythonLanguage.get(null), functions, module, name);
         return 0;
-    }
-
-    /**
-     * Implementation of {@code moduleobject.c: _add_methods_to_object}.
-     *
-     * TODO(fa): overlaps with
-     * {@link com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes#createLegacyMethod}
-     */
-    private static void addMethodsToObject(long functions, Object module, Object modName) {
-        PythonLanguage language = PythonLanguage.get(null);
-        long nameRaw;
-
-        // iterate over a native array of PyModuleDef elements
-        for (long def = functions; (nameRaw = readPtrField(def, CFields.PyMethodDef__ml_name)) != NULLPTR; def += CStructs.PyMethodDef.size()) {
-            long cfunc = readPtrField(def, CFields.PyMethodDef__ml_meth);
-            int flags = readIntField(def, CFields.PyMethodDef__ml_flags);
-            long docRaw = readPtrField(def, CFields.PyMethodDef__ml_doc);
-
-            TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
-            Object doc = CharPtrToPythonNode.executeUncached(docRaw);
-            assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
-
-            PythonBuiltinObject func = PythonCextMethodBuiltins.cFunctionNewExMethodNode(language, def, name, cfunc, flags, module, modName, PNone.NO_VALUE, doc);
-            WriteAttributeToObjectNode.getUncached().execute(module, name, func);
-        }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct, abi = ABI.ABI3T)

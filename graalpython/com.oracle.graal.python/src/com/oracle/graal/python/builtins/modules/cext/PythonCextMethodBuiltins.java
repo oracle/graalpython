@@ -48,6 +48,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getArrayElementPtr;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags.METH_METHOD;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
@@ -57,16 +60,21 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextMethodBuiltins {
@@ -92,6 +100,30 @@ public final class PythonCextMethodBuiltins {
         }
         WriteAttributeToPythonObjectNode.executeUncached(method, T___MODULE__, moduleName);
         return method;
+    }
+
+    /**
+     * Implementation of {@code moduleobject.c: _add_methods_to_object}.
+     */
+    @TruffleBoundary
+    public static void addMethodsToObject(PythonLanguage language, long methods, Object object, Object moduleName) {
+        for (int i = 0;; i++) {
+            long methodDef = getArrayElementPtr(methods, i, CStructs.PyMethodDef);
+            long nameRaw = readPtrField(methodDef, CFields.PyMethodDef__ml_name);
+            if (nameRaw == NULLPTR) {
+                break;
+            }
+            long methPtr = readPtrField(methodDef, CFields.PyMethodDef__ml_meth);
+            int flags = readIntField(methodDef, CFields.PyMethodDef__ml_flags);
+            long docRaw = readPtrField(methodDef, CFields.PyMethodDef__ml_doc);
+
+            TruffleString name = FromCharPointerNode.executeUncached(nameRaw);
+            Object doc = CharPtrToPythonNode.executeUncached(docRaw);
+            assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
+
+            PythonBuiltinObject function = cFunctionNewExMethodNode(language, methodDef, name, methPtr, flags, object, moduleName, PNone.NO_VALUE, doc);
+            WriteAttributeToObjectNode.getUncached().execute(object, name, function);
+        }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyMethodDef, ConstCharPtrAsTruffleString, Pointer, Int, PyObject, PyObject, PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)

@@ -100,8 +100,14 @@ from_slots(PyObject *Py_UNUSED(module), PyObject *spec)
 }
 
 static PyMethodDef methods[] = {
-    {"increment", increment, METH_NOARGS, NULL},
-    {"from_slots", from_slots, METH_O, NULL},
+    {"increment", increment, METH_NOARGS,
+        "increment($module, /)\n"
+        "--\n\n"
+        "Increment the module state."},
+    {"from_slots", from_slots, METH_O,
+        "from_slots($module, spec, /)\n"
+        "--\n\n"
+        "Create a module from slots."},
     {NULL, NULL, 0, NULL},
 };
 
@@ -260,6 +266,10 @@ class TestAbi3t(unittest.TestCase):
         code = (
             "import importlib.machinery; import abi3t_smoke as m; "
             "n = m.from_slots(importlib.machinery.ModuleSpec('from_slots', None)); "
+            "assert m.increment.__name__ == 'increment'; "
+            "assert m.increment.__module__ == 'abi3t_smoke'; "
+            "assert m.increment.__doc__ == 'Increment the module state.'; "
+            "assert m.increment.__text_signature__ == '($module, /)'; "
             "print(m.increment(), m.increment(), n.__name__)"
         )
         proc = subprocess.run(
