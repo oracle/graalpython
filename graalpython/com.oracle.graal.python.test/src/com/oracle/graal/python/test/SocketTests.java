@@ -643,6 +643,11 @@ public class SocketTests {
             assertTrue(e.hasErrno(OSErrorEnum.EWOULDBLOCK));
         }
         cli.connect(srv.usa());
+
+        // A completed connect does not guarantee that the connection is already visible to a
+        // non-blocking accept(). Wait until the listening socket reports that it is readable.
+        SelectResult res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(1, 0));
+        assertTrue(res.getReadFds()[0]);
         srv.accept(cli.address());
     }
 
@@ -691,8 +696,23 @@ public class SocketTests {
 
         res = lib.select(posixSupport, new int[]{srv.fd, cli.fd, c.fd}, new int[0], new int[0], new Timeval(0, 100000));
         assertFalse(res.getReadFds()[0]);
-        assertTrue(res.getReadFds()[1]);
-        assertTrue(res.getReadFds()[2]);
+
+        // c is readable immediately after shutdown(SHUT_RD), while the data sent to cli may arrive
+        // slightly later. select() returns when any descriptor is ready, so wait for each event
+        // separately if they were not observed in the same call.
+        boolean cliReadable = res.getReadFds()[1];
+        boolean cReadable = res.getReadFds()[2];
+        if (!cliReadable) {
+            SelectResult cliRes = lib.select(posixSupport, new int[]{cli.fd}, new int[0], new int[0],
+                            new Timeval(1, 0));
+            cliReadable = cliRes.getReadFds()[0];
+        }
+        if (!cReadable) {
+            SelectResult cRes = lib.select(posixSupport, new int[]{c.fd}, new int[0], new int[0], new Timeval(1, 0));
+            cReadable = cRes.getReadFds()[0];
+        }
+        assertTrue(cliReadable);
+        assertTrue(cReadable);
 
         assertEquals(0, lib.recv(posixSupport, c.fd, new byte[10], 0, 10, 0));
 
