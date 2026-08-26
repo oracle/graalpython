@@ -67,7 +67,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,9 +97,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ReferenceQueueCoordinator;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -349,22 +348,6 @@ public final class CApiContext {
      */
     private final HashMap<PyMethodDefHelper, Long> methodDefinitions = new HashMap<>(4);
 
-    /**
-     * This list holds a strong reference to all loaded extension libraries to keep the library
-     * objects alive. This is necessary because native library handles may {@code dlclose} the
-     * library (and thus {@code munmap} all code) if the library object is no longer reachable.
-     * However, it can happen
-     * that we still store raw function pointers (as Java {@code long} values) in a native object
-     * that is referenced by a
-     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference}.
-     * For example, the {code tp_dealloc} functions may be executed a long time after all managed
-     * objects of the extension died and the native library has been {@code dlclosed}'d.
-     *
-     * Since we have no control over the timing when certain garbage will be collected, we need to
-     * ensure that the code is still mapped.
-     */
-    private final List<Object> loadedExtensions = new LinkedList<>();
-
     private final NativeLibraryLocator nativeLibraryLocator;
 
     public final BackgroundGCTask gcTask;
@@ -389,11 +372,6 @@ public final class CApiContext {
 
         this.gcTask = new BackgroundGCTask(context);
         this.referenceQueueWatcherTask = new ReferenceQueueWatcherTask(context);
-    }
-
-    @TruffleBoundary
-    void addLoadedExtensionLibrary(Object nativeLibrary) {
-        loadedExtensions.add(nativeLibrary);
     }
 
     @TruffleBoundary
@@ -1369,7 +1347,7 @@ public final class CApiContext {
             TruffleString modExportFuncName = spec.getModExecFunctionName();
             long modExportFunc = sharedLibrary.lookupOptionalSymbol(modExportFuncName.toJavaStringUncached());
             if (modExportFunc != NULLPTR) {
-                return initAbi3tCApiModule(node, sharedLibrary, modExportFunc, spec);
+                return initAbi3tCApiModule(node, modExportFunc, spec);
             }
         }
         return initLegacyCApiModule(node, sharedLibrary, spec.getInitFunctionName(), spec);
@@ -1401,12 +1379,10 @@ public final class CApiContext {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CExtNodes.createModuleFromDefAndSpec(node, this, spec, nativeResult, sharedLibrary);
+            return CExtNodes.createModuleFromDefAndSpec(node, this, spec, nativeResult);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             module.setAttribute(T___FILE__, spec.path);
-            addLoadedExtensionLibrary(sharedLibrary);
-
             // add to 'sys.modules'
             PDict sysModules = context.getSysModules();
             sysModules.setItem(spec.name, result);
@@ -1426,7 +1402,7 @@ public final class CApiContext {
     }
 
     // import.c: import_run_modexport
-    private Object initAbi3tCApiModule(Node node, NativeLibrary library, long modExportFunc, ModuleSpec spec) {
+    private Object initAbi3tCApiModule(Node node, long modExportFunc, ModuleSpec spec) {
         CompilerAsserts.neverPartOfCompilation();
         NativeContext nativeContext = context.ensureNativeContext();
         PythonThreadState threadState = context.getThreadState(context.getLanguage());
@@ -1435,7 +1411,7 @@ public final class CApiContext {
                         ExternalFunctionSignature.MODINIT.bind(nativeContext, modExportFunc));
         TransformExceptionFromNativeNode.getUncached().execute(node, threadState, spec.name, slots == NULLPTR, true,
                         ErrorMessages.MODULE_EXPORT_HOOK_FAILED, ErrorMessages.MODULE_EXPORT_HOOK_RAISED_EXCEPTION);
-        Object module = CExtNodes.createModuleFromSlotsAndSpec(node, context.getCApiContext(), library, slots, spec);
+        Object module = CExtNodes.createModuleFromSlotsAndSpec(node, context.getCApiContext(), slots, spec);
         if (module instanceof PythonModule pythonModule && pythonModule.getNativeModuleToken() == NULLPTR) {
             // import_run_modexport uses the static top-level slots array as the default token.
             pythonModule.setNativeModuleToken(slots);

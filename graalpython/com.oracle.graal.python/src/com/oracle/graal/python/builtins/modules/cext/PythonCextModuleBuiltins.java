@@ -324,7 +324,7 @@ public final class PythonCextModuleBuiltins {
         Object spec = NativeToPythonInternalNode.executeUncached(specPtr, false);
         TruffleString name = CastToTruffleStringNode.executeUncached(PyObjectGetAttr.executeUncached(spec, T_NAME));
         ModuleSpec moduleSpec = new ModuleSpec(name, T_EMPTY_STRING, spec);
-        Object module = CExtNodes.createModuleFromSlotsAndSpec(null, PythonContext.get(null).getCApiContext(), null, slots, moduleSpec);
+        Object module = CExtNodes.createModuleFromSlotsAndSpec(null, PythonContext.get(null).getCApiContext(), slots, moduleSpec);
         return PythonToNativeInternalNode.executeNewRefUncached(module);
     }
 

@@ -158,7 +158,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
-import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1021,7 +1020,7 @@ public abstract class CExtNodes {
      * </pre>
      */
     @TruffleBoundary
-    static Object createModuleFromDefAndSpec(Node node, CApiContext capiContext, ModuleSpec moduleSpec, long moduleDefPtr, NativeLibrary library) {
+    static Object createModuleFromDefAndSpec(Node node, CApiContext capiContext, ModuleSpec moduleSpec, long moduleDefPtr) {
         /*
          * The name of the module is taken from the module spec and *NOT* from the module
          * definition.
@@ -1038,7 +1037,7 @@ public abstract class CExtNodes {
         definition.clearFunction = readPtrField(moduleDefPtr, PyModuleDef__m_clear);
         definition.freeFunction = readPtrField(moduleDefPtr, PyModuleDef__m_free);
         definition.token = moduleDefPtr;
-        return createModule(node, capiContext, library, moduleSpec,
+        return createModule(node, capiContext, moduleSpec,
                         parseModuleSlots(node, PySlotIterator.initLegacy(node, mName, slotDefinitions, PySlotIterator.SlotKind.MODULE), definition, mName).getDefinition());
     }
 
@@ -1063,7 +1062,7 @@ public abstract class CExtNodes {
      * </pre>
      */
     @TruffleBoundary
-    public static Object createModuleFromSlotsAndSpec(Node node, CApiContext capiContext, NativeLibrary library, long slots, ModuleSpec moduleSpec) {
+    public static Object createModuleFromSlotsAndSpec(Node node, CApiContext capiContext, long slots, ModuleSpec moduleSpec) {
         PythonContext context = capiContext.getContext();
         ParsedModuleSlots parsed = parseModuleSlots(node, PySlotIterator.init(node, moduleSpec.name, slots, PySlotIterator.SlotKind.MODULE), null, moduleSpec.name);
         if (!parsed.sawAbi) {
@@ -1083,7 +1082,7 @@ public abstract class CExtNodes {
             checkSubinterpIncompatibleExtensionAllowed(node, context, moduleSpec.name);
         }
 
-        return createModule(node, capiContext, library, moduleSpec, parsed.getDefinition());
+        return createModule(node, capiContext, moduleSpec, parsed.getDefinition());
     }
 
     private static final class ParsedModuleSlots {
@@ -1196,7 +1195,7 @@ public abstract class CExtNodes {
         }
     }
 
-    private static Object createModule(Node node, CApiContext capiContext, NativeLibrary library, ModuleSpec moduleSpec, NativeModuleDefinition definition) {
+    private static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, NativeModuleDefinition definition) {
 
         if (definition.stateSize < 0) {
             throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, moduleSpec.name);
@@ -1233,9 +1232,6 @@ public abstract class CExtNodes {
         }
         WriteAttributeToObjectNode.getUncached().execute(module, SpecialAttributeNames.T___DOC__, mDoc);
 
-        if (library != null) {
-            capiContext.addLoadedExtensionLibrary(library);
-        }
         return module;
 
     }
