@@ -52,10 +52,6 @@ import mx_graalpython_benchmark
 import mx_urlrewrites
 
 import tempfile
-try:
-    import tomllib
-except ModuleNotFoundError:
-    from pip._vendor import tomli as tomllib
 from argparse import ArgumentParser
 from dataclasses import dataclass
 
@@ -3423,9 +3419,12 @@ def stable_abi_check(raw_args, default_profile=None):
 
     if not args.profile:
         mx.abort("Specify --profile")
+    # Use mx's bundled TOML parser through its public proxy so this also works with Python < 3.11 without an external dependency.
+    import mx_codeowners
     config_path = os.path.join(SUITE.dir, 'capi-abis.toml')
-    with open(config_path, 'rb') as file:
-        profiles = tomllib.load(file)['profiles']
+    with open(config_path, encoding='utf-8') as file:
+        config = mx_codeowners.stoml_parse_rules(file.read())
+    profiles = {key.partition('.')[2]: value for key, value in config.items() if key.startswith('profiles.')}
     profile = profiles.get(args.profile)
     if profile is None or profile.get('mode') != 'stable':
         mx.abort(f"{args.profile} is not a stable ABI profile in {config_path}")
