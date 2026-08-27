@@ -228,7 +228,13 @@ public abstract class CApiTransitions {
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
+        public final ReferenceQueueCoordinator referenceQueueCoordinator = new ReferenceQueueCoordinator();
+
         volatile PollingState referenceQueuePollingState = RQ_UNINITIALIZED;
+
+        long referenceQueueWatcherDrains;
+        long referenceQueueForcedDrains;
+        long referenceQueueReferencesDrained;
 
         @TruffleBoundary
         public static <T> T putShadowTable(HashMap<Long, T> table, long pointer, T ref) {
@@ -472,136 +478,207 @@ public abstract class CApiTransitions {
         return ref;
     }
 
+    /**
+     * Synchronously drains the reference queue on the current Python thread while it owns the
+     * GIL. If there is no watcher, the queue is polled directly. Otherwise, the coordinator
+     * interrupts a watcher blocked in {@link ReferenceQueue#remove()}, waits until it has left the
+     * remove operation, and transfers exclusive ownership to this thread by changing its state to
+     * {@code DRAINING}. If the watcher removed a reference before observing the interrupt, that
+     * reference is preserved in the coordinator state and processed before the remaining queue is
+     * polled. Finally, ownership is returned and the watcher is resumed. Draining is still subject
+     * to the reference-queue polling state and is skipped while polling is disabled or unsafe.
+     */
+    @SuppressWarnings("try")
+    public static int drainReferenceQueueNow(PythonContext context) {
+        if (!PythonOptions.AUTOMATIC_ASYNC_ACTIONS || context.handleContext.referenceQueueCoordinator.getState() == ReferenceQueueCoordinator.State.INACTIVE) {
+            return pollReferenceQueue(context, null, false);
+        }
+        return pollReferenceQueue(context, null, true);
+    }
+
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static int pollReferenceQueue() {
-        PythonContext context = PythonContext.get(null);
+    private static int pollReferenceQueue(PythonContext context, Reference<?> handoff, boolean force) {
         HandleContext handleContext = context.handleContext;
-        int manuallyCollected = 0;
-        if (handleContext.referenceQueuePollingState != RQ_READY) {
-            return manuallyCollected;
-        }
-        /*
-         * Polling the reference queue may deallocate native GC objects and therefore re-enter
-         * native code paths that use '_PyThreadState_GET()' to obtain the current thread's GC
-         * state. So, we may only poll once the current thread has installed its native
-         * 'tstate_current' pointer.
-         */
-        if (!context.getThreadState(context.getLanguage()).isNativeThreadStateInitialized()) {
-            return manuallyCollected;
-        }
-        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+        boolean coordinated = false;
+        boolean watcherHandoff = false;
+        try {
             if (handleContext.referenceQueuePollingState != RQ_READY) {
-                return manuallyCollected;
+                return 0;
             }
+            /*
+             * Polling the reference queue may deallocate native GC objects and therefore re-enter
+             * native code paths that use '_PyThreadState_GET()' to obtain the current thread's GC
+             * state. So, we may only poll once the current thread has installed its native
+             * 'tstate_current' pointer.
+             */
             if (!context.getThreadState(context.getLanguage()).isNativeThreadStateInitialized()) {
-                return manuallyCollected;
+                return 0;
             }
-            ReferenceQueue<Object> queue = handleContext.referenceQueue;
-            int count = 0;
-            long start = 0;
-            boolean polling = false;
-            ArrayList<Long> referencesToBeFreed = handleContext.referencesToBeFreed;
-            try {
-                while (true) {
-                    Object entry = queue.poll();
-                    if (entry == null) {
-                        if (count > 0) {
-                            assert handleContext.referenceQueuePollingState == RQ_POLLING || handleContext.referenceQueuePollingState == RQ_DISABLED_PERMANENT;
-                            releaseNativeObjects(context, referencesToBeFreed);
-                            LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
+            try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+                if (handleContext.referenceQueuePollingState != RQ_READY) {
+                    return 0;
+                }
+                if (!context.getThreadState(context.getLanguage()).isNativeThreadStateInitialized()) {
+                    return 0;
+                }
+                /*
+                 * Do not claim a watcher handoff until all conditions that can defer polling have
+                 * been checked. The watcher has already removed this reference from the queue, so
+                 * restoring the coordinator state after an unused claim would otherwise lose the
+                 * reference permanently.
+                 */
+                Reference<?> firstReference = null;
+                if (handoff != null) {
+                    firstReference = handleContext.referenceQueueCoordinator.beginWatcherDrain(handoff);
+                    if (firstReference == null) {
+                        return 0;
+                    }
+                    coordinated = true;
+                    watcherHandoff = true;
+                } else if (force) {
+                    Object previousState = handleContext.referenceQueueCoordinator.beginForcedDrain(context.getLanguage().unavailableSafepointLocation);
+                    if (previousState == null) {
+                        return 0;
+                    }
+                    coordinated = true;
+                    if (previousState instanceof Reference<?> reference) {
+                        firstReference = reference;
+                    }
+                }
+                if (watcherHandoff) {
+                    handleContext.referenceQueueWatcherDrains++;
+                } else {
+                    handleContext.referenceQueueForcedDrains++;
+                }
+                ReferenceQueue<Object> queue = handleContext.referenceQueue;
+                int count = 0;
+                long start = 0;
+                boolean polling = false;
+                ArrayList<Long> referencesToBeFreed = handleContext.referencesToBeFreed;
+                try {
+                    Reference<?> entry = firstReference;
+                    while (true) {
+                        if (entry == null) {
+                            entry = queue.poll();
                         }
-                        return manuallyCollected;
-                    }
-                    if (count == 0) {
-                        assert handleContext.referenceQueuePollingState == RQ_READY;
-                        handleContext.referenceQueuePollingState = RQ_POLLING;
-                        polling = true;
-                        start = System.nanoTime();
-                    } else {
-                        assert handleContext.referenceQueuePollingState == RQ_POLLING;
-                    }
-                    count++;
-                    LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", entry));
-                    if (entry instanceof PythonObjectReference reference) {
-                        if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
-                            assert !HandlePointerConverter.pointsToPyIntHandle(reference.pointer);
-                            assert !HandlePointerConverter.pointsToPyFloatHandle(reference.pointer);
-                            assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
-                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
-                            nativeStubLookupRemove(handleContext, reference);
-                            /*
-                             * We may only free native object stubs if their reference count is
-                             * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because we
-                             * don't know if they are still used from native code. Those must be
-                             * free'd at context finalization.
-                             */
-                            long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
-                            long newRefCount = subNativeRefCount(stubPointer, MANAGED_REFCNT);
-                            if (newRefCount == 0) {
-                                LOGGER.finer(() -> PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
-                                freeNativeStub(reference);
-                            } else {
-                                LOGGER.finer(() -> PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
-                                /*
-                                 * In this case, the object is no longer referenced from managed but
-                                 * still from native code (since the reference count is greater 0).
-                                 * This case is possible if there are reference cycles that include
-                                 * managed objects. We overwrite field 'CFields.GraalPyObject__id'
-                                 * to avoid incorrect reuse of the ID which could resolve to another
-                                 * object.
-                                 */
-                                writeIntField(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
-                                // this can only happen if the object is a GC object
-                                assert reference.gc;
-                                /*
-                                 * Since the managed object is already dead (only the native object
-                                 * stub is still alive), we need to remove the object from its
-                                 * current GC list. Otherwise, the Python GC would try to traverse
-                                 * the object on the next collection which would lead to a crash.
-                                 */
-                                GCListRemoveNode.executeUncached(stubPointer);
+                        if (entry == null) {
+                            if (count > 0) {
+                                assert handleContext.referenceQueuePollingState == RQ_POLLING || handleContext.referenceQueuePollingState == RQ_DISABLED_PERMANENT;
+                                releaseNativeObjects(context, referencesToBeFreed);
                             }
+                            handleContext.referenceQueueReferencesDrained += count;
+                            if (count > 0) {
+                                logReferenceQueueDrain(handleContext, watcherHandoff, count, start);
+                            }
+                            return 0;
+                        }
+                        if (count == 0) {
+                            assert handleContext.referenceQueuePollingState == RQ_READY;
+                            handleContext.referenceQueuePollingState = RQ_POLLING;
+                            polling = true;
+                            start = System.nanoTime();
                         } else {
-                            assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
-                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
-                            if (nativeLookupRemove(handleContext, reference.pointer) != null) {
-                                // The reference was still in our lookup table, it was not otherwise
-                                // freed and we can process it now.
-                                if (reference.isAllocatedFromJava()) {
-                                    LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
-                                    freeNativeStruct(reference);
+                            assert handleContext.referenceQueuePollingState == RQ_POLLING;
+                        }
+                        count++;
+                        Reference<?> currentEntry = entry;
+                        entry = null;
+                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", currentEntry));
+                        if (currentEntry instanceof PythonObjectReference reference) {
+                            if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
+                                assert !HandlePointerConverter.pointsToPyIntHandle(reference.pointer);
+                                assert !HandlePointerConverter.pointsToPyFloatHandle(reference.pointer);
+                                assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
+                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
+                                nativeStubLookupRemove(handleContext, reference);
+                                /*
+                                 * We may only free native object stubs if their reference count is
+                                 * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because we
+                                 * don't know if they are still used from native code. Those must be
+                                 * free'd at context finalization.
+                                 */
+                                long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
+                                long newRefCount = subNativeRefCount(stubPointer, MANAGED_REFCNT);
+                                if (newRefCount == 0) {
+                                    LOGGER.finer(() -> PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
+                                    freeNativeStub(reference);
                                 } else {
-                                    referencesToBeFreed.add(reference.pointer);
+                                    LOGGER.finer(() -> PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
+                                    /*
+                                     * In this case, the object is no longer referenced from managed but
+                                     * still from native code (since the reference count is greater 0).
+                                     * This case is possible if there are reference cycles that include
+                                     * managed objects. We overwrite field 'CFields.GraalPyObject__id'
+                                     * to avoid incorrect reuse of the ID which could resolve to another
+                                     * object.
+                                     */
+                                    writeIntField(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
+                                    // this can only happen if the object is a GC object
+                                    assert reference.gc;
+                                    /*
+                                     * Since the managed object is already dead (only the native object
+                                     * stub is still alive), we need to remove the object from its
+                                     * current GC list. Otherwise, the Python GC would try to traverse
+                                     * the object on the next collection which would lead to a crash.
+                                     */
+                                    GCListRemoveNode.executeUncached(stubPointer);
                                 }
                             } else {
-                                // This handle was removed from the native lookup table before,
-                                // probably during an explicit collection. This can happen during
-                                // shutdown when tp_dealloc is called for some objects and that
-                                // causes upcalls and reference queue polling on references that
-                                // were already removed and had their memory freed
+                                assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
+                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
+                                if (nativeLookupRemove(handleContext, reference.pointer) != null) {
+                                    // The reference was still in our lookup table, it was not otherwise
+                                    // freed and we can process it now.
+                                    if (reference.isAllocatedFromJava()) {
+                                        LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
+                                        freeNativeStruct(reference);
+                                    } else {
+                                        referencesToBeFreed.add(reference.pointer);
+                                    }
+                                } else {
+                                    // This handle was removed from the native lookup table before,
+                                    // probably during an explicit collection. This can happen during
+                                    // shutdown when tp_dealloc is called for some objects and that
+                                    // causes upcalls and reference queue polling on references that
+                                    // were already removed and had their memory freed
+                                }
                             }
+                        } else if (currentEntry instanceof NativeObjectReference reference) {
+                            if (nativeLookupRemove(handleContext, reference.pointer) == reference) {
+                                // The reference was still in our lookup table, it was not otherwise
+                                // freed and we can process it now
+                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
+                                processNativeObjectReference(reference, referencesToBeFreed);
+                            }
+                        } else if (currentEntry instanceof NativeStorageReference reference) {
+                            handleContext.nativeStorageReferences.remove(reference);
+                            processNativeStorageReference(reference);
+                        } else if (currentEntry instanceof PyCapsuleReference reference) {
+                            handleContext.pyCapsuleReferences.remove(reference);
+                            processPyCapsuleReference(reference);
                         }
-                    } else if (entry instanceof NativeObjectReference reference) {
-                        if (nativeLookupRemove(handleContext, reference.pointer) == reference) {
-                            // The reference was still in our lookup table, it was not otherwise
-                            // freed and we can process it now
-                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
-                            processNativeObjectReference(reference, referencesToBeFreed);
-                        }
-                    } else if (entry instanceof NativeStorageReference reference) {
-                        handleContext.nativeStorageReferences.remove(reference);
-                        processNativeStorageReference(reference);
-                    } else if (entry instanceof PyCapsuleReference reference) {
-                        handleContext.pyCapsuleReferences.remove(reference);
-                        processPyCapsuleReference(reference);
+                    }
+                } finally {
+                    if (polling && handleContext.referenceQueuePollingState == RQ_POLLING) {
+                        handleContext.referenceQueuePollingState = RQ_READY;
                     }
                 }
-            } finally {
-                if (polling && handleContext.referenceQueuePollingState == RQ_POLLING) {
-                    handleContext.referenceQueuePollingState = RQ_READY;
-                }
             }
+        } finally {
+            if (coordinated) {
+                handleContext.referenceQueueCoordinator.finishDrain();
+            }
+        }
+    }
+
+    private static void logReferenceQueueDrain(HandleContext handleContext, boolean watcherHandoff, int count, long start) {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString(
+                            "native reference queue drain reason=%s drained=%d time=%dms totals={watcher-drains=%d, forced-drains=%d, references-drained=%d}",
+                            watcherHandoff ? "watcher" : "forced", count, (System.nanoTime() - start) / 1000000,
+                            handleContext.referenceQueueWatcherDrains, handleContext.referenceQueueForcedDrains,
+                            handleContext.referenceQueueReferencesDrained));
         }
     }
 
@@ -772,7 +849,7 @@ public abstract class CApiTransitions {
             }
         }
         releaseNativeObjects(context, referencesToBeFreed);
-        pollReferenceQueue();
+        pollReferenceQueueIfPending(context);
     }
 
     public static void freeNativeReplacementStructs(PythonContext context, HandleContext handleContext) {
@@ -797,6 +874,10 @@ public abstract class CApiTransitions {
 
     public static boolean disableReferenceQueuePolling(HandleContext handleContext) {
         if (handleContext.referenceQueuePollingState == RQ_READY) {
+            PythonContext context = PythonContext.get(null);
+            if (!handleContext.referenceQueueCoordinator.disable(context.getLanguage().unavailableSafepointLocation)) {
+                return true;
+            }
             handleContext.referenceQueuePollingState = RQ_DISABLED_TEMP;
             return false;
         }
@@ -806,6 +887,7 @@ public abstract class CApiTransitions {
     public static void enableReferenceQueuePolling(HandleContext handleContext) {
         if (handleContext.referenceQueuePollingState == RQ_DISABLED_TEMP) {
             handleContext.referenceQueuePollingState = RQ_READY;
+            handleContext.referenceQueueCoordinator.enable();
         }
     }
 
@@ -816,6 +898,30 @@ public abstract class CApiTransitions {
 
     public static void disableReferenceQueuePollingPermanently(HandleContext handleContext) {
         handleContext.referenceQueuePollingState = RQ_DISABLED_PERMANENT;
+    }
+
+    /**
+     * Processes a lock-free handoff from the reference-queue watcher. The watcher removes the
+     * first reference and publishes it by replacing {@code WATCHING} in the coordinator's atomic
+     * state. A Python thread reads that state once; a {@link Reference} means that work is pending
+     * and is passed on as the expected value used to claim exclusive draining ownership. In the
+     * watcher steady state, a non-reference value returns immediately without taking a lock or
+     * inspecting the queue. If no watcher exists, reference-queue polling falls back to the direct,
+     * uncoordinated path.
+     */
+    public static void pollReferenceQueueIfPending(PythonContext context) {
+        HandleContext handleContext = context.handleContext;
+        if (!PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            pollReferenceQueue(context, null, false);
+            return;
+        }
+        Object state = handleContext.referenceQueueCoordinator.getState();
+        if (state instanceof Reference<?> reference) {
+            pollReferenceQueue(context, reference, false);
+        } else if (state == ReferenceQueueCoordinator.State.INACTIVE) {
+            // Preserve polling when the watcher is disabled by configuration.
+            pollReferenceQueue(context, null, false);
+        }
     }
 
     private static void freeNativeStub(PythonObjectReference ref) {
@@ -1000,14 +1106,14 @@ public abstract class CApiTransitions {
         assert context.nativeWeakRef.isEmpty();
     }
 
-    public static void maybeGCALot() {
+    public static void maybeGCALot(Node inliningTarget) {
         if (GCALot != 0) {
-            maybeGC();
+            maybeGC(PythonContext.get(inliningTarget));
         }
     }
 
     @TruffleBoundary
-    private static void maybeGC() {
+    private static void maybeGC(PythonContext context) {
         GCALotTotalCounter++;
         if (GCALotTotalCounter < GCALotWait) {
             // skip
@@ -1015,7 +1121,7 @@ public abstract class CApiTransitions {
             LOGGER.info("GC A Lot - calling System.gc (opportunities=" + GCALotTotalCounter + ")");
             GCALotCounter = 0;
             PythonUtils.forceFullGC();
-            pollReferenceQueue();
+            pollReferenceQueueIfPending(context);
         }
     }
 
@@ -1310,7 +1416,7 @@ public abstract class CApiTransitions {
             assert !mv.isNative();
             assert initialRefCount == IMMORTAL_REFCNT;
             long ptr = PyMemoryViewWrapper.allocate(mv);
-            CApiTransitions.createReference(mv, ptr);
+            CApiTransitions.createReference(PythonContext.get(null), mv, ptr);
             return ptr;
         }
 
@@ -1416,7 +1522,8 @@ public abstract class CApiTransitions {
                         @Cached PyObjectGCTrackNode gcTrackNode) {
 
             log(object);
-            pollReferenceQueue();
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            pollReferenceQueueIfPending(pythonContext);
 
             /*
              * Allocate a native stub object (C type: GraalPy*Object). For types that participate in
@@ -1427,7 +1534,6 @@ public abstract class CApiTransitions {
             long stubPointer = NativeMemory.malloc(allocationSize);
             NativeMemory.memset(stubPointer, (byte) 0, ctype.size() + presize);
 
-            PythonContext pythonContext = PythonContext.get(inliningTarget);
             HandleContext handleContext = pythonContext.handleContext;
             long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
 
@@ -1511,7 +1617,7 @@ public abstract class CApiTransitions {
      */
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static void createReference(PythonObject obj, long ptr) {
+    public static void createReference(PythonContext pythonContext, PythonObject obj, long ptr) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
              * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
@@ -1520,8 +1626,8 @@ public abstract class CApiTransitions {
             if (!obj.isNative()) {
                 logVoid(obj, ptr);
                 obj.setNativePointer(ptr);
-                pollReferenceQueue();
-                HandleContext context = getContext();
+                pollReferenceQueueIfPending(pythonContext);
+                HandleContext context = pythonContext.handleContext;
                 nativeLookupPut(context, ptr, PythonObjectReference.createReplacement(context, obj, ptr, false));
             }
         }
@@ -1826,13 +1932,13 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached FirstToNativeNode firstToNativeNode,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
-            assert PythonContext.get(inliningTarget).ownsGil();
-            pollReferenceQueue();
+            PythonContext context = PythonContext.get(inliningTarget);
+            assert context.ownsGil();
+            pollReferenceQueueIfPending(context);
 
             long pointer;
             if (!pythonObject.isNative()) {
                 assert !CApiContext.isSpecialSingleton(pythonObject);
-                PythonContext context = PythonContext.get(inliningTarget);
                 boolean immortal = isImmortalPythonObject(context, pythonObject);
                 pointer = firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal));
                 pythonObject.setNativePointer(pointer);
@@ -1863,8 +1969,9 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached FirstToNativeNode firstToNativeNode,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
-            assert PythonContext.get(inliningTarget).ownsGil();
-            pollReferenceQueue();
+            PythonContext context = PythonContext.get(inliningTarget);
+            assert context.ownsGil();
+            pollReferenceQueueIfPending(context);
 
             Object profiled = classProfile.profile(inliningTarget, obj);
 
@@ -1888,8 +1995,6 @@ public abstract class CApiTransitions {
             if (profiled instanceof PythonAbstractNativeObject pythonAbstractNativeObject) {
                 return doNative(inliningTarget, pythonAbstractNativeObject, needsTransfer, hasReplicatedNativeReferences, updateRefNode);
             }
-
-            PythonContext context = PythonContext.get(inliningTarget);
 
             /*
              * Step 4: Special singletons (e.g. PNone) are context-independent. Their native
@@ -2119,7 +2224,8 @@ public abstract class CApiTransitions {
                     /*
                      * Here we are encountering a weakref object that has died in the managed side,
                      * e.g. PReferenceType, but we kept alive in the native side, see
-                     * pollReferenceQueue(). Though, if this happens to an object that shouldn't
+                     * pollReferenceQueueIfPending(). Though, if this happens to an object that
+                     * shouldn't
                      * have died in the managed side, the native side should catch it with a null
                      * pointer check.
                      */
@@ -2145,7 +2251,7 @@ public abstract class CApiTransitions {
                         if (LOGGER.isLoggable(Level.FINE)) {
                             LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         }
-                        return createAbstractNativeObject(threadState, handleContext, needsTransfer, pointer);
+                        return createAbstractNativeObject(pythonContext, threadState, handleContext, needsTransfer, pointer);
                     }
                     if (isNativeObjectProfile.profile(inliningTarget, ref instanceof PythonAbstractNativeObject)) {
                         if (needsTransfer) {
@@ -2157,7 +2263,7 @@ public abstract class CApiTransitions {
                         result = (PythonAbstractObject) ref;
                     }
                 } else {
-                    return createAbstractNativeObject(threadState, handleContext, needsTransfer, pointer);
+                    return createAbstractNativeObject(pythonContext, threadState, handleContext, needsTransfer, pointer);
                 }
             }
             return updateRef(inliningTarget, wrapperProfile, updateRefNode, needsTransfer, release, result);
@@ -2328,7 +2434,7 @@ public abstract class CApiTransitions {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(threadState, handleContext, stealing, pointer);
+                        return createAbstractNativeObject(pythonContext, threadState, handleContext, stealing, pointer);
                     }
                     if (isNativeObjectProfile.profile(inliningTarget, ref instanceof PythonAbstractNativeObject)) {
                         if (stealing) {
@@ -2340,7 +2446,7 @@ public abstract class CApiTransitions {
                         pythonAbstractObject = (PythonAbstractObject) ref;
                     }
                 } else {
-                    return createAbstractNativeObject(threadState, handleContext, stealing, pointer);
+                    return createAbstractNativeObject(pythonContext, threadState, handleContext, stealing, pointer);
                 }
             }
             return NativeToPythonInternalNode.updateRef(inliningTarget, wrapperProfile, updateRefNode, stealing, false, pythonAbstractObject);
@@ -2464,7 +2570,7 @@ public abstract class CApiTransitions {
                 if (LOGGER.isLoggable(Level.FINE)) {
                     LOGGER.fine(PythonUtils.formatJString("re-creating collected PythonNativeClass reference 0x%x", pointer));
                 }
-                return recreatePythonNativeClass(handleContext, pointer);
+                return recreatePythonNativeClass(pythonContext, handleContext, pointer);
             }
             assert clazz instanceof PythonAbstractClass;
             return clazz;
@@ -2603,8 +2709,8 @@ public abstract class CApiTransitions {
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, newValue);
     }
 
-    private static PythonAbstractNativeObject createAbstractNativeObject(PythonThreadState threadState, HandleContext handleContext, boolean transfer, long pointer) {
-        pollReferenceQueue();
+    private static PythonAbstractNativeObject createAbstractNativeObject(PythonContext pythonContext, PythonThreadState threadState, HandleContext handleContext, boolean transfer, long pointer) {
+        pollReferenceQueueIfPending(pythonContext);
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(pointer);
         long refCntDelta = MANAGED_REFCNT - (transfer ? 1 : 0);
         /*
@@ -2632,8 +2738,8 @@ public abstract class CApiTransitions {
      * index from the native {@code PyTypeObject}.
      */
     @TruffleBoundary
-    private static PythonNativeClass recreatePythonNativeClass(HandleContext handleContext, long pointer) {
-        pollReferenceQueue();
+    private static PythonNativeClass recreatePythonNativeClass(PythonContext pythonContext, HandleContext handleContext, long pointer) {
+        pollReferenceQueueIfPending(pythonContext);
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(pointer);
         /*
          * Some APIs might be called from tp_dealloc/tp_del/tp_finalize where the refcount is 0. In

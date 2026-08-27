@@ -698,7 +698,7 @@ public final class PythonCextBuiltins {
                     if (retNode != null) {
                         result = retNode.execute(result);
                     }
-                    CApiTransitions.maybeGCALot();
+                    CApiTransitions.maybeGCALot(this);
                     return result;
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "CApiBuiltin", self.name);
@@ -1044,7 +1044,7 @@ public final class PythonCextBuiltins {
             // Restore interrupt status
             Thread.currentThread().interrupt();
         }
-        CApiTransitions.pollReferenceQueue();
+        CApiTransitions.pollReferenceQueueIfPending(PythonContext.get(null));
         PythonContext.triggerAsyncActions(EncapsulatingNodeReference.getCurrent().get());
     }
 
