@@ -1174,6 +1174,14 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
         HandleContext handleContext = context.handleContext;
+        /*
+         * Cancellation skips the context's atexit hooks, so mark the C API as finalizing here as
+         * well. This must happen before any native wrappers are freed while other threads may still
+         * be running native code.
+         */
+        if (nativeFinalizerRunnable != null) {
+            nativeFinalizerRunnable.run();
+        }
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
             context.killSystemThread(backgroundGCTaskThread);
             try {
@@ -1230,7 +1238,6 @@ public final class CApiContext extends CExtContext {
         if (nativeFinalizerShutdownHook != null) {
             try {
                 Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
-                nativeFinalizerRunnable.run();
             } catch (IllegalStateException e) {
                 // Shutdown already in progress, let it do the finalization then
             }
