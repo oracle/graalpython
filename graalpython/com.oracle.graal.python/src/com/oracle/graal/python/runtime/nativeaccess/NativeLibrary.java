@@ -45,10 +45,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 public final class NativeLibrary {
 
     private final NativeContext context;
+    private final String name; // for debugging
     final long ptr;
 
-    NativeLibrary(NativeContext context, long ptr) {
+    NativeLibrary(NativeContext context, String name, long ptr) {
         this.context = context;
+        this.name = name;
         this.ptr = ptr;
     }
 
@@ -62,5 +64,10 @@ public final class NativeLibrary {
 
     public long lookupOptionalSymbol(String name) {
         return context.lookupOptionalSymbol(ptr, name);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("NativeLibrary(%s, 0x%x)", name, ptr);
     }
 }

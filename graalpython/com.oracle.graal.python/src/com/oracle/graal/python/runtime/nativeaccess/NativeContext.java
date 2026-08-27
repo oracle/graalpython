@@ -53,9 +53,11 @@ import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 
 public final class NativeContext {
     public static final String UNAVAILABLE = "JEP 454 is not included on this JDK, this prevents loading native extensions modules.";
+    static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeContext.class);
 
     private static final int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
     private static final int LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x00000200;
@@ -81,13 +83,14 @@ public final class NativeContext {
     @TruffleBoundary
     NativeContext() {
         arena = NativeAccessSupport.createArena();
-        defaultLibrary = isWindows() ? null : new NativeLibrary(this, getPosixDefaultLibraryHandle());
+        defaultLibrary = isWindows() ? null : new NativeLibrary(this, "DEFAULT", getPosixDefaultLibraryHandle());
         callState = ThreadLocal.withInitial(() -> NativeAccessSupport.createCapturedCallState(arena));
     }
 
     public void close() {
         CompilerAsserts.neverPartOfCompilation();
         for (NativeLibrary library : libraries) {
+            LOGGER.fine(() -> "Closing " + library);
             int result;
             try {
                 result = isWindows() ? (int) FREE_LIBRARY.invokeExact(freeLibraryPtr, library.ptr) : (int) DLCLOSE.invokeExact(dlclosePtr, library.ptr);
@@ -129,7 +132,7 @@ public final class NativeContext {
         if (lib == 0) {
             throw createLoadLibraryException(isWindows() ? getLastError() : 0);
         }
-        NativeLibrary library = new NativeLibrary(this, lib);
+        NativeLibrary library = new NativeLibrary(this, name, lib);
         libraries.add(library);
         return library;
     }
