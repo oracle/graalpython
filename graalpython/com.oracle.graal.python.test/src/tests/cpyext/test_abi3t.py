@@ -138,6 +138,16 @@ PyModExport_abi3t_smoke(PyObject *Py_UNUSED(spec))
     };
     return slots;
 }
+
+#ifdef MS_WINDOWS
+/* Setuptools still requires PyInit_<name> when linking extensions on Windows. */
+PyMODINIT_FUNC
+PyInit_abi3t_smoke(void)
+{
+    PyErr_SetString(PyExc_ImportError, "PyInit_abi3t_smoke must not be called");
+    return NULL;
+}
+#endif
 """
 
 
