@@ -1769,12 +1769,14 @@ public final class PythonContext extends Python3Core {
             // shut down async actions threads
             handler.shutdown();
             finalizing = true;
+            // Flushing may execute arbitrary guest code, including C extension code. Do it before
+            // finalizeCApi tears down native wrappers and other C API state.
+            stdioFlushFailed = flushStdFiles();
             if (cApiContext != null) {
                 cApiContext.finalizeCApi(cancelling);
             }
             // interrupt and join or kill python threads
             joinPythonThreads();
-            stdioFlushFailed = flushStdFiles();
             if (nativeContext != null) {
                 nativeContext.close();
             }
