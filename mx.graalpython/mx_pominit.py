@@ -58,8 +58,8 @@ ROOT_VERSION = "1.0-SNAPSHOT"
 LOCAL_GROUP_ID = "${project.groupId}"
 LOCAL_VERSION = "${project.version}"
 GRAALVM_VERSION = "${graalvm.version}"
-DEFAULT_GRAALVM_VERSION = "25.3.4"
-CURRENT_GRAALVM_VERSION = "25.3.4.1"
+DEFAULT_GRAALVM_VERSION = "25.3.4.1"
+CURRENT_GRAALVM_VERSION = "25.4.4.1.1"
 
 XML_UPL_HEADER = """<!--
 Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
