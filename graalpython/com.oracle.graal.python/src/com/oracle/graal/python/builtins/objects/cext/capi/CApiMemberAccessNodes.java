@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -78,8 +77,11 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -363,8 +365,9 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(long pointer, Object newValue,
-                        @Cached AsNativePrimitiveNode asLong) {
-            NativeMemory.writeByte(pointer, (byte) asLong.toInt64(newValue, true));
+                        @Bind Node inliningTarget,
+                        @Cached PyLongAsLongNode asLong) {
+            NativeMemory.writeByte(pointer, (byte) asLong.execute(null, inliningTarget, newValue));
         }
     }
 
@@ -373,8 +376,9 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(long pointer, Object newValue,
-                        @Cached AsNativePrimitiveNode asLong) {
-            NativeMemory.writeShort(pointer, (short) asLong.toInt64(newValue, true));
+                        @Bind Node inliningTarget,
+                        @Cached PyLongAsLongNode asLong) {
+            NativeMemory.writeShort(pointer, (short) asLong.execute(null, inliningTarget, newValue));
         }
     }
 
@@ -383,8 +387,9 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(long pointer, Object newValue,
-                        @Cached AsNativePrimitiveNode asLong) {
-            NativeMemory.writeInt(pointer, (int) asLong.toInt64(newValue, true));
+                        @Bind Node inliningTarget,
+                        @Cached PyLongAsLongNode asLong) {
+            NativeMemory.writeInt(pointer, (int) asLong.execute(null, inliningTarget, newValue));
         }
     }
 
@@ -394,10 +399,10 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached AsNativePrimitiveNode asLong,
+                        @Cached PyLongAsLongNode asLong,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                NativeMemory.writeLong(pointer, asLong.toInt64(newValue, true));
+                NativeMemory.writeLong(pointer, asLong.execute(null, inliningTarget, newValue));
             } catch (PException e) {
                 /*
                  * Special case: if conversion raises an OverflowError, CPython still assigns the
@@ -417,20 +422,22 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached AsNativePrimitiveNode asLong,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaUnsignedLongNode asUnsignedLong,
+                        @Cached PyLongAsLongNode asLong,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             /*
              * This emulates the arguably buggy behavior from CPython where it accepts MIN_LONG to
              * MAX_ULONG values.
              */
             try {
-                NativeMemory.writeInt(pointer, (int) asLong.toUInt64(newValue, true));
+                NativeMemory.writeInt(pointer, (int) asUnsignedLong.execute(inliningTarget, indexNode.execute(null, inliningTarget, newValue)));
             } catch (PException e) {
                 /*
                  * Special case: accept signed long as well.
                  */
                 e.expectOverflowError(inliningTarget, exceptionProfile);
-                NativeMemory.writeInt(pointer, (int) asLong.toInt64(newValue, true));
+                NativeMemory.writeInt(pointer, (int) asLong.execute(null, inliningTarget, newValue));
                 // swallowing the exception
             }
         }
@@ -442,10 +449,11 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached AsNativePrimitiveNode asLong,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaUnsignedLongNode asUnsignedLong,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                NativeMemory.writeLong(pointer, asLong.toUInt64(newValue, true));
+                NativeMemory.writeLong(pointer, asUnsignedLong.execute(inliningTarget, indexNode.execute(null, inliningTarget, newValue)));
             } catch (PException e) {
                 /*
                  * Special case: if conversion raises an OverflowError, CPython still assigns the
