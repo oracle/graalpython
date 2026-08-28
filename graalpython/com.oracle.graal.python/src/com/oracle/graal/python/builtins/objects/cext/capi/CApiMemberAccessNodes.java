@@ -77,19 +77,21 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -358,6 +360,41 @@ public class CApiMemberAccessNodes {
     abstract static class WriteTypeNode extends Node {
 
         abstract void execute(long pointer, Object newValue);
+
+        static long asSignedLong(Object value, int memberType, Node inliningTarget, PyLongAsLongAndOverflowNode asLong, PRaiseNode raiseNode) {
+            try {
+                return asLong.execute(null, inliningTarget, value);
+            } catch (OverflowException e) {
+                if (memberType == T_LONGLONG) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
+                }
+                String targetType = memberType == T_PYSSIZET ? "C ssize_t" : "C long";
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, targetType);
+            }
+        }
+
+        static long asUnsignedLong(Object value, int memberType, Node inliningTarget, CastToJavaUnsignedLongNode asUnsignedLong, IsBuiltinObjectProfile exceptionProfile,
+                        PRaiseNode raiseNode) {
+            try {
+                return asUnsignedLong.execute(inliningTarget, value);
+            } catch (PException e) {
+                e.expectOverflowError(inliningTarget, exceptionProfile);
+                if (memberType == T_ULONGLONG) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
+                }
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C unsigned long");
+            }
+        }
+
+        static boolean isNegative(Object value) {
+            if (value instanceof Integer intValue) {
+                return intValue < 0;
+            } else if (value instanceof Long longValue) {
+                return longValue < 0;
+            } else {
+                return ((PInt) value).isNegative();
+            }
+        }
     }
 
     @GenerateInline(false)
@@ -366,8 +403,9 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached PyLongAsLongNode asLong) {
-            NativeMemory.writeByte(pointer, (byte) asLong.execute(null, inliningTarget, newValue));
+                        @Cached PyLongAsLongAndOverflowNode asLong,
+                        @Cached PRaiseNode raiseNode) {
+            NativeMemory.writeByte(pointer, (byte) asSignedLong(newValue, T_LONG, inliningTarget, asLong, raiseNode));
         }
     }
 
@@ -377,8 +415,9 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached PyLongAsLongNode asLong) {
-            NativeMemory.writeShort(pointer, (short) asLong.execute(null, inliningTarget, newValue));
+                        @Cached PyLongAsLongAndOverflowNode asLong,
+                        @Cached PRaiseNode raiseNode) {
+            NativeMemory.writeShort(pointer, (short) asSignedLong(newValue, T_LONG, inliningTarget, asLong, raiseNode));
         }
     }
 
@@ -388,28 +427,41 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached PyLongAsLongNode asLong) {
-            NativeMemory.writeInt(pointer, (int) asLong.execute(null, inliningTarget, newValue));
+                        @Cached PyLongAsLongAndOverflowNode asLong,
+                        @Cached PRaiseNode raiseNode) {
+            NativeMemory.writeInt(pointer, (int) asSignedLong(newValue, T_LONG, inliningTarget, asLong, raiseNode));
         }
     }
 
     @GenerateInline(false)
     abstract static class WriteLongNode extends WriteTypeNode {
 
+        private final int type;
+
+        WriteLongNode(int type) {
+            this.type = type;
+        }
+
+        int getType() {
+            return type;
+        }
+
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached PyLongAsLongNode asLong,
-                        @Cached IsBuiltinObjectProfile exceptionProfile) {
+                        @Bind("getType()") int type,
+                        @Cached PyLongAsLongAndOverflowNode asLong,
+                        @Cached PRaiseNode raiseNode) {
             try {
-                NativeMemory.writeLong(pointer, asLong.execute(null, inliningTarget, newValue));
+                if (type == T_PYSSIZET && !PyLongCheckNode.executeUncached(newValue)) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED);
+                }
+                NativeMemory.writeLong(pointer, asSignedLong(newValue, type, inliningTarget, asLong, raiseNode));
             } catch (PException e) {
                 /*
-                 * Special case: if conversion raises an OverflowError, CPython still assigns the
-                 * error indication value -1 to the member. That looks rather like a bug but let's
-                 * just do the same.
+                 * PyMember_SetOne assigns the integer conversion's error indication value before
+                 * checking whether the conversion raised an exception.
                  */
-                e.expectOverflowError(inliningTarget, exceptionProfile);
                 NativeMemory.writeLong(pointer, -1);
                 throw e;
             }
@@ -424,46 +476,48 @@ public class CApiMemberAccessNodes {
                         @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaUnsignedLongNode asUnsignedLong,
-                        @Cached PyLongAsLongNode asLong,
-                        @Cached IsBuiltinObjectProfile exceptionProfile) {
+                        @Cached PyLongAsLongAndOverflowNode asLong,
+                        @Cached IsBuiltinObjectProfile exceptionProfile,
+                        @Cached PRaiseNode raiseNode) {
             /*
              * This emulates the arguably buggy behavior from CPython where it accepts MIN_LONG to
              * MAX_ULONG values.
              */
-            try {
-                NativeMemory.writeInt(pointer, (int) asUnsignedLong.execute(inliningTarget, indexNode.execute(null, inliningTarget, newValue)));
-            } catch (PException e) {
-                /*
-                 * Special case: accept signed long as well.
-                 */
-                e.expectOverflowError(inliningTarget, exceptionProfile);
-                NativeMemory.writeInt(pointer, (int) asLong.execute(null, inliningTarget, newValue));
-                // swallowing the exception
-            }
+            Object index = indexNode.execute(null, inliningTarget, newValue);
+            long value = isNegative(index)
+                            ? asSignedLong(index, T_LONG, inliningTarget, asLong, raiseNode)
+                            : asUnsignedLong(index, T_UINT, inliningTarget, asUnsignedLong, exceptionProfile, raiseNode);
+            NativeMemory.writeInt(pointer, (int) value);
         }
     }
 
     @GenerateInline(false)
     abstract static class WriteULongNode extends WriteTypeNode {
 
+        private final int type;
+
+        WriteULongNode(int type) {
+            this.type = type;
+        }
+
+        int getType() {
+            return type;
+        }
+
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
+                        @Bind("getType()") int type,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaUnsignedLongNode asUnsignedLong,
-                        @Cached IsBuiltinObjectProfile exceptionProfile) {
-            try {
-                NativeMemory.writeLong(pointer, asUnsignedLong.execute(inliningTarget, indexNode.execute(null, inliningTarget, newValue)));
-            } catch (PException e) {
-                /*
-                 * Special case: if conversion raises an OverflowError, CPython still assigns the
-                 * error indication value -1 to the member. That looks rather like a bug but let's
-                 * just do the same.
-                 */
-                e.expectOverflowError(inliningTarget, exceptionProfile);
-                NativeMemory.writeLong(pointer, -1);
-                throw e;
-            }
+                        @Cached PyLongAsLongAndOverflowNode asLong,
+                        @Cached IsBuiltinObjectProfile exceptionProfile,
+                        @Cached PRaiseNode raiseNode) {
+            Object index = indexNode.execute(null, inliningTarget, newValue);
+            long value = isNegative(index)
+                            ? asSignedLong(index, T_LONG, inliningTarget, asLong, raiseNode)
+                            : asUnsignedLong(index, type, inliningTarget, asUnsignedLong, exceptionProfile, raiseNode);
+            NativeMemory.writeLong(pointer, value);
         }
     }
 
@@ -548,7 +602,7 @@ public class CApiMemberAccessNodes {
             case T_UINT:
                 return WriteUIntNodeGen.create();
             case T_LONG:
-                return WriteLongNodeGen.create();
+                return WriteLongNodeGen.create(type);
             case T_FLOAT:
                 return WriteFloatNodeGen.create();
             case T_DOUBLE:
@@ -568,13 +622,16 @@ public class CApiMemberAccessNodes {
             case T_UBYTE:
                 return WriteByteNodeGen.create();
             case T_ULONG:
-            case T_ULONGLONG:
-                return WriteULongNodeGen.create();
+                return WriteULongNodeGen.create(type);
             case T_LONGLONG:
-            case T_PYSSIZET:
                 assert CStructs.long__long.size() == Long.BYTES;
+                return WriteLongNodeGen.create(type);
+            case T_PYSSIZET:
                 assert CStructs.Py_ssize_t.size() == Long.BYTES;
-                return WriteLongNodeGen.create();
+                return WriteLongNodeGen.create(type);
+            case T_ULONGLONG:
+                assert CStructs.long__long.size() == Long.BYTES;
+                return WriteULongNodeGen.create(type);
             default:
                 throw CompilerDirectives.shouldNotReachHere("invalid member type");
         }
