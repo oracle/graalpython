@@ -1048,6 +1048,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return op(moduleState.currentZoneId, integers);
         }
 
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object mktime(Object module, Object tuple,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
+        }
+
         @TruffleBoundary
         private static long op(ZoneId timeZone, int[] integers) {
             LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
