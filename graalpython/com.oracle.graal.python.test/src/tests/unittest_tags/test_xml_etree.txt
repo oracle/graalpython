@@ -164,6 +164,7 @@ test.test_xml_etree.IterparseTest.test_non_utf8 @ darwin-arm64,linux-aarch64,lin
 test.test_xml_etree.IterparseTest.test_nonexistent_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xml_etree.IterparseTest.test_parsing_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xml_etree.IterparseTest.test_resource_warnings_exhausted @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_xml_etree.IterparseTest.test_resource_warnings_failed_iteration @ linux-x86_64-github
 test.test_xml_etree.IterparseTest.test_resource_warnings_not_exhausted @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xml_etree.IterparseTest.test_unknown_events @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xml_etree.KeywordArgsTest.test_issue14818 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
