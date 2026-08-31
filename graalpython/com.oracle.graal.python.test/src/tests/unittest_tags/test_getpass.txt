@@ -1,5 +1,5 @@
 test.test_getpass.GetpassGetuserTest.test_username_falls_back_to_pwd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_getpass.GetpassGetuserTest.test_username_priorities_of_env_values @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_getpass.GetpassGetuserTest.test_username_priorities_of_env_values @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_getpass.GetpassGetuserTest.test_username_takes_username_from_env @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_getpass.GetpassRawinputTest.test_flushes_stream_after_prompt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_getpass.GetpassRawinputTest.test_raises_on_empty_input @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

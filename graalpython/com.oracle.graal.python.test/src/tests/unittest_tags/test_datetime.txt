@@ -1,4 +1,4 @@
-test.datetimetester.ExtensionModuleTests_Fast.test_update_type_cache @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.ExtensionModuleTests_Fast.test_update_type_cache @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.IranTest_Fast.test_folds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.IranTest_Fast.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.IranTest_Fast.test_system_transitions @ linux-aarch64-github,linux-x86_64-github
@@ -7,12 +7,12 @@ test.datetimetester.IranTest_Pure.test_folds @ darwin-arm64,darwin-x86_64,linux-
 test.datetimetester.IranTest_Pure.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.IranTest_Pure.test_system_transitions @ linux-aarch64-github,linux-x86_64-github
 !test.datetimetester.IranTest_Pure.test_system_transitions @ darwin-arm64
-test.datetimetester.Oddballs_Fast.test_bug_1028306 @ darwin-x86_64,win32-AMD64,win32-AMD64-github
+test.datetimetester.Oddballs_Fast.test_bug_1028306 @ darwin-x86_64,win32-AMD64
 test.datetimetester.Oddballs_Fast.test_check_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.Oddballs_Fast.test_extra_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.Oddballs_Pure.test_bug_1028306 @ darwin-x86_64,win32-AMD64,win32-AMD64-github
+test.datetimetester.Oddballs_Pure.test_bug_1028306 @ darwin-x86_64,win32-AMD64
 test.datetimetester.Oddballs_Pure.test_check_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.Oddballs_Pure.test_date_datetime_comparison @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.Oddballs_Pure.test_date_datetime_comparison @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.Oddballs_Pure.test_extra_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateOnly_Fast.test_delta_non_days_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateOnly_Pure.test_delta_non_days_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -92,7 +92,7 @@ test.datetimetester.TestDateTimeTZ_Fast.test_strftime_special @ darwin-arm64,dar
 test.datetimetester.TestDateTimeTZ_Fast.test_strftime_trailing_percent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_strftime_y2k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_strptime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTimeTZ_Fast.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTimeTZ_Fast.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_strptime_single_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_subclass_alternate_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_subclass_alternate_constructors_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -101,7 +101,7 @@ test.datetimetester.TestDateTimeTZ_Fast.test_subclass_datetime @ darwin-arm64,da
 test.datetimetester.TestDateTimeTZ_Fast.test_subclass_datetimetz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_subclass_now @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_subclass_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTimeTZ_Fast.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTimeTZ_Fast.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_timestamp_aware @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_timestamp_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Fast.test_timetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -200,7 +200,7 @@ test.datetimetester.TestDateTimeTZ_Pure.test_strftime_trailing_percent @ darwin-
 test.datetimetester.TestDateTimeTZ_Pure.test_strftime_with_bad_tzname_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_strftime_y2k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_strptime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTimeTZ_Pure.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTimeTZ_Pure.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_strptime_single_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_subclass_alternate_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_subclass_alternate_constructors_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -209,7 +209,7 @@ test.datetimetester.TestDateTimeTZ_Pure.test_subclass_datetime @ darwin-arm64,da
 test.datetimetester.TestDateTimeTZ_Pure.test_subclass_datetimetz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_subclass_now @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_subclass_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTimeTZ_Pure.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTimeTZ_Pure.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_timestamp_aware @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_timestamp_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTimeTZ_Pure.test_timetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -298,7 +298,7 @@ test.datetimetester.TestDateTime_Fast.test_strftime_special @ darwin-arm64,darwi
 test.datetimetester.TestDateTime_Fast.test_strftime_trailing_percent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_strftime_y2k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_strptime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTime_Fast.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTime_Fast.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_strptime_single_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_subclass_alternate_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_subclass_alternate_constructors_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -306,7 +306,7 @@ test.datetimetester.TestDateTime_Fast.test_subclass_date @ darwin-arm64,darwin-x
 test.datetimetester.TestDateTime_Fast.test_subclass_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_subclass_now @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_subclass_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTime_Fast.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTime_Fast.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_timestamp_aware @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_timestamp_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Fast.test_timetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -384,7 +384,7 @@ test.datetimetester.TestDateTime_Pure.test_strftime_trailing_percent @ darwin-ar
 test.datetimetester.TestDateTime_Pure.test_strftime_with_bad_tzname_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_strftime_y2k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_strptime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTime_Pure.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTime_Pure.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_strptime_single_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_subclass_alternate_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_subclass_alternate_constructors_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -392,7 +392,7 @@ test.datetimetester.TestDateTime_Pure.test_subclass_date @ darwin-arm64,darwin-x
 test.datetimetester.TestDateTime_Pure.test_subclass_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_subclass_now @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_subclass_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestDateTime_Pure.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestDateTime_Pure.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_timestamp_aware @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_timestamp_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestDateTime_Pure.test_timetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -601,7 +601,7 @@ test.datetimetester.TestSubclassDateTime_Fast.test_strftime_special @ darwin-arm
 test.datetimetester.TestSubclassDateTime_Fast.test_strftime_trailing_percent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_strftime_y2k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_strptime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestSubclassDateTime_Fast.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestSubclassDateTime_Fast.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_strptime_single_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_subclass_alternate_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_subclass_alternate_constructors_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -609,7 +609,7 @@ test.datetimetester.TestSubclassDateTime_Fast.test_subclass_date @ darwin-arm64,
 test.datetimetester.TestSubclassDateTime_Fast.test_subclass_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_subclass_now @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_subclass_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestSubclassDateTime_Fast.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestSubclassDateTime_Fast.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_timestamp_aware @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_timestamp_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Fast.test_timetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -686,7 +686,7 @@ test.datetimetester.TestSubclassDateTime_Pure.test_strftime_trailing_percent @ d
 test.datetimetester.TestSubclassDateTime_Pure.test_strftime_with_bad_tzname_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_strftime_y2k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_strptime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestSubclassDateTime_Pure.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestSubclassDateTime_Pure.test_strptime_leap_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_strptime_single_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_subclass_alternate_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_subclass_alternate_constructors_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -694,7 +694,7 @@ test.datetimetester.TestSubclassDateTime_Pure.test_subclass_date @ darwin-arm64,
 test.datetimetester.TestSubclassDateTime_Pure.test_subclass_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_subclass_now @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_subclass_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestSubclassDateTime_Pure.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestSubclassDateTime_Pure.test_subclass_replace_fold @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_timestamp_aware @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_timestamp_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestSubclassDateTime_Pure.test_timetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -863,7 +863,7 @@ test.datetimetester.TestTimeTZ_Pure.test_tzinfo_classes @ darwin-arm64,darwin-x8
 test.datetimetester.TestTimeTZ_Pure.test_utc_offset_out_of_bounds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeTZ_Pure.test_zones @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Fast.test_aware_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestTimeZone_Fast.test_cannot_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestTimeZone_Fast.test_cannot_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestTimeZone_Fast.test_class_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Fast.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Fast.test_comparison_with_tzinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -880,7 +880,7 @@ test.datetimetester.TestTimeZone_Fast.test_str @ darwin-arm64,darwin-x86_64,linu
 test.datetimetester.TestTimeZone_Fast.test_tzname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Fast.test_utcoffset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Pure.test_aware_datetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.datetimetester.TestTimeZone_Pure.test_cannot_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.datetimetester.TestTimeZone_Pure.test_cannot_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.datetimetester.TestTimeZone_Pure.test_class_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Pure.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.datetimetester.TestTimeZone_Pure.test_comparison_with_tzinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

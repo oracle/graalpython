@@ -65,6 +65,6 @@ test.test_poplib.TestPOP3_TLSClass.test_uidl @ darwin-arm64,linux-aarch64,linux-
 test.test_poplib.TestPOP3_TLSClass.test_user @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_poplib.TestPOP3_TLSClass.test_utf8 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_poplib.TestPOP3_TLSClass.test_utf8_raises_if_unsupported @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_poplib.TestTimeouts.testTimeoutDefault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_poplib.TestTimeouts.testTimeoutNone @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_poplib.TestTimeouts.testTimeoutValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_poplib.TestTimeouts.testTimeoutDefault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_poplib.TestTimeouts.testTimeoutNone @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_poplib.TestTimeouts.testTimeoutValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github

@@ -31,7 +31,7 @@ test.test_csv.TestDialectExcel.test_singlequoted @ darwin-arm64,linux-aarch64,li
 test.test_csv.TestDialectExcel.test_singlequoted_left_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_csv.TestDialectExcel.test_singlequoted_right_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_csv.TestDialectExcel.test_space_and_quote @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_csv.TestDialectRegistry.test_bad_dialect @ win32-AMD64,win32-AMD64-github
+test.test_csv.TestDialectRegistry.test_bad_dialect @ win32-AMD64
 test.test_csv.TestDialectRegistry.test_dialect_apply @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_csv.TestDialectRegistry.test_incomplete_dialect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_csv.TestDialectRegistry.test_register_kwargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
