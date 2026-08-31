@@ -295,6 +295,11 @@ def test_invalid_return_statement():
     assert_raise_syntax_error("return 10", "'return' outside function")
     assert_raise_syntax_error("class A: return 10\n", "'return' outside function")
 
+
+def test_top_level_async_with():
+    assert_raise_syntax_error("async with _:\n    pass", "'async with' outside async function")
+
+
 def test_outside_of_loop_errors():
     assert_raise_syntax_error("break", "'break' outside loop")
     # TODO: parser gives invalid syntax for this one, but should be: "'break' outside loop"

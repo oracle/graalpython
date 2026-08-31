@@ -4054,11 +4054,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.AsyncWith node) {
-            if (!scope.isFunction()) {
-                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside function");
-            }
             if (scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
-                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside async function");
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "'async with' outside async function");
             }
             beginStatement(node, b);
             visitWithRecurse(node.items, 0, node.body, true);
