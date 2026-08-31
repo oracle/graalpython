@@ -459,7 +459,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INIT_TAKES_ONE_ARG_OBJECT = tsLiteral("object.__init__() takes exactly one argument (the instance to initialize)");
     public static final TruffleString INVALID_TYPE_FOR_S = tsLiteral("Invalid type for %s");
     public static final TruffleString INVALID_VALUE_NAN = tsLiteral("Invalid value NaN (not a number)");
-    public static final TruffleString IS_NOT_SUBTYPE_OF = tsLiteral("%s.__new__(%N): %N is not a subtype of %s");
+    public static final TruffleString IS_NOT_SUBTYPE_OF = tsLiteral("%N.__new__(%N): %N is not a subtype of %N");
     public static final TruffleString IS_NOT_TYPE_OBJ = tsLiteral("%s is not a type object (%p)");
     public static final TruffleString MAX_FACTOR_MUST_BE_AT_LEAST_ONE = tsLiteral("'max_factor' must be at least 1.0");
     public static final TruffleString N_MUST_BE_AT_LEAST_ONE = tsLiteral("n must be at least one");
@@ -1346,8 +1346,9 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT = tsLiteral("byte array too long to convert to int");
 
     public static final TruffleString INVALID_SEQ_ITEM = tsLiteral("sequence item %d: expected str instance, %p found");
-    public static final TruffleString NEW_X_ISNT_TYPE_OBJ = tsLiteral("%s.__new__(X): X is not a type object (%p)");
-    public static final TruffleString NEW_IS_NOT_SAFE_USE_ELSE = tsLiteral("%s.__new__(%N) is not safe, use %N.__new__()");
+    public static final TruffleString NEW_NOT_ENOUGH_ARGUMENTS = tsLiteral("%N.__new__(): not enough arguments");
+    public static final TruffleString NEW_X_ISNT_TYPE_OBJ = tsLiteral("%N.__new__(X): X is not a type object (%p)");
+    public static final TruffleString NEW_IS_NOT_SAFE_USE_ELSE = tsLiteral("%N.__new__(%N) is not safe, use %N.__new__()");
 
     public static final TruffleString INSTANCE_OF_CONTEXTVAR_EXPECTED = tsLiteral("an instance of ContextVar was expected");
     public static final TruffleString INSTANCE_OF_TOKEN_EXPECTED = tsLiteral("expected an instance of Token, got %s");

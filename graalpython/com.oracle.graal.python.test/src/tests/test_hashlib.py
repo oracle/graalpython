@@ -44,6 +44,11 @@ import unittest
 
 class HashlibTest(unittest.TestCase):
 
+    def test_new_validates_type(self):
+        self.assertRaises(TypeError, hashlib.sha3_224.__new__)
+        self.assertRaises(TypeError, hashlib.sha3_224.__new__, '')
+        self.assertRaises(TypeError, hashlib.sha3_224.__new__, int)
+
     def test_messagedigest_update_after_digest(self):
         sha1 = hashlib.sha1()
         sha1.update(b'a')
