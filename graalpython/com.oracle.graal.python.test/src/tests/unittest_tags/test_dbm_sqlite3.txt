@@ -26,4 +26,4 @@ test.test_dbm_sqlite3.ReadWrite.test_readwrite_delete @ darwin-arm64,linux-aarch
 test.test_dbm_sqlite3.ReadWrite.test_readwrite_null_key @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_dbm_sqlite3.ReadWrite.test_readwrite_null_value @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_dbm_sqlite3.ReadWrite.test_readwrite_unique_key @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_dbm_sqlite3.URI.test_uri_substitutions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_dbm_sqlite3.URI.test_uri_substitutions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github

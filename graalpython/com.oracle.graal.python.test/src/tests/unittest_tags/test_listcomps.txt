@@ -47,8 +47,8 @@ test.test_listcomps.ListComprehensionTest.test_no_leakage_to_locals @ darwin-arm
 test.test_listcomps.ListComprehensionTest.test_references___class__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_references___class___defined @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_references___class___enclosing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_listcomps.ListComprehensionTest.test_references___classdict__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_listcomps.ListComprehensionTest.test_references___conditional_annotations__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_listcomps.ListComprehensionTest.test_references___classdict__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_listcomps.ListComprehensionTest.test_references___conditional_annotations__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_references_super @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_shadow_comp_iterable_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_shadow_with_free_and_local @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

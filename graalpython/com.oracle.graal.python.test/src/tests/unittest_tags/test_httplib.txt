@@ -16,8 +16,8 @@ test.test_httplib.BasicTest.test_host_port @ darwin-arm64,linux-aarch64,linux-aa
 test.test_httplib.BasicTest.test_httpstatus_category @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_httpstatus_range @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_incomplete_read @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_httplib.BasicTest.test_large_content_length @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_httplib.BasicTest.test_large_content_length_truncated @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_httplib.BasicTest.test_large_content_length @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_httplib.BasicTest.test_large_content_length_truncated @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_httplib.BasicTest.test_mixed_reads @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_negative_content_length @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.BasicTest.test_overflowing_chunked_line @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -84,9 +84,9 @@ test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_with_string_d
 test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_without_default @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HTTPSTest.test_attributes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HTTPSTest.test_host_port @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_httplib.HTTPSTest.test_local_bad_hostname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_httplib.HTTPSTest.test_local_good_hostname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_httplib.HTTPSTest.test_local_unknown_cert @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_httplib.HTTPSTest.test_local_bad_hostname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_httplib.HTTPSTest.test_local_good_hostname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_httplib.HTTPSTest.test_local_unknown_cert @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_httplib.HTTPSTest.test_networked @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_httplib.HTTPSTest.test_networked_bad_cert @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_httplib.HTTPSTest.test_networked_good_cert @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
@@ -96,8 +96,8 @@ test.test_httplib.HeaderTests.test_auto_headers @ darwin-arm64,linux-aarch64,lin
 test.test_httplib.HeaderTests.test_content_length_0 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_headers_debuglevel @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_invalid_headers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_httplib.HeaderTests.test_invalid_tunnel_headers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_httplib.HeaderTests.test_invalid_tunnel_host @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_httplib.HeaderTests.test_invalid_tunnel_headers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_httplib.HeaderTests.test_invalid_tunnel_host @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_httplib.HeaderTests.test_ipv6host_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_malformed_headers_coped_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.HeaderTests.test_parse_all_octets @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -116,9 +116,9 @@ test.test_httplib.RequestBodyTest.test_latin1_body @ darwin-arm64,linux-aarch64,
 test.test_httplib.RequestBodyTest.test_list_body @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.RequestBodyTest.test_manual_content_length @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.RequestBodyTest.test_text_file_body @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_httplib.SourceAddressTest.testHTTPConnectionSourceAddress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_httplib.SourceAddressTest.testHTTPSConnectionSourceAddress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_httplib.TimeoutTest.testTimeoutAttribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_httplib.SourceAddressTest.testHTTPConnectionSourceAddress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_httplib.SourceAddressTest.testHTTPSConnectionSourceAddress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_httplib.TimeoutTest.testTimeoutAttribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_httplib.TransferEncodingTest.test_empty_body @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.TransferEncodingTest.test_endheaders_chunked @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httplib.TransferEncodingTest.test_explicit_headers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
