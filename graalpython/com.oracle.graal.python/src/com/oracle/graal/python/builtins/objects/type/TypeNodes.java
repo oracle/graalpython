@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_bases;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
@@ -54,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
@@ -108,9 +108,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
@@ -181,6 +182,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
+import com.oracle.graal.python.lib.PyDictMerge;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -1958,7 +1960,11 @@ public abstract class TypeNodes {
         @Specialization
         protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
                         @Bind Node inliningTarget,
-                        @Cached HashingStorage.InitNode initNode,
+                        @Cached HashingStorageCopy copyStorage,
+                        @Cached GetPythonObjectClassNode getNamespaceClass,
+                        @Cached GetCachedTpSlotsNode getNamespaceSlots,
+                        @Cached PyDictMerge mergeNamespace,
+                        @Cached InlinedConditionProfile hasBuiltinDictIter,
                         @Cached HashingStorageGetItem getItemGlobals,
                         @Cached HashingStorageGetItem getItemNamespace,
                         @Cached HashingStorageGetIterator getIterator,
@@ -1980,8 +1986,15 @@ public abstract class TypeNodes {
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Cached PyEvalGetGlobals getGlobals) {
-            PDict namespace = PFactory.createDict(language);
-            namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
+            PDict namespace;
+            boolean canCopyStorage = PGuards.isBuiltinDict(namespaceOrig) || PGuards.hasBuiltinDictIter(inliningTarget, namespaceOrig, getNamespaceClass, getNamespaceSlots);
+            if (hasBuiltinDictIter.profile(inliningTarget, canCopyStorage)) {
+                HashingStorage storageCopy = copyStorage.execute(inliningTarget, namespaceOrig.getDictStorage());
+                namespace = PFactory.createDict(language, storageCopy);
+            } else {
+                namespace = PFactory.createDict(language);
+                mergeNamespace.execute(frame, inliningTarget, namespace, namespaceOrig);
+            }
             PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
             // set '__module__' attribute

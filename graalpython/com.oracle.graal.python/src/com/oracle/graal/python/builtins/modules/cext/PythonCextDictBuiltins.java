@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode.checkNonNullArgUncached;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -61,9 +60,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
-import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLong;
@@ -118,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyDictDelItem;
+import com.oracle.graal.python.lib.PyDictMerge;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -138,7 +136,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -741,8 +738,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Update extends CApiBinaryBuiltinNode {
         @Specialization
         static int update(PDict dict, Object other,
-                        @Cached DictNodes.UpdateNode updateNode) {
-            updateNode.execute(null, dict, other);
+                        @Bind Node inliningTarget,
+                        @Cached PyDictMerge mergeNode) {
+            mergeNode.execute(null, inliningTarget, dict, other);
             return 0;
         }
 
@@ -833,16 +831,8 @@ public final class PythonCextDictBuiltins {
         @Specialization(guards = {"override != 0"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached PyObjectGetAttr getKeys,
-                        @Exclusive @Cached PyObjectGetAttr getUpdate,
-                        @Shared @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode) {
-            // lookup "keys" to raise the right error:
-            if (getKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
-                throw raiseNode.raise(inliningTarget, AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
-            }
-            Object updateCallable = getUpdate.execute(null, inliningTarget, a, T_UPDATE);
-            callNode.executeWithoutFrame(updateCallable, new Object[]{b});
+                        @Cached PyDictMerge mergeNode) {
+            mergeNode.execute(null, inliningTarget, a, b);
             return 0;
         }
 
@@ -875,7 +865,7 @@ public final class PythonCextDictBuiltins {
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectGetAttr getKeys,
-                        @Shared @Cached CallNode callNode,
+                        @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached GetItemNode getKeyNode,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getValueNode,

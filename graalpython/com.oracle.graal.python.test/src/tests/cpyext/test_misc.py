@@ -41,6 +41,7 @@ import builtins
 import os
 import pathlib
 import sys
+import types
 import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
@@ -96,6 +97,27 @@ async def _async_generator():
 
 
 class TestMisc(CPyExtTestCase):
+
+    test__PyNamespace_New = CPyExtFunction(
+        lambda args: types.SimpleNamespace() if args[0] is None else types.SimpleNamespace(**args[0]),
+        lambda: (
+            (None,),
+            ({},),
+            ({"answer": 42, "text": "hello"},),
+        ),
+        code='''#define Py_BUILD_CORE
+        #include "internal/pycore_namespace.h"
+        #undef Py_BUILD_CORE
+
+        PyObject* wrap__PyNamespace_New(PyObject* kwds) {
+            return _PyNamespace_New(kwds == Py_None ? NULL : kwds);
+        }
+        ''',
+        resultspec="N",
+        argspec="O",
+        arguments=["PyObject* kwds"],
+        callfunction="wrap__PyNamespace_New",
+    )
 
     test_builtin_type_objects = CPyExtFunction(
         lambda args: True,
