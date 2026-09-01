@@ -462,6 +462,18 @@
         ],
     }),
 
+    verify_patches_gate:: base_gate + task_spec({
+        downloads: {},
+        setup: [],
+        run: [["mx", "verify-patches"]],
+        guard: {
+            includes: [
+                "graalpython/lib-graalpython/patches/**",
+                "mx.graalpython/verify_patches.py",
+            ],
+        },
+    }),
+
     graalpy_ee_gate:: $.graalpy_gate + task_spec({
         setup+: [
             // NOTE: logic shared with ci/python-bench.libsonnet, keep in sync

@@ -5,8 +5,14 @@ repos:
     name: Copyright check
     language: system
     require_serial: true
-    entry: env VERIFY_PATCHES_GIT=1 bash scripts/pre-commit-checkcopyrights.sh
+    entry: bash scripts/pre-commit-checkcopyrights.sh
     types: [text]
+  - id: verify-patches
+    name: Verify patches
+    language: system
+    pass_filenames: false
+    entry: python3 mx.graalpython/verify_patches.py --git-mode graalpython/lib-graalpython/patches
+    files: '^graalpython/lib-graalpython/patches/.*|^mx\.graalpython/verify_patches\.py$'
   - id: eclipseformat
     name: Eclipse formatter
     language: system

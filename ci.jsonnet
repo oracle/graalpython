@@ -70,6 +70,7 @@
     local gpgate_ee             = self.graalpy_ee_gate,
     local gpgate_maven          = self.graalpy_maven_gate,
     local style_gate            = self.style_gate,
+    local patchgate             = self.verify_patches_gate,
     local cpygate               = self.cpython_gate,
     local ut_retagger           = self.unittest_retagger_gate,
     local cov_jacoco_tagged     = self.cov_jacoco_gate_tagged,
@@ -301,6 +302,9 @@
             "linux:amd64:jdk-latest"     : tier1 + provide(GPY_JVM_STANDALONE),
         }),
         "style-ecj": style_gate + task_spec({ tags:: "style,ecjbuild" }) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier1,
+        }),
+        "verify-patches": patchgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1,
         }),
         // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
