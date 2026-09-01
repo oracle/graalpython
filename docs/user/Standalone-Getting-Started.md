@@ -50,25 +50,25 @@ The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com
 # Update pyenv to include latest GraalPy versions (if needed)
 pyenv update
 
-# Install GraalPy 25.2.4
-pyenv install graalpy-25.2.4
+# Install GraalPy 25.3.4.1
+pyenv install graalpy-25.3.4.1
 
 # Use GraalPy for the current shell session
-pyenv shell graalpy-25.2.4
+pyenv shell graalpy-25.3.4.1
 ```
 
 #### Manual Installation (Linux)
 
 1. Download the appropriate binary from [GitHub releases](https://github.com/oracle/graalpython/releases):
 
-   - AMD64: `graalpy3.12-25.2.4-linux-amd64.tar.gz`
-   - ARM64: `graalpy3.12-25.2.4-linux-aarch64.tar.gz`
+   - AMD64: `graalpy3.13-25.3.4.1-linux-amd64.tar.gz`
+   - ARM64: `graalpy3.13-25.3.4.1-linux-aarch64.tar.gz`
 
 2. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy3.12-25.2.4-linux-amd64.tar.gz
-   export PATH="$PWD/graalpy3.12-25.2.4-linux-amd64/bin:$PATH"
+   tar -xzf graalpy3.13-25.3.4.1-linux-amd64.tar.gz
+   export PATH="$PWD/graalpy3.13-25.3.4.1-linux-amd64/bin:$PATH"
    ```
 
 ### macOS
@@ -76,11 +76,11 @@ pyenv shell graalpy-25.2.4
 Using Pyenv (recommended):
 
 ```bash
-# Install GraalPy 25.2.4
-pyenv install graalpy-25.2.4
+# Install GraalPy 25.3.4.1
+pyenv install graalpy-25.3.4.1
 
 # Use GraalPy for the current shell session
-pyenv shell graalpy-25.2.4
+pyenv shell graalpy-25.3.4.1
 ```
 
 #### Manual Installation (macOS)
@@ -92,14 +92,14 @@ pyenv shell graalpy-25.2.4
    ```bash
    sudo xattr -r -d com.apple.quarantine /path/to/graalpy
    # For example:
-   sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.2.4
+   sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.3.4.1
    ```
 
 3. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy3.12-25.2.4-macos-aarch64.tar.gz
-   export PATH="$PWD/graalpy3.12-25.2.4-macos-aarch64/bin:$PATH"
+   tar -xzf graalpy3.13-25.3.4.1-macos-aarch64.tar.gz
+   export PATH="$PWD/graalpy3.13-25.3.4.1-macos-aarch64/bin:$PATH"
    ```
 
 ### Windows
@@ -112,9 +112,9 @@ pyenv shell graalpy-25.2.4
 
    ```powershell
    # Extract the file and update your PATH environment variable
-   # to include the graalpy3.12-25.2.4-windows-amd64/bin directory
-   tar -xzf graalpy3.12-25.2.4-windows-amd64.zip
-   $env:PATH = "$PWD\graalpy3.12-25.2.4-windows-amd64\bin;$env:PATH"
+   # to include the graalpy3.13-25.3.4.1-windows-amd64/bin directory
+   tar -xzf graalpy3.13-25.3.4.1-windows-amd64.zip
+   $env:PATH = "$PWD\graalpy3.13-25.3.4.1-windows-amd64\bin;$env:PATH"
    ```
 
 #### Known Windows Limitations
@@ -129,10 +129,10 @@ The recommended way to use GraalPy is with [venv](https://docs.python.org/3/libr
 
 ```bash
 # Create a virtual environment
-graalpy -m venv ~/.virtualenvs/graalpy-25.2.4
+graalpy -m venv ~/.virtualenvs/graalpy
 
 # Activate the environment
-source ~/.virtualenvs/graalpy-25.2.4/bin/activate
+source ~/.virtualenvs/graalpy/bin/activate
 ```
 
 ### Installing Packages

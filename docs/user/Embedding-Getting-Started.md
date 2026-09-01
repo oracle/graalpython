@@ -16,7 +16,7 @@ The fastest way to get started is with GraalPy's Maven archetype, which generate
    mvn archetype:generate \
      -DarchetypeGroupId=org.graalvm.python \
      -DarchetypeArtifactId=graalpy-archetype-polyglot-app \
-     -DarchetypeVersion=25.2.4
+     -DarchetypeVersion=25.3.4.1
    ```
 
    This generates the following project structure:
@@ -87,8 +87,8 @@ If you prefer Gradle, here is how to set up a new project with GraalPy embedding
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
 
         ```gradle
-        implementation("org.graalvm.polyglot:polyglot:25.2.4")
-        implementation("org.graalvm.python:python-embedding:25.2.4")
+        implementation("org.graalvm.polyglot:polyglot:25.3.4.1")
+        implementation("org.graalvm.python:python-embedding:25.3.4.1")
         ```
 
 3. Replace the _App.java_ content with this simple Python embedding example:
@@ -134,7 +134,7 @@ Add the Python embedding dependency and GraalPy Maven plugin configuration to yo
     <dependency>
         <groupId>org.graalvm.python</groupId>
         <artifactId>python-embedding</artifactId>
-        <version>25.2.4</version>
+        <version>25.3.4.1</version>
     </dependency>
 </dependencies>
 
@@ -143,7 +143,7 @@ Add the Python embedding dependency and GraalPy Maven plugin configuration to yo
         <plugin>
             <groupId>org.graalvm.python</groupId>
             <artifactId>graalpy-maven-plugin</artifactId>
-            <version>25.2.4</version>
+            <version>25.3.4.1</version>
             <executions>
                 <execution>
                     <configuration>
@@ -169,11 +169,11 @@ Add the GraalPy Gradle plugin and configure dependencies in _app/build.gradle_:
 plugins {
     id "java"
     id "application"
-    id "org.graalvm.python" version "25.2.4"
+    id "org.graalvm.python" version "25.3.4.1"
 }
 
 dependencies {
-    implementation("org.graalvm.python:python-embedding:25.2.4")
+    implementation("org.graalvm.python:python-embedding:25.3.4.1")
 }
 
 graalPy {
@@ -213,11 +213,11 @@ BouncyCastle is optional for GraalPy embeddings. Add the following dependency on
 <dependency>
     <groupId>org.graalvm.python</groupId>
     <artifactId>python-bouncycastle-support</artifactId>
-    <version>25.2.4</version>
+    <version>25.3.4.1</version>
 </dependency>
 ```
 
-For Gradle, use `implementation("org.graalvm.python:python-bouncycastle-support:25.2.4")`.
+For Gradle, use `implementation("org.graalvm.python:python-bouncycastle-support:25.3.4.1")`.
 
 ### Configuring Individual Sources
 
