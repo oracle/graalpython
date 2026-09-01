@@ -41,8 +41,8 @@ For Linux/amd64, I use [act](https://github.com/nektos/act/releases) on a Linux 
 ```shell
 git clone https://github.com/oracle/graalpython
 cd graalpython
-VERSION=25.2.4
-PYTHON_VERSION=3.12
+VERSION=25.3.4.1
+PYTHON_VERSION=3.13
 BINDIR=. curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | bash
 echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-linux-amd64.tar.gz" > .input
 podman system service -t 0 unix:///tmp/podman.sock &
@@ -54,8 +54,8 @@ For Linux/aarch64, I use act on a mac, those are usually beefy ARM machines that
 ```shell
 git clone https://github.com/oracle/graalpython
 cd graalpython
-VERSION=25.2.4
-PYTHON_VERSION=3.12
+VERSION=25.3.4.1
+PYTHON_VERSION=3.13
 brew install act
 echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-linux-aarch64.tar.gz" > .input
 podman machine init -m 16384 --now
@@ -65,8 +65,8 @@ act --env http_proxy=$http_proxy --env https_proxy=$https_proxy -W .github/workf
 For macOS/aarch64, you get no isolation from act, so I just run it directly.
 ```shell
 git clone https://github.com/oracle/graalpython
-VERSION=25.2.4
-PYTHON_VERSION=3.12
+VERSION=25.3.4.1
+PYTHON_VERSION=3.13
 export GITHUB_RUN_ID=doesntMatterJustTriggerBrewInstallScripts
 python3 -m venv wheelbuilder-venv
 . wheelbuilder-venv/bin/activate
@@ -76,8 +76,8 @@ python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/orac
 For Windows/amd64, you get no isolation from act, so I just run it directly in Visual Studio powershell.
 ```shell
 git clone https://github.com/oracle/graalpython
-$VERSION="25.2.4"
-$PYTHON_VERSION="3.12"
+$VERSION="25.3.4.1"
+$PYTHON_VERSION="3.13"
 $env:GITHUB_RUN_ID="doesntMatterJustTriggerBrewInstallScripts"
 python3 -m venv wheelbuilder-venv
 wheelbuilder-venv/scripts/activate

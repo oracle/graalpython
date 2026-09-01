@@ -7,7 +7,7 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/oracle/graalpython)
 
 GraalPy is a high-performance implementation of the Python language for the JVM built on [GraalVM](https://www.graalvm.org/python).
-GraalPy is a Python 3.12 compliant runtime.
+GraalPy is a Python 3.13 compliant runtime.
 It has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
 GraalPy is ready for production running pure Python code and has experimental support for many popular native extension modules.
 
@@ -63,20 +63,20 @@ Refer to our [embedding documentation](https://www.graalvm.org/latest/reference-
   <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>polyglot</artifactId>
-      <version>25.0.2</version>
+      <version>25.3.4.1</version>
   </dependency>
   <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>python</artifactId>
-      <version>25.0.2</version>
+      <version>25.3.4.1</version>
       <type>pom</type>
   </dependency>
   ```
 
 * Gradle
   ```kotlin
-  implementation("org.graalvm.polyglot:polyglot:25.0.2")
-  implementation("org.graalvm.python:python-embedding:25.0.2")
+  implementation("org.graalvm.polyglot:polyglot:25.3.4.1")
+  implementation("org.graalvm.python:python-embedding:25.3.4.1")
   ```
 
 </details>
@@ -93,8 +93,8 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 
 **Quick Installation:**
 
-- **Linux/macOS**: `pyenv install graalpy-25.0.2 && pyenv shell graalpy-25.0.2`
-- **Windows**: `pyenv install graalpy-25.0.2-windows-amd64`
+- **Linux/macOS**: `pyenv install graalpy-25.3.4.1 && pyenv shell graalpy-25.3.4.1`
+- **Windows**: `pyenv install graalpy-25.3.4.1-windows-amd64`
 - **Manual**: Download from [GitHub releases](https://github.com/oracle/graalpython/releases)
 
 **See the [complete installation guide](docs/user/Standalone-Getting-Started.md) for detailed instructions.**

@@ -258,11 +258,11 @@ outside, by selecting compatible tags, for example:
 
 ```bash
 python3 -m pip install \
-  --target GRAALPY_NATIVE_GRAALOS_STANDALONE/lib/python3.12/site-packages \
+  --target GRAALPY_NATIVE_GRAALOS_STANDALONE/lib/python3.13/site-packages \
   --only-binary=:all: \
-  --python-version 3.12 \
+  --python-version 3.13 \
   --implementation py --implementation graalpy \
-  --abi none --abi graalpy250_312_native \
+  --abi none --abi graalpy253_313_native \
   --platform any --platform graalos_x86_64 \
   --no-compile \
   rich asteval

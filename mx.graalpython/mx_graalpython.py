@@ -2134,14 +2134,7 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
-            collecting_coverage = is_collecting_coverage()
-            run_tagged_unittests(
-                graalpy_standalone_native(),
-                # GR-78213: Temporarily work around transient failures in test_gzip
-                args=[] if collecting_coverage else ["--engine.CompileOnly=~_PaddedFile.read"],
-                nonZeroIsFatal=not collecting_coverage,
-                report=report(),
-            )
+            run_tagged_unittests(graalpy_standalone_native(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
 
     # Unittests on SVM
     with Task('GraalPython build on SVM', tasks, tags=[GraalPythonTags.svmbuild]) as task:
