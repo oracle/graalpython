@@ -4382,7 +4382,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             inExceptStar = false;
             b.beginBlock();
 
-            BytecodeLocal value = beginTemporaryLocal();
+            BytecodeLocal value = beginTemporaryLocalOrGetLocal(node.target, b);
 
             b.beginBindStackValue();
             b.beginGetIter();
@@ -4409,9 +4409,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // body
             b.beginBlock();
             continueLabel = b.createLabel();
-            node.target.accept(new StoreVisitor(() -> {
-                b.emitLoadLocal(value);
-            }));
+            storeTemporaryLocalToTarget(value, node.target, b);
 
             visitSequence(node.body);
             b.emitLabel(continueLabel);

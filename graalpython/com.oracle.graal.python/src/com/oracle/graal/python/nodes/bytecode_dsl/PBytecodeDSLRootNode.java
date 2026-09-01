@@ -1874,7 +1874,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
-                output.setObject(bytecode, frame, null);
                 return false;
             }
             Object value = iterator.next();
@@ -1917,7 +1916,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 output.setObject(bytecode, frame, value);
                 return true;
             } catch (IteratorExhausted e) {
-                output.setObject(bytecode, frame, null);
                 return false;
             }
         }
