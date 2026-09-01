@@ -1399,7 +1399,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             statementCompiler.emitAsyncFor(iter, comp.target, null, true, index,
                             (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collection, accumulateProducer, stmtComp));
         } else {
-            BytecodeLocal localValue = beginTemporaryLocal(b);
+            BytecodeLocal localValue = beginTemporaryLocalOrGetLocal(comp.target, b);
 
             b.beginBlock();
             b.beginBindStackValue();
@@ -1428,14 +1428,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.beginBlock();
 
-            comp.target.accept(statementCompiler.new StoreVisitor(() -> b.emitLoadLocal(localValue)));
+            statementCompiler.storeTemporaryLocalToTarget(localValue, comp.target, b);
             emitComprehensionBody(generators, index, type, collection, accumulateProducer, statementCompiler);
 
             b.endBlock();
             b.endWhile();
 
             b.endBlock();
-            assert RootNodeCompiler.this.isTemporaryLocal(localValue);
             endTemporaryLocal(localValue, b);
         }
 
