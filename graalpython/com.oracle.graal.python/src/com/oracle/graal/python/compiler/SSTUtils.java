@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,6 +95,10 @@ public class SSTUtils {
                 throw parserCallbacks.onError(ErrorType.Syntax, currentLocation, "cannot delete __debug__");
             }
         }
+    }
+
+    public static boolean mayBeForbiddenName(String id) {
+        return id.equals("__debug__");
     }
 
     public static void checkSubscripter(ParserCallbacks parserCallbacks, ExprTy e) {
