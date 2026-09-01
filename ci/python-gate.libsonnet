@@ -449,7 +449,7 @@
 
     graalpy_gate:: base_gate + test_reports + pylint + svm + jdk_spec + task_spec({
         guard+: {
-            excludes+: ["**.md", "docs/**", "3rd_party_licenses.txt", "scripts/**"],
+            excludes+: ["**.md", "docs/**", "3rd_party_licenses.txt", "scripts/**", "graalpython/lib-graalpython/patches/**"],
         },
         setup+: pip_index_setup + [
             // force imports the main repository to get the right graal commit
