@@ -1,6 +1,6 @@
 # GraalPy User Guide
 
-GraalPy is a Python 3.12 compliant runtime that provides better performance, native compilation capabilities, and seamless Java interoperability.
+GraalPy is a Python 3.13 compliant runtime that provides better performance, native compilation capabilities, and seamless Java interoperability.
 
 Here are the two main types of users and how they can benefit from GraalPy:
 

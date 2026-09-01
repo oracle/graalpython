@@ -107,10 +107,10 @@ pyenv shell graalpy-dev
             <div class="languages__snippet">
 {%- highlight bash -%}
 # Install GraalPy with uv (uv selects GraalPy by Python language version)
-uv python install graalpy-3.12
+uv python install graalpy-{{site.python_version}}
 
 # Create a virtual environment with GraalPy
-uv venv --python graalpy-3.12
+uv venv --python graalpy-{{site.python_version}}
 {%- endhighlight -%}
             </div>
             <div class="example-logo-box example-logo-box--install-badge">

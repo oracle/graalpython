@@ -7,7 +7,7 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/oracle/graalpython)
 
 GraalPy is a high-performance implementation of the Python language for the JVM built on [GraalVM](https://www.graalvm.org/python).
-GraalPy is a Python 3.12 compliant runtime.
+GraalPy is a Python 3.13 compliant runtime.
 It has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
 GraalPy is ready for production running pure Python code and has experimental support for many popular native extension modules.
 

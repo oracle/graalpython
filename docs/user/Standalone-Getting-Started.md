@@ -29,7 +29,7 @@ The GraalPy standalone runtimes are identified using the pattern _graalpy(-commu
 
 ## GraalPy Capabilities
 
-GraalPy provides a Python 3.12 compliant runtime.
+GraalPy provides a Python 3.13 compliant runtime.
 A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
 
 GraalPy provides the following capabilities:
