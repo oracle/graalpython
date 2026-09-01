@@ -472,6 +472,7 @@
                 "mx.graalpython/verify_patches.py",
             ],
         },
+        run_on_patch_branch: true,
     }),
 
     graalpy_ee_gate:: $.graalpy_gate + task_spec({
