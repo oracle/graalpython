@@ -1197,7 +1197,7 @@ public final class CApiContext {
 
             throw new ImportException(CApiContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
         }
-        return cApiContext.initCApiModule(location, library, spec);
+        return cApiContext.loadCApiModule(location, library, spec);
     }
 
     /**
@@ -1341,19 +1341,19 @@ public final class CApiContext {
         }
     }
 
-    public Object initCApiModule(Node node, NativeLibrary sharedLibrary, ModuleSpec spec) throws ImportException {
+    public Object loadCApiModule(Node node, NativeLibrary sharedLibrary, ModuleSpec spec) throws ImportException {
         CompilerAsserts.neverPartOfCompilation();
         if (context.getOption(PythonOptions.EnableAbi3t)) {
             TruffleString modExportFuncName = spec.getModExecFunctionName();
             long modExportFunc = sharedLibrary.lookupOptionalSymbol(modExportFuncName.toJavaStringUncached());
             if (modExportFunc != NULLPTR) {
-                return initAbi3tCApiModule(node, modExportFunc, spec);
+                return loadCApiModuleFromPyModExport(node, modExportFunc, spec);
             }
         }
-        return initLegacyCApiModule(node, sharedLibrary, spec.getInitFunctionName(), spec);
+        return loadCApiModuleFromPyInit(node, sharedLibrary, spec.getInitFunctionName(), spec);
     }
 
-    private Object initLegacyCApiModule(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
+    private Object loadCApiModuleFromPyInit(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
         CompilerAsserts.neverPartOfCompilation();
         long pyinitFunc = sharedLibrary.lookupOptionalSymbol(initFuncName.toJavaStringUncached());
         if (pyinitFunc == NULLPTR) {
@@ -1402,7 +1402,7 @@ public final class CApiContext {
     }
 
     // import.c: import_run_modexport
-    private Object initAbi3tCApiModule(Node node, long modExportFunc, ModuleSpec spec) {
+    private Object loadCApiModuleFromPyModExport(Node node, long modExportFunc, ModuleSpec spec) {
         CompilerAsserts.neverPartOfCompilation();
         NativeContext nativeContext = context.ensureNativeContext();
         PythonThreadState threadState = context.getThreadState(context.getLanguage());
