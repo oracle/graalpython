@@ -2,6 +2,7 @@ baseurl: ""
 url: "https://graalpy.org"
 github: "oracle/graalpython"
 language_version: 25.3.4.1
+release_tag: graal-25.3.4
 python_version: 3.13
 name: GraalPy
 permalink: pretty
