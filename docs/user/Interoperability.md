@@ -67,7 +67,7 @@ assert java.is_function(my_list.add)
 assert java.instanceof(my_list, ArrayList)
 ```
 
-See the [Polyglot Programming](https://www.graalvm.org/latest/reference-manual/polyglot-programming/) and [Embed Languages](https://www.graalvm.org/latest/reference-manual/embedding/embed-languages/) documentation for more information about interoperability with other programming languages.
+See the [Polyglot Programming](https://www.graalvm.org/latest/reference-manual/polyglot-programming/) and [Embed Languages](https://www.graalvm.org/latest/reference-manual/embed-languages/) documentation for more information about interoperability with other programming languages.
 
 ## Call Foreign Objects from Python
 
