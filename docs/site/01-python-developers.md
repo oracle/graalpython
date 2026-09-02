@@ -83,12 +83,12 @@ audience_identifier: python
             <div class="languages__snippet">
 {%- highlight bash -%}
 # Latest GraalPy release
-pyenv install graalpy-{{ site.language_version }}
-pyenv shell graalpy-{{ site.language_version }}
+pyenv install graalpy3.13-{{ site.language_version }}
+pyenv shell graalpy3.13-{{ site.language_version }}
 
 # On Windows (pyenv-win), provide platform-specific names
-pyenv install graalpy-{{ site.language_version }}-windows-amd64
-pyenv shell graalpy-{{ site.language_version }}-windows-amd64
+pyenv install graalpy3.13-{{ site.language_version }}-windows-amd64
+pyenv shell graalpy3.13-{{ site.language_version }}-windows-amd64
 
 # Latest development build of GraalPy
 pyenv install graalpy-dev

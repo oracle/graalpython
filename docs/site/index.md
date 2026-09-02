@@ -44,8 +44,8 @@ try (Context context = Context.newBuilder().build()) {
           <p class="languages__example-card-title">Build and Run Python Applications</p>
           <div class="cta-code">
 {%- highlight bash -%}
-$ pyenv install graalpy-{{ site.language_version }}
-$ pyenv shell graalpy-{{ site.language_version }}
+$ pyenv install graalpy3.13-{{ site.language_version }}
+$ pyenv shell graalpy3.13-{{ site.language_version }}
 
 $ python3 -c "import sys; print(sys.implementation.name)"
 graalpy
