@@ -55,8 +55,8 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByte
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShortArrayElement;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.SURROGATE_CODE_POINT_SET;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.Charset;
@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -100,22 +99,17 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -537,49 +531,6 @@ public abstract class CExtCommonNodes {
 
     public static byte[] getByteArray(long ptr, long n) throws OverflowException {
         return readByteArrayElements(ptr, 0, PInt.intValueExact(n));
-    }
-
-    /**
-    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
-    @GenerateUncached
-    public abstract static class NativePrimitiveAsPythonBooleanNode extends Node {
-
-        public abstract Object execute(Object value);
-
-        @Specialization
-        static Boolean doBoolean(Boolean b) {
-            return b;
-        }
-
-        @Specialization
-        static Object doByte(byte b) {
-            return b != 0;
-        }
-
-        @Specialization
-        static Object doShort(short i) {
-            return i != 0;
-        }
-
-        @Specialization
-        static Object doLong(long l) {
-            // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // semantics as we should just read a single byte.
-            return l != 0;
-        }
-
-        @Specialization(replaces = {"doBoolean", "doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(Object n,
-                        @CachedLibrary("n") InteropLibrary lib) {
-            if (lib.fitsInLong(n)) {
-                try {
-                    return lib.asLong(n) != 0;
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
     }
 
     /**
