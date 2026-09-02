@@ -482,7 +482,7 @@ try (Context context = GraalPyResources.contextBuilder().build()) {
           </div>
           <div class="lang-video__card">
             <div class="lang-video__title">
-              <h4>Supercharge your Java Applications with Python!<br><a target="_blank" href="https://www.jfokus.se/talks/2305">Jfokus'25</a></h4>
+              <h4>Supercharge your Java Applications with Python!<br><a target="_blank" href="https://www.youtube.com/watch?v=IdoFsS-mpVw">Jfokus'25</a></h4>
             </div>
             <div class="lang-video__text">
               <h5>Projects such as LangChain4j, Spring AI, and llama3.java got the Java community very excited about AI in the last year.
