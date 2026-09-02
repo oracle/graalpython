@@ -83,12 +83,12 @@ audience_identifier: python
             <div class="languages__snippet">
 {%- highlight bash -%}
 # Latest GraalPy release
-pyenv install graalpy-{{ site.language_version }}
-pyenv shell graalpy-{{ site.language_version }}
+pyenv install graalpy3.13-{{ site.language_version }}
+pyenv shell graalpy3.13-{{ site.language_version }}
 
 # On Windows (pyenv-win), provide platform-specific names
-pyenv install graalpy-{{ site.language_version }}-windows-amd64
-pyenv shell graalpy-{{ site.language_version }}-windows-amd64
+pyenv install graalpy3.13-{{ site.language_version }}-windows-amd64
+pyenv shell graalpy3.13-{{ site.language_version }}-windows-amd64
 
 # Latest development build of GraalPy
 pyenv install graalpy-dev
@@ -169,16 +169,16 @@ docker run --rm ghcr.io/graalvm/graalpy-community:{{ site.language_version }} py
                 <td>
                 {{ site.language_version }}
                 </td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-linux-aarch64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/{{ site.release_tag }}/graalpy{{ site.python_version }}-{{ site.language_version }}-linux-aarch64.tar.gz">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-linux-amd64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/{{ site.release_tag }}/graalpy{{ site.python_version }}-{{ site.language_version }}-linux-amd64.tar.gz">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-macos-aarch64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/{{ site.release_tag }}/graalpy{{ site.python_version }}-{{ site.language_version }}-macos-aarch64.tar.gz">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-windows-amd64.zip">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/{{ site.release_tag }}/graalpy{{ site.python_version }}-{{ site.language_version }}-windows-amd64.zip">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
               </tr>

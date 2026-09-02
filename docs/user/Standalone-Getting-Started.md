@@ -51,10 +51,10 @@ The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com
 pyenv update
 
 # Install GraalPy 25.3.4.1
-pyenv install graalpy-25.3.4.1
+pyenv install graalpy3.13-25.3.4.1
 
 # Use GraalPy for the current shell session
-pyenv shell graalpy-25.3.4.1
+pyenv shell graalpy3.13-25.3.4.1
 ```
 
 #### Manual Installation (Linux)
@@ -77,10 +77,10 @@ Using Pyenv (recommended):
 
 ```bash
 # Install GraalPy 25.3.4.1
-pyenv install graalpy-25.3.4.1
+pyenv install graalpy3.13-25.3.4.1
 
 # Use GraalPy for the current shell session
-pyenv shell graalpy-25.3.4.1
+pyenv shell graalpy3.13-25.3.4.1
 ```
 
 #### Manual Installation (macOS)
@@ -92,7 +92,7 @@ pyenv shell graalpy-25.3.4.1
    ```bash
    sudo xattr -r -d com.apple.quarantine /path/to/graalpy
    # For example:
-   sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.3.4.1
+   sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy3.13-25.3.4.1
    ```
 
 3. Extract and add it to your `PATH` environment variable:
