@@ -3918,38 +3918,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = false)
-    @ConstantOperand(type = LocalAccessor.class)
-    public static final class TeeLocal {
-        @Specialization
-        public static int doInt(VirtualFrame frame, LocalAccessor local, int value,
-                        @Bind BytecodeNode bytecode) {
-            local.setInt(bytecode, frame, value);
-            return value;
-        }
-
-        @Specialization
-        public static double doDouble(VirtualFrame frame, LocalAccessor local, double value,
-                        @Bind BytecodeNode bytecode) {
-            local.setDouble(bytecode, frame, value);
-            return value;
-        }
-
-        @Specialization
-        public static long doLong(VirtualFrame frame, LocalAccessor local, long value,
-                        @Bind BytecodeNode bytecode) {
-            local.setLong(bytecode, frame, value);
-            return value;
-        }
-
-        @Specialization(replaces = {"doInt", "doDouble", "doLong"})
-        public static Object doObject(VirtualFrame frame, LocalAccessor local, Object value,
-                        @Bind BytecodeNode bytecode) {
-            local.setObject(bytecode, frame, value);
-            return value;
-        }
-    }
-
     @Operation(storeBytecodeIndex = true)
     public static final class GetLen {
         @Specialization
