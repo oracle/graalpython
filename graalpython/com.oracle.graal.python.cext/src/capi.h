@@ -285,8 +285,6 @@ GraalPyPrivate_Log(int level, const char *format, ...)
     }
 }
 
-Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
-
 // export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);
 PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject *, const char *, ...);
