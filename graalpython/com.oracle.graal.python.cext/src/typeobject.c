@@ -2546,8 +2546,6 @@ is_subtype_with_mro(PyObject *a_mro, PyTypeObject *a, PyTypeObject *b)
         return PyType_FastSubclass(a, Py_TPFLAGS_DICT_SUBCLASS);
     } else if ((PyObject *)b == PyExc_BaseException) {
         return PyType_FastSubclass(a, Py_TPFLAGS_BASE_EXC_SUBCLASS);
-    } else if (is_builtin_type(a) && !is_builtin_type(b)) {
-        return 0;
     }
     int res;
     if (a_mro != NULL) {

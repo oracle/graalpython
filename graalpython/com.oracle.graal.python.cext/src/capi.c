@@ -418,18 +418,6 @@ static void initialize_gc_types_related_slots() {
     _PyWeakref_RefType.tp_free = &GraalPyPrivate_Object_GC_Del;
 }
 
-int is_builtin_type(PyTypeObject *tp) {
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
-#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, a, b) (tp == &GLOBAL_NAME) ||
-#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, 0, 0, 0, 0, 0, 0, 0)
-#define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
-    return PY_TYPE_OBJECTS 0;
-#undef PY_TRUFFLE_TYPE_GENERIC
-#undef PY_TRUFFLE_TYPE_LOCAL
-#undef PY_TRUFFLE_TYPE_EXTERN
-#undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
-}
-
 /** to be used from Java code only; calls '_Py_Dealloc' */
 GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
