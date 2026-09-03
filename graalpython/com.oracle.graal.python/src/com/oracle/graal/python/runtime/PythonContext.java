@@ -751,6 +751,7 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private NativeZlibSupport nativeZlib;
     @CompilationFinal private NativeBz2Support nativeBz2lib;
     @CompilationFinal private NativeLZMASupport nativeLZMA;
+    @CompilationFinal private NativePapiSupport nativePapi;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -1008,6 +1009,10 @@ public final class PythonContext extends Python3Core {
 
     public NativeLZMASupport getNativeLZMASupport() {
         return nativeLZMA;
+    }
+
+    public NativePapiSupport getNativePapiSupport() {
+        return nativePapi;
     }
 
     public TruffleLanguage.Env getEnv() {
@@ -1340,6 +1345,7 @@ public final class PythonContext extends Python3Core {
             nativeBz2lib = NativeBz2Support.createNative(this, "");
             nativeLZMA = NativeLZMASupport.createNative(this, "");
         }
+        nativePapi = NativePapiSupport.createNative(this);
 
         mainModule = PFactory.createPythonModule(T___MAIN__);
         mainModule.setAttribute(T___BUILTINS__, getBuiltins());

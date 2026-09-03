@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -173,6 +174,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.NativePapiSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -1562,5 +1564,80 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             context.getCore().loadFile(name, context.getCoreHomeOrFail());
             return PNone.NONE;
         }
+    }
+
+    @Builtin(name = "papi_available", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PapiAvailableNode extends PythonBuiltinNode {
+        @Specialization
+        static boolean available(@Bind PythonContext context) {
+            return context.getNativePapiSupport().isAvailable();
+        }
+    }
+
+    @Builtin(name = "papi_start", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PapiStartNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static PNone start(Object eventNames,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context) {
+            Object[] items = GetObjectArrayNode.executeUncached(eventNames);
+            String[] names = new String[items.length];
+            for (int i = 0; i < items.length; i++) {
+                try {
+                    names[i] = CastToJavaStringNode.getUncached().execute(items[i]);
+                } catch (CannotCastException e) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                }
+            }
+            try {
+                context.getNativePapiSupport().start(names);
+            } catch (NativePapiSupport.PapiException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "papi_read", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PapiReadNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static PTuple read(@Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context) {
+            try {
+                return toTuple(language, context.getNativePapiSupport().read());
+            } catch (NativePapiSupport.PapiException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, e);
+            }
+        }
+    }
+
+    @Builtin(name = "papi_stop", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PapiStopNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static PTuple stop(@Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context) {
+            try {
+                return toTuple(language, context.getNativePapiSupport().stop());
+            } catch (NativePapiSupport.PapiException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, e);
+            }
+        }
+    }
+
+    private static PTuple toTuple(PythonLanguage language, long[] values) {
+        Object[] objects = new Object[values.length];
+        for (int i = 0; i < values.length; i++) {
+            objects[i] = values[i];
+        }
+        return PFactory.createTuple(language, objects);
     }
 }
