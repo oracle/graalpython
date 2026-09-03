@@ -298,14 +298,14 @@ public final class TpSlotVarargs {
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached MaybeBindDescriptorNode bindDescriptorNode,
                         @Cached(inline = false) CallNode callNode) {
-            Object bound = bindDescriptorNode.execute(frame, inliningTarget, slot.getCallable(), self, slot.getType());
+            Object bound = bindDescriptorNode.execute(frame, inliningTarget, slot.getCallableOrRaise(inliningTarget), self, slot.getType());
             Object callable;
             Object[] callArgs;
             if (bound instanceof BoundDescriptor boundDescriptor) {
                 callable = boundDescriptor.descriptor;
                 callArgs = args;
             } else {
-                callable = slot.getCallable();
+                callable = slot.getCallableOrRaise(inliningTarget);
                 callArgs = new Object[args.length + 1];
                 callArgs[0] = self;
                 PythonUtils.arraycopy(args, 0, callArgs, 1, args.length);
@@ -491,7 +491,7 @@ public final class TpSlotVarargs {
                         @Cached GetClassNode getClassNode,
                         @Cached BindNewMethodNode bindNew,
                         @Exclusive @Cached(inline = false) CallNode callNode) {
-            Object callable = bindNew.execute(frame, inliningTarget, slot.getCallable(), self);
+            Object callable = bindNew.execute(frame, inliningTarget, slot.getCallableOrRaise(inliningTarget), self);
             return callNode.execute(frame, callable, PythonUtils.prependArgument(self, args), keywords);
         }
 

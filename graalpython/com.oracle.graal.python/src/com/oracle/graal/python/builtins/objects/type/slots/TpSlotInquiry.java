@@ -54,11 +54,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiryFactory.CallSlotNbBoolNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyBoolCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -216,16 +219,37 @@ public abstract class TpSlotInquiry {
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached PyBoolCheckNode pyBoolCheckNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PyObjectIsTrueNode pyObjectIsTrueNode) {
+                        @Cached PyObjectIsTrueNode pyObjectIsTrueNode,
+                        @Cached CallLenForBoolNode callLenForBoolNode) {
             // See CPython: slot_nb_bool
-            // TODO: it is not clear to me why CPython lookups __len__ in the slot wrapper although
-            // the slow wrapper is assigned only in the presence of __bool__ magic method and not
-            // __len__. We ignore the __len__ lookup for now.
-            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
+            Object callable = slot.getCallable();
+            if (callable == null) {
+                return callLenForBoolNode.execute(frame, self);
+            }
+            Object result = dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self);
             if (!pyBoolCheckNode.execute(inliningTarget, result)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
             }
             return pyObjectIsTrueNode.execute(frame, result);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false) // intentionally lazy initialized
+    abstract static class CallLenForBoolNode extends Node {
+        abstract boolean execute(VirtualFrame frame, Object self);
+
+        @Specialization
+        static boolean doIt(VirtualFrame frame, Object self,
+                        @Bind Node inliningTarget,
+                        @Cached GetObjectSlotsNode getObjectSlotsNode,
+                        @Cached CallSlotLenNode callSlotLenNode) {
+            TpSlots slots = getObjectSlotsNode.execute(inliningTarget, self);
+            TpSlot lengthSlot = slots.combined_sq_mp_length();
+            if (lengthSlot == null || lengthSlot instanceof TpSlotPythonSingle lengthPythonSlot && lengthPythonSlot.getCallable() == null) {
+                return true;
+            }
+            return callSlotLenNode.execute(frame, inliningTarget, lengthSlot, self) != 0;
         }
     }
 

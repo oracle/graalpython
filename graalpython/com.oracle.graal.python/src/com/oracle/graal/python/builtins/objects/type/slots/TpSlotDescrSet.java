@@ -50,7 +50,6 @@ import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
@@ -69,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSetFactory.CallSlotDescrSetNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.InitCheckFunctionResultNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -77,12 +75,10 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -150,8 +146,8 @@ public abstract class TpSlotDescrSet {
 
         @Override
         public TpSlotPython forNewType(Object klass) {
-            Object set = Dynamic.getUncached().execute(klass, T___SET__);
-            Object delete = Dynamic.getUncached().execute(klass, T___DELETE__);
+            Object set = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___SET__));
+            Object delete = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___DELETE__));
             if (set != getSetCallable() || delete != getDelCallable()) {
                 return new TpSlotDescrSetPython(set, delete, getType());
             }
@@ -222,11 +218,6 @@ public abstract class TpSlotDescrSet {
         }
     }
 
-    @InliningCutoff
-    private static PException raiseAttributeError(Node inliningTarget, PRaiseNode raiseNode, TruffleString attrName) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, attrName);
-    }
-
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     @GenerateUncached
@@ -258,24 +249,16 @@ public abstract class TpSlotDescrSet {
 
         @Specialization(guards = "!isNoValue(value)")
         static void callPythonSet(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, Object value,
-                        @Cached TernaryPythonSlotDispatcherNode dispatcherNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object callable = slot.getSetCallable();
-            if (callable == null) {
-                throw raiseAttributeError(inliningTarget, raiseNode, T___SET__);
-            }
+                        @Cached TernaryPythonSlotDispatcherNode dispatcherNode) {
+            Object callable = slot.safeGetOrRaise(slot.setCallable, inliningTarget, T___SET__);
             dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self, obj, value);
         }
 
         @Specialization(guards = "isNoValue(value)")
         @InliningCutoff
         static void callPythonDel(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, @SuppressWarnings("unused") Object value,
-                        @Cached BinaryPythonSlotDispatcherNode dispatcherNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object callable = slot.getDelCallable();
-            if (callable == null) {
-                throw raiseAttributeError(inliningTarget, raiseNode, T___DEL__);
-            }
+                        @Cached BinaryPythonSlotDispatcherNode dispatcherNode) {
+            Object callable = slot.safeGetOrRaise(slot.delCallable, inliningTarget, T___DEL__);
             dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self, obj);
         }
 

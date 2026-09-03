@@ -255,7 +255,7 @@ public class TpSlotSizeArgFun {
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, int index,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode) {
-            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self, index);
+            return dispatcherNode.execute(frame, inliningTarget, slot.getCallableOrRaise(inliningTarget), slot.getType(), self, index);
         }
 
         @Specialization

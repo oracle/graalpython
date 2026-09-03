@@ -315,8 +315,8 @@ public class TpSlotBinaryOp {
 
         @Override
         public TpSlotPython forNewType(Object klass) {
-            Object newLeft = LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, op.name);
-            Object newRight = LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, op.rname);
+            Object newLeft = normalizeLookupResult(LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, op.name));
+            Object newRight = normalizeLookupResult(LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, op.rname));
             if (newLeft != getLeft() || newRight != getRight()) {
                 return new TpSlotReversiblePython(op, newLeft, newRight, getType());
             }

@@ -101,8 +101,11 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
@@ -926,6 +929,25 @@ public abstract class TypeNodes {
             ArrayList<PythonAbstractClass> list = new ArrayList<>();
             HashingStorageForEach.executeUncached(storage, new EachSubclassAdd(), list);
             return list.toArray(EMPTY);
+        }
+
+        public static PythonAbstractClass[] executeRecursiveUncached(Object object) {
+            ArrayList<PythonAbstractClass> allSubclasses = new ArrayList<>();
+            Set<PythonAbstractClass> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+            collectSubclasses(object, allSubclasses, seen);
+            // Subclasses are returned in topological order: a base that is in the result always
+            // precedes its subclasses.
+            Collections.reverse(allSubclasses);
+            return allSubclasses.toArray(EMPTY);
+        }
+
+        private static void collectSubclasses(Object object, ArrayList<PythonAbstractClass> allSubclasses, Set<PythonAbstractClass> seen) {
+            for (PythonAbstractClass subclass : executeUncached(object)) {
+                if (seen.add(subclass)) {
+                    collectSubclasses(subclass, allSubclasses, seen);
+                    allSubclasses.add(subclass);
+                }
+            }
         }
     }
 

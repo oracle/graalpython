@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 
@@ -38,7 +37,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -55,7 +53,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 /**
  * Mutable class.
@@ -63,17 +60,13 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
-    private static final int MRO_SUBTYPES_MAX = 64;
     private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
 
-    private MroShape mroShape;  // only set if there's no inheritance from native types
     /**
-     * Array of all classes that contain this class in their MRO and that have non-null mroShape,
-     * i.e., classes whose mro shape depends on this class. Including this class itself as long as
-     * it is in its own MRO. The size of this array is bounded by {@link #MRO_SUBTYPES_MAX}. This
-     * array may be over-allocated and padded with nulls at the end.
+     * MroShape is only set if all base classes in MRO have mroShape set.
+     * Most notably there must be no native type in MRO.
      */
-    private TruffleWeakReference<PythonClass>[] mroShapeSubTypes;
+    private MroShape mroShape;
     private byte mroShapeInvalidationsCount;
 
     public PythonClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
@@ -211,7 +204,7 @@ public final class PythonClass extends PythonManagedClass {
 
     public void setDictHiddenProp(Node inliningTarget, HiddenAttr.WriteNode writeNode, InlinedBranchProfile hasMroShapeProfile, Object value) {
         writeNode.execute(inliningTarget, this, HiddenAttr.DICT, value);
-        if (mroShapeSubTypes != null) {
+        if (mroShape != null) {
             hasMroShapeProfile.enter(inliningTarget);
             invalidateMroShapeSubTypes();
         }
@@ -230,7 +223,6 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     public void initializeMroShape(PythonLanguage language) {
-        assert mroShapeSubTypes == null;
         assert mroShape == null;
         if (!language.isSingleContext()) {
             reinitializeMroShape(language);
@@ -240,91 +232,59 @@ public final class PythonClass extends PythonManagedClass {
     @SuppressWarnings("unchecked")
     @TruffleBoundary
     private void reinitializeMroShape(PythonLanguage language) {
-        MroSequenceStorage mro = getMethodResolutionOrder();
-        mroShape = MroShape.create(mro, language);
-        if (mroShape != null) {
-            // add this class as a subtype of all classes in the mro (including itself)
-            mroLoop: for (int mroIdx = 0; mroIdx < mro.length(); mroIdx++) {
-                PythonManagedClass managedClass = (PythonManagedClass) mro.getPythonClassItemNormalized(mroIdx);
-                if (managedClass instanceof PythonBuiltinClass) {
-                    // builtin classes are assumed immutable, so we do not need to register in their
-                    // mro subtypes array (in fact they do not have such array)
-                    continue;
-                }
-                PythonClass klass = (PythonClass) managedClass;
-                TruffleWeakReference<PythonClass>[] subTypes = klass.mroShapeSubTypes;
-                if (subTypes == null) {
-                    klass.mroShapeSubTypes = (TruffleWeakReference<PythonClass>[]) new TruffleWeakReference<?>[8];
-                    klass.mroShapeSubTypes[0] = new TruffleWeakReference<>(this);
-                    continue;
-                }
-                for (int subTypesIdx = 0; subTypesIdx < subTypes.length; subTypesIdx++) {
-                    if (subTypes[subTypesIdx] == null) {
-                        subTypes[subTypesIdx] = new TruffleWeakReference<>(this);
-                        continue mroLoop;
-                    } else if (subTypes[subTypesIdx].get() == this) {
-                        continue mroLoop;
-                    }
-                }
-                if (subTypes.length >= MRO_SUBTYPES_MAX) {
-                    mroShape = null;
-                    mroShapeSubTypes = null;
-                    break;
-                } else {
-                    klass.mroShapeSubTypes = Arrays.copyOf(subTypes, subTypes.length * 2);
-                    klass.mroShapeSubTypes[subTypes.length] = new TruffleWeakReference<>(this);
-                }
-            }
-        }
-    }
-
-    public boolean hasMroShapeSubTypes() {
-        return mroShapeSubTypes != null;
+        mroShape = MroShape.create(getMethodResolutionOrder(), language);
     }
 
     @TruffleBoundary
     @Override
     public void onAttributeUpdate(TruffleString key, Object newValue) {
-        super.onAttributeUpdate(key, newValue);
-        if (hasMroShapeSubTypes()) {
-            if (newValue == PNone.NO_VALUE || mroShapeInvalidationsCount >= MRO_SHAPE_INVALIDATIONS_MAX) {
-                // Any NO_VALUE means that we cannot rely on Shapes anymore, because they do not
-                // reflect the actual properties
-                invalidateMroShapeSubTypes();
-            } else {
-                mroShapeInvalidationsCount++;
-                updateMroShapeSubTypes(PythonLanguage.get(null));
+        PythonAbstractClass[] allSubclasses = GetSubclassesAsArrayNode.executeRecursiveUncached(this);
+        super.onAttributeUpdate(key, newValue, allSubclasses);
+        if (mroShape == null || newValue == PNone.NO_VALUE || mroShapeInvalidationsCount >= MRO_SHAPE_INVALIDATIONS_MAX) {
+            // Any NO_VALUE means that we cannot rely on Shapes anymore, because they do not
+            // reflect the actual properties
+            invalidateMroShapeSubTypes(allSubclasses);
+        } else {
+            mroShapeInvalidationsCount++;
+            updateMroShapeSubTypes(PythonLanguage.get(null), allSubclasses);
+        }
+    }
+
+    @TruffleBoundary
+    private void invalidateMroShapeSubTypes() {
+        mroShape = null;
+        for (PythonAbstractClass subclass : GetSubclassesAsArrayNode.executeUncached(this)) {
+            if (subclass instanceof PythonClass pc && pc.mroShape != null) {
+                pc.invalidateMroShapeSubTypes();
             }
         }
     }
 
-    private void invalidateMroShapeSubTypes() {
+    private void invalidateMroShapeSubTypes(PythonAbstractClass[] subclasses) {
         // Note: intentionally not a TruffleBoundary
-        if (hasMroShapeSubTypes()) {
-            for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
-                if (subTypeRef == null) {
-                    break;
-                }
-                PythonClass subType = subTypeRef.get();
-                if (subType != null) {
-                    subType.mroShape = null;
-                }
+        mroShape = null;
+        for (PythonAbstractClass subclass : subclasses) {
+            if (subclass instanceof PythonClass pc && pc.mroShape != null) {
+                pc.mroShape = null;
             }
-            mroShapeSubTypes = null;
         }
     }
 
     @TruffleBoundary
     private void updateMroShapeSubTypes(PythonLanguage lang) {
-        if (hasMroShapeSubTypes()) {
-            for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
-                if (subTypeRef == null) {
-                    break;
-                }
-                PythonClass subType = subTypeRef.get();
-                if (subType != null && subType.hasMroShapeSubTypes()) {
-                    subType.mroShape = MroShape.create(subType.getMethodResolutionOrder(), lang);
-                }
+        for (PythonAbstractClass subclass : GetSubclassesAsArrayNode.executeUncached(this)) {
+            if (subclass instanceof PythonClass pc) {
+                pc.mroShape = MroShape.create(pc.getMethodResolutionOrder(), lang);
+                pc.updateMroShapeSubTypes(lang);
+            }
+        }
+    }
+
+    private void updateMroShapeSubTypes(PythonLanguage lang, PythonAbstractClass[] subclasses) {
+        mroShape = MroShape.create(getMethodResolutionOrder(), lang);
+        for (PythonAbstractClass subclass : subclasses) {
+            if (subclass instanceof PythonClass pc) {
+                pc.mroShape = MroShape.create(pc.getMethodResolutionOrder(), lang);
             }
         }
     }
@@ -337,7 +297,7 @@ public final class PythonClass extends PythonManagedClass {
         ArrayDeque<Object> toProcess = new ArrayDeque<>();
         toProcess.add(klass);
         PythonLanguage lang = PythonLanguage.get(null);
-        while (toProcess.size() > 0) {
+        while (!toProcess.isEmpty()) {
             Object next = toProcess.pop();
             if (next instanceof PythonClass) {
                 ((PythonClass) next).updateMroShapeSubTypes(lang);

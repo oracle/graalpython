@@ -48,8 +48,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -236,7 +236,8 @@ public abstract class TpSlotLen {
                         @Cached CastToJavaIntLossyNode castLossy,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             // See CPython: slot_sq_length
-            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
+            Object callable = slot.getCallableOrRaise(inliningTarget);
+            Object result = dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self);
             if (!genericCheck.wasEntered(inliningTarget)) {
                 try {
                     return checkLen(inliningTarget, raiseNode, PGuards.expectInteger(result));
