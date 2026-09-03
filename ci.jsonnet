@@ -390,13 +390,18 @@
     } + {
         // "small" benchmarks have their argument set such that they run in a resonable
         // time in the interpreter and they are used for interpreter benchmarking
-        [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
+        "micro_small": bench_task("micro_small") + platform_spec(no_jobs) + bench_variants({
+            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge + t("02:00:00") + need_pgo},
+            "vm_name:graalvm_ee_default_interpreter_uncached"           : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
+            "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
+            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
+        }),
+        "meso_small": bench_task("meso_small") + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
             "vm_name:graalvm_ee_default_interpreter_uncached"           : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
             "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
         }),
-        for bench in ["micro_small", "meso_small"]
     } + {
         // benchmarks executed via Java embedding driver
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
