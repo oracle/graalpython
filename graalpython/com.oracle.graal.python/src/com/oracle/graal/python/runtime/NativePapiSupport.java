@@ -156,37 +156,50 @@ public final class NativePapiSupport {
     }
 
     private final PythonContext pythonContext;
-    private final boolean available;
     private final PapiNativeFunctions nativeFunctions;
+
+    /** Lazily computed by {@link #isAvailable()} -- {@code null} means "not probed yet". This
+     * must NOT be probed eagerly at context construction: {@code createNative} also runs during
+     * native-image build-time context preinitialization, and actually touching native code
+     * (dlopen, downcalls) is not allowed at that point (only at real runtime, once the image is
+     * actually running). See {@link PythonContext#ensureNativeContext()}. */
+    private Boolean available;
 
     private int eventSet = PAPI_NULL;
     private int numEvents;
     private long[] prevValues;
 
-    private NativePapiSupport(PythonContext context, boolean available, PapiNativeFunctions nativeFunctions) {
+    private NativePapiSupport(PythonContext context, PapiNativeFunctions nativeFunctions) {
         this.pythonContext = context;
-        this.available = available;
         this.nativeFunctions = nativeFunctions;
     }
 
     public static NativePapiSupport createNative(PythonContext context) {
-        if (!ImageInfo.inImageCode()) {
-            return new NativePapiSupport(context, false, null);
+        // Cheap and native-call-free, so it's safe to do eagerly, including at build time: just
+        // wires up the (still unresolved) downcall handles, matching NativeZlibSupport's pattern.
+        PapiNativeFunctions functions = ImageInfo.inImageCode() ? new PapiNativeFunctionsGen(context) : null;
+        return new NativePapiSupport(context, functions);
+    }
+
+    @TruffleBoundary
+    public boolean isAvailable() {
+        if (available == null) {
+            available = probeAvailability();
         }
-        PapiNativeFunctions functions = new PapiNativeFunctionsGen(context);
-        boolean initialized;
+        return available;
+    }
+
+    private boolean probeAvailability() {
+        if (!ImageInfo.inImageCode() || nativeFunctions == null) {
+            return false;
+        }
         try {
-            initialized = functions.PAPI_library_init(PAPI_VER_CURRENT) == PAPI_VER_CURRENT;
+            return nativeFunctions.PAPI_library_init(PAPI_VER_CURRENT) == PAPI_VER_CURRENT;
         } catch (UnsupportedOperationException e) {
             // libpapi.so not installed, or not found on the default library search path
             LOGGER.fine("PAPI support disabled: " + e.getMessage());
-            initialized = false;
+            return false;
         }
-        return new NativePapiSupport(context, initialized, initialized ? functions : null);
-    }
-
-    public boolean isAvailable() {
-        return available;
     }
 
     public boolean isRunning() {
@@ -300,7 +313,7 @@ public final class NativePapiSupport {
     }
 
     private void ensureAvailable() {
-        if (!available) {
+        if (!isAvailable()) {
             throw new PapiException(JAVA_NOT_AVAILABLE, "PAPI is not available (native-image only, and requires libpapi.so to be installed)");
         }
     }
