@@ -504,53 +504,28 @@
                 ["bundle", "install"],
                 ["bundle", "exec", "jekyll", "build"],
             ],
-            publishArtifacts: [
-                {
-                    name: "graalpy-website-build-artifact",
-                    dir: "docs/site/_site",
-                    patterns: ["*"],
-                }
-            ],
+            // publishArtifacts: [
+            //     {
+            //         name: "graalpy-website-build-artifact",
+            //         dir: "docs/site/_site",
+            //         patterns: ["*"],
+            //     }
+            // ],
         },
-        {
-            name: "graalpy-website-deploy-staging",
-            targets: ["deploy"],
-            capabilities: ["linux", "amd64"],
-            requireArtifacts: [
-                {
-                    name: "graalpy-website-build-artifact",
-                    dir: "_site",
-                }
-            ],
-            run: [
-                $.overlay_imports.STAGING_DEPLOY_CMD
-            ],
-        },
-        {
-            name: "graalpy-website-deploy-production",
-            targets: ["deploy"],
-            capabilities: ["linux", "amd64"],
-            packages: {
-                mx: "==7.82.0",
-                python3: "==3.8.10",
-            },
-            requireArtifacts: [
-                {
-                    name: "graalpy-website-build-artifact",
-                    dir: "_site",
-                }
-            ],
-            run: [
-                ["git", "clone", $.overlay_imports.WEBSITE_GIT],
-                ["rsync", "-a", "--delete", "_site/", "graalvm-website/python"],
-                ["git", "-C", "graalvm-website", "add", "."],
-                ["git", "-C", "graalvm-website", "status"],
-                ["git", "-C", "graalvm-website", "-c", "user.name=Web Publisher", "-c", "user.email=graalvm-dev@oss.oracle.com", "commit", "-m", "Update GraalPy website"],
-                ["git", "-C", "graalvm-website", "push", "origin", "HEAD"],
-                ["git", "branch", "--force", "--no-track", "published"],
-                ["git", "push", "--force", "origin", "published"],
-            ]
-        },
+        // {
+        //     name: "graalpy-website-deploy-staging",
+        //     targets: ["deploy"],
+        //     capabilities: ["linux", "amd64"],
+        //     requireArtifacts: [
+        //         {
+        //             name: "graalpy-website-build-artifact",
+        //             dir: "_site",
+        //         }
+        //     ],
+        //     run: [
+        //         $.overlay_imports.STAGING_DEPLOY_CMD
+        //     ],
+        // },
     ],
 }
 
