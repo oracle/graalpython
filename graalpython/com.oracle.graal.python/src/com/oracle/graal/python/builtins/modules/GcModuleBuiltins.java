@@ -211,7 +211,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             }
             // collect some weak references now
             PythonContext.triggerAsyncActions(inliningTarget);
-            CApiTransitions.pollReferenceQueue();
+            CApiTransitions.pollReferenceQueueIfPending(PythonContext.get(null));
             /*
              * CPython's GC returns the number of collected cycles. This is not something we can
              * determine, but to return some useful info to the Python program, we return the amount

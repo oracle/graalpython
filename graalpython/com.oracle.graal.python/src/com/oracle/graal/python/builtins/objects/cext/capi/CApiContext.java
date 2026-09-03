@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.drainReferenceQueueNow;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ReferenceQueueCoordinator;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -311,6 +313,7 @@ public final class CApiContext extends CExtContext {
 
     public final BackgroundGCTask gcTask;
     private Thread backgroundGCTaskThread;
+    private final ReferenceQueueWatcherTask referenceQueueWatcherTask;
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -326,6 +329,7 @@ public final class CApiContext extends CExtContext {
         Arrays.fill(singletonNativePtrs, UNINITIALIZED);
 
         this.gcTask = new BackgroundGCTask(context);
+        this.referenceQueueWatcherTask = new ReferenceQueueWatcherTask(context);
     }
 
     @TruffleBoundary
@@ -695,6 +699,31 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    private static final class ReferenceQueueWatcherTask implements Runnable {
+        private final WeakReference<PythonContext> contextRef;
+
+        private ReferenceQueueWatcherTask(PythonContext context) {
+            contextRef = new WeakReference<>(context);
+        }
+
+        @Override
+        public void run() {
+            PythonContext context = contextRef.get();
+            if (context == null) {
+                return;
+            }
+            HandleContext handleContext = context.handleContext;
+            try {
+                while (handleContext.referenceQueueCoordinator.beginWatcherRemove()) {
+                    Reference<?> reference = handleContext.referenceQueueCoordinator.blockingRemove(handleContext.referenceQueue);
+                    handleContext.referenceQueueCoordinator.endWatcherRemove(reference);
+                }
+            } finally {
+                handleContext.referenceQueueCoordinator.stopped();
+            }
+        }
+    }
+
     @TruffleBoundary
     public long getCurrentRSS() {
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
@@ -724,6 +753,34 @@ public final class CApiContext extends CExtContext {
         }
         backgroundGCTaskThread = context.createSystemThread(gcTask);
         backgroundGCTaskThread.start();
+    }
+
+    void runReferenceQueueWatcher(PythonContext context) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (context.getEnv().isPreInitialization() || context.getOption(PythonOptions.NoAsyncActions) || !PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            return;
+        }
+        Thread thread = context.getEnv().createSystemThread(referenceQueueWatcherTask, context.getThreadGroup());
+        thread.setName("C API reference queue watcher");
+        /*
+         * The watcher runs without an entered context, so it cannot use a logger obtained through
+         * TruffleLogger.getLogger. Env.getLogger returns a context-bound logger that is safe to use
+         * from such a system thread.
+         */
+        TruffleLogger logger = context.getEnv().getLogger(LOGGER_CAPI_NAME + "." + ReferenceQueueCoordinator.class.getSimpleName());
+        context.handleContext.referenceQueueCoordinator.start(thread, logger);
+    }
+
+    private void stopReferenceQueueWatcher(PythonContext context) {
+        context.handleContext.referenceQueueCoordinator.stop();
+    }
+
+    /**
+     * Stops system threads that must not outlive the polyglot context. This must not run guest
+     * code: context disposal is still performed if cancellation interrupts finalization.
+     */
+    public void dispose() {
+        stopReferenceQueueWatcher(getContext());
     }
 
     /**
@@ -854,10 +911,11 @@ public final class CApiContext extends CExtContext {
                     context.runCApiHooks();
                     context.setCApiState(PythonContext.CApiState.INITIALIZED); // volatile write
                     try {
+                        cApiContext.runReferenceQueueWatcher(context);
                         cApiContext.runBackgroundGCTask(context);
                     } catch (RuntimeException e) {
-                        // This can happen when other languages restrict multithreading
-                        LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
+                        // This can happen when other languages restrict multithreading.
+                        LOGGER.warning(() -> "didn't start a C API background task due to: " + e.getMessage());
                     }
                 } catch (ImportException e) {
                     context.setCApiState(PythonContext.CApiState.CANNOT_IMPORT);
@@ -1159,13 +1217,14 @@ public final class CApiContext extends CExtContext {
          * ensure that the GIL is held.
          */
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            PythonContext context = getContext();
             /*
              * Polling the native reference queue is the only task we can do here because
              * deallocating objects may run arbitrary guest code that can again call into the
              * interpreter.
              */
-            pollReferenceQueue();
-            CApiTransitions.deallocateNativeWeakRefs(getContext());
+            drainReferenceQueueNow(context);
+            CApiTransitions.deallocateNativeWeakRefs(context);
         }
     }
 
@@ -1174,6 +1233,15 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
         HandleContext handleContext = context.handleContext;
+        /*
+         * Cancellation skips the context's atexit hooks, so mark the C API as finalizing here as
+         * well. This must happen before any native wrappers are freed while other threads may still
+         * be running native code.
+         */
+        if (nativeFinalizerRunnable != null) {
+            nativeFinalizerRunnable.run();
+        }
+        stopReferenceQueueWatcher(context);
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
             context.killSystemThread(backgroundGCTaskThread);
             try {
@@ -1230,7 +1298,6 @@ public final class CApiContext extends CExtContext {
         if (nativeFinalizerShutdownHook != null) {
             try {
                 Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
-                nativeFinalizerRunnable.run();
             } catch (IllegalStateException e) {
                 // Shutdown already in progress, let it do the finalization then
             }

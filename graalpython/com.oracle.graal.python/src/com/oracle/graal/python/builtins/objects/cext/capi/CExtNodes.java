@@ -283,7 +283,7 @@ public abstract class CExtNodes {
         TransformExceptionFromNativeNode.executeUncached(context.getThreadState(context.getLanguage()), NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW.getTsName(), nativeObject == NULLPTR,
                         true);
         CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
-        CApiTransitions.createReference(managedSide, nativeObject);
+        CApiTransitions.createReference(context, managedSide, nativeObject);
         assert managedSide.isNative();
         return managedSide;
     }

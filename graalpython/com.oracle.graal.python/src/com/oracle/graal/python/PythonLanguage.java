@@ -434,6 +434,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    protected void disposeContext(PythonContext context) {
+        if (context.getCApiContext() != null) {
+            context.getCApiContext().dispose();
+        }
+        super.disposeContext(context);
+    }
+
+    @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
         return PythonOptions.areOptionsCompatible(firstOptions, newOptions);
     }

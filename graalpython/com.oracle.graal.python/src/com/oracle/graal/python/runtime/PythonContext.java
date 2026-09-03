@@ -1769,18 +1769,26 @@ public final class PythonContext extends Python3Core {
             // shut down async actions threads
             handler.shutdown();
             finalizing = true;
+            // Flushing may execute arbitrary guest code, including C extension code. Do it before
+            // finalizeCApi tears down native wrappers and other C API state.
+            stdioFlushFailed = flushStdFiles();
             if (cApiContext != null) {
                 cApiContext.finalizeCApi(cancelling);
             }
             // interrupt and join or kill python threads
             joinPythonThreads();
-            stdioFlushFailed = flushStdFiles();
-            if (nativeContext != null) {
-                nativeContext.close();
-            }
             freeContextMemory();
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
+            /*
+             * Closing NativeContext must be the last operation because it may unload native libraries
+             * with their global state. If any code still has the address to some variable and writes
+             * to it, this can cause severe memory corruptions. E.g. the address of `tstate_current` is
+             * stored in `PythonThreadState.nativeThreadLocalVarPointer` and will be nulled on disposal.
+             */
+            if (nativeContext != null) {
+                nativeContext.close();
+            }
         }
         // interrupt and join or kill system threads
         joinSystemThreads();
