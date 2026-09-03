@@ -1874,7 +1874,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
-                output.setObject(bytecode, frame, null);
                 return false;
             }
             Object value = iterator.next();
@@ -1917,7 +1916,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 output.setObject(bytecode, frame, value);
                 return true;
             } catch (IteratorExhausted e) {
-                output.setObject(bytecode, frame, null);
                 return false;
             }
         }
@@ -3917,38 +3915,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 }
             }
             return toString.execute(tsb);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = false)
-    @ConstantOperand(type = LocalAccessor.class)
-    public static final class TeeLocal {
-        @Specialization
-        public static int doInt(VirtualFrame frame, LocalAccessor local, int value,
-                        @Bind BytecodeNode bytecode) {
-            local.setInt(bytecode, frame, value);
-            return value;
-        }
-
-        @Specialization
-        public static double doDouble(VirtualFrame frame, LocalAccessor local, double value,
-                        @Bind BytecodeNode bytecode) {
-            local.setDouble(bytecode, frame, value);
-            return value;
-        }
-
-        @Specialization
-        public static long doLong(VirtualFrame frame, LocalAccessor local, long value,
-                        @Bind BytecodeNode bytecode) {
-            local.setLong(bytecode, frame, value);
-            return value;
-        }
-
-        @Specialization(replaces = {"doInt", "doDouble", "doLong"})
-        public static Object doObject(VirtualFrame frame, LocalAccessor local, Object value,
-                        @Bind BytecodeNode bytecode) {
-            local.setObject(bytecode, frame, value);
-            return value;
         }
     }
 

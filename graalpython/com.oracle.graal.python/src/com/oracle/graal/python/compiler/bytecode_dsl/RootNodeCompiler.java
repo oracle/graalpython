@@ -48,6 +48,7 @@ import static com.oracle.graal.python.compiler.SSTUtils.checkCompare;
 import static com.oracle.graal.python.compiler.SSTUtils.checkForbiddenArgs;
 import static com.oracle.graal.python.compiler.SSTUtils.checkIndex;
 import static com.oracle.graal.python.compiler.SSTUtils.checkSubscripter;
+import static com.oracle.graal.python.compiler.SSTUtils.mayBeForbiddenName;
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.COMPREHENSION_ARGS;
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.NO_ARGS;
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.TYPE_PARAMS_DEFAULTS;
@@ -762,8 +763,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         prevSaveExceptionLocal = null;
         lastTracedLine = -1;
         this.inExceptStar = false;
+        temporaryLocals.clear();
         if (ASSERTIONS_ENABLED) {
-            temporaryLocals.clear();
+            temporaryLocalsTraces.clear();
         }
     }
 
@@ -795,14 +797,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         b.endRoot();
         endRootSourceSection(b);
         b.endSource();
-        if (ASSERTIONS_ENABLED && !temporaryLocals.isEmpty()) {
+        if (ASSERTIONS_ENABLED && !temporaryLocalsTraces.isEmpty()) {
             throw new AssertionError(this.qualName + "\n\n" + formatTempLocalsStackTraces());
         }
     }
 
     private String formatTempLocalsStackTraces() {
         StringBuilder sb = new StringBuilder();
-        for (Object v : temporaryLocals.values()) {
+        for (Object v : temporaryLocalsTraces.values()) {
             if (v instanceof RuntimeException re) {
                 sb.append("\n==================\n");
                 StringWriter sw = new StringWriter();
@@ -825,12 +827,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return enabled;
     }
 
-    private HashMap<BytecodeLocal, Object> temporaryLocals = ASSERTIONS_ENABLED ? new HashMap<>() : null;
+    private HashMap<BytecodeLocal, Object> temporaryLocalsTraces = ASSERTIONS_ENABLED ? new HashMap<>() : null;
+    private HashSet<BytecodeLocal> temporaryLocals = new HashSet<>();
 
     private BytecodeLocal beginTemporaryLocal(Builder b) {
         BytecodeLocal local = b.createLocal();
+        temporaryLocals.add(local);
+        assert isTemporaryLocal(local);
         if (ASSERTIONS_ENABLED) {
-            Object previous = temporaryLocals.put(local, TRACK_TEMP_LOCALS ? new RuntimeException() : local);
+            Object previous = temporaryLocalsTraces.put(local, TRACK_TEMP_LOCALS ? new RuntimeException() : local);
             if (previous != null) {
                 throw new AssertionError();
             }
@@ -838,31 +843,43 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return local;
     }
 
+    public BytecodeLocal beginTemporaryLocalOrGetLocal(ExprTy target, Builder b) {
+        if (target instanceof ExprTy.Name nameExpr) {
+            BytecodeLocal l = getFastLocal(nameExpr.id);
+            if (l != null) {
+                return l;
+            }
+        }
+        return beginTemporaryLocal(b);
+    }
+
+    public boolean isTemporaryLocal(BytecodeLocal local) {
+        return temporaryLocals.contains(local);
+    }
+
     private void endTemporaryLocal(BytecodeLocal local, Builder b) {
-        markTemporaryLocalCleared(local);
-        b.emitClearLocal(local);
+        if (isTemporaryLocal(local)) {
+            markTemporaryLocalCleared(local);
+            b.emitClearLocal(local);
+        }
     }
 
     private void loadAndEndTemporaryLocal(BytecodeLocal local, Builder b) {
-        markTemporaryLocalCleared(local);
-        b.emitLoadAndClearTempLocal(local);
+        if (isTemporaryLocal(local)) {
+            markTemporaryLocalCleared(local);
+            b.emitLoadAndClearTempLocal(local);
+        }
     }
 
     private void markTemporaryLocalCleared(BytecodeLocal local) {
+        if (!temporaryLocals.remove(local)) {
+            throw new AssertionError();
+        }
         if (ASSERTIONS_ENABLED) {
-            if (temporaryLocals.remove(local) == null) {
+            if (temporaryLocalsTraces.remove(local) == null) {
                 throw new AssertionError();
             }
         }
-    }
-
-    private BytecodeLocal checkTemporaryLocal(BytecodeLocal local) {
-        if (ASSERTIONS_ENABLED) {
-            if (local != null && !temporaryLocals.containsKey(local)) {
-                throw new AssertionError("Temporary local was already cleared");
-            }
-        }
-        return local;
     }
 
     void emitTraceLineChecked(SSTNode node, Builder b) {
@@ -1382,7 +1399,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             statementCompiler.emitAsyncFor(iter, comp.target, null, true, index,
                             (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collection, accumulateProducer, stmtComp));
         } else {
-            BytecodeLocal localValue = beginTemporaryLocal(b);
+            BytecodeLocal localValue = beginTemporaryLocalOrGetLocal(comp.target, b);
 
             b.beginBlock();
             b.beginBindStackValue();
@@ -1411,7 +1428,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.beginBlock();
 
-            comp.target.accept(statementCompiler.new StoreVisitor(() -> b.emitLoadLocal(localValue)));
+            statementCompiler.storeTemporaryLocalToTarget(localValue, comp.target, b);
             emitComprehensionBody(generators, index, type, collection, accumulateProducer, statementCompiler);
 
             b.endBlock();
@@ -1851,6 +1868,25 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         emitNameSlowOperation(mangled, op, b);
     }
 
+    private BytecodeLocal getFastLocal(String name) {
+        if (mayBeForbiddenName(name)) {
+            return null;
+        }
+        String mangled = maybeMangle(name);
+        EnumSet<DefUse> uses = scope.getUseOfName(mangled);
+        if (uses != null) {
+            if (uses.contains(DefUse.Free) || uses.contains(DefUse.Cell)) {
+                return null;
+            } else if (uses.contains(DefUse.Local)) {
+                if (scope.isFunction()) {
+                    assert varnames.containsKey(mangled) : String.format("scope analysis did not mark %s as a regular variable", mangled);
+                    return locals.get(mangled);
+                }
+            }
+        }
+        return null;
+    }
+
     private void emitReadLocal(String name, Builder b) {
         emitNameOperation(name, NameOperation.Read, b);
     }
@@ -2014,6 +2050,23 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         private BytecodeLocal beginTemporaryLocal() {
             return RootNodeCompiler.this.beginTemporaryLocal(b);
+        }
+
+        /**
+         * If the target expression is simple local variable, we can often just directly store into it.
+         * Otherwise, we create temporary local. {@link BytecodeLocal} instances returned by this should
+         * be passed to {@link #storeTemporaryLocalToTarget(BytecodeLocal, ExprTy, Builder)}.
+         */
+        public BytecodeLocal beginTemporaryLocalOrGetLocal(ExprTy target, Builder b) {
+            return RootNodeCompiler.this.beginTemporaryLocalOrGetLocal(target, b);
+        }
+
+        private void storeTemporaryLocalToTarget(BytecodeLocal temporaryLocal, ExprTy target, Builder b) {
+            if (RootNodeCompiler.this.isTemporaryLocal(temporaryLocal)) {
+                target.accept(new StoreVisitor(() -> {
+                    b.emitLoadLocal(temporaryLocal);
+                }));
+            }
         }
 
         private void endTemporaryLocal(BytecodeLocal local) {
@@ -4328,7 +4381,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             inExceptStar = false;
             b.beginBlock();
 
-            BytecodeLocal value = beginTemporaryLocal();
+            BytecodeLocal value = beginTemporaryLocalOrGetLocal(node.target, b);
 
             b.beginBindStackValue();
             b.beginGetIter();
@@ -4355,9 +4408,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // body
             b.beginBlock();
             continueLabel = b.createLabel();
-            node.target.accept(new StoreVisitor(() -> {
-                b.emitLoadLocal(value);
-            }));
+            storeTemporaryLocalToTarget(value, node.target, b);
 
             visitSequence(node.body);
             b.emitLabel(continueLabel);
