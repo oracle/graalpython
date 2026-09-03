@@ -345,6 +345,28 @@
             "raw_results.json",
         ],
     }),
+    // Existing GraalPy post-merge benchmark jobs provide master history for
+    // PR-bench. The report uses that history as a best-effort baseline and
+    // does not run separate baseline benchmarking.
+    local pr_bench_graalpy = task_spec({
+        unicorn_pull_request_benchmarking:: {
+            name: "graalpy",
+            benchmarks: [
+                "meso.nbody3",
+                "macro.c-pydantic-validate",
+                "macro.c-pydantic-serialize-json",
+                "micro-small.attribute-bool",
+            ],
+            metrics: ["time"],
+            baseline_benchmarking: false,
+            _extra_unicorn_args: [
+                "--config-key", "dataserver/fetch/where/bench-suite-version/enum[]=unknown",
+                "--config-key", "dataserver/fetch/where/bench-suite-version/allow-absent=true",
+                "--config-key", "dataserver/fetch/where/platform.jdk-major-version/enum[]=0",
+                "--config-key", "dataserver/fetch/where/platform.jdk-major-version/allow-absent=true",
+            ],
+        },
+    }),
 
     // -----------------------------------------------------------------------------------------------------------------
     // benchmarks
@@ -352,7 +374,7 @@
     // [info]: when adding a benchmark, the key in the `bench_task_dict` is taken as the name of the benchmark if it is
     // not specified as the first arg to `bench_task`.
     local bench_task_dict = {
-        [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
+        "micro": bench_task("micro") + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
                 "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
@@ -361,10 +383,18 @@
             "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : monthly    + t("04:00:00")},
             "vm_name:pypy"                                              : {"linux:amd64:jdk-latest" : on_demand    + t("04:00:00")},
         }),
-        for bench in ["micro", "meso"]
+        "meso": bench_task("meso") + platform_spec(no_jobs) + bench_variants({
+            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo + pr_bench_graalpy},
+            "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
+                "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
+            },
+            "vm_name:graalpython_enterprise_multi"                      : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
+            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : monthly    + t("04:00:00")},
+            "vm_name:pypy"                                              : {"linux:amd64:jdk-latest" : on_demand    + t("04:00:00")},
+        }),
     } + {
         "macro": bench_task("macro") + internet_access_env + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
+            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo + pr_bench_graalpy},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
                 "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
             },
@@ -391,7 +421,7 @@
         // "small" benchmarks have their argument set such that they run in a resonable
         // time in the interpreter and they are used for interpreter benchmarking
         "micro_small": bench_task("micro_small") + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge + t("02:00:00") + need_pgo},
+            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge + t("02:00:00") + need_pgo + pr_bench_graalpy},
             "vm_name:graalvm_ee_default_interpreter_uncached"           : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
             "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
