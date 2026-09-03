@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ReferenceQueueCoordinator;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -761,7 +762,13 @@ public final class CApiContext extends CExtContext {
         }
         Thread thread = context.getEnv().createSystemThread(referenceQueueWatcherTask, context.getThreadGroup());
         thread.setName("C API reference queue watcher");
-        context.handleContext.referenceQueueCoordinator.start(thread);
+        /*
+         * The watcher runs without an entered context, so it cannot use a logger obtained through
+         * TruffleLogger.getLogger. Env.getLogger returns a context-bound logger that is safe to use
+         * from such a system thread.
+         */
+        TruffleLogger logger = context.getEnv().getLogger(LOGGER_CAPI_NAME + "." + ReferenceQueueCoordinator.class.getSimpleName());
+        context.handleContext.referenceQueueCoordinator.start(thread, logger);
     }
 
     private void stopReferenceQueueWatcher(PythonContext context) {

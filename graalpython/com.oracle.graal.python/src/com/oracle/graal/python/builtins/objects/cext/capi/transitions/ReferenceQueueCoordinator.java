@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -82,6 +83,7 @@ public final class ReferenceQueueCoordinator {
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition stateChanged = lock.newCondition();
     private final AtomicReference<Object> state = new AtomicReference<>(State.INACTIVE);
+    private TruffleLogger logger;
     private Thread watcherThread;
     private volatile boolean watcherInRemove;
     private volatile boolean pauseRequested;
@@ -90,11 +92,16 @@ public final class ReferenceQueueCoordinator {
      * Takes ownership of the watcher thread, publishes the watching state, and starts the thread.
      */
     public void start(Thread thread) {
+        start(thread, null);
+    }
+
+    public void start(Thread thread, TruffleLogger contextBoundLogger) {
         lock.lock();
         try {
             assert state.get() == State.INACTIVE : state.get();
+            logger = contextBoundLogger;
             watcherThread = thread;
-            state.set(State.WATCHING);
+            setState(State.WATCHING);
         } finally {
             lock.unlock();
         }
@@ -151,7 +158,7 @@ public final class ReferenceQueueCoordinator {
         assert watcherInRemove;
         Reference<?> handoff = null;
         if (reference != null) {
-            if (state.compareAndSet(State.WATCHING, reference)) {
+            if (compareAndSetState(State.WATCHING, reference)) {
                 handoff = pauseRequested ? null : reference;
             }
         }
@@ -165,7 +172,7 @@ public final class ReferenceQueueCoordinator {
      * succeeded, or {@code null} if another thread or a lifecycle transition won the race.
      */
     public Reference<?> beginWatcherDrain(Reference<?> reference) {
-        if (!state.compareAndSet(reference, State.DRAINING)) {
+        if (!compareAndSetState(reference, State.DRAINING)) {
             return null;
         }
         return reference;
@@ -205,7 +212,7 @@ public final class ReferenceQueueCoordinator {
             }
             current = state.get();
             if (current == State.STOPPING || current == State.STOPPED || current == State.DRAINING || current == State.DISABLED || current instanceof DisabledReference ||
-                            !state.compareAndSet(current, State.DRAINING)) {
+                            !compareAndSetState(current, State.DRAINING)) {
                 pauseRequested = false;
                 stateChanged.signalAll();
                 return null;
@@ -220,7 +227,7 @@ public final class ReferenceQueueCoordinator {
     public void finishDrain() {
         lock.lock();
         try {
-            if (state.compareAndSet(State.DRAINING, State.WATCHING)) {
+            if (compareAndSetState(State.DRAINING, State.WATCHING)) {
                 stateChanged.signalAll();
             }
         } finally {
@@ -252,7 +259,7 @@ public final class ReferenceQueueCoordinator {
                 return false;
             }
             Object disabledState = current instanceof Reference<?> reference ? new DisabledReference(reference) : State.DISABLED;
-            if (!state.compareAndSet(current, disabledState)) {
+            if (!compareAndSetState(current, disabledState)) {
                 pauseRequested = false;
                 stateChanged.signalAll();
                 return false;
@@ -280,7 +287,7 @@ public final class ReferenceQueueCoordinator {
                 // INACTIVE is expected when automatic async actions are disabled.
                 return;
             }
-            if (state.compareAndSet(current, enabledState)) {
+            if (compareAndSetState(current, enabledState)) {
                 stateChanged.signalAll();
             }
         } finally {
@@ -302,7 +309,7 @@ public final class ReferenceQueueCoordinator {
             if (current == State.INACTIVE || current == State.STOPPED) {
                 return;
             }
-            state.set(State.STOPPING);
+            setState(State.STOPPING);
             stateChanged.signalAll();
             thread = watcherThread;
         } finally {
@@ -328,7 +335,7 @@ public final class ReferenceQueueCoordinator {
     public void stopped() {
         lock.lock();
         try {
-            state.set(State.STOPPED);
+            setState(State.STOPPED);
             watcherThread = null;
             watcherInRemove = false;
             pauseRequested = false;
@@ -345,5 +352,38 @@ public final class ReferenceQueueCoordinator {
         } finally {
             lock.unlock();
         }
+    }
+
+    private boolean compareAndSetState(Object expectedState, Object newState) {
+        if (!state.compareAndSet(expectedState, newState)) {
+            return false;
+        }
+        logStateChange(expectedState, newState);
+        return true;
+    }
+
+    private void setState(Object newState) {
+        Object previousState = state.getAndSet(newState);
+        if (previousState != newState) {
+            logStateChange(previousState, newState);
+        }
+    }
+
+    private void logStateChange(Object previousState, Object newState) {
+        TruffleLogger currentLogger = logger;
+        if (currentLogger != null) {
+            currentLogger.fine(() -> String.format("Reference queue coordinator %x state changed on thread '%s': %s -> %s", System.identityHashCode(this), Thread.currentThread().getName(),
+                            describeState(previousState), describeState(newState)));
+        }
+    }
+
+    private static String describeState(Object value) {
+        if (value instanceof DisabledReference disabled) {
+            return String.format("DISABLED[%s]", describeState(disabled.reference));
+        }
+        if (value instanceof Reference<?> reference) {
+            return String.format("PENDING[%s@%x]", reference.getClass().getSimpleName(), System.identityHashCode(reference));
+        }
+        return String.valueOf(value);
     }
 }
