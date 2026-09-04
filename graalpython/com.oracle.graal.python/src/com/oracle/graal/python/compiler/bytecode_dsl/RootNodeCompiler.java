@@ -1428,7 +1428,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.beginBlock();
 
-            statementCompiler.storeTemporaryLocalToTarget(localValue, comp.target, b);
+            statementCompiler.storeTemporaryLocalToTarget(localValue, comp.target, b, false);
             emitComprehensionBody(generators, index, type, collection, accumulateProducer, statementCompiler);
 
             b.endBlock();
@@ -2055,17 +2055,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         /**
          * If the target expression is simple local variable, we can often just directly store into it.
          * Otherwise, we create temporary local. {@link BytecodeLocal} instances returned by this should
-         * be passed to {@link #storeTemporaryLocalToTarget(BytecodeLocal, ExprTy, Builder)}.
+         * be passed to {@link #storeTemporaryLocalToTarget(BytecodeLocal, ExprTy, Builder, boolean)}.
          */
         public BytecodeLocal beginTemporaryLocalOrGetLocal(ExprTy target, Builder b) {
             return RootNodeCompiler.this.beginTemporaryLocalOrGetLocal(target, b);
         }
 
-        private void storeTemporaryLocalToTarget(BytecodeLocal temporaryLocal, ExprTy target, Builder b) {
+        private void storeTemporaryLocalToTarget(BytecodeLocal temporaryLocal, ExprTy target, Builder b, boolean allowFastLocalLookup) {
             if (RootNodeCompiler.this.isTemporaryLocal(temporaryLocal)) {
                 target.accept(new StoreVisitor(() -> {
                     b.emitLoadLocal(temporaryLocal);
-                }));
+                }, allowFastLocalLookup));
             }
         }
 
@@ -3590,9 +3590,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public class StoreVisitor implements BaseBytecodeDSLVisitor<Void> {
             private final Builder b = StatementCompiler.this.b;
             private final Runnable generateValue;
+            private final boolean allowFastLocalLookup;
 
             StoreVisitor(Runnable generateValue) {
+                this(generateValue, true);
+            }
+
+            StoreVisitor(Runnable generateValue, boolean allowFastLocalLookup) {
                 this.generateValue = generateValue;
+                this.allowFastLocalLookup = allowFastLocalLookup;
             }
 
             @Override
@@ -3645,6 +3651,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             private void visitIterableAssign(ExprTy[] nodes) {
                 b.beginBlock();
 
+                if (nodes.length == 2 && containsNoStarred(nodes)) {
+                    BytecodeLocal target1 = allowFastLocalLookup ? beginTemporaryLocalOrGetLocal(nodes[0], b) : beginTemporaryLocal();
+                    BytecodeLocal target2 = allowFastLocalLookup ? beginTemporaryLocalOrGetLocal(nodes[1], b) : beginTemporaryLocal();
+                    b.beginUnpackToLocals2(target1, target2);
+                    generateValue.run();
+                    b.endUnpackToLocals2();
+                    storeTemporaryLocalToTarget(target1, nodes[0], b, allowFastLocalLookup);
+                    storeTemporaryLocalToTarget(target2, nodes[1], b, allowFastLocalLookup);
+                    endTemporaryLocal(target1);
+                    endTemporaryLocal(target2);
+                    b.endBlock();
+                    return;
+                }
+
                 /*
                  * The rhs should be fully evaluated and unpacked into the expected number of
                  * elements before storing values into the lhs (e.g., if an lhs element is f().attr,
@@ -3692,7 +3712,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                     target.accept(new StoreVisitor(() -> {
                         b.emitLoadLocal(targets[index]);
-                    }));
+                    }, allowFastLocalLookup));
                     endTemporaryLocal(targets[index]);
                 }
 
@@ -3894,8 +3914,35 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return null;
         }
 
+        private ExprTy[] getElementsOfTupleOrList(ExprTy value) {
+            if (value instanceof Tuple tupleExpr) {
+                return tupleExpr.elements;
+            } else if (value instanceof ExprTy.List listExpr) {
+                return listExpr.elements;
+            }
+            return null;
+        }
+
         private void emitAssignment(ExprTy[] targets, ExprTy value) {
-            if (targets.length == 1) {
+            ExprTy[] valueElements = getElementsOfTupleOrList(value);
+            if (targets.length == 1 && targets[0] instanceof ExprTy.Tuple targetTuple && valueElements != null &&
+                            targetTuple.elements.length == valueElements.length &&
+                            containsNoStarred(targetTuple.elements) && containsNoStarred(valueElements)) {
+                b.beginBlock();
+                StackValue[] values = new StackValue[valueElements.length];
+                for (int i = 0; i < values.length; i++) {
+                    b.beginBindStackValue();
+                    valueElements[i].accept(this);
+                    values[i] = b.endBindStackValue();
+                }
+                for (int i = 0; i < values.length; i++) {
+                    int index = i;
+                    targetTuple.elements[i].accept(new StoreVisitor(() -> {
+                        b.emitLoadStackValue(values[index]);
+                    }));
+                }
+                b.endBlock();
+            } else if (targets.length == 1) {
                 targets[0].accept(new StoreVisitor(() -> {
                     value.accept(this);
                 }));
@@ -3903,15 +3950,24 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.beginBlock();
                 b.beginBindStackValue();
                 value.accept(this);
-                StackValue tmp = b.endBindStackValue();
+                StackValue values = b.endBindStackValue();
 
                 for (ExprTy target : targets) {
                     target.accept(new StoreVisitor(() -> {
-                        b.emitLoadStackValue(tmp);
+                        b.emitLoadStackValue(values);
                     }));
                 }
                 b.endBlock();
             }
+        }
+
+        private static boolean containsNoStarred(ExprTy[] nodes) {
+            for (ExprTy node : nodes) {
+                if (node instanceof ExprTy.Starred) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @Override
@@ -3931,10 +3987,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * @param iterOrNull If {@code null}, then it assumes that the first argument holds the
-         *            iterator, i.e., it won't call {@code __aiter__} on it and just use it as is.
-         *            This is the calling convention for async comprehensions.
-         */
+        * @param iterOrNull If {@code null}, then it assumes that the first argument holds the
+        *                   iterator, i.e., it won't call {@code __aiter__} on it and just use it as is.
+        *                   This is the calling convention for async comprehensions.
+        */
         private <T> void emitAsyncFor(ExprTy iterOrNull, ExprTy target, StmtTy[] orElse, boolean isComprehension,
                         T arg, BiConsumer<StatementCompiler, T> body) {
             assert !isComprehension || orElse == null;
@@ -3987,7 +4043,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             b.endTryCatch();
                             b.emitLoadLocal(result);
                         b.endBlock();
-                    }));
+                    }, !isComprehension));
                     // TODO: GR-71890, we should clear result, or create a temporary local for each iteration
                     body.accept(this, arg);
                     if (!isComprehension) {
@@ -4408,7 +4464,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // body
             b.beginBlock();
             continueLabel = b.createLabel();
-            storeTemporaryLocalToTarget(value, node.target, b);
+            storeTemporaryLocalToTarget(value, node.target, b, true);
 
             visitSequence(node.body);
             b.emitLabel(continueLabel);
