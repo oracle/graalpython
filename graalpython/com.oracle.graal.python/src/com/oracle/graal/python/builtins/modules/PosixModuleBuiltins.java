@@ -611,6 +611,27 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_is_inputhook_installed", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class IsInputHookInstalledNode extends PythonBuiltinNode {
+
+        @Specialization
+        static boolean isInputHookInstalled() {
+            // TOOD we don't support PyOS_InputHook at the moment
+            return false;
+        }
+    }
+
+    @Builtin(name = "_inputhook", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class InputHookNode extends PythonBuiltinNode {
+
+        @Specialization
+        static int inputHook() {
+            return 0;
+        }
+    }
+
     @Builtin(name = "getuid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetUidNode extends PythonBuiltinNode {
