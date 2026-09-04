@@ -34,9 +34,156 @@ import collections
 import enum
 import sys
 import types
+import os
+import subprocess
+import importlib
+import shutil
+import platform
 
-import _tkinter # If this fails your Python may not be configured for Tk
-TclError = _tkinter.TclError
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
+
+def check_package(name: str) -> bool:
+    try:
+        importlib.import_module(name)
+        return True
+    except ImportError:
+        return False
+
+def is_tcl_tk_installed( name: str ) -> bool:
+
+    if sys.platform == "darwin":
+        try:
+            subprocess.check_output(["brew", "list", "--versions", name])
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    else:
+        try:
+            subprocess.check_output(
+                ["tclsh", "-c", "puts [info patchlevel]"],
+                stderr=subprocess.DEVNULL
+            )
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
+def prompt_user_install(package_name: str, is_system_package: bool=False) -> bool:
+
+    package_type = "system" if is_system_package else "Python"
+    response = input(f"{YELLOW} Would you like to install the {package_type} package \'{package_name}\'? [Y/n]: {RESET}").strip().lower()
+    return response in ("", "y", "yes")
+
+def install_tcl_tk(name:str) -> bool:
+    if sys.platform == "darwin":
+        try:
+            subprocess.check_call(["brew", "install", name])
+            print(f"{GREEN}{name} installed successfully.{RESET}")
+        except subprocess.CalledProcessError:
+            print(f"{RED}Failed to install {name}.{RESET}")
+            sys.exit(1)
+
+    else:
+        subprocess.check_call(["sudo", "apt", "install", "-y", "tcl8.6-dev", "tk8.6-dev"])
+
+def install_system_dependencies():
+
+    if sys.platform == "darwin":
+        if not shutil.which("brew"):
+            print(f"{YELLOW}Homebrew is a system package manager for macOS.{RESET}")
+            if prompt_user_install("Homebrew", True):
+                subprocess.check_call([
+                    "/bin/bash", "-c",
+                    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                ])
+            else:
+                print(f"{RED}Cannot continue without Homebrew. Please install it and rerun.{RESET}")
+                sys.exit(1)
+
+    tcl_tk = "tcl-tk@8"
+    sys.stdout.write(f"Checking {tcl_tk}... ")
+    sys.stdout.flush()
+    if is_tcl_tk_installed(tcl_tk):
+        sys.stdout.write(f"{GREEN}Installed{RESET}\n")
+    else:
+        sys.stdout.write(f"{RED}Not installed{RESET}\n")
+        if prompt_user_install(tcl_tk, True):
+            install_tcl_tk(tcl_tk)
+        else:
+            print(f"{RED}Cannot continue without {tcl_tk}. Please install it and try again.{RESET}")
+            sys.exit(1)
+
+
+def run_tkinter_build_script():
+
+    current_dir = os.path.dirname(__file__)
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if machine == 'x86_64':
+        machine = 'x64'
+    elif machine == 'arm64' or machine == 'aarch64':
+        machine = 'aarch64'
+
+    platform_id = f"{system}-{machine}"
+
+    py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    base_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "..", "..", ".."))
+    script_path = os.path.join(
+        base_dir,
+        platform_id,
+        "GRAALPY_JVM_STANDALONE",
+        "lib",
+        f"python{py_version}",
+        "_tkinter",
+        "tklib_build.py"
+    )
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(f"Build script not found: {script_path}")
+    subprocess.check_call([sys.executable, script_path])
+
+def setup_tkinter():
+
+    packages = ["pip", "cffi", "setuptools"]
+
+    sys.stdout.write("Checking for required packages before importing tkinter:\n")
+    sys.stdout.flush()
+
+    to_install = []
+    for pkg in packages:
+        sys.stdout.write(f"  {pkg}...")
+        sys.stdout.flush()
+
+        if check_package(pkg):
+            sys.stdout.write(f"{GREEN}Installed{RESET}\n")
+        else:
+            sys.stdout.write(f"{RED}Not installed{RESET}\n")
+            to_install.append(pkg)
+
+    if to_install:
+        response = input(f"{YELLOW} Would you like to install {', '.join(to_install)} {"package" if len(to_install) == 1 else "packages"}? [Y/n]: {RESET}").strip().lower()
+        if response in ("", "y", "yes"):
+            if "pip" in to_install:
+                subprocess.check_call([sys.executable, "-m", "ensurepip", "--default-pip"])
+                to_install.remove("pip")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", *to_install])
+            print(f"{GREEN}All required packages were installed successfully.{RESET}")
+        else:
+            print(f"{RED}Cannot import tkinter without {"this package" if len(to_install) == 1 else "these packages"}: {' '.join(to_install)}")
+            sys.exit(1)
+
+    install_system_dependencies()
+    run_tkinter_build_script()
+
+try:
+    import _tkinter
+except Exception:
+    setup_tkinter()
+    import _tkinter
+    TclError = _tkinter.TclError
+
 from tkinter.constants import *
 import re
 
