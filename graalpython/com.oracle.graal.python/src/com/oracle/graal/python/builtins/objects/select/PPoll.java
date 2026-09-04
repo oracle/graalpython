@@ -48,16 +48,23 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PPoll extends PythonBuiltinObject {
-    private final Map<Integer, Integer> registrations = new LinkedHashMap<>();
+    private final Map<Integer, Integer> registrations;
+    private int[] pollFds;
+    private int[] pollEvents;
+    private int[] pollRevents;
+    private boolean pollDataUpToDate;
     private boolean pollRunning;
 
+    @TruffleBoundary
     public PPoll(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+        registrations = new LinkedHashMap<>();
     }
 
     @TruffleBoundary
     public synchronized void register(int fd, int events) {
         registrations.put(fd, events);
+        pollDataUpToDate = false;
     }
 
     @TruffleBoundary
@@ -66,29 +73,50 @@ public final class PPoll extends PythonBuiltinObject {
             return false;
         }
         registrations.put(fd, events);
+        pollDataUpToDate = false;
         return true;
     }
 
     @TruffleBoundary
     public synchronized boolean unregister(int fd) {
-        return registrations.remove(fd) != null;
+        if (registrations.remove(fd) == null) {
+            return false;
+        }
+        pollDataUpToDate = false;
+        return true;
     }
 
     @TruffleBoundary
-    public synchronized int[][] startPoll() {
+    public synchronized boolean startPoll() {
         if (pollRunning) {
-            return null;
+            return false;
+        }
+        if (!pollDataUpToDate) {
+            pollFds = new int[registrations.size()];
+            pollEvents = new int[registrations.size()];
+            pollRevents = new int[registrations.size()];
+            int i = 0;
+            for (Map.Entry<Integer, Integer> entry : registrations.entrySet()) {
+                pollFds[i] = entry.getKey();
+                pollEvents[i] = entry.getValue();
+                i++;
+            }
+            pollDataUpToDate = true;
         }
         pollRunning = true;
-        int[] fds = new int[registrations.size()];
-        int[] events = new int[registrations.size()];
-        int i = 0;
-        for (Map.Entry<Integer, Integer> entry : registrations.entrySet()) {
-            fds[i] = entry.getKey();
-            events[i] = entry.getValue();
-            i++;
-        }
-        return new int[][]{fds, events};
+        return true;
+    }
+
+    public int[] getPollFds() {
+        return pollFds;
+    }
+
+    public int[] getPollEvents() {
+        return pollEvents;
+    }
+
+    public int[] getPollRevents() {
+        return pollRevents;
     }
 
     @TruffleBoundary

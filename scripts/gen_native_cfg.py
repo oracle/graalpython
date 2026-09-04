@@ -530,6 +530,11 @@ layout_defs = '''
 [struct in6_addr]
   s6_addr
 
+[struct pollfd] u
+  fd
+  events
+  revents
+
 [struct sockaddr_un] u
   sun_family
   sun_path

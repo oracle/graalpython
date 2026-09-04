@@ -118,7 +118,8 @@ public class SocketUtils {
                             if (connect) {
                                 event |= PosixConstants.POLLERR.getValueIfDefined();
                             }
-                            int[] revents = posixLib.poll(posixSupport, new int[]{socket.getFd()}, new int[]{event}, pollTimeout(selectTimeout));
+                            int[] revents = new int[1];
+                            posixLib.poll(posixSupport, new int[]{socket.getFd()}, new int[]{event}, revents, pollTimeout(selectTimeout));
                             ready = revents[0] != 0;
                         }
                         if (!ready) {

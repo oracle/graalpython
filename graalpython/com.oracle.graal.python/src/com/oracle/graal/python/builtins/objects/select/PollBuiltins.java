@@ -77,7 +77,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -183,15 +182,16 @@ public final class PollBuiltins extends PythonBuiltins {
                 }
             }
 
-            int[][] snapshot = self.startPoll();
-            if (snapshot == null) {
+            if (!self.startPoll()) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.CONCURRENT_POLL_INVOCATION);
             }
-            int[] revents;
+            int[] pollFds = self.getPollFds();
+            int[] pollEvents = self.getPollEvents();
+            int[] pollRevents = self.getPollRevents();
             try {
                 gil.release(true);
                 try {
-                    revents = posixLib.poll(PosixSupport.get(inliningTarget), snapshot[0], snapshot[1], timeout);
+                    posixLib.poll(PosixSupport.get(inliningTarget), pollFds, pollEvents, pollRevents, timeout);
                 } finally {
                     gil.acquire();
                 }
@@ -201,14 +201,20 @@ public final class PollBuiltins extends PythonBuiltins {
                 self.finishPoll();
             }
 
-            Object[] result = new Object[revents.length];
             int resultSize = 0;
-            for (int i = 0; i < revents.length; i++) {
-                if (revents[i] != 0) {
-                    result[resultSize++] = PFactory.createTuple(language, new Object[]{snapshot[0][i], revents[i]});
+            for (int revents : pollRevents) {
+                if (revents != 0) {
+                    resultSize++;
                 }
             }
-            return PFactory.createList(language, PythonUtils.arrayCopyOf(result, resultSize));
+            Object[] result = new Object[resultSize];
+            int resultIndex = 0;
+            for (int i = 0; i < pollRevents.length; i++) {
+                if (pollRevents[i] != 0) {
+                    result[resultIndex++] = PFactory.createTuple(language, new Object[]{pollFds[i], pollRevents[i]});
+                }
+            }
+            return PFactory.createList(language, result);
         }
     }
 

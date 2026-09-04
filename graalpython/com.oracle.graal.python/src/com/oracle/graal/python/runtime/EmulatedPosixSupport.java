@@ -762,35 +762,38 @@ public final class EmulatedPosixSupport extends PosixResources {
     private SelectableChannel[] getSelectableChannels(int[] fds) throws PosixException {
         SelectableChannel[] channels = new SelectableChannel[fds.length];
         for (int i = 0; i < fds.length; i++) {
-            Channel ch = getFileChannel(fds[i]);
-            if (ch == null) {
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            if (ch instanceof SelectableChannel) {
-                channels[i] = (SelectableChannel) ch;
-            } else if (ch instanceof EmulatedDatagramSocket) {
-                channels[i] = ((EmulatedDatagramSocket) ch).channel;
-            } else if (ch instanceof EmulatedStreamSocket) {
-                EmulatedStreamSocket streamSocket = (EmulatedStreamSocket) ch;
-                synchronized (streamSocket) {
-                    if (streamSocket.clientChannel != null) {
-                        channels[i] = streamSocket.clientChannel;
-                    } else if (streamSocket.serverChannel != null) {
-                        channels[i] = streamSocket.serverChannel;
-                    } else {
-                        throw ChannelNotSelectableException.INSTANCE;
-                    }
-                }
-            } else {
-                throw ChannelNotSelectableException.INSTANCE;
-            }
+            channels[i] = getSelectableChannel(fds[i]);
         }
         return channels;
     }
 
+    private SelectableChannel getSelectableChannel(int fd) throws PosixException {
+        Channel ch = getFileChannel(fd);
+        if (ch == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        if (ch instanceof SelectableChannel) {
+            return (SelectableChannel) ch;
+        } else if (ch instanceof EmulatedDatagramSocket) {
+            return ((EmulatedDatagramSocket) ch).channel;
+        } else if (ch instanceof EmulatedStreamSocket) {
+            EmulatedStreamSocket streamSocket = (EmulatedStreamSocket) ch;
+            synchronized (streamSocket) {
+                if (streamSocket.clientChannel != null) {
+                    return streamSocket.clientChannel;
+                } else if (streamSocket.serverChannel != null) {
+                    return streamSocket.serverChannel;
+                }
+            }
+        }
+        throw ChannelNotSelectableException.INSTANCE;
+    }
+
     @ExportMessage
     @TruffleBoundary
-    public int[] poll(int[] fds, int[] events, int timeout) throws PosixException {
+    public void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
+        assert fds.length == events.length && fds.length == revents.length;
+        java.util.Arrays.fill(revents, 0);
         int pollIn = pollFlag(PosixConstants.POLLIN);
         int pollPri = pollFlag(PosixConstants.POLLPRI);
         int pollOut = pollFlag(PosixConstants.POLLOUT);
@@ -800,16 +803,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         int pollWrBand = pollFlag(PosixConstants.POLLWRBAND);
         int[] readFds = new int[fds.length];
         int[] writeFds = new int[fds.length];
-        int[] result = new int[fds.length];
         int readCount = 0;
         int writeCount = 0;
         for (int i = 0; i < fds.length; i++) {
             if (getFileChannel(fds[i]) == null) {
-                result[i] = PosixConstants.POLLNVAL.getValueIfDefined();
+                revents[i] = PosixConstants.POLLNVAL.getValueIfDefined();
                 continue;
             }
             try {
-                SelectableChannel channel = getSelectableChannels(new int[]{fds[i]})[0];
+                SelectableChannel channel = getSelectableChannel(fds[i]);
                 if ((events[i] & (pollIn | pollPri | pollRdNorm | pollRdBand)) != 0 && (channel.validOps() & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0) {
                     readFds[readCount++] = fds[i];
                 }
@@ -818,13 +820,13 @@ public final class EmulatedPosixSupport extends PosixResources {
                 }
             } catch (ChannelNotSelectableException e) {
                 // Files that cannot be registered with a Java Selector do not block.
-                result[i] = events[i] & (pollIn | pollOut | pollRdNorm | pollWrNorm);
+                revents[i] = events[i] & (pollIn | pollOut | pollRdNorm | pollWrNorm);
             }
         }
         readFds = Arrays.copyOf(readFds, readCount);
         writeFds = Arrays.copyOf(writeFds, writeCount);
         boolean alreadyReady = false;
-        for (int event : result) {
+        for (int event : revents) {
             alreadyReady |= event != 0;
         }
         Timeval timeval = null;
@@ -838,7 +840,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (selected.getReadFds()[i]) {
                 for (int j = 0; j < fds.length; j++) {
                     if (fds[j] == readFds[i]) {
-                        result[j] |= events[j] & (pollIn | pollRdNorm);
+                        revents[j] |= events[j] & (pollIn | pollRdNorm);
                     }
                 }
             }
@@ -847,12 +849,11 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (selected.getWriteFds()[i]) {
                 for (int j = 0; j < fds.length; j++) {
                     if (fds[j] == writeFds[i]) {
-                        result[j] |= events[j] & (pollOut | pollWrNorm);
+                        revents[j] |= events[j] & (pollOut | pollWrNorm);
                     }
                 }
             }
         }
-        return result;
     }
 
     private static int pollFlag(PosixConstants.IntConstant constant) {

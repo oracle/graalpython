@@ -1317,12 +1317,10 @@ GP_EXPORT int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen
     return result;
 }
 
-GP_EXPORT int32_t call_poll(int32_t *fds, int32_t *events, int32_t count, int32_t timeout, int32_t *revents) {
-    (void)fds;
-    (void)events;
+GP_EXPORT int32_t call_poll(void *poll_data, int32_t count, int32_t timeout) {
+    (void)poll_data;
     (void)count;
     (void)timeout;
-    (void)revents;
     set_posix_errno(ENOSYS);
     return -1;
 }
@@ -2237,7 +2235,7 @@ GP_EXPORT void call_initialize(void) {
 }
 
 GP_EXPORT int32_t init_constants(int64_t* out, int32_t len) {
-    if (len != 33)
+    if (len != 40)
         return -1;
     out[0] = sizeof(struct sockaddr);
     out[1] = sizeof(((struct sockaddr*)0)->sa_family);
@@ -2267,11 +2265,18 @@ GP_EXPORT int32_t init_constants(int64_t* out, int32_t len) {
     out[25] = sizeof(struct in6_addr);
     out[26] = sizeof(((struct in6_addr*)0)->s6_addr);
     out[27] = offsetof(struct in6_addr, s6_addr);
-    out[28] = sizeof(struct sockaddr_un);
-    out[29] = sizeof(((struct sockaddr_un*)0)->sun_family);
-    out[30] = offsetof(struct sockaddr_un, sun_family);
-    out[31] = sizeof(((struct sockaddr_un*)0)->sun_path);
-    out[32] = offsetof(struct sockaddr_un, sun_path);
+    out[28] = 0;
+    out[29] = 0;
+    out[30] = 0;
+    out[31] = 0;
+    out[32] = 0;
+    out[33] = 0;
+    out[34] = 0;
+    out[35] = sizeof(struct sockaddr_un);
+    out[36] = sizeof(((struct sockaddr_un*)0)->sun_family);
+    out[37] = offsetof(struct sockaddr_un, sun_family);
+    out[38] = sizeof(((struct sockaddr_un*)0)->sun_path);
+    out[39] = offsetof(struct sockaddr_un, sun_path);
     return 0;
 }
 
@@ -2496,31 +2501,13 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     CAPTURE_ERRNO_AND_RETURN(-1, (int32_t) result);
 }
 
-int32_t call_poll(int32_t *fds, int32_t *events, int32_t count, int32_t timeout, int32_t *revents) {
+int32_t call_poll(struct pollfd *poll_data, int32_t count, int32_t timeout) {
 #ifdef _WIN32
     errno = ENOSYS;
     capture_errno();
     return -1;
 #else
-    struct pollfd *pollfds = malloc((size_t)count * sizeof(struct pollfd));
-    if (pollfds == NULL && count != 0) {
-        errno = ENOMEM;
-        capture_errno();
-        return -1;
-    }
-    for (int32_t i = 0; i < count; i++) {
-        pollfds[i].fd = fds[i];
-        pollfds[i].events = (short)(unsigned short)events[i];
-        pollfds[i].revents = 0;
-    }
-    int result = poll(pollfds, (nfds_t)count, timeout);
-    if (result >= 0) {
-        for (int32_t i = 0; i < count; i++) {
-            revents[i] = (unsigned short)pollfds[i].revents;
-        }
-    }
-    free(pollfds);
-    CAPTURE_ERRNO_AND_RETURN(-1, result);
+    CAPTURE_ERRNO_AND_RETURN(-1, poll(poll_data, (nfds_t)count, timeout));
 #endif
 }
 
@@ -3539,7 +3526,7 @@ int32_t get_error_source() {
 
 // start generated
 int32_t init_constants(int64_t* out, int32_t len) {
-    if (len != 33)
+    if (len != 40)
         return -1;
     out[0] = sizeof(struct sockaddr);
     out[1] = sizeof(((struct sockaddr*)0)->sa_family);
@@ -3569,11 +3556,18 @@ int32_t init_constants(int64_t* out, int32_t len) {
     out[25] = sizeof(struct in6_addr);
     out[26] = sizeof(((struct in6_addr*)0)->s6_addr);
     out[27] = offsetof(struct in6_addr, s6_addr);
-    out[28] = unix_or_0(sizeof(struct sockaddr_un));
-    out[29] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_family));
-    out[30] = unix_or_0(offsetof(struct sockaddr_un, sun_family));
-    out[31] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_path));
-    out[32] = unix_or_0(offsetof(struct sockaddr_un, sun_path));
+    out[28] = unix_or_0(sizeof(struct pollfd));
+    out[29] = unix_or_0(sizeof(((struct pollfd*)0)->fd));
+    out[30] = unix_or_0(offsetof(struct pollfd, fd));
+    out[31] = unix_or_0(sizeof(((struct pollfd*)0)->events));
+    out[32] = unix_or_0(offsetof(struct pollfd, events));
+    out[33] = unix_or_0(sizeof(((struct pollfd*)0)->revents));
+    out[34] = unix_or_0(offsetof(struct pollfd, revents));
+    out[35] = unix_or_0(sizeof(struct sockaddr_un));
+    out[36] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_family));
+    out[37] = unix_or_0(offsetof(struct sockaddr_un, sun_family));
+    out[38] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_path));
+    out[39] = unix_or_0(offsetof(struct sockaddr_un, sun_path));
     return 0;
 }
 // end generated
