@@ -619,6 +619,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         String[] args = context.getEnv().getApplicationArguments();
         sys.setAttribute(tsInternedLiteral("argv"), PFactory.createList(language, convertToObjectArray(args)));
         sys.setAttribute(tsInternedLiteral("orig_argv"), PFactory.createList(language, convertToObjectArray(PythonOptions.getOrigArgv(context))));
+        sys.setAttribute(tsInternedLiteral("_xoptions"), createXOptions(language, context));
 
         sys.setAttribute(tsInternedLiteral("stdlib_module_names"), createStdLibModulesSet(language));
 
@@ -728,6 +729,21 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             storage.putUncached(s, PNone.NONE);
         }
         return PFactory.createFrozenSet(language, storage);
+    }
+
+    private static PDict createXOptions(PythonLanguage language, PythonContext context) {
+        TruffleString[] options = PythonOptions.getXOptions(context);
+        EconomicMapStorage storage = EconomicMapStorage.create(options.length);
+        for (TruffleString option : options) {
+            String javaOption = option.toJavaStringUncached();
+            int equals = javaOption.indexOf('=');
+            if (equals < 0) {
+                storage.putUncached(option, true);
+            } else {
+                storage.putUncached(toTruffleStringUncached(javaOption.substring(0, equals)), toTruffleStringUncached(javaOption.substring(equals + 1)));
+            }
+        }
+        return PFactory.createDict(language, storage);
     }
 
     /**

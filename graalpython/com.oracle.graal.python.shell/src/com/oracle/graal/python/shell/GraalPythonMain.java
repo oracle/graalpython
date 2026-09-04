@@ -162,6 +162,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private int repeatedRuns = 1;
     private boolean snaptshotStartup = false;
     private boolean warnDefaultEncoding = false;
+    private final List<String> xOptions = new ArrayList<>();
     private int intMaxStrDigits = -1;
     private int cpuCount = -1;
     private boolean cpuCountXOptionSet = false;
@@ -462,6 +463,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         case 'X':
                             // CPython ignores unknown/unsupported -X options, so we can do that too
                             String xOption = getShortOptionParameter(argumentIterator, remainder, 'X');
+                            xOptions.add(xOption);
                             if ("warn_default_encoding".equals(xOption)) {
                                 warnDefaultEncoding = true;
                             } else if (xOption.startsWith("int_max_str_digits")) {
@@ -857,6 +859,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
         origArgs.add(0, toAbsolutePath(executable));
         contextBuilder.option("python.OrigArgv", String.join(STRING_LIST_DELIMITER, origArgs));
+        StringBuilder serializedXOptions = new StringBuilder();
+        for (String xOption : xOptions) {
+            serializedXOptions.append(xOption.length()).append(':').append(xOption);
+        }
+        contextBuilder.option("python.XOptions", serializedXOptions.toString());
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
