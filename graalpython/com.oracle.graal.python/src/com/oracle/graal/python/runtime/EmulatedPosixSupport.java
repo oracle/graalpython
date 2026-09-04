@@ -688,7 +688,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
             for (SelectableChannel channel : writeChannels) {
                 channel.configureBlocking(false);
-                channel.register(selector, writeOps);
+                SelectionKey key = channel.keyFor(selector);
+                if (key == null) {
+                    channel.register(selector, writeOps);
+                } else {
+                    key.interestOps(key.interestOps() | writeOps);
+                }
             }
 
             // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
@@ -716,7 +721,8 @@ public final class EmulatedPosixSupport extends PosixResources {
             boolean[] resWritefds = createSelectedMap(writefds, writeChannels, selector, writeOps);
             boolean[] resErrfds = new boolean[errorfds.length];
 
-            assert selected == countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
+            // One selected channel can satisfy multiple entries and both read and write interests.
+            assert selected <= countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
             return new SelectResult(resReadfds, resWritefds, resErrfds);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached()));
@@ -830,7 +836,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             alreadyReady |= event != 0;
         }
         Timeval timeval = null;
-        if (alreadyReady) {
+        if (alreadyReady || timeout == 0) {
             timeval = Timeval.SELECT_TIMEOUT_NOW;
         } else if (timeout > 0) {
             timeval = new Timeval(timeout / 1000, timeout % 1000 * 1000);
