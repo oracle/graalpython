@@ -1317,9 +1317,14 @@ GP_EXPORT int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen
     return result;
 }
 
-GP_EXPORT int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
-    int8_t selected = 0;
-    return call_select(1, writing ? NULL : &fd, writing ? 0 : 1, writing ? &fd : NULL, writing ? 1 : 0, NULL, 0, timeoutSec, timeoutUsec, &selected);
+GP_EXPORT int32_t call_poll(int32_t *fds, int32_t *events, int32_t count, int32_t timeout, int32_t *revents) {
+    (void)fds;
+    (void)events;
+    (void)count;
+    (void)timeout;
+    (void)revents;
+    set_posix_errno(ENOSYS);
+    return -1;
 }
 
 GP_EXPORT int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
@@ -2491,37 +2496,31 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     CAPTURE_ERRNO_AND_RETURN(-1, (int32_t) result);
 }
 
-int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
+int32_t call_poll(int32_t *fds, int32_t *events, int32_t count, int32_t timeout, int32_t *revents) {
 #ifdef _WIN32
-    // for windows, use select() as a worse fallback
-    int selected[2] = {0, 0};
-    return call_select(1,
-                       writing ? NULL : &fd, writing ? 0 : 1,
-                       writing ? &fd : NULL, writing ? 1 : 0,
-                       NULL, 0,
-                       timeoutSec, timeoutUsec, &selected);
+    errno = ENOSYS;
+    capture_errno();
+    return -1;
 #else
-    struct pollfd pollfd;
-    pollfd.fd = fd;
-    pollfd.events = writing ? POLLOUT : POLLIN;
-
-    int timeout_ms;
-    if (timeoutSec < 0) {
-        timeout_ms = -1;
-    } else if (timeoutSec > INT_MAX / 1000) {
-        errno = EINVAL;
+    struct pollfd *pollfds = malloc((size_t)count * sizeof(struct pollfd));
+    if (pollfds == NULL && count != 0) {
+        errno = ENOMEM;
         capture_errno();
         return -1;
-    } else {
-        int64_t timeout_ms_64 = timeoutSec * 1000 + timeoutUsec / 1000;
-        if (timeout_ms_64 > INT_MAX) {
-            errno = EINVAL;
-            capture_errno();
-            return -1;
-        }
-        timeout_ms = (int)timeout_ms_64;
     }
-    CAPTURE_ERRNO_AND_RETURN(-1, poll(&pollfd, 1, timeout_ms));
+    for (int32_t i = 0; i < count; i++) {
+        pollfds[i].fd = fds[i];
+        pollfds[i].events = (short)(unsigned short)events[i];
+        pollfds[i].revents = 0;
+    }
+    int result = poll(pollfds, (nfds_t)count, timeout);
+    if (result >= 0) {
+        for (int32_t i = 0; i < count; i++) {
+            revents[i] = (unsigned short)pollfds[i].revents;
+        }
+    }
+    free(pollfds);
+    CAPTURE_ERRNO_AND_RETURN(-1, result);
 #endif
 }
 

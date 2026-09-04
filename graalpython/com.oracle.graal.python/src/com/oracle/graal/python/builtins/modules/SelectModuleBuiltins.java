@@ -48,11 +48,13 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.select.PPoll;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -94,15 +96,6 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 @CoreFunctions(defineModule = "select")
 public final class SelectModuleBuiltins extends PythonBuiltins {
 
-    /*
-     * ATTENTION: if we ever add "poll" support, update the code in
-     * MultiprocessingModuleBuilins#SelectNode to use it if available
-     */
-
-    public SelectModuleBuiltins() {
-        addBuiltinConstant("error", PythonErrorType.OSError);
-    }
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SelectModuleBuiltinsFactory.getFactories();
@@ -111,8 +104,24 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
+        addBuiltinConstant("error", PythonErrorType.OSError);
         if (PosixConstants.PIPE_BUF.defined) {
             addBuiltinConstant("PIPE_BUF", PosixConstants.PIPE_BUF.getValueIfDefined());
+        }
+        for (PosixConstants.IntConstant constant : PosixConstants.pollFlags) {
+            if (constant.defined) {
+                addBuiltinConstant(constant.name, constant.getValueIfDefined());
+            }
+        }
+    }
+
+    @Builtin(name = "poll", minNumOfPositionalArgs = 0, os = PythonOS.PLATFORM_LINUX)
+    @Builtin(name = "poll", minNumOfPositionalArgs = 0, os = PythonOS.PLATFORM_DARWIN)
+    @GenerateNodeFactory
+    abstract static class PollNode extends PythonBuiltinNode {
+        @Specialization
+        static PPoll poll(@Bind PythonLanguage language) {
+            return PFactory.createPoll(language);
         }
     }
 

@@ -97,6 +97,17 @@ public final class PosixConstants {
     public static final OptionalIntConstant SEEK_HOLE;
     public static final MandatoryIntConstant SOMAXCONN;
     public static final OptionalIntConstant PIPE_BUF;
+    public static final OptionalIntConstant POLLIN;
+    public static final OptionalIntConstant POLLPRI;
+    public static final OptionalIntConstant POLLOUT;
+    public static final OptionalIntConstant POLLERR;
+    public static final OptionalIntConstant POLLHUP;
+    public static final OptionalIntConstant POLLNVAL;
+    public static final OptionalIntConstant POLLRDNORM;
+    public static final OptionalIntConstant POLLRDBAND;
+    public static final OptionalIntConstant POLLWRNORM;
+    public static final OptionalIntConstant POLLWRBAND;
+    public static final OptionalIntConstant POLLMSG;
     public static final OptionalIntConstant SEM_VALUE_MAX;
     public static final OptionalIntConstant RUSAGE_CHILDREN;
     public static final MandatoryIntConstant RUSAGE_SELF;
@@ -387,6 +398,7 @@ public final class PosixConstants {
     public static final MandatoryIntConstant _SC_NPROCESSORS_CONF;
     public static final MandatoryIntConstant _SC_NPROCESSORS_ONLN;
 
+    public static final IntConstant[] pollFlags;
     public static final IntConstant[] openFlags;
     public static final IntConstant[] fileType;
     public static final IntConstant[] mmapFlags;
@@ -436,6 +448,17 @@ public final class PosixConstants {
         SEEK_HOLE = reg.createOptionalInt("SEEK_HOLE");
         SOMAXCONN = reg.createMandatoryInt("SOMAXCONN");
         PIPE_BUF = reg.createOptionalInt("PIPE_BUF");
+        POLLIN = reg.createOptionalInt("POLLIN");
+        POLLPRI = reg.createOptionalInt("POLLPRI");
+        POLLOUT = reg.createOptionalInt("POLLOUT");
+        POLLERR = reg.createOptionalInt("POLLERR");
+        POLLHUP = reg.createOptionalInt("POLLHUP");
+        POLLNVAL = reg.createOptionalInt("POLLNVAL");
+        POLLRDNORM = reg.createOptionalInt("POLLRDNORM");
+        POLLRDBAND = reg.createOptionalInt("POLLRDBAND");
+        POLLWRNORM = reg.createOptionalInt("POLLWRNORM");
+        POLLWRBAND = reg.createOptionalInt("POLLWRBAND");
+        POLLMSG = reg.createOptionalInt("POLLMSG");
         SEM_VALUE_MAX = reg.createOptionalInt("SEM_VALUE_MAX");
         RUSAGE_CHILDREN = reg.createOptionalInt("RUSAGE_CHILDREN");
         RUSAGE_SELF = reg.createMandatoryInt("RUSAGE_SELF");
@@ -726,6 +749,7 @@ public final class PosixConstants {
         _SC_NPROCESSORS_CONF = reg.createMandatoryInt("_SC_NPROCESSORS_CONF");
         _SC_NPROCESSORS_ONLN = reg.createMandatoryInt("_SC_NPROCESSORS_ONLN");
 
+        pollFlags = new IntConstant[]{POLLIN, POLLPRI, POLLOUT, POLLERR, POLLHUP, POLLNVAL, POLLRDNORM, POLLRDBAND, POLLWRNORM, POLLWRBAND, POLLMSG};
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NOCTTY, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC,
                         O_TMPFILE, O_TEMPORARY, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT, O_EVTONLY, O_FSYNC, O_SYMLINK,
                         O_NOINHERIT, O_NOFOLLOW, O_NOFOLLOW_ANY, O_NOLINKS, O_NOATIME, O_RANDOM, O_SEQUENTIAL, O_ASYNC};

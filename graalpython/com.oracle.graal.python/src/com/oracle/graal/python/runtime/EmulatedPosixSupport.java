@@ -789,14 +789,74 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public boolean poll(int fd, boolean forWriting, Timeval timeout) throws PosixException {
-        SelectResult r = select(forWriting ? EMPTY_INT_ARRAY : new int[]{fd},
-                        forWriting ? new int[]{fd} : EMPTY_INT_ARRAY, EMPTY_INT_ARRAY, timeout);
-        if (forWriting) {
-            return r.getWriteFds().length > 0 && r.getWriteFds()[0];
-        } else {
-            return r.getReadFds().length > 0 && r.getReadFds()[0];
+    @TruffleBoundary
+    public int[] poll(int[] fds, int[] events, int timeout) throws PosixException {
+        int pollIn = pollFlag(PosixConstants.POLLIN);
+        int pollPri = pollFlag(PosixConstants.POLLPRI);
+        int pollOut = pollFlag(PosixConstants.POLLOUT);
+        int pollRdNorm = pollFlag(PosixConstants.POLLRDNORM);
+        int pollRdBand = pollFlag(PosixConstants.POLLRDBAND);
+        int pollWrNorm = pollFlag(PosixConstants.POLLWRNORM);
+        int pollWrBand = pollFlag(PosixConstants.POLLWRBAND);
+        int[] readFds = new int[fds.length];
+        int[] writeFds = new int[fds.length];
+        int[] result = new int[fds.length];
+        int readCount = 0;
+        int writeCount = 0;
+        for (int i = 0; i < fds.length; i++) {
+            if (getFileChannel(fds[i]) == null) {
+                result[i] = PosixConstants.POLLNVAL.getValueIfDefined();
+                continue;
+            }
+            try {
+                SelectableChannel channel = getSelectableChannels(new int[]{fds[i]})[0];
+                if ((events[i] & (pollIn | pollPri | pollRdNorm | pollRdBand)) != 0 && (channel.validOps() & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0) {
+                    readFds[readCount++] = fds[i];
+                }
+                if ((events[i] & (pollOut | pollWrNorm | pollWrBand)) != 0 && (channel.validOps() & SelectionKey.OP_WRITE) != 0) {
+                    writeFds[writeCount++] = fds[i];
+                }
+            } catch (ChannelNotSelectableException e) {
+                // Files that cannot be registered with a Java Selector do not block.
+                result[i] = events[i] & (pollIn | pollOut | pollRdNorm | pollWrNorm);
+            }
         }
+        readFds = Arrays.copyOf(readFds, readCount);
+        writeFds = Arrays.copyOf(writeFds, writeCount);
+        boolean alreadyReady = false;
+        for (int event : result) {
+            alreadyReady |= event != 0;
+        }
+        Timeval timeval = null;
+        if (alreadyReady) {
+            timeval = Timeval.SELECT_TIMEOUT_NOW;
+        } else if (timeout > 0) {
+            timeval = new Timeval(timeout / 1000, timeout % 1000 * 1000);
+        }
+        SelectResult selected = select(readFds, writeFds, EMPTY_INT_ARRAY, timeval);
+        for (int i = 0; i < readFds.length; i++) {
+            if (selected.getReadFds()[i]) {
+                for (int j = 0; j < fds.length; j++) {
+                    if (fds[j] == readFds[i]) {
+                        result[j] |= events[j] & (pollIn | pollRdNorm);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < writeFds.length; i++) {
+            if (selected.getWriteFds()[i]) {
+                for (int j = 0; j < fds.length; j++) {
+                    if (fds[j] == writeFds[i]) {
+                        result[j] |= events[j] & (pollOut | pollWrNorm);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static int pollFlag(PosixConstants.IntConstant constant) {
+        return constant.defined ? constant.getValueIfDefined() : 0;
     }
 
     @ExportMessage

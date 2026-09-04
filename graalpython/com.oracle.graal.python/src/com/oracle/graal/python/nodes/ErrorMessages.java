@@ -208,6 +208,7 @@ public abstract class ErrorMessages {
                     : tsLiteral("cannot load %s: %m");
     public static final TruffleString CANNOT_RELEASE_UNAQUIRED_LOCK = tsLiteral("cannot release un-acquired lock");
     public static final TruffleString CANNOT_REENTER_TEE_ITERATOR = tsLiteral("cannot re-enter the tee iterator");
+    public static final TruffleString CONCURRENT_POLL_INVOCATION = tsLiteral("concurrent poll() invocation");
     public static final TruffleString CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = tsLiteral("Cannot specify both ',' and '_'.");
     public static final TruffleString CANNOT_SPECIFY_C_WITH_C = tsLiteral("Cannot specify '%c' with '%c'.");
     public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC = tsLiteral("Cannot subclass an instance of ParamSpec");
@@ -880,6 +881,8 @@ public abstract class ErrorMessages {
     public static final TruffleString RANGE_OBJ_IDX_OUT_OF_RANGE = tsLiteral("range object index out of range");
     public static final TruffleString NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE = tsLiteral("number of bits must be non-negative");
     public static final TruffleString TIMEOUT_MUST_BE_NON_NEG_NUM = tsLiteral("'timeout' must be a non-negative number");
+    public static final TruffleString TIMEOUT_MUST_BE_INTEGER_OR_NONE = tsLiteral("timeout must be an integer or None");
+    public static final TruffleString TIMEOUT_IS_TOO_LARGE = tsLiteral("timeout is too large");
     public static final TruffleString THIRD_ARG_MUST_BE_A_VALID_MACHINE_CODE_FMT = tsLiteral("third argument must be a valid machine format code.");
     public static final TruffleString OBJ_DOES_NOT_PROVIDE_DIR = tsLiteral("object does not provide __dir__");
     public static final TruffleString ARRAY_ARG_1_MUST_BE_UNICODE = tsLiteral("array() argument 1 must be a unicode character, not str");

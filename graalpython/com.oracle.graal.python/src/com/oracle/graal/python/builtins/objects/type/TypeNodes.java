@@ -420,6 +420,7 @@ public abstract class TypeNodes {
                 case PAsyncGenerator:
                 case PCell:
                 case PIterator:
+                case PPoll:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PMappingproxy:

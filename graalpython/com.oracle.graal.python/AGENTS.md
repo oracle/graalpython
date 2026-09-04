@@ -26,6 +26,7 @@ com.oracle.graal.python/
 ## CONVENTIONS
 - Code style enforced via pre-commit Eclipse formatter + checkstyle; don’t hand-format Java.
 - Keep naming/layout close to CPython where practical (helps cross-referencing).
+- Put user-facing error and warning message strings in `src/com/oracle/graal/python/nodes/ErrorMessages.java`; reuse an existing constant when possible instead of inlining message literals at call sites.
 
 ## ANTI-PATTERNS
 - Don’t edit generated sources under `mxbuild/**` or distribution outputs; edit `src/**`.

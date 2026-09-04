@@ -74,6 +74,7 @@ includes = '''
 # include <netdb.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
+# include <poll.h>
 # include <sys/mman.h>
 # include <sys/resource.h>
 # include <sys/select.h>
@@ -149,6 +150,19 @@ constant_defs = '''
   i SOMAXCONN
 
 * i PIPE_BUF
+
+[pollFlags]
+* x POLLIN
+* x POLLPRI
+* x POLLOUT
+* x POLLERR
+* x POLLHUP
+* x POLLNVAL
+* x POLLRDNORM
+* x POLLRDBAND
+* x POLLWRNORM
+* x POLLWRBAND
+* x POLLMSG
 
 * i SEM_VALUE_MAX
 

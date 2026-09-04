@@ -250,8 +250,8 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER, SINT32, POINTER, SINT32, SINT64, SINT64, POINTER})
         abstract int call_select(int nfds, long readfds, int readfdsLen, long writefds, int writefdsLen, long errfds, int errfdsLen, long timeoutSec, long timeoutUsec, long selected);
 
-        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT64, SINT64})
-        abstract int call_poll(int fd, int writing, long timeoutSec, long timeoutUsec);
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT32, SINT32, POINTER})
+        abstract int call_poll(long fds, long events, int count, int timeout, long revents);
 
         @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, SINT64, SINT32})
         abstract long call_lseek(int fd, long offset, int whence);
@@ -940,20 +940,24 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public boolean poll(int fd, boolean forWriting, Timeval timeout) throws PosixException {
-        long secs = -1, usecs = -1;
-        if (timeout != null) {
-            secs = timeout.getSeconds();
-            usecs = timeout.getMicroseconds();
-        }
-        int result = posixNativeFunctionInvoker.call_poll(fd, forWriting ? 1 : 0, secs, usecs);
-        if (result < 0) {
-            throw getErrnoAndThrowPosixException();
-        }
-        if (result == 0) {
-            return false;
-        } else {
-            return true;
+    public int[] poll(int[] fds, int[] events, int timeout) throws PosixException {
+        assert fds.length == events.length;
+        long nativeFds = NULLPTR;
+        long nativeEvents = NULLPTR;
+        long nativeRevents = NULLPTR;
+        try {
+            nativeFds = NativeMemory.copyToNativeIntArrayOrNull(fds);
+            nativeEvents = NativeMemory.copyToNativeIntArrayOrNull(events);
+            nativeRevents = fds.length == 0 ? NULLPTR : NativeMemory.mallocIntArray(fds.length);
+            int result = posixNativeFunctionInvoker.call_poll(nativeFds, nativeEvents, fds.length, timeout, nativeRevents);
+            if (result < 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            return NativeMemory.readIntArrayElements(nativeRevents, 0, fds.length);
+        } finally {
+            NativeMemory.free(nativeRevents);
+            NativeMemory.free(nativeEvents);
+            NativeMemory.free(nativeFds);
         }
     }
 

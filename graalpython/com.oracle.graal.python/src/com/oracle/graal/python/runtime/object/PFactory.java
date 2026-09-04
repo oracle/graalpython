@@ -125,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.filter.PFilter;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrameLocalsProxy;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -171,7 +172,6 @@ import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.frame.PFrameLocalsProxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -194,6 +194,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator;
 import com.oracle.graal.python.builtins.objects.reversed.PStringReverseIterator;
+import com.oracle.graal.python.builtins.objects.select.PPoll;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -1475,6 +1476,10 @@ public final class PFactory {
 
     public static PSimpleQueue createSimpleQueue(Object cls, Shape shape) {
         return new PSimpleQueue(cls, shape);
+    }
+
+    public static PPoll createPoll(PythonLanguage language) {
+        return new PPoll(PythonBuiltinClassType.PPoll, PythonBuiltinClassType.PPoll.getInstanceShape(language));
     }
 
     public static PContextVar createContextVar(PythonLanguage language, TruffleString name, Object def) {

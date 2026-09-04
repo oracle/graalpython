@@ -309,11 +309,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public boolean poll(int fd, boolean forWriting, Timeval timeout,
+    public int[] poll(int[] fds, int[] events, int timeout,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("poll", "%s %s %s", fd, forWriting, timeout);
+        logEnter("poll", "%s %s %s", fds, events, timeout);
         try {
-            return logExit("poll", "%s", lib.poll(delegate, fd, forWriting, timeout));
+            return logExit("poll", "%s", lib.poll(delegate, fds, events, timeout));
         } catch (PosixException e) {
             throw logException("poll", e);
         }

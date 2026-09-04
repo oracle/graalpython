@@ -563,6 +563,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     --
 
                                     Simple, unbounded, reentrant FIFO queue.""")),
+    PPoll("poll", PythonObject, newBuilder().moduleName("select").disallowInstantiation()),
     PRandom("Random", PythonObject, newBuilder().publishInModule("_random").basetype().slots(RandomBuiltins.SLOTS)),
     PRange("range", PythonObject, newBuilder().publishInModule(J_BUILTINS).slots(RangeBuiltins.SLOTS).doc("""
                     range(stop) -> range object
