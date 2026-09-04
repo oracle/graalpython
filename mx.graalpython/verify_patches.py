@@ -66,9 +66,12 @@ RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'in
 CRATE_VERSION_SPECIFIER_RE = re.compile(r'(==|!=|<=|>=|<|>)\s*\d+(?:\.\d+)*')
 
 
-def validate_metadata(patches_dir, crates=False):
-    verify_git = os.environ.get('VERIFY_PATCHES_GIT')
-    if verify_git:
+# Make it work in pre-commit hooks in worktrees
+os.environ.pop('GIT_DIR', None)
+
+
+def validate_metadata(patches_dir, crates=False, git_mode=False):
+    if git_mode:
         patch_files = {
             patches_dir / file
             for file in subprocess.run(
@@ -95,7 +98,7 @@ def validate_metadata(patches_dir, crates=False):
                     if patch := rule.get('patch'):
                         patch_path = patches_dir / patch
                         assert patch_path.is_file(), f"Patch file does not exists: {patch_path}"
-                        if verify_git:
+                        if git_mode:
                             assert patch_path in patch_files, f"Patch file is not tracked by git: {patch_path}"
                         patches.add(patch_path)
                         license_id = rule.get('license')
@@ -136,16 +139,17 @@ def validate_metadata(patches_dir, crates=False):
             assert patch_file in patches, f"Dangling patch file: {patch_file}"
     crates_dir = patches_dir / 'crates'
     if crates_dir.is_dir():
-        validate_metadata(crates_dir, crates=True)
+        validate_metadata(crates_dir, crates=True, git_mode=git_mode)
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--git-mode', action='store_true')
     parser.add_argument('patches_dir', type=Path)
 
     args = parser.parse_args()
 
-    validate_metadata(args.patches_dir)
+    validate_metadata(args.patches_dir, git_mode=args.git_mode)
 
 
 if __name__ == '__main__':

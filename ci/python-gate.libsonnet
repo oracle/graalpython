@@ -449,7 +449,7 @@
 
     graalpy_gate:: base_gate + test_reports + pylint + svm + jdk_spec + task_spec({
         guard+: {
-            excludes+: ["**.md", "docs/**", "3rd_party_licenses.txt", "scripts/**"],
+            excludes+: ["**.md", "docs/**", "3rd_party_licenses.txt", "scripts/**", "graalpython/lib-graalpython/patches/**"],
         },
         setup+: pip_index_setup + [
             // force imports the main repository to get the right graal commit
@@ -460,6 +460,19 @@
         on_success+: [
             ["rm", "-rf", "graal_dumps"],
         ],
+    }),
+
+    verify_patches_gate:: base_gate + task_spec({
+        downloads: {},
+        setup: [],
+        run: [["mx", "verify-patches"]],
+        guard: {
+            includes: [
+                "graalpython/lib-graalpython/patches/**",
+                "mx.graalpython/verify_patches.py",
+            ],
+        },
+        run_on_patch_branch: true,
     }),
 
     graalpy_ee_gate:: $.graalpy_gate + task_spec({

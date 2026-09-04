@@ -70,6 +70,7 @@
     local gpgate_ee             = self.graalpy_ee_gate,
     local gpgate_maven          = self.graalpy_maven_gate,
     local style_gate            = self.style_gate,
+    local patchgate             = self.verify_patches_gate,
     local cpygate               = self.cpython_gate,
     local ut_retagger           = self.unittest_retagger_gate,
     local cov_jacoco_tagged     = self.cov_jacoco_gate_tagged,
@@ -303,6 +304,9 @@
         "style-ecj": style_gate + task_spec({ tags:: "style,ecjbuild" }) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1,
         }),
+        "verify-patches": patchgate + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier1,
+        }),
         // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : tier2     + provide(GPY_JVM21_STANDALONE),
@@ -500,53 +504,28 @@
                 ["bundle", "install"],
                 ["bundle", "exec", "jekyll", "build"],
             ],
-            publishArtifacts: [
-                {
-                    name: "graalpy-website-build-artifact",
-                    dir: "docs/site/_site",
-                    patterns: ["*"],
-                }
-            ],
+            // publishArtifacts: [
+            //     {
+            //         name: "graalpy-website-build-artifact",
+            //         dir: "docs/site/_site",
+            //         patterns: ["*"],
+            //     }
+            // ],
         },
-        {
-            name: "graalpy-website-deploy-staging",
-            targets: ["deploy"],
-            capabilities: ["linux", "amd64"],
-            requireArtifacts: [
-                {
-                    name: "graalpy-website-build-artifact",
-                    dir: "_site",
-                }
-            ],
-            run: [
-                $.overlay_imports.STAGING_DEPLOY_CMD
-            ],
-        },
-        {
-            name: "graalpy-website-deploy-production",
-            targets: ["deploy"],
-            capabilities: ["linux", "amd64"],
-            packages: {
-                mx: "==7.82.0",
-                python3: "==3.8.10",
-            },
-            requireArtifacts: [
-                {
-                    name: "graalpy-website-build-artifact",
-                    dir: "_site",
-                }
-            ],
-            run: [
-                ["git", "clone", $.overlay_imports.WEBSITE_GIT],
-                ["rsync", "-a", "--delete", "_site/", "graalvm-website/python"],
-                ["git", "-C", "graalvm-website", "add", "."],
-                ["git", "-C", "graalvm-website", "status"],
-                ["git", "-C", "graalvm-website", "-c", "user.name=Web Publisher", "-c", "user.email=graalvm-dev@oss.oracle.com", "commit", "-m", "Update GraalPy website"],
-                ["git", "-C", "graalvm-website", "push", "origin", "HEAD"],
-                ["git", "branch", "--force", "--no-track", "published"],
-                ["git", "push", "--force", "origin", "published"],
-            ]
-        },
+        // {
+        //     name: "graalpy-website-deploy-staging",
+        //     targets: ["deploy"],
+        //     capabilities: ["linux", "amd64"],
+        //     requireArtifacts: [
+        //         {
+        //             name: "graalpy-website-build-artifact",
+        //             dir: "_site",
+        //         }
+        //     ],
+        //     run: [
+        //         $.overlay_imports.STAGING_DEPLOY_CMD
+        //     ],
+        // },
     ],
 }
 
