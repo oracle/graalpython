@@ -691,7 +691,7 @@ def generate_platform():
         subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=output_file, universal_newlines=True)
         output_file.seek(0)
         output = output_file.read()[:-1]
-    uname = " ".join(tuple(plat.uname()))
+    uname = " ".join(tuple(plat.uname())).rstrip()
 
     out_path = DIR / f'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstants{platform}.java'
 
