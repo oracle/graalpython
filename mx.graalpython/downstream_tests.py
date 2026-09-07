@@ -147,11 +147,18 @@ def downstream_test_pydantic_core(graalpy, testdir):
             '--no-install-package', 'pytest-codspeed', '--no-install-package', 'cffi', '--inexact',
             # GraalPy change: greenlet crashes on import
             '--no-install-package', 'greenlet',
+            # The latest rpds-py release does not yet include the PyO3 fix needed by GraalPy
+            '--no-install-package', 'rpds-py',
         ],
         cwd=repo,
         env=env,
     )
     del env['UV_PYTHON']
+    run(
+        ['uv', 'pip', 'install', 'rpds-py @ git+https://github.com/crate-py/rpds.git@main', '--no-deps', '--force-reinstall'],
+        cwd=repo,
+        env=env,
+    )
     run(
         ['uv', 'pip', 'install', './pydantic-core', '--no-deps', '--force-reinstall'],
         cwd=repo,
