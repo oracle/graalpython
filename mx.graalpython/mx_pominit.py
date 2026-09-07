@@ -143,7 +143,7 @@ ANNOTATION_PROCESSOR_ALIASES = {
     "GRAALPYTHON_PROCESSOR": ["com.oracle.graal.python.processor"],
 }
 
-GRAALVM_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:\.\d+)?")
+GRAALVM_VERSION_RE = re.compile(r"\d+(?:\.\d+){2,}")
 
 
 @dataclass(frozen=True)
