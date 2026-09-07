@@ -74,13 +74,16 @@ test.test_compile.TestSpecifics.test_variable_dependent @ darwin-arm64,linux-aar
 !test.test_compile.TestStackSizeStability.test_async_for @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_async_for_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_async_with @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for @ linux-x86_64-github
 !test.test_compile.TestStackSizeStability.test_for @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue @ linux-x86_64-github
 !test.test_compile.TestStackSizeStability.test_for_break_continue @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_for_break_continue_inside_async_with_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_for_break_continue_inside_except_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_for_break_continue_inside_finally_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_for_break_continue_inside_try_finally_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_for_break_continue_inside_with_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_else @ linux-x86_64-github
 !test.test_compile.TestStackSizeStability.test_for_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestStackSizeStability.test_if @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestStackSizeStability.test_if_else @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
