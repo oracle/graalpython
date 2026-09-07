@@ -868,13 +868,13 @@ public final class PatternBuiltins extends PythonBuiltins {
         @Specialization(guards = "groupCount == 1")
         static Object count1(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int pos, int endpos, boolean binary, int groupCount,
                         @Cached @Exclusive FindAllInnerNode3 innerNode) {
-            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, binary, groupCount, false);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, binary, 1, false);
         }
 
         @Specialization(guards = "groupCount == 2")
         static Object count2(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int pos, int endpos, boolean binary, int groupCount,
                         @Cached @Exclusive FindAllInnerNode3 innerNode) {
-            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, binary, groupCount, false);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, binary, 2, false);
         }
 
         @Specialization(guards = "groupCount > 2")
