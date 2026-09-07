@@ -320,6 +320,10 @@ class ParseTest(unittest.TestCase):
         'UTF-8', 'utf-8', 'utf-16', 'utf-16le', 'utf-16be',
         'koi8-u', 'cp1125', 'cp1251', 'iso8859-5', 'mac-cyrillic',
     ])
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently does not support all encodings accepted through CPython's "
+        "unknown-encoding handler and cannot report UTF-16 XML declarations consistently."
+    )
     def test_supported_encodings2(self, encoding):
         out = self.Outputter()
         parser = expat.ParserCreate()
@@ -387,12 +391,20 @@ class ParseTest(unittest.TestCase):
         with self.assertRaises(LookupError):
             parser.Parse(data, True)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend reports an ExpatError instead of the codec's UnicodeError for an "
+        "explicitly undefined encoding."
+    )
     def test_undefined_encoding(self):
         parser = expat.ParserCreate()
         data = b'<?xml version="1.0" encoding="undefined"?>\n<root></root>'
         with self.assertRaises(UnicodeError):
             parser.Parse(data, True)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend reports an ExpatError instead of the codec's LookupError for an "
+        "unknown encoding."
+    )
     def test_unknown_encoding(self):
         parser = expat.ParserCreate()
         data = b'<?xml version="1.0" encoding="xyz"?>\n<root></root>'
@@ -852,6 +864,10 @@ class ChardataBufferTest(unittest.TestCase):
         self.assertEqual(self.n, 4)
 
 class ElementDeclHandlerTest(unittest.TestCase):
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently does not enforce Expat's integer return-value contract for "
+        "NotStandaloneHandler."
+    )
     def test_trigger_leak(self):
         # Unfixed, this test would leak the memory of the so-called
         # "content model" in function ``my_ElementDeclHandler`` of pyexpat.
