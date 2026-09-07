@@ -983,6 +983,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             int eventOrdinal;
             Locator locator;
             boolean keepCurrentPositionForNextCall;
+            boolean notStandaloneDtd;
             final Map<String, ExternalEntityInfo> externalEntities = new HashMap<>();
             final Set<String> resolvedExternalEntities = new HashSet<>();
 
@@ -1021,16 +1022,18 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             @Override
             public void startDTD(String name, String publicId, String systemId) {
-                if (xmlDeclInfo != null && xmlDeclInfo.standalone == 0) {
-                    call(parser.getNotStandaloneHandler());
+                notStandaloneDtd = (xmlDeclInfo != null && xmlDeclInfo.standalone == 0) ||
+                                ((systemId != null || publicId != null) && (xmlDeclInfo == null || xmlDeclInfo.standalone != 1));
+                if (notStandaloneDtd) {
+                    callInt(parser.getNotStandaloneHandler());
                 }
                 call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toOptionalTs(publicId), doctypeHasInternalSubset ? 1 : 0);
             }
 
             @Override
             public void endDTD() {
-                if (xmlDeclInfo != null && xmlDeclInfo.standalone == 0) {
-                    call(parser.getNotStandaloneHandler());
+                if (notStandaloneDtd) {
+                    callInt(parser.getNotStandaloneHandler());
                 }
                 call(parser.getEndDoctypeDeclHandler());
             }
@@ -1200,10 +1203,10 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 return qName == null || qName.isEmpty() ? localName : qName;
             }
 
-            private void call(Object handler, Object... args) {
+            private Object call(Object handler, Object... args) {
                 boolean shouldDeliver = eventOrdinal++ >= parser.getDeliveredEventCount();
                 if (!shouldDeliver) {
-                    return;
+                    return PNone.NO_VALUE;
                 }
                 if (!keepCurrentPositionForNextCall && locator != null) {
                     line = Math.max(1, locator.getLineNumber());
@@ -1215,7 +1218,15 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 }
                 keepCurrentPositionForNextCall = false;
                 if (handler != PNone.NONE) {
-                    CallNode.executeUncached(handler, args);
+                    return CallNode.executeUncached(handler, args);
+                }
+                return PNone.NO_VALUE;
+            }
+
+            private void callInt(Object handler, Object... args) {
+                Object result = call(handler, args);
+                if (result != PNone.NO_VALUE) {
+                    PyLongAsLongNode.executeUncached(result);
                 }
             }
 
@@ -1510,20 +1521,27 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static XmlDeclInfo detectXmlDecl(byte[] data) {
-        if (data.length == 0 || data[0] != '<') {
+        if (data.length == 0) {
             return null;
         }
-        int end = -1;
-        for (int i = 1; i < data.length; i++) {
-            if (data[i - 1] == '?' && data[i] == '>') {
-                end = i + 1;
-                break;
-            }
+        String text;
+        if ((data.length >= 2 && data[0] == (byte) 0xfe && data[1] == (byte) 0xff) ||
+                        (data.length >= 4 && data[0] == 0 && data[1] == '<' && data[2] == 0 && data[3] == '?')) {
+            text = new String(data, java.nio.charset.StandardCharsets.UTF_16BE);
+        } else if ((data.length >= 2 && data[0] == (byte) 0xff && data[1] == (byte) 0xfe) ||
+                        (data.length >= 4 && data[0] == '<' && data[1] == 0 && data[2] == '?' && data[3] == 0)) {
+            text = new String(data, java.nio.charset.StandardCharsets.UTF_16LE);
+        } else {
+            text = new String(data, java.nio.charset.StandardCharsets.ISO_8859_1);
         }
-        if (end == -1) {
+        if (!text.isEmpty() && text.charAt(0) == '\ufeff') {
+            text = text.substring(1);
+        }
+        int end = text.indexOf("?>");
+        if (end < 0) {
             return null;
         }
-        String decl = new String(data, 0, end, java.nio.charset.StandardCharsets.ISO_8859_1);
+        String decl = text.substring(0, end + 2);
         if (!decl.startsWith("<?xml")) {
             return null;
         }
@@ -1582,6 +1600,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 String entity = message.substring(firstQuote + 1, secondQuote);
                 return "undefined entity &" + entity + ";: line " + e.getLineNumber() + ", column " + Math.max(0, e.getColumnNumber() - 1);
             }
+        }
+        if (message.contains("Content is not allowed in trailing section")) {
+            return "junk after document element: line " + e.getLineNumber() + ", column " + Math.max(0, e.getColumnNumber() - 1);
         }
         return message;
     }
