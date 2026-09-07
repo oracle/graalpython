@@ -73,6 +73,16 @@ SKIP_SHA3 = support.check_sanitizer(ub=True)
 requires_sha3 = unittest.skipUnless(not SKIP_SHA3, 'requires _sha3')
 
 
+def _has_java_shake():
+    if getattr(__graalpython__, 'sha3_module_backend', lambda: None)() != 'java':
+        return True
+    try:
+        hashlib.shake_128(usedforsecurity=False)
+    except _hashlib.UnsupportedDigestmodError:
+        return False
+    return True
+
+
 def hexstr(s):
     assert isinstance(s, bytes), repr(s)
     h = "0123456789abcdef"
@@ -557,6 +567,8 @@ class HashLibTestCase(unittest.TestCase):
         self.check_blocksize_name('sha384', 128, 48)
         self.check_blocksize_name('sha512', 128, 64)
 
+    @unittest.skipUnless(_has_java_shake(),
+                         'The java backend requires a JDK or security provider with SHAKE support.')
     @requires_sha3
     def test_blocksize_name_sha3(self):
         self.check_blocksize_name('sha3_224', 144, 28)
