@@ -22,8 +22,8 @@ test.test_socket.BasicTCPTest2.testShutdown @ darwin-arm64,linux-aarch64,linux-a
 test.test_socket.BasicUDPTest.testRecvFrom @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.BasicUDPTest.testRecvFromNegative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.BasicUDPTest.testSendtoAndRecv @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_socket.BufferIOTest.testRecvFromIntoArray @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_socket.BufferIOTest.testRecvFromIntoBytearray @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_socket.BufferIOTest.testRecvFromIntoArray @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_socket.BufferIOTest.testRecvFromIntoBytearray @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_socket.BufferIOTest.testRecvFromIntoEmptyBuffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_socket.BufferIOTest.testRecvFromIntoMemoryview @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_socket.BufferIOTest.testRecvFromIntoSmallBuffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
@@ -137,6 +137,7 @@ test.test_socket.NetworkConnectionNoServer.test_create_connection_timeout @ darw
 test.test_socket.NonBlockingTCPTests.testAccept @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_socket.NonBlockingTCPTests.testInheritFlagsBlocking @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_socket.NonBlockingTCPTests.testInheritFlagsTimeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_socket.NonBlockingTCPTests.testLargeTimeout @ win32-AMD64-github
 test.test_socket.NonBlockingTCPTests.testRecv @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_socket.NonBlockingTCPTests.testSetBlocking @ win32-AMD64-github
 test.test_socket.PurePythonSocketPairTest.test_injected_authentication_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
