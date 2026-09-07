@@ -132,6 +132,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         return dict;
     }
 
+    @Idempotent
     protected boolean dictIsConstant(PythonObject object) {
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }

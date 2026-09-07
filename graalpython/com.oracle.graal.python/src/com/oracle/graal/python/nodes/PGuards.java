@@ -453,6 +453,7 @@ public abstract class PGuards {
         return object.getPythonClass() == type;
     }
 
+    @Idempotent
     public static boolean isBuiltinDict(PythonObject dict) {
         return isBuiltinImmutableTypeInstance(dict, PythonBuiltinClassType.PDict);
     }
