@@ -321,6 +321,9 @@ class ParseTest(unittest.TestCase):
         'koi8-u', 'cp1125', 'cp1251', 'iso8859-5', 'mac-cyrillic',
     ])
     def test_supported_encodings2(self, encoding):
+        if (_is_graalpy_java_pyexpat_backend() and
+                encoding in ('cp1125', 'mac-cyrillic')):
+            self.skipTest("Java pyexpat backend does not yet use Python's unknown-encoding handler")
         out = self.Outputter()
         parser = expat.ParserCreate()
         self._hookup_callbacks(parser, out)
@@ -387,12 +390,20 @@ class ParseTest(unittest.TestCase):
         with self.assertRaises(LookupError):
             parser.Parse(data, True)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend reports an ExpatError instead of the codec's UnicodeError for an "
+        "explicitly undefined encoding."
+    )
     def test_undefined_encoding(self):
         parser = expat.ParserCreate()
         data = b'<?xml version="1.0" encoding="undefined"?>\n<root></root>'
         with self.assertRaises(UnicodeError):
             parser.Parse(data, True)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend reports an ExpatError instead of the codec's LookupError for an "
+        "unknown encoding."
+    )
     def test_unknown_encoding(self):
         parser = expat.ParserCreate()
         data = b'<?xml version="1.0" encoding="xyz"?>\n<root></root>'
