@@ -287,6 +287,47 @@ def test_multiline_pattern_bindings():
     assert alternatives({"x": 43}) == 43
 
 
+def test_ast_transformed_class_pattern_bindings():
+    source = """
+def match_int(value):
+    match value:
+        case int(real=x):
+            assert x == 42
+        case _:
+            return False
+    return True
+"""
+    tree = ast.parse(source)
+    case = tree.body[0].body[0].cases[0]
+    original_assert = case.body[0]
+
+    # Mimic assertion rewriting: replace one source statement with several AST statements that
+    # share its source range. This used to make the class-pattern capture's StackValue escape the
+    # source-section operation in which it was created.
+    case.body = [
+        ast.copy_location(
+            ast.Assign(targets=[ast.Name(id="assert_result", ctx=ast.Store())], value=original_assert.test),
+            original_assert,
+        ),
+        ast.copy_location(
+            ast.If(
+                test=ast.UnaryOp(op=ast.Not(), operand=ast.Name(id="assert_result", ctx=ast.Load())),
+                body=[
+                    ast.Raise(
+                        exc=ast.Call(func=ast.Name(id="AssertionError", ctx=ast.Load()), args=[], keywords=[])
+                    )
+                ],
+                orelse=[],
+            ),
+            original_assert,
+        ),
+    ]
+    ast.fix_missing_locations(tree)
+
+    namespace = {}
+    exec(compile(tree, "<rewritten-assert>", "exec"), namespace)
+    assert namespace["match_int"](42)
+
 
 class TestErrors(unittest.TestCase):
     def assert_syntax_error(self, code: str):
