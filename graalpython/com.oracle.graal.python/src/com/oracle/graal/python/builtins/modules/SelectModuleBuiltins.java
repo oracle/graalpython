@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.select.PPoll;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -148,29 +150,48 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
             ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
 
             Timeval timeoutval = null;
+            long timeoutNs = -1;
             if (!PGuards.isPNone(timeout)) {
                 isNotNoneTimeout.enter(inliningTarget);
-                timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, inliningTarget, timeout, RoundType.TIMEOUT, SEC_TO_NS));
+                timeoutNs = pyTimeFromObjectNode.execute(frame, inliningTarget, timeout, RoundType.TIMEOUT, SEC_TO_NS);
+                timeoutval = TimeUtils.pyTimeAsTimeval(timeoutNs);
                 if (timeoutval.getSeconds() < 0) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
                 }
             }
 
             SelectResult result;
-            try {
-                gil.release(true);
+            long startNano = timeoutval != null ? System.nanoTime() : 0;
+            while (true) {
                 try {
-                    result = posixLib.select(PosixSupport.get(inliningTarget), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
-                } finally {
-                    gil.acquire();
+                    gil.release(true);
+                    try {
+                        result = posixLib.select(PosixSupport.get(inliningTarget), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    } finally {
+                        gil.acquire();
+                    }
+                    break;
+                } catch (ChannelNotSelectableException e) {
+                    // GraalPython hack: if one of the channels is not selectable (can happen only
+                    // in the emulated mode), we just return everything.
+                    notSelectableBranch.enter(inliningTarget);
+                    return PFactory.createTuple(language, new Object[]{rlist, wlist, xlist});
+                } catch (PosixException e) {
+                    if (!e.hasErrno(OSErrorEnum.EINTR)) {
+                        throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+                    }
+                    PythonContext.triggerAsyncActions(inliningTarget);
+                    if (timeoutval != null) {
+                        long remainingNs = timeoutNs - (System.nanoTime() - startNano);
+                        if (remainingNs <= 0) {
+                            return PFactory.createTuple(language, new PList[]{
+                                            PFactory.createList(language),
+                                            PFactory.createList(language),
+                                            PFactory.createList(language)});
+                        }
+                        timeoutval = TimeUtils.pyTimeAsTimeval(remainingNs);
+                    }
                 }
-            } catch (ChannelNotSelectableException e) {
-                // GraalPython hack: if one of the channels is not selectable (can happen only in
-                // the emulated mode), we just return everything.
-                notSelectableBranch.enter(inliningTarget);
-                return PFactory.createTuple(language, new Object[]{rlist, wlist, xlist});
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PFactory.createTuple(language, new PList[]{
                             toList(result.getReadFds(), readFDs, language),

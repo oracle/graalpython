@@ -74,6 +74,7 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -160,25 +161,21 @@ public final class PollBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            int timeout = -1;
-            if (!PGuards.isPNone(timeoutObject) && !PGuards.isNoValue(timeoutObject)) {
-                long timeoutNs;
+            int timeoutMs = -1;
+            long timeoutNs = -1;
+            if (!(timeoutObject instanceof PNone)) {
                 try {
                     timeoutNs = fromTime.execute(frame, inliningTarget, timeoutObject, RoundType.TIMEOUT, MS_TO_NS);
                 } catch (PException e) {
-                    try {
-                        e.expectTypeError(inliningTarget, typeErrorProfile);
-                    } catch (PException notTypeError) {
-                        throw e;
-                    }
+                    e.expectTypeError(inliningTarget, typeErrorProfile);
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TIMEOUT_MUST_BE_INTEGER_OR_NONE);
                 }
-                long timeoutMs = TimeUtils.pyTimeDivide(timeoutNs, MS_TO_NS);
-                if (timeoutMs < Integer.MIN_VALUE || timeoutMs > Integer.MAX_VALUE) {
+                long timeoutMsLong = TimeUtils.pyTimeDivide(timeoutNs, MS_TO_NS);
+                if (timeoutMsLong < Integer.MIN_VALUE || timeoutMsLong > Integer.MAX_VALUE) {
                     throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.TIMEOUT_IS_TOO_LARGE);
                 }
-                if (timeoutMs >= 0) {
-                    timeout = (int) timeoutMs;
+                if (timeoutMsLong >= 0) {
+                    timeoutMs = (int) timeoutMsLong;
                 }
             }
 
@@ -188,17 +185,39 @@ public final class PollBuiltins extends PythonBuiltins {
             int[] pollFds = self.getPollFds();
             int[] pollEvents = self.getPollEvents();
             int[] pollRevents = self.getPollRevents();
+            boolean timedOut = false;
+            long startNano = timeoutMs >= 0 ? System.nanoTime() : 0;
             try {
-                gil.release(true);
-                try {
-                    posixLib.poll(PosixSupport.get(inliningTarget), pollFds, pollEvents, pollRevents, timeout);
-                } finally {
-                    gil.acquire();
+                while (true) {
+                    try {
+                        gil.release(true);
+                        try {
+                            posixLib.poll(PosixSupport.get(inliningTarget), pollFds, pollEvents, pollRevents, timeoutMs);
+                        } finally {
+                            gil.acquire();
+                        }
+                        break;
+                    } catch (PosixException e) {
+                        if (!e.hasErrno(OSErrorEnum.EINTR)) {
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+                        }
+                        PythonContext.triggerAsyncActions(inliningTarget);
+                        if (timeoutMs >= 0) {
+                            long remainingNs = timeoutNs - (System.nanoTime() - startNano);
+                            if (remainingNs <= 0) {
+                                timedOut = true;
+                                break;
+                            }
+                            timeoutMs = (int) TimeUtils.pyTimeDivide(remainingNs, MS_TO_NS);
+                        }
+                    }
                 }
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
                 self.finishPoll();
+            }
+
+            if (timedOut) {
+                return PFactory.createList(language);
             }
 
             int resultSize = 0;
