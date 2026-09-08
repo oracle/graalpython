@@ -613,6 +613,25 @@ public final class EmulatedPosixSupport extends PosixResources {
         return previousMode;
     }
 
+    @ExportMessage
+    public void msvcrtLocking(int fd, int mode, long nbytes,
+                    @Bind Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        Channel channel = getFileChannel(fd);
+        if (channel == null) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        boolean unlock = mode == PosixConstants._LK_UNLCK.getValueIfDefined();
+        boolean blocking = mode == PosixConstants._LK_LOCK.getValueIfDefined() || mode == PosixConstants._LK_RLCK.getValueIfDefined();
+        boolean nonBlocking = mode == PosixConstants._LK_NBLCK.getValueIfDefined() || mode == PosixConstants._LK_NBRLCK.getValueIfDefined();
+        if (!unlock && !blocking && !nonBlocking) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        doLockOperation(fd, channel, unlock, false, blocking, SEEK_CUR.value, 0, nbytes);
+    }
+
     @ExportMessage(name = "pipe")
     public int[] pipeMessage(@Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         // TODO: will merge with super.pipe once the super class is merged with this class
@@ -908,20 +927,9 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
-        boolean unlock, shared, exclusive;
-        if (PythonLanguage.getPythonOS() == PLATFORM_WIN32) {
-            /*
-             * Windows doesn't expose fnctl, but we call this from MsvcrtModuleBuiltins, where we
-             * use 0 for unlock and 1 for lock
-             */
-            unlock = lockType == 0;
-            exclusive = !unlock;
-            shared = false;
-        } else {
-            unlock = lockType == F_UNLCK.getValueIfDefined();
-            shared = lockType == F_RDLCK.getValueIfDefined();
-            exclusive = lockType == F_WRLCK.getValueIfDefined();
-        }
+        boolean unlock = lockType == F_UNLCK.getValueIfDefined();
+        boolean shared = lockType == F_RDLCK.getValueIfDefined();
+        boolean exclusive = lockType == F_WRLCK.getValueIfDefined();
         if (!unlock && !shared && !exclusive) {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EINVAL);

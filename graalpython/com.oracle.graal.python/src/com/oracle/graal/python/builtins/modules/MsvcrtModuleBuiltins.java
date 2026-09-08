@@ -57,6 +57,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,9 +73,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = "msvcrt", os = PythonOS.PLATFORM_WIN32)
 public final class MsvcrtModuleBuiltins extends PythonBuiltins {
 
-    public static final int LK_LOCK = 1;
-    public static final int LK_NBLCK = 2;
-    public static final int LK_UNLOCK = 3;
     private static final TruffleString T_MSVCRT_LOCKING = tsLiteral("msvcrt.locking");
     private static final TruffleString T_MSVCRT_GET_OSFHANDLE = tsLiteral("msvcrt.get_osfhandle");
     private static final TruffleString T_MSVCRT_OPEN_OSFHANDLE = tsLiteral("msvcrt.open_osfhandle");
@@ -86,9 +85,11 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant("LK_LOCK", LK_LOCK);
-        addBuiltinConstant("LK_NBLCK", LK_NBLCK);
-        addBuiltinConstant("LK_UNLCK", LK_UNLOCK);
+        addBuiltinConstant("LK_LOCK", PosixConstants._LK_LOCK.getValueIfDefined());
+        addBuiltinConstant("LK_NBLCK", PosixConstants._LK_NBLCK.getValueIfDefined());
+        addBuiltinConstant("LK_UNLCK", PosixConstants._LK_UNLCK.getValueIfDefined());
+        addBuiltinConstant("LK_RLCK", PosixConstants._LK_RLCK.getValueIfDefined());
+        addBuiltinConstant("LK_NBRLCK", PosixConstants._LK_NBRLCK.getValueIfDefined());
     }
 
     @Builtin(name = "locking", minNumOfPositionalArgs = 3, parameterNames = {"fd", "mode", "nbytes"})
@@ -102,10 +103,16 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gilNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_LOCKING, fd, mode, nbytes);
             try {
-                posixLib.fcntlLock(getPosixSupport(), fd, mode != LK_NBLCK, mode == LK_UNLOCK ? 0 : 1, 0, 0, nbytes);
+                gilNode.release(true);
+                try {
+                    posixLib.msvcrtLocking(getPosixSupport(), fd, mode, nbytes);
+                } finally {
+                    gilNode.acquire();
+                }
             } catch (PosixSupportLibrary.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

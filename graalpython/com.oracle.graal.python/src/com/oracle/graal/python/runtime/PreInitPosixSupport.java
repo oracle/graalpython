@@ -264,6 +264,13 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void msvcrtLocking(int fd, int mode, long nbytes,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        nativeLib.msvcrtLocking(nativePosixSupport, fd, mode, nbytes);
+    }
+
+    @ExportMessage
     final int[] pipe(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
         return nativeLib.pipe(nativePosixSupport);

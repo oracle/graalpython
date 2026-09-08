@@ -1,3 +1,5 @@
 test.test_msvcrt.TestFileOperations.test_get_osfhandle @ win32-AMD64,win32-AMD64-github
+test.test_msvcrt.TestFileOperations.test_locking @ win32-AMD64,win32-AMD64-github
 test.test_msvcrt.TestFileOperations.test_open_osfhandle @ win32-AMD64,win32-AMD64-github
 test.test_msvcrt.TestFileOperations.test_setmode @ win32-AMD64,win32-AMD64-github
+test.test_msvcrt.TestFileOperations.test_unlockfile @ win32-AMD64,win32-AMD64-github

@@ -110,6 +110,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int setMode(Object receiver, int fd, int mode) throws PosixException;
 
+    public abstract void msvcrtLocking(Object receiver, int fd, int mode, long nbytes) throws PosixException;
+
     public abstract int[] pipe(Object receiver) throws PosixException;
 
     public abstract SelectResult select(Object receiver, int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
