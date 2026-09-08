@@ -2665,6 +2665,67 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    @Operation(storeBytecodeIndex = true)
+    @ConstantOperand(type = LocalAccessor.class)
+    @ConstantOperand(type = LocalAccessor.class)
+    @ImportStatic({PGuards.class})
+    public static final class UnpackToLocals2 {
+        @ExplodeLoop
+        @Specialization(guards = "isBuiltinSequence(sequence)")
+        public static void doUnpackSequence(VirtualFrame localFrame, LocalAccessor target1, LocalAccessor target2, PSequence sequence,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
+            int len = storage.length();
+            if (len != 2) {
+                throw UnpackToLocals.raiseError(inliningTarget, raiseNode, len, 2);
+            }
+            Object value1 = getItemNode.execute(inliningTarget, storage, 0);
+            Object value2 = getItemNode.execute(inliningTarget, storage, 1);
+            target1.setObject(bytecode, localFrame, value1);
+            target2.setObject(bytecode, localFrame, value2);
+        }
+
+        @Specialization
+        @InliningCutoff
+        public static void doUnpackIterable(VirtualFrame virtualFrame, LocalAccessor target1, LocalAccessor target2, Object collection,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode getNextNode,
+                        @Cached IsBuiltinObjectProfile notIterableProfile,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object iterator;
+            try {
+                iterator = getIter.execute(virtualFrame, inliningTarget, collection);
+            } catch (PException e) {
+                e.expectTypeError(inliningTarget, notIterableProfile);
+                throw UnpackToLocals.raiseNotIterableError(collection, inliningTarget, raiseNode);
+            }
+            Object value1 = extractItem(virtualFrame, inliningTarget, 0, iterator, getNextNode, raiseNode);
+            Object value2 = extractItem(virtualFrame, inliningTarget, 1, iterator, getNextNode, raiseNode);
+            try {
+                getNextNode.execute(virtualFrame, inliningTarget, iterator);
+            } catch (IteratorExhausted e) {
+                target1.setObject(bytecode, virtualFrame, value1);
+                target2.setObject(bytecode, virtualFrame, value2);
+                return;
+            }
+            throw UnpackToLocals.raiseTooManyValues(inliningTarget, raiseNode, 2);
+        }
+
+        private static Object extractItem(VirtualFrame virtualFrame, Node inliningTarget, int index, Object iterator, PyIterNextNode getNextNode, PRaiseNode raiseNode) {
+            try {
+                return getNextNode.execute(virtualFrame, inliningTarget, iterator);
+            } catch (IteratorExhausted e) {
+                throw UnpackToLocals.raiseNotEnoughValues(inliningTarget, raiseNode, 2, index);
+            }
+        }
+    }
+
     /**
      * This operation is used to implement destructing assignment where the rhs should be fully
      * evaluated and unpacked into temporary variables and then assigned to the targets.
