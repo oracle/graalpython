@@ -241,6 +241,9 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
         abstract int call_setmode(int fd, int mode);
 
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT64})
+        abstract int call_msvcrt_locking(int fd, int mode, long nbytes);
+
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
         abstract int call_pipe2(long pipefd);
 
@@ -847,6 +850,13 @@ public final class NativePosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException();
         }
         return previousMode;
+    }
+
+    @ExportMessage
+    public void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
+        if (posixNativeFunctionInvoker.call_msvcrt_locking(fd, mode, nbytes) != 0) {
+            throw getErrnoAndThrowPosixException();
+        }
     }
 
     @ExportMessage

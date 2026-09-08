@@ -88,6 +88,7 @@ includes = '''
 # include <winsock2.h>
 # include <ws2tcpip.h>
 # include <windows.h>
+# include <sys/locking.h>
 # include <sys/stat.h>
 # ifndef PATH_MAX
 #  define PATH_MAX MAX_PATH
@@ -230,6 +231,13 @@ u x S_IFCHR
 * i F_RDLCK
 * i F_WRLCK
 * i F_UNLCK
+
+[msvcrtLocking]
+* i _LK_UNLCK
+* i _LK_LOCK
+* i _LK_NBLCK
+* i _LK_RLCK
+* i _LK_NBRLCK
 
 [direntType]
 0 i DT_UNKNOWN
@@ -514,7 +522,7 @@ layout_defs = '''
 '''
 
 java_copyright = '''/*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -575,6 +583,7 @@ Struct = namedtuple('Struct', ['name', 'members', 'unix_only'])
 
 c_source_file = 'gen_native_cfg.c'
 c_executable_file = 'gen_native_cfg'
+c_output_file = 'gen_native_cfg.out'
 
 
 def parse_defs():
@@ -678,7 +687,10 @@ def generate_platform():
     cc = os.environ.get('CC', 'cl' if platform == 'Win32' else 'cc')
     subprocess.run(f'{cc} {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
 
-    output = subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1]
+    with open(c_output_file, 'w+') as output_file:
+        subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=output_file, universal_newlines=True)
+        output_file.seek(0)
+        output = output_file.read()[:-1]
     uname = " ".join(tuple(plat.uname()))
 
     out_path = DIR / f'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstants{platform}.java'
@@ -762,7 +774,7 @@ def generate_posix_constants(constants, groups):
 
 def generate_native_constants(layouts):
     c_filename = DIR / 'graalpython/python-libposix/src/posix.c'
-    java_filename = DIR / 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/NFIPosixConstants.java'
+    java_filename = DIR / 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/NativePosixConstants.java'
     constants = []
     for struct in layouts:
         if struct.unix_only:
@@ -795,6 +807,9 @@ def main():
     finally:
         delete_if_exists(c_source_file)
         delete_if_exists(c_executable_file)
+        delete_if_exists(c_executable_file + '.exe')
+        delete_if_exists(c_executable_file + '.obj')
+        delete_if_exists(c_output_file)
 
 
 if __name__ == '__main__':

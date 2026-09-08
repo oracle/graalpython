@@ -275,6 +275,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void msvcrtLocking(int fd, int mode, long nbytes,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("msvcrtLocking", "%d, %d, %d", fd, mode, nbytes);
+        try {
+            lib.msvcrtLocking(delegate, fd, mode, nbytes);
+        } catch (PosixException e) {
+            throw logException("msvcrtLocking", e);
+        }
+    }
+
+    @ExportMessage
     final int[] pipe(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("pipe", "");

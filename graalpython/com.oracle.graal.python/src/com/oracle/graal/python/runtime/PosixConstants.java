@@ -165,6 +165,11 @@ public final class PosixConstants {
     public static final OptionalIntConstant F_RDLCK;
     public static final OptionalIntConstant F_WRLCK;
     public static final OptionalIntConstant F_UNLCK;
+    public static final OptionalIntConstant _LK_UNLCK;
+    public static final OptionalIntConstant _LK_LOCK;
+    public static final OptionalIntConstant _LK_NBLCK;
+    public static final OptionalIntConstant _LK_RLCK;
+    public static final OptionalIntConstant _LK_NBRLCK;
     public static final MandatoryIntConstant DT_UNKNOWN;
     public static final MandatoryIntConstant DT_FIFO;
     public static final MandatoryIntConstant DT_CHR;
@@ -388,6 +393,7 @@ public final class PosixConstants {
     public static final IntConstant[] mmapProtection;
     public static final IntConstant[] flockOperation;
     public static final IntConstant[] flockType;
+    public static final IntConstant[] msvcrtLocking;
     public static final IntConstant[] direntType;
     public static final IntConstant[] waitOptions;
     public static final IntConstant[] accessMode;
@@ -498,6 +504,11 @@ public final class PosixConstants {
         F_RDLCK = reg.createOptionalInt("F_RDLCK");
         F_WRLCK = reg.createOptionalInt("F_WRLCK");
         F_UNLCK = reg.createOptionalInt("F_UNLCK");
+        _LK_UNLCK = reg.createOptionalInt("_LK_UNLCK");
+        _LK_LOCK = reg.createOptionalInt("_LK_LOCK");
+        _LK_NBLCK = reg.createOptionalInt("_LK_NBLCK");
+        _LK_RLCK = reg.createOptionalInt("_LK_RLCK");
+        _LK_NBRLCK = reg.createOptionalInt("_LK_NBRLCK");
         DT_UNKNOWN = reg.createMandatoryInt("DT_UNKNOWN");
         DT_FIFO = reg.createMandatoryInt("DT_FIFO");
         DT_CHR = reg.createMandatoryInt("DT_CHR");
@@ -723,6 +734,7 @@ public final class PosixConstants {
         mmapProtection = new IntConstant[]{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
         flockOperation = new IntConstant[]{LOCK_SH, LOCK_EX, LOCK_NB, LOCK_UN};
         flockType = new IntConstant[]{F_RDLCK, F_WRLCK, F_UNLCK};
+        msvcrtLocking = new IntConstant[]{_LK_UNLCK, _LK_LOCK, _LK_NBLCK, _LK_RLCK, _LK_NBRLCK};
         direntType = new IntConstant[]{DT_UNKNOWN, DT_FIFO, DT_CHR, DT_DIR, DT_BLK, DT_REG, DT_LNK, DT_SOCK, DT_WHT};
         waitOptions = new IntConstant[]{WNOHANG, WUNTRACED};
         accessMode = new IntConstant[]{R_OK, W_OK, X_OK, F_OK};
