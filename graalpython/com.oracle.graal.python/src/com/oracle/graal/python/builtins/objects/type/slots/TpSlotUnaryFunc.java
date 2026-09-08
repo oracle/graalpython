@@ -168,7 +168,7 @@ public final class TpSlotUnaryFunc {
         static Object doIt(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
                         @Bind Node inliningTarget,
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode) {
-            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
+            return dispatcherNode.execute(frame, inliningTarget, slot.getCallableOrRaise(inliningTarget), slot.getType(), self);
         }
     }
 }

@@ -147,7 +147,7 @@ public class TpSlotBinaryFunc {
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object arg,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode) {
-            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self, arg);
+            return dispatcherNode.execute(frame, inliningTarget, slot.getCallableOrRaise(inliningTarget), slot.getType(), self, arg);
         }
 
         @Specialization

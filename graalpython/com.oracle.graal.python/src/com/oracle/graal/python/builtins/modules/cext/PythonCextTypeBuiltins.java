@@ -103,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyDictSetItem;
@@ -242,20 +243,29 @@ public final class PythonCextTypeBuiltins {
                 if (nativeClassStableAssumption != null) {
                     nativeClassStableAssumption.invalidate("PyType_Modified(\"" + TypeNodes.GetNameNode.executeUncached(clazz).toJavaStringUncached() + "\") called");
                 }
-                MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(clazz);
-                mroStorage.lookupChanged();
                 // Reload slots from native, which also invalidates cached slot lookups
                 clazz.setTpSlots(TpSlots.fromNative(clazz, context));
+                invalidateMroLookup(clazz);
             } else if (object instanceof PythonManagedClass clazz) {
                 Object field = readObjectNode.read(clazz.getNativePointer(), CFields.PyTypeObject__tp_dict);
                 if (field instanceof PDict dict && dict != getDictIfExists.execute(clazz)) {
                     setDict.execute(inliningTarget, object, dict);
                 }
-                // TODO: should we support syncing special slots as well?
-                MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(object);
-                mroStorage.lookupChanged();
+                invalidateMroLookup(clazz);
             }
             return PNone.NO_VALUE;
+        }
+
+        public static void invalidateMroLookup(PythonAbstractClass klass) {
+            // Note: PyType_Modified should not recompute the slots, just invalidate lookup caches
+            PythonAbstractClass[] allSubclasses = GetSubclassesAsArrayNode.executeRecursiveUncached(klass);
+            TpSlots.updateSlotWrappersLookups(klass, allSubclasses);
+            MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(klass);
+            mroStorage.lookupChanged();
+            for (PythonAbstractClass subclass : allSubclasses) {
+                MroSequenceStorage subClassMroStorage = TypeNodes.GetMroStorageNode.executeUncached(subclass);
+                subClassMroStorage.lookupChanged();
+            }
         }
     }
 

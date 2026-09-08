@@ -61,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContainsFactory.CallSlotSqContainsNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PySequenceIterSearchNode;
+import com.oracle.graal.python.lib.PySequenceIterSearchNode.LazyPySequenceIterSeachNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -70,6 +72,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -130,11 +133,17 @@ public final class TpSlotSqContains {
         static boolean callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object arg,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (slot.getCallable() == PNone.NONE) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached LazyPySequenceIterSeachNode iterSearch) {
+            Object callable = slot.getCallable();
+            if (callable == null) {
+                return iterSearch.get(inliningTarget).executeCached(frame, self, arg, PySequenceIterSearchNode.PY_ITERSEARCH_CONTAINS) == 1;
+            }
+            if (callable == PNone.NONE) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_CONTAINER, self);
             }
-            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self, arg);
+            Object result = dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self, arg);
             return isTrueNode.execute(frame, result);
         }
 

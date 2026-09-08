@@ -49,9 +49,9 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -216,7 +216,12 @@ public abstract class TpSlotDescrGet {
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object obj, Object type,
                         @Cached DescrGetPythonSlotDispatcherNode dispatcherNode) {
-            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self, obj, type);
+            Object callable = slot.getCallable();
+            if (callable == null) {
+                // CPython here overrides the slot with NULL with comment "Avoid further slowdowns"...
+                return self;
+            }
+            return dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self, obj, type);
         }
 
         @InliningCutoff

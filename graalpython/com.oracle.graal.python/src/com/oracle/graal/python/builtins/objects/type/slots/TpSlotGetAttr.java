@@ -155,8 +155,8 @@ public class TpSlotGetAttr {
 
         @Override
         public TpSlotPython forNewType(Object klass) {
-            Object newGetattribute = Dynamic.getUncached().execute(klass, T___GETATTRIBUTE__);
-            Object newGetattr = Dynamic.getUncached().execute(klass, T___GETATTR__);
+            Object newGetattribute = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___GETATTRIBUTE__));
+            Object newGetattr = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___GETATTR__));
             if (newGetattr != getGetattr() || newGetattribute != getGetattribute()) {
                 return new TpSlotGetAttrPython(newGetattribute, newGetattr, getType());
             }
@@ -168,7 +168,7 @@ public class TpSlotGetAttr {
         }
 
         public boolean hasGetattr() {
-            return getattr != null;
+            return safeGet(getattr) != null;
         }
 
         public Object getGetattribute() {

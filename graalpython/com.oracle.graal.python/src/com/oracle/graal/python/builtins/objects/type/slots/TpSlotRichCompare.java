@@ -43,6 +43,12 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_TP_RICHCOMPARE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_TP_RICHCOMPARE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.lang.ref.Reference;
@@ -66,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompareFactory.CallSlotRichCmpNodeGen;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -200,7 +207,17 @@ public abstract class TpSlotRichCompare {
 
         @Override
         public TpSlotPython forNewType(Object klass) {
-            return new TpSlotRichCmpPython(type.get(), lt.get(), le.get(), eq.get(), ne.get(), gt.get(), ge.get());
+            Object newLt = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___LT__));
+            Object newLe = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___LE__));
+            Object newEq = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___EQ__));
+            Object newNe = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___NE__));
+            Object newGt = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___GT__));
+            Object newGe = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___GE__));
+            if (klass != safeGet(type) || newLt != safeGet(lt) || newLe != safeGet(le) ||
+                            newEq != safeGet(eq) || newNe != safeGet(ne) || newGt != safeGet(gt) || newGe != safeGet(ge)) {
+                return new TpSlotRichCmpPython(klass, newLt, newLe, newEq, newNe, newGt, newGe);
+            }
+            return this;
         }
     }
 

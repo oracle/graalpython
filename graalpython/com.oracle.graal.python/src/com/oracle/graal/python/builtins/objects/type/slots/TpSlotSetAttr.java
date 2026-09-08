@@ -41,23 +41,21 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 
 import java.lang.ref.Reference;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -71,10 +69,10 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttrFactory.CallManagedSlotSetAttrNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -82,7 +80,6 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -90,7 +87,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -173,8 +169,8 @@ public class TpSlotSetAttr {
 
         @Override
         public TpSlotPython forNewType(Object klass) {
-            Object newSet = Dynamic.getUncached().execute(klass, T___SETATTR__);
-            Object newDel = Dynamic.getUncached().execute(klass, T___DELATTR__);
+            Object newSet = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___SETATTR__));
+            Object newDel = normalizeLookupResult(Dynamic.getUncached().execute(klass, T___DELATTR__));
             if (newSet != getSetattr() || newDel != getDelattr()) {
                 return new TpSlotSetAttrPython(newSet, newDel, getType());
             }
@@ -345,30 +341,17 @@ public class TpSlotSetAttr {
 
         @Specialization(guards = "!isNoValue(value)")
         static void callPythonSimpleSet(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, Object value,
-                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached TernaryPythonSlotDispatcherNode callPythonFun) {
-            Object callable = slot.getSetattr();
-            if (callable == null) {
-                throw raiseAttributeError(inliningTarget, raiseNode, T___SETATTR__);
-            }
+            Object callable = slot.safeGetOrRaise(slot.setattr, inliningTarget, T___SETATTR__);
             callPythonFun.execute(frame, inliningTarget, callable, slot.getType(), self, name, value);
         }
 
         @Specialization(guards = "isNoValue(value)")
         @InliningCutoff
         static void callPythonSimpleDel(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, @SuppressWarnings("unused") Object value,
-                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
-            Object callable = slot.getDelattr();
-            if (callable == null) {
-                throw raiseAttributeError(inliningTarget, raiseNode, T___DELATTR__);
-            }
+            Object callable = slot.safeGetOrRaise(slot.delattr, inliningTarget, T___DELATTR__);
             callPythonFun.execute(frame, inliningTarget, callable, slot.getType(), self, name);
-        }
-
-        @InliningCutoff
-        private static PException raiseAttributeError(Node inliningTarget, PRaiseNode raiseNode, TruffleString attrName) {
-            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, attrName);
         }
 
         @Specialization(replaces = "callCachedBuiltin")

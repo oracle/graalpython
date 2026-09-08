@@ -45,8 +45,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
@@ -71,6 +71,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -144,11 +145,25 @@ public final class TpSlotRepr {
     abstract static class CallSlotReprPythonNode extends Node {
         abstract Object execute(VirtualFrame frame, TpSlotPythonSingle slot, Object obj);
 
-        @Specialization
+        @Specialization(guards = "callable != null")
         static Object doIt(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
                         @Bind Node inliningTarget,
-                        @Cached ReprPythonSlotDispatcherNode dispatcherNode) {
-            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
+                        @Bind("slot.getCallable()") Object callable,
+                        @Shared("dispatcherNode") @Cached ReprPythonSlotDispatcherNode dispatcherNode) {
+            return dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self);
+        }
+
+        @Specialization(replaces = "doIt")
+        @InliningCutoff
+        static Object doItGeneric(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
+                        @Bind Node inliningTarget,
+                        @Shared("dispatcherNode") @Cached ReprPythonSlotDispatcherNode dispatcherNode,
+                        @Cached(inline = false) ObjectNodes.DefaultObjectReprNode defaultRepr) {
+            Object callable = slot.getCallable();
+            if (callable == null) {
+                return defaultRepr.execute(frame, inliningTarget, self);
+            }
+            return dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self);
         }
     }
 

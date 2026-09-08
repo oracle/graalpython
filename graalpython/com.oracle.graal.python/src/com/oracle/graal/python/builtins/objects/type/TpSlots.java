@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -121,6 +120,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
@@ -171,7 +171,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetObjectSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
@@ -210,7 +209,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -218,6 +216,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1492,24 +1491,59 @@ public record TpSlots(TpSlot nb_bool, //
      * Mirrors CPython's {@code typeobject.c:update_all_slots}.
      */
     @TruffleBoundary
-    public static void updateAllSlots(PythonAbstractClass klass) {
-        updateSlot(klass, SLOTDEFS.entrySet());
+    public static void updateAllSlots(PythonAbstractClass klass, PythonAbstractClass[] allSubclasses) {
+        updateSlot(klass, SLOTDEFS.entrySet(), allSubclasses);
+    }
+
+    /**
+     * Updates only cached MRO lookups stored in the slots, but not the slots themselves
+     * like {@link #updateAllSlots(PythonAbstractClass, PythonAbstractClass[])} does.
+     */
+    @TruffleBoundary
+    public static void updateSlotWrappersLookups(PythonAbstractClass klass, PythonAbstractClass[] allSubclasses) {
+        updateSlotWrappersLookupsSingle(klass);
+        for (PythonAbstractClass subclass : allSubclasses) {
+            updateSlotWrappersLookupsSingle(subclass);
+        }
+    }
+
+    private static void updateSlotWrappersLookupsSingle(PythonAbstractClass klass) {
+        TpSlots slots = GetTpSlotsNode.executeUncached(klass);
+        if (slots == null) {
+            return;
+        }
+        Builder builder = slots.copy();
+        boolean updated = false;
+        for (TpSlotMeta def : TpSlotMeta.VALUES) {
+            TpSlot slotValue = def.getValue(slots);
+            if (slotValue instanceof TpSlotPython pySlot) {
+                TpSlotPython newValue = pySlot.forNewType(klass);
+                if (newValue != pySlot) {
+                    updated = true;
+                    builder.set(def, newValue);
+                    refreshSlotInNative(klass, def, newValue);
+                }
+            }
+        }
+        if (updated) {
+            setSlots(klass, builder.build());
+        }
     }
 
     /**
      * Mirrors CPython's {@code typeobject.c:update_slot}.
      */
     @TruffleBoundary
-    public static void updateSlot(PythonAbstractClass klass, TruffleString specialMethodName) {
+    public static void updateSlot(PythonAbstractClass klass, TruffleString specialMethodName, PythonAbstractClass[] allSubclasses) {
         // We find all tp slots that have a slotdef that has name equal to the name that was changed
         Set<Entry<TpSlotMeta, TpSlotDef[]>> slotdefGroups = SPECIAL2SLOTDEF.get(specialMethodName);
         if (slotdefGroups == null) {
             return;
         }
-        updateSlot(klass, slotdefGroups);
+        updateSlot(klass, slotdefGroups, allSubclasses);
     }
 
-    private static void updateSlot(PythonAbstractClass klass, Set<Entry<TpSlotMeta, TpSlotDef[]>> slotdefGroups) {
+    private static void updateSlot(PythonAbstractClass klass, Set<Entry<TpSlotMeta, TpSlotDef[]>> slotdefGroups, PythonAbstractClass[] allSubclasses) {
         // slots can be null if the type is just being initialized, for example,
         // when the initialization calls the "mro" method, which may execute arbitrary code
         // including setting its __bases__ to something.
@@ -1518,8 +1552,11 @@ public record TpSlots(TpSlot nb_bool, //
             return;
         }
         updateSlots(klass, slots, slotdefGroups);
-        for (PythonAbstractClass subClass : GetSubclassesAsArrayNode.executeUncached(klass)) {
-            updateSlot(subClass, slotdefGroups);
+        for (PythonAbstractClass subClass : allSubclasses) {
+            TpSlots subClassSlots = GetTpSlotsNode.executeUncached(subClass);
+            if (subClassSlots != null) {
+                updateSlots(subClass, subClassSlots, slotdefGroups);
+            }
         }
     }
 
@@ -1665,23 +1702,27 @@ public record TpSlots(TpSlot nb_bool, //
                 newValue = generic.create(genericCallables, genericCallablesNames, klass);
             }
             slots.set(slot, newValue);
-            if (klass instanceof PythonAbstractNativeObject nativeClass) {
-                // Update the slots on the native side if this is a native class
-                toNative(nativeClass.getPtr(), slot, newValue);
-            }
-            if (klass instanceof PythonManagedClass managedClass) {
-                // Update the slots on the native side if this is a managed class that has a
-                // native mirror allocated already
-                if (managedClass.isNative()) {
-                    toNative(managedClass.getNativePointer(), slot, newValue);
-                }
-            }
+            refreshSlotInNative(klass, slot, newValue);
         }
         return slots;
     }
 
     private static boolean areSameNativeCallables(TpSlot a, TpSlot b) {
         return a instanceof TpSlotNative na && b instanceof TpSlotNative nb && na.isSameCallable(nb);
+    }
+
+    private static void refreshSlotInNative(PythonAbstractClass klass, TpSlotMeta def, TpSlot newValue) {
+        if (klass instanceof PythonAbstractNativeObject nativeClass) {
+            // Update the slots on the native side if this is a native class
+            toNative(nativeClass.getPtr(), def, newValue);
+        }
+        if (klass instanceof PythonManagedClass managedClass) {
+            // Update the slots on the native side if this is a managed class that has a
+            // native mirror allocated already
+            if (managedClass.isNative()) {
+                toNative(managedClass.getNativePointer(), def, newValue);
+            }
+        }
     }
 
     public static void setSlots(PythonAbstractClass klass, TpSlots slots) {

@@ -36,11 +36,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
@@ -221,45 +218,66 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         onAttributeUpdate(key, value);
     }
 
+    /**
+     * Note: there are these exclusive hooks for attribute update or MRO change:
+     * <ul>
+     *     <li>This method {@link #onAttributeUpdate(TruffleString, Object)}</li>
+     *     <li>Implementation of C API {@code PyType_Modified}</li>
+     *     <li>{@link #setBases(Node, Object, PythonAbstractClass[])}, which calls
+     *     {@link #setMRO(PythonAbstractClass[])} on each affected class</li>
+     * </ul>
+     * Each of them has slightly different semantics to match CPython behavior.
+     */
     @TruffleBoundary
     public void onAttributeUpdate(TruffleString key, Object value) {
-        callOnAttributeUpdateOnSubclasses(subClasses, key, value);
-        methodResolutionOrder.invalidateFinalAttributeAssumption(key);
+        onAttributeUpdate(key, value, GetSubclassesAsArrayNode.executeRecursiveUncached(this));
+    }
+
+    final void onAttributeUpdate(TruffleString key, Object value, PythonAbstractClass[] allSubclasses) {
+        onAttributeUpdateSelf(key, value);
+        callOnAttributeUpdateOnSubclasses(key, value, allSubclasses);
         if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexUTF32Node.getUncached())) {
             if (this.tpSlots != null) {
                 // This is called during type instantiation from copyDictSlots when the tp slots are
-                // not initialized yet
-                TpSlots.updateSlot(this, key);
+                // not initialized yet.
+                // Note: updateSlot also handles subclasses
+                TpSlots.updateSlot(this, key, allSubclasses);
             }
         }
+    }
+
+    /**
+     * Non-recursive part of the {@link #onAttributeUpdate(TruffleString, Object)}.
+     */
+    private void onAttributeUpdateSelf(TruffleString key, Object value) {
+        methodResolutionOrder.invalidateFinalAttributeAssumption(key);
     }
 
     @TruffleBoundary
     public static void onAttributeUpdateNative(PythonAbstractNativeObject nativeClass, TruffleString key, Object value) {
         assert TypeNodes.IsTypeNode.executeUncached(nativeClass);
-        callOnAttributeUpdateOnSubclasses(GetSubclassesNode.executeUncached(nativeClass), key, value);
-        TypeNodes.GetMroStorageNode.executeUncached(nativeClass).invalidateFinalAttributeAssumption(key);
+        PythonAbstractClass[] allSubclasses = GetSubclassesAsArrayNode.executeRecursiveUncached(nativeClass);
+        onAttributeUpdateNativeSelf(nativeClass, key);
+        callOnAttributeUpdateOnSubclasses(key, value, allSubclasses);
         if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexUTF32Node.getUncached())) {
-            TpSlots.updateSlot(nativeClass, key);
+            // Note: updateSlot also handles subclasses
+            TpSlots.updateSlot(nativeClass, key, allSubclasses);
         }
     }
 
-    private static void callOnAttributeUpdateOnSubclasses(PDict subClasses, TruffleString key, Object value) {
-        if (subClasses != null) {
-            HashingStorage dictStorage = subClasses.getDictStorage();
-            HashingStorageNodes.HashingStorageIterator it = HashingStorageNodes.HashingStorageGetIterator.executeUncached(dictStorage);
-            while (HashingStorageNodes.HashingStorageIteratorNext.executeUncached(dictStorage, it)) {
-                PReferenceType ref = (PReferenceType) HashingStorageNodes.HashingStorageIteratorValue.executeUncached(dictStorage, it);
-                Object subclass = ref.getObject();
-                if (subclass != null) {
-                    if (subclass instanceof PythonManagedClass managedClass) {
-                        managedClass.onAttributeUpdate(key, value);
-                    } else if (subclass instanceof PythonAbstractNativeObject nativeClass) {
-                        onAttributeUpdateNative(nativeClass, key, value);
-                    } else {
-                        throw CompilerDirectives.shouldNotReachHere("Unexpected subclass type");
-                    }
-                }
+    @TruffleBoundary
+    private static void onAttributeUpdateNativeSelf(PythonAbstractNativeObject nativeClass, TruffleString key) {
+        TypeNodes.GetMroStorageNode.executeUncached(nativeClass).invalidateFinalAttributeAssumption(key);
+    }
+
+    private static void callOnAttributeUpdateOnSubclasses(TruffleString key, Object value, PythonAbstractClass[] allSubclasses) {
+        for (Object subclass : allSubclasses) {
+            if (subclass instanceof PythonManagedClass managedClass) {
+                managedClass.onAttributeUpdateSelf(key, value);
+            } else if (subclass instanceof PythonAbstractNativeObject nativeClass) {
+                onAttributeUpdateNativeSelf(nativeClass, key);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("Unexpected subclass type");
             }
         }
     }
@@ -301,11 +319,16 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     public final void setBases(Node node, Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
+        // NOTE: doesn't call onAttributeUpdate() - lookup invalidations are handled in setMRO,
+        // we do our own subclasses traversal here
         Object oldBase = getBase();
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
         PythonAbstractClass[] oldMRO = this.methodResolutionOrder.getInternalClassArray();
 
-        PythonAbstractClass[] subclassesArray = GetSubclassesAsArrayNode.executeUncached(this);
+        // CPython recursively follows every subclass edge, so in a diamond it may recompute a
+        // shared subclass's MRO multiple times and the last recomputation wins. We avoid duplicate
+        // recomputations by collecting each subclass once in topological order.
+        PythonAbstractClass[] subclassesArray = GetSubclassesAsArrayNode.executeRecursiveUncached(this);
         PythonAbstractClass[][] oldSubClasssMROs = new PythonAbstractClass[subclassesArray.length][];
         for (int i = 0; i < subclassesArray.length; i++) {
             PythonAbstractClass scls = subclassesArray[i];
@@ -357,6 +380,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 if (base instanceof PythonManagedClass) {
                     GetSubclassesNode.addSubclass(base, this);
                 }
+            }
+            if (this instanceof PythonClass) {
+                TpSlots.updateAllSlots(this, subclassesArray);
             }
         }
     }

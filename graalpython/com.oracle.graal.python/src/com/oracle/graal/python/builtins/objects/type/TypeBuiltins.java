@@ -746,8 +746,6 @@ public final class TypeBuiltins extends PythonBuiltins {
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
-            TpSlots.updateAllSlots(cls);
-
             return PNone.NONE;
         }
 

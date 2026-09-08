@@ -269,7 +269,7 @@ public final class TpSlotNbPower {
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object v, Object w, @SuppressWarnings("unused") Object z,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode) {
             // CPython doesn't pass the third argument to __ipow__
-            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), v, w);
+            return dispatcherNode.execute(frame, inliningTarget, slot.getCallableOrRaise(inliningTarget), slot.getType(), v, w);
         }
 
         @Specialization

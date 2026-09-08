@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.NodeFactoryBase;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -184,16 +185,24 @@ public abstract class TpSlot {
         public abstract TpSlotPython forNewType(Object klass);
 
         final Object safeGet(TruffleWeakReference<Object> weakRef) {
-            if (weakRef == null) {
-                return null;
+            return weakRef == null ? null : weakRef.get();
+        }
+
+        final Object safeGetOrRaise(TruffleWeakReference<Object> weakRef, Node inliningTarget, TruffleString attributeName) {
+            Object result = safeGet(weakRef);
+            if (result == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, attributeName);
             }
-            Object result = weakRef.get();
-            assert result != null : "Object cached in " + getClass().getSimpleName() + " disappeared";
             return result;
         }
 
         static TruffleWeakReference<Object> asWeakRef(Object value) {
             return value == null || value == PNone.NO_VALUE ? null : new TruffleWeakReference<>(value);
+        }
+
+        static Object normalizeLookupResult(Object value) {
+            return value == PNone.NO_VALUE ? null : value;
         }
     }
 
@@ -356,20 +365,23 @@ public abstract class TpSlot {
         }
 
         private TpSlotPythonSingle(Object callable, TruffleWeakReference<Object> type, TruffleString name) {
-            assert callable != null;
-            this.callable = new TruffleWeakReference<>(callable);
+            this.callable = asWeakRef(callable);
             this.type = type;
             this.name = name;
         }
 
         @Override
         public TpSlotPython forNewType(Object klass) {
-            Object newCallable = Dynamic.getUncached().execute(klass, name);
-            return newCallable == callable.get() ? this : new TpSlotPythonSingle(newCallable, type, name);
+            Object newCallable = normalizeLookupResult(Dynamic.getUncached().execute(klass, name));
+            return newCallable == safeGet(callable) ? this : new TpSlotPythonSingle(newCallable, type, name);
         }
 
         public Object getCallable() {
             return safeGet(callable);
+        }
+
+        public Object getCallableOrRaise(Node inliningTarget) {
+            return safeGetOrRaise(callable, inliningTarget, name);
         }
 
         public Object getType() {
