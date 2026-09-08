@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.ordereddict;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
@@ -75,16 +76,20 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin.ReprOrderedDictItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict.ODictNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.PyDictMerge;
+import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -98,6 +103,7 @@ import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -113,6 +119,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -207,6 +214,114 @@ public class OrderedDictBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    abstract static class UpdateMappingNode extends PNodeWithContext {
+        abstract void execute(VirtualFrame frame, Node inliningTarget, Object target, Object mapping, Object keysMethod);
+
+        @Specialization
+        static void doMerge(VirtualFrame frame, Node inliningTarget, Object target, Object mapping, Object keysMethod,
+                        @Cached CallNode callKeys,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode next,
+                        @Cached PyObjectGetItem getItem,
+                        @Cached PyObjectSetItem setItem) {
+            Object keys = callKeys.execute(frame, keysMethod);
+            Object iterator = getIter.execute(frame, inliningTarget, keys);
+            while (true) {
+                Object key;
+                try {
+                    key = next.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
+                    break;
+                }
+                Object value = getItem.execute(frame, inliningTarget, mapping, key);
+                setItem.execute(frame, inliningTarget, target, key, value);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class UpdateFromSequenceNode extends PNodeWithContext {
+        abstract void execute(VirtualFrame frame, Node inliningTarget, Object target, Object iterable);
+
+        @Specialization
+        static void doIterable(VirtualFrame frame, Node inliningTarget, Object target, Object iterable,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode next,
+                        @Cached SetItemFromSequenceNode setItemFromSequence) {
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
+            while (true) {
+                Object element;
+                try {
+                    element = next.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
+                    break;
+                }
+                setItemFromSequence.execute(frame, inliningTarget, target, element);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class SetItemFromSequenceNode extends PNodeWithContext {
+        abstract void execute(VirtualFrame frame, Node inliningTarget, Object target, Object element);
+
+        @Specialization
+        static void doGeneric(VirtualFrame frame, Node inliningTarget, Object target, Object element,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode next,
+                        @Cached PyObjectSetItem setItem,
+                        @Cached InlinedBranchProfile tupleProfile,
+                        @Cached InlinedBranchProfile listProfile,
+                        @Cached PRaiseNode raiseNode) {
+            Object key, value;
+            SequenceStorage storage = null;
+            if (element instanceof PTuple tuple && PGuards.isBuiltinTuple(tuple)) {
+                tupleProfile.enter(inliningTarget);
+                storage = tuple.getSequenceStorage();
+            } else if (element instanceof PList list && PGuards.isBuiltinList(list)) {
+                listProfile.enter(inliningTarget);
+                storage = list.getSequenceStorage();
+            }
+            if (storage != null) {
+                int length = storage.length();
+                if (length == 0) {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEED_MORE_THAN_D_VALUES_TO_UNPACK, 0);
+                } else if (length == 1) {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEED_MORE_THAN_D_VALUES_TO_UNPACK, 1);
+                } else if (length > 2) {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, 2);
+                }
+                key = getItem.execute(inliningTarget, storage, 0);
+                value = getItem.execute(inliningTarget, storage, 1);
+            } else {
+                // Acts as a profile
+                Object iterator = getIter.execute(frame, inliningTarget, element);
+                try {
+                    key = next.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEED_MORE_THAN_D_VALUES_TO_UNPACK, 0);
+                }
+                try {
+                    value = next.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEED_MORE_THAN_D_VALUES_TO_UNPACK, 1);
+                }
+                try {
+                    next.execute(frame, inliningTarget, iterator);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, 2);
+                } catch (IteratorExhausted e) {
+                    // Expected
+                }
+            }
+            setItem.execute(frame, inliningTarget, target, key, value);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class UpdateFromArgsNode extends Node {
         final void execute(VirtualFrame frame, Node inliningTarget, Object self, Object mapping) {
             execute(frame, inliningTarget, self, mapping, PKeyword.EMPTY_KEYWORDS);
@@ -217,8 +332,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         @Specialization
         static void update(VirtualFrame frame, Node inliningTarget, Object self, Object mapping, PKeyword[] kwargs,
                         @Cached PyObjectLookupAttr lookupKeys,
-                        @Cached PyDictMerge.MappingNode updateMapping,
-                        @Cached PyDictMerge.FromSeq2Node updateFromSequence,
+                        @Cached UpdateMappingNode updateMapping,
+                        @Cached UpdateFromSequenceNode updateFromSequence,
                         @Cached PyObjectSetItem setItem,
                         @Cached HashingStorageNodes.HashingStorageGetIterator getIterator,
                         @Cached HashingStorageNodes.HashingStorageIteratorNext iteratorNext,
