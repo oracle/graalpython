@@ -83,6 +83,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester, "GetAttribute$Module")
 
 
+    @skipUnlessSingleContext
     def test_get_attr_quickening_module_int():
         def tester_i(s):
             return s.maxsize - 5
@@ -107,6 +108,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester, "GetAttribute$Type")
 
 
+    @skipUnlessSingleContext
     def test_get_attr_quickening_type_int():
         class Q:
             MY_ATTR = 42
