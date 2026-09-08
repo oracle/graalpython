@@ -45,11 +45,11 @@ import tempfile
 import unittest
 
 
-def expected_failure_on_old_windows(test):
+def skip_on_old_windows(test):
     # Despite the documented Windows 10 1607 cutoff, SetCurrentDirectoryW still rejects long paths
     # on Windows Server 2016 (build 14393), even when RtlAreLongPathsEnabled() returns true.
     if os.name == 'nt' and int(platform.version().split('.')[2]) <= 14393:
-        return unittest.expectedFailure(test)
+        return unittest.skip("old windows")(test)
     return test
 
 
@@ -110,7 +110,7 @@ class LongPathTests(unittest.TestCase):
             if root is not None:
                 shutil.rmtree(root)
 
-    @expected_failure_on_old_windows
+    @skip_on_old_windows
     def test_long_path_chdir(self):
         root = tempfile.mkdtemp()
         old_cwd = os.getcwd()
