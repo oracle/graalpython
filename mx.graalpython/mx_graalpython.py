@@ -1694,6 +1694,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
                          cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
                          report: Union[Task, bool, None] = False, parallel=None, runner_args=None, test_runner=None,
                          reportfile=None, runner_reportfile=None):
+    args = args or []
+
     if lock:
         lock.acquire()
 
@@ -1713,8 +1715,6 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         parallel = 1
 
     parallelism = str(min(os.cpu_count() or 1, parallel))
-
-    args = args or []
     extra_args = shlex.split(os.environ.get("GRAALPY_UNITTEST_ARGS", ""))
     if extra_args:
         mx.log("Adding GraalPy unittest args from GRAALPY_UNITTEST_ARGS: " + shlex.join(extra_args))
@@ -1752,6 +1752,9 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
         args.append('--separate-workers')
+
+    if '-repeated-run' in args and (parallelism != '0' or '--separate-workers' in args):
+        mx.abort("-repeated-run requires running without parallel or separate workers")
 
     t0 = time.time()
     if report:
@@ -2057,10 +2060,13 @@ def graalpython_gate_runner(_, tasks):
             env = os.environ.copy()
             graalpy = graalpy_standalone_native()
             env['PATH'] = get_path_with_patchelf()
+            args = ["--python.IsolateNativeModules=true"]
+            if not is_collecting_coverage():
+                args.append("-repeated-run")
             mx.log("1. Running twice without shared engine")
             run_python_unittests(
                 graalpy,
-                args=["-repeated-run", "--python.IsolateNativeModules=true"],
+                args=args,
                 parallel=0,
                 exclude=MULTI_CONTEXT_EXCLUSIONS,
                 env=env,
@@ -2070,7 +2076,7 @@ def graalpython_gate_runner(_, tasks):
             mx.log("2. Running twice with shared engine")
             run_python_unittests(
                 graalpy,
-                args=["-repeated-run", "-multi-context", "--python.IsolateNativeModules=true"],
+                args=[*args, "-multi-context"],
                 parallel=0,
                 exclude=MULTI_CONTEXT_EXCLUSIONS,
                 env=env,
