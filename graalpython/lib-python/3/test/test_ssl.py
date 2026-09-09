@@ -197,6 +197,7 @@ if is_ubuntu():
         for ctx in ctxs:
             if (
                 hasattr(ctx, "minimum_version") and
+                hasattr(ctx, "security_level") and
                 ctx.minimum_version <= ssl.TLSVersion.TLSv1_1 and
                 ctx.security_level > 1
             ):
