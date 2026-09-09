@@ -282,11 +282,8 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
-    abstract static class GraalPyPrivate_Long_FromLongLong extends CApiUnaryBuiltinNode {
-        @Specialization
-        static long doSignedLong(long n) {
-            return n;
-        }
+    static long GraalPyPrivate_Long_FromLongLong(long n) {
+        return PythonToNativeInternalNode.executeNewRefUncached(n);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false)
