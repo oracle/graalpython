@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
@@ -141,6 +143,60 @@ public final class PythonCextLongBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, SIZE_T, Pointer}, call = Ignored, acquireGil = false)
+    abstract static class GraalPyPrivate_Long_AsPrimitiveAndOverflow extends CApiTernaryBuiltinNode {
+        @Specialization
+        static long doGeneric(Object object, long targetTypeSize, long overflow,
+                        @Bind Node inliningTarget,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @Cached PyNumberIndexNode indexNode) {
+            Object integer;
+            if (longCheckNode.execute(inliningTarget, object)) {
+                integer = object;
+            } else {
+                integer = indexNode.execute(null, inliningTarget, object);
+            }
+
+            try {
+                return convertBuiltinInteger(inliningTarget, integer, 1, (int) targetTypeSize, true);
+            } catch (OverflowException e) {
+                writeOverflow(integer, overflow);
+                return -1;
+            }
+        }
+
+        @TruffleBoundary
+        private static void writeOverflow(Object value, long overflow) {
+            int sign;
+            if (value instanceof Long longValue) {
+                sign = Long.signum(longValue);
+            } else {
+                assert value instanceof PInt;
+                sign = ((PInt) value).isNegative() ? -1 : 1;
+            }
+            assert sign >= -1 && sign <= 1;
+            NativeMemory.writeInt(overflow, sign);
+        }
+    }
+
+    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored)
+    abstract static class GraalPyPrivate_Long_AsPrimitiveWithCoercion extends CApiTernaryBuiltinNode {
+        @Specialization
+        static long doGeneric(Object object, int mode, long targetTypeSize,
+                        @Bind Node inliningTarget,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object integer;
+            if (longCheckNode.execute(inliningTarget, object)) {
+                integer = object;
+            } else {
+                integer = indexNode.execute(null, inliningTarget, object);
+            }
+            return convertAndRaise(inliningTarget, integer, mode, (int) targetTypeSize, raiseNode);
+        }
+    }
+
     @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored)
     abstract static class GraalPyPrivate_Long_AsPrimitive extends CApiTernaryBuiltinNode {
 
@@ -148,87 +204,81 @@ public final class PythonCextLongBuiltins {
         static Object doGeneric(Object object, int mode, long targetTypeSize,
                         @Bind Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached PyNumberIndexNode indexNode,
                         @Cached PRaiseNode raiseNode) {
-            /*
-             * The 'mode' parameter is usually a constant since this function is primarily used
-             * in 'PyLong_As*' API functions that pass a fixed mode. So, there is no need to
-             * profile the value and even if it is not constant, it is profiled implicitly.
-             */
-            if (requiredPInt(mode) && !longCheckNode.execute(inliningTarget, object)) {
+            if (!longCheckNode.execute(inliningTarget, object)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
-            Object index = indexNode.execute(null, inliningTarget, object);
-            return convertBuiltinInteger(inliningTarget, index, signed(mode), (int) targetTypeSize, exact(mode), raiseNode);
+            return convertAndRaise(inliningTarget, object, mode, (int) targetTypeSize, raiseNode);
         }
+    }
 
-        private static int signed(int mode) {
-            return mode & 0x1;
-        }
-
-        private static boolean requiredPInt(int mode) {
-            return (mode & 0x2) != 0;
-        }
-
-        private static boolean exact(int mode) {
-            return (mode & 0x4) == 0;
-        }
-
-        private static long convertBuiltinInteger(Node inliningTarget, Object object, int signed, int targetTypeSize, boolean exact, PRaiseNode raiseNode) {
-            if (targetTypeSize != Integer.BYTES && targetTypeSize != Long.BYTES) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-            }
-            if (object instanceof Integer value) {
-                return convertLong(inliningTarget, value, signed, targetTypeSize, exact, raiseNode);
-            } else if (object instanceof Long value) {
-                return convertLong(inliningTarget, value, signed, targetTypeSize, exact, raiseNode);
-            } else if (object instanceof PInt value) {
-                if (!exact) {
-                    return targetTypeSize == Integer.BYTES ? value.intValue() : value.longValue();
-                }
-                if (signed == 0 && value.isNegative()) {
-                    throw raiseNegativeValue(inliningTarget, raiseNode);
-                }
-                try {
-                    if (targetTypeSize == Integer.BYTES) {
-                        if (signed != 0) {
-                            return value.intValueExact();
-                        } else if (value.bitLength() <= Integer.SIZE) {
-                            return value.intValue();
-                        }
-                    } else if (signed != 0) {
-                        return value.longValueExact();
-                    } else if (value.bitLength() <= Long.SIZE) {
-                        return value.longValue();
-                    }
-                } catch (OverflowException e) {
-                    // fall through
-                }
-                throw raiseOverflow(inliningTarget, raiseNode, targetTypeSize);
-            }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
-        }
-
-        private static long convertLong(Node inliningTarget, long value, int signed, int targetTypeSize, boolean exact, PRaiseNode raiseNode) {
-            if (!exact) {
-                return targetTypeSize == Integer.BYTES ? (int) value : value;
-            }
-            if (signed == 0 && value < 0) {
-                throw raiseNegativeValue(inliningTarget, raiseNode);
-            }
-            if (targetTypeSize == Integer.BYTES && (signed != 0 ? (int) value != value : Integer.toUnsignedLong((int) value) != value)) {
-                throw raiseOverflow(inliningTarget, raiseNode, targetTypeSize);
-            }
-            return value;
-        }
-
-        private static PException raiseNegativeValue(Node inliningTarget, PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
-        }
-
-        private static PException raiseOverflow(Node inliningTarget, PRaiseNode raiseNode, int targetTypeSize) {
+    private static long convertAndRaise(Node inliningTarget, Object object, int mode, int targetTypeSize, PRaiseNode raiseNode) {
+        try {
+            return convertBuiltinInteger(inliningTarget, object, signed(mode), targetTypeSize, exact(mode));
+        } catch (OverflowException e) {
             throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
+    }
+
+    private static int signed(int mode) {
+        return mode & 0x1;
+    }
+
+    private static boolean exact(int mode) {
+        return (mode & 0x4) == 0;
+    }
+
+    @TruffleBoundary
+    private static long convertBuiltinInteger(Node inliningTarget, Object object, int signed, int targetTypeSize, boolean exact) throws OverflowException {
+        if (targetTypeSize != Integer.BYTES && targetTypeSize != Long.BYTES) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+        if (object instanceof Boolean value) {
+            return value ? 1 : 0;
+        } else if (object instanceof Integer value) {
+            return convertLong(inliningTarget, value, signed, targetTypeSize, exact);
+        } else if (object instanceof Long value) {
+            return convertLong(inliningTarget, value, signed, targetTypeSize, exact);
+        } else if (object instanceof PInt value) {
+            if (!exact) {
+                return targetTypeSize == Integer.BYTES ? value.intValue() : value.longValue();
+            }
+            if (signed == 0 && value.isNegative()) {
+                throw raiseNegativeValue(inliningTarget);
+            }
+            if (targetTypeSize == Integer.BYTES) {
+                if (signed != 0) {
+                    return value.intValueExact();
+                } else if (value.bitLength() <= Integer.SIZE) {
+                    return value.intValue();
+                }
+            } else if (signed != 0) {
+                return value.longValueExact();
+            } else if (value.bitLength() <= Long.SIZE) {
+                return value.longValue();
+            }
+            throw OverflowException.INSTANCE;
+        } else if (object instanceof PythonAbstractNativeObject) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET);
+        }
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
+    }
+
+    private static long convertLong(Node inliningTarget, long value, int signed, int targetTypeSize, boolean exact) throws OverflowException {
+        if (!exact) {
+            return targetTypeSize == Integer.BYTES ? (int) value : value;
+        }
+        if (signed == 0 && value < 0) {
+            throw raiseNegativeValue(inliningTarget);
+        }
+        if (targetTypeSize == Integer.BYTES && (signed != 0 ? (int) value != value : Integer.toUnsignedLong((int) value) != value)) {
+            throw OverflowException.INSTANCE;
+        }
+        return value;
+    }
+
+    private static PException raiseNegativeValue(Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
@@ -298,7 +348,10 @@ public final class PythonCextLongBuiltins {
                         @Exclusive @Cached PRaiseNode raiseNode) {
             try {
                 Object index = indexNode.execute(null, inliningTarget, n);
-                return GraalPyPrivate_Long_AsPrimitive.convertBuiltinInteger(inliningTarget, index, 0, Long.BYTES, true, raiseNode);
+                return convertBuiltinInteger(inliningTarget, index, 0, Long.BYTES, true);
+            } catch (OverflowException e) {
+                transformOverflow(inliningTarget, raiseNode);
+                return 0;
             } catch (PException e) {
                 ensureTransformExcNode().execute(e);
                 return 0;

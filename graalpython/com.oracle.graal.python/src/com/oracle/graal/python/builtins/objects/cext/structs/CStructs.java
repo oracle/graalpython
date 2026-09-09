@@ -95,6 +95,7 @@ public enum CStructs {
     GraalPySingletons,
     GraalPyDeallocState,
     wchar_t,
+    long__,
     long__long,
     Py_ssize_t,
     GCState,

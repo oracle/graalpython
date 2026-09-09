@@ -101,7 +101,7 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doNative(PythonAbstractNativeObject nativeObject) {
+    public static boolean doNative(PythonAbstractNativeObject nativeObject) {
         long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
         boolean isLongSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.LONG_SUBCLASS) != 0L;
         assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PInt) == isLongSubclass;

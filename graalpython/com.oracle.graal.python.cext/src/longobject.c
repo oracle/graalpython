@@ -25,24 +25,10 @@
 #include <stddef.h>               // offsetof
 
 // GraalPy-specific defines
-/*
- * There are 4 different modes for 'PyLong_AsPrimitive:
- * - MODE_COERCE_UNSIGNED
- *     Will coerce the object to a Python integer and returns it as unsigned primitive.
- * - MODE_COERCE_SIGNED 1
- *     Will coerce the object to a Python integer and returns it as signed primitive.
- * - MODE_PINT_UNSIGNED 2
- *     Requires the object to be a Python integer and returns it as unsigned primitive.
- * - MODE_PINT_SIGNED 3
- *     Requires the object to be a Python integer and returns it as signed primitive.
- * - MODE_COERCE_MASK 4
- *     Will coerce the object to a Python integer and does a lossy cast to an unsigned primitive.
- */
-#define MODE_COERCE_UNSIGNED 0
-#define MODE_COERCE_SIGNED 1
-#define MODE_PINT_UNSIGNED 2
-#define MODE_PINT_SIGNED 3
-#define MODE_COERCE_MASK 4
+/* Modes for GraalPyPrivate_Long_AsPrimitive* conversion. */
+#define MODE_UNSIGNED 0
+#define MODE_SIGNED 1
+#define MODE_MASK 4
 
 #if 0 // GraalPy change
 #include "clinic/longobject.c.h"
@@ -486,12 +472,7 @@ PyLong_AsLongAndOverflow(PyObject *vv, int *overflow)
     if (points_to_py_int_handle(vv)) {
         return pointer_to_int64(vv);
     }
-    long result = (long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
-    if (result == -1L && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_OverflowError)) {
-        PyErr_Clear();
-        *overflow = _PyLong_Sign(vv);
-    }
-    return result;
+    return (long) GraalPyPrivate_Long_AsPrimitiveAndOverflow(vv, sizeof(long), overflow);
 }
 
 /* Get a C long int from an int object or any object that has an __index__
@@ -504,7 +485,7 @@ PyLong_AsLong(PyObject *obj)
     if (points_to_py_int_handle(obj)) {
         return pointer_to_int64(obj);
     }
-    return (long) GraalPyPrivate_Long_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    return (long) GraalPyPrivate_Long_AsPrimitiveWithCoercion(obj, MODE_SIGNED, sizeof(long));
 }
 
 /* Get a C int from an int object or any object that has an __index__
@@ -533,7 +514,7 @@ PyLong_AsSsize_t(PyObject *vv) {
     if (points_to_py_int_handle(vv)) {
         return pointer_to_int64(vv);
     }
-    return (Py_ssize_t) GraalPyPrivate_Long_AsPrimitive(vv, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
+    return (Py_ssize_t) GraalPyPrivate_Long_AsPrimitive(vv, MODE_SIGNED, sizeof(Py_ssize_t));
 }
 
 /* Get a C unsigned long int from an int object.
@@ -555,7 +536,7 @@ PyLong_AsUnsignedLong(PyObject *vv)
         }
         return (unsigned long) value;
     }
-    return (unsigned long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(unsigned long));
+    return (unsigned long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_UNSIGNED, sizeof(unsigned long));
 }
 
 /* Get a C size_t from an int object. Returns (size_t)-1 and sets
@@ -573,7 +554,7 @@ PyLong_AsSize_t(PyObject *vv)
         }
         return (size_t) value;
     }
-    return (size_t) GraalPyPrivate_Long_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(size_t));
+    return (size_t) GraalPyPrivate_Long_AsPrimitive(vv, MODE_UNSIGNED, sizeof(size_t));
 }
 
 #if 0 // GraalPy change
@@ -620,7 +601,7 @@ PyLong_AsUnsignedLongMask(PyObject *op)
     if (points_to_py_int_handle(op)) {
         return pointer_to_int64(op);
     }
-    return (unsigned long) GraalPyPrivate_Long_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long));
+    return (unsigned long) GraalPyPrivate_Long_AsPrimitiveWithCoercion(op, MODE_MASK, sizeof(unsigned long));
 }
 
 int
@@ -1307,7 +1288,7 @@ PyLong_AsLongLong(PyObject *vv)
     if (points_to_py_int_handle(vv)) {
         return pointer_to_int64(vv);
     }
-    return (long long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long long));
+    return (long long) GraalPyPrivate_Long_AsPrimitiveWithCoercion(vv, MODE_SIGNED, sizeof(long long));
 }
 
 /* Get a C unsigned long long int from an int object.
@@ -1329,7 +1310,7 @@ PyLong_AsUnsignedLongLong(PyObject *vv)
         }
         return (unsigned long long) value;
     }
-    return (unsigned long long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
+    return (unsigned long long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_UNSIGNED, sizeof(unsigned long long));
 }
 
 #if 0 // GraalPy change
@@ -1377,7 +1358,7 @@ PyLong_AsUnsignedLongLongMask(PyObject *op)
     if (points_to_py_int_handle(op)) {
         return pointer_to_int64(op);
     }
-    return (unsigned long long) GraalPyPrivate_Long_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long long));
+    return (unsigned long long) GraalPyPrivate_Long_AsPrimitiveWithCoercion(op, MODE_MASK, sizeof(unsigned long long));
 }
 
 /* Get a C long long int from an int object or any object that has an
@@ -1394,14 +1375,15 @@ long long
 PyLong_AsLongLongAndOverflow(PyObject *vv, int *overflow)
 {
     // GraalPy change: different implementation
-    long long result = PyLong_AsLongLong(vv);
-    if (result == -1L && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_OverflowError)) {
-        PyErr_Clear();
-        *overflow = _PyLong_Sign(vv);
-    } else {
-        *overflow = 0;
+    *overflow = 0;
+    if (vv == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
     }
-    return result;
+    if (points_to_py_int_handle(vv)) {
+        return pointer_to_int64(vv);
+    }
+    return GraalPyPrivate_Long_AsPrimitiveAndOverflow(vv, sizeof(long long), overflow);
 }
 
 #if 0 // GraalPy change
@@ -6510,7 +6492,7 @@ Py_ssize_t PyUnstable_Long_CompactValue(const PyLongObject *op) {
     if (points_to_py_int_handle(op)) {
         return pointer_to_int64(op);
     }
-    return GraalPyPrivate_Long_AsPrimitive((PyObject*) op, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
+    return GraalPyPrivate_Long_AsPrimitive((PyObject*) op, MODE_SIGNED, sizeof(Py_ssize_t));
 }
 
 // GraalPy additions
