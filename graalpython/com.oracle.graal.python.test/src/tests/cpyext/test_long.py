@@ -48,6 +48,9 @@ long_bits = struct.calcsize('l') * 8
 max_long = 2 ** (long_bits - 1) - 1
 min_long = -2 ** (long_bits - 1)
 max_ulong = 2 ** long_bits
+longlong_bits = struct.calcsize('q') * 8
+max_longlong = 2 ** (longlong_bits - 1) - 1
+min_longlong = -2 ** (longlong_bits - 1)
 ulonglong_bits = struct.calcsize('Q') * 8
 max_ulonglong = 2 ** ulonglong_bits
 size_t_bits = struct.calcsize('P') * 8
@@ -74,6 +77,13 @@ def _reference_as_long(args):
     return n
 
 
+def _reference_as_longlong(args):
+    n = _reference_as_index(args[0])
+    if n > max_longlong or n < min_longlong:
+        raise OverflowError("Python int too large to convert to C long")
+    return n
+
+
 def _reference_as_int(args):
     n = _reference_as_index(args[0])
     if n > max_int or n < min_int:
@@ -87,9 +97,28 @@ def _reference_as_unsigned_long(args):
         raise TypeError("an integer is required")
     if n < 0:
         raise OverflowError("can't convert negative value to unsigned int")
-    if n > max_ulong:
+    if n >= max_ulong:
         raise OverflowError("Python int too large to convert to C unsigned long")
     return n
+
+
+def _reference_as_unsigned_longlong(args):
+    n = args[0]
+    if not isinstance(n, int):
+        raise TypeError("an integer is required")
+    if n < 0:
+        raise OverflowError("can't convert negative value to unsigned int")
+    if n >= max_ulonglong:
+        raise OverflowError("Python int too large to convert to C unsigned long")
+    return n
+
+
+def _reference_as_unsigned_long_mask(args):
+    return _reference_as_index(args[0]) & (max_ulong - 1)
+
+
+def _reference_as_unsigned_longlong_mask(args):
+    return _reference_as_index(args[0]) & (max_ulonglong - 1)
 
 
 def _reference_as_long_and_overflow(args):
@@ -97,6 +126,15 @@ def _reference_as_long_and_overflow(args):
     if n > max_long:
         return -1, 1
     elif n < min_long:
+        return -1, -1
+    return n, 0
+
+
+def _reference_as_longlong_and_overflow(args):
+    n = _reference_as_index(args[0])
+    if n > max_longlong:
+        return -1, 1
+    elif n < min_longlong:
         return -1, -1
     return n, 0
 
@@ -201,8 +239,11 @@ class DummyNonInt():
 
 class DummyIndexable:
 
+    def __init__(self, value=0xBEEF):
+        self.value = value
+
     def __index__(self):
-        return 0xBEEF
+        return self.value
 
 
 def _int_examples():
@@ -216,6 +257,12 @@ def _int_examples():
         (0x7fffffff,),
         (0xffffffff,),
         (-0xffffffff,),
+        (max_longlong,),
+        (max_longlong + 1,),
+        (min_longlong,),
+        (min_longlong - 1,),
+        (max_ulonglong - 1,),
+        (max_ulonglong,),
         (0x7fffffffffffffffffffffffffffffff,),
         (0xffffffffffffffffffffffffffffffff,),
         (-0xffffffffffffffffffffffffffffffff,),
@@ -224,6 +271,8 @@ def _int_examples():
         (0.3,),
         (DummyNonInt(),),
         (DummyIndexable(),),
+        (DummyIndexable(max_longlong + 1),),
+        (DummyIndexable(min_longlong - 1),),
     ]
 
 
@@ -267,6 +316,15 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyLong_AsLongLong = CPyExtFunction(
+        _reference_as_longlong,
+        _int_examples,
+        resultspec="L",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyLong_AsInt = CPyExtFunction(
         _reference_as_int,
         _int_examples,
@@ -287,10 +345,48 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyLong_AsLongLongAndOverflow = CPyExtFunctionOutVars(
+        _reference_as_longlong_and_overflow,
+        _int_examples,
+        resultspec="Li",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        resulttype="long long",
+        resultvars=["int overflow"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyLong_AsUnsignedLong = CPyExtFunction(
         _reference_as_unsigned_long,
         _int_examples,
         resultspec="k",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_AsUnsignedLongLong = CPyExtFunction(
+        _reference_as_unsigned_longlong,
+        _int_examples,
+        resultspec="K",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_AsUnsignedLongMask = CPyExtFunction(
+        _reference_as_unsigned_long_mask,
+        _int_examples,
+        resultspec="k",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_AsUnsignedLongLongMask = CPyExtFunction(
+        _reference_as_unsigned_longlong_mask,
+        _int_examples,
+        resultspec="K",
         argspec='O',
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
