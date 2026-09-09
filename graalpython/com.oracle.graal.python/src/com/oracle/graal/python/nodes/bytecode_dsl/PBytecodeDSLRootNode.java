@@ -1950,7 +1950,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         TruffleString name, PythonObject obj,
                         @Bind Node inliningTarget,
                         @Cached("obj.getShape()") Shape cachedShape,
-                        @Cached(value = "getManagedClassOrNull(cachedShape)", weak = true) PythonManagedClass managedClass,
+                        @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
                         @Cached("getPropertyGetterWithFinalAssumption(cachedShape, name)") PropertyGetter cachedPropertyGetter,
                         @Cached InlineWeakValueProfile slotsValueProfile,
                         @Cached InlinedBranchProfile hasInstanceValueBranchProfile,

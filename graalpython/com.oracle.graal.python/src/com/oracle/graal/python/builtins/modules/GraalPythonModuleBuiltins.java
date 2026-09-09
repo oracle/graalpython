@@ -308,6 +308,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
         } else {
             mod.setAttribute(tsLiteral("interop_has_gil"), new InteropGilTester());
+            mod.setAttribute(tsLiteral("is_single_context"), language.isSingleContext());
         }
         addBuiltinConstant("using_native_primitive_storage_strategy", context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {

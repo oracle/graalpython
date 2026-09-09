@@ -322,7 +322,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         @Specialization
         static Object lookupPBCTCached(Node inliningTarget, PythonBuiltinClassType klass, TruffleString key,
                         @Bind PythonContext context,
-                        @Cached("findAttr(context, klass, key)") Object cachedValue) {
+                        @Cached(value = "findAttr(context, klass, key)", weak = true) Object cachedValue) {
             return cachedValue;
         }
 
