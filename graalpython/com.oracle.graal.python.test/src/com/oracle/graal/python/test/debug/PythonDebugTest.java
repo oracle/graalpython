@@ -186,6 +186,30 @@ public class PythonDebugTest {
     }
 
     @Test
+    public void testSteppingMultipleStatementsOnSameLine() throws Throwable {
+        final Source source = Source.newBuilder("python", "a = 1; b = 2; a + b", "test_same_line.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            session.suspendNextExecution();
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                assertEquals("a = 1", event.getSourceSection().getCharacters().toString());
+                event.prepareStepOver(1);
+            });
+            expectSuspended((SuspendedEvent event) -> {
+                assertEquals("b = 2", event.getSourceSection().getCharacters().toString());
+                event.prepareStepOver(1);
+            });
+            expectSuspended((SuspendedEvent event) -> {
+                assertEquals("a + b", event.getSourceSection().getCharacters().toString());
+                event.prepareContinue();
+            });
+            assertEquals("3", tester.expectDone());
+        }
+    }
+
+    @Test
     public void testException() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "try:\n" +
