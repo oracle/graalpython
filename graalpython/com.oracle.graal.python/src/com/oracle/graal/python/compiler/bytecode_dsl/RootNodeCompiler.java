@@ -795,7 +795,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     void endRootNode(Builder b) {
         b.endRoot();
-        endRootSourceSection(b);
+        endSourceSection(b);
         b.endSource();
         if (ASSERTIONS_ENABLED && !temporaryLocalsTraces.isEmpty()) {
             throw new AssertionError(this.qualName + "\n\n" + formatTempLocalsStackTraces());
@@ -910,40 +910,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         b.endBlock();
     }
 
-    /**
-     * Opens a new SourceSection operation. Emits TraceLine and starts a new Tag(Statement) if this
-     * location has a different line from the previous location.
-     * <p>
-     * Returns whether this call opened a new Tag(Statement). The result should be passed to the
-     * corresponding {@link #endSourceSection} call to ensure the Tag is closed.
-     */
-    boolean beginSourceSection(SSTNode node, Builder b) {
-        return beginSourceSection(node.getSourceRange(), b);
+    void beginSourceSection(SSTNode node, Builder b) {
+        beginSourceSection(node.getSourceRange(), b);
     }
 
-    /**
-     * {@link #beginSourceSection(SSTNode, Builder)}
-     */
-    boolean beginSourceSection(SourceRange sourceRange, Builder b) {
-        SourceRange oldSourceRange = this.currentLocation;
+    void beginSourceSection(SourceRange sourceRange, Builder b) {
         this.currentLocation = sourceRange;
-
         beginSourceSectionInner(b, sourceRange);
-
-        if (oldSourceRange == null || oldSourceRange.startLine != sourceRange.startLine) {
-            b.beginTag(StatementTag.class);
-            b.beginBlock();
-            return true;
-        }
-        return false;
     }
 
-    /**
-     * Same as {@link #beginSourceSection(SSTNode, Builder)}, but does not emit tags or trace events
-     * (since the root has not been started yet). Avoids setting {@link #currentLocation} so that
-     * {{@link #beginSourceSection(SSTNode, Builder)} will emit a TraceLine for a statement on the
-     * first line.
-     */
     void beginRootSourceSection(SSTNode node, Builder b) {
         beginSourceSectionInner(b, getRootSourceRange(node));
     }
@@ -987,16 +962,24 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
     }
 
-    void endSourceSection(Builder b, boolean closeTag) {
-        if (closeTag) {
-            b.endBlock();
-            b.endTag(StatementTag.class);
-        }
+    void endSourceSection(Builder b) {
         b.endSourceSection();
     }
 
-    void endRootSourceSection(Builder b) {
-        b.endSourceSection();
+    void beginStatement(SSTNode node, Builder b) {
+        beginStatement(node.getSourceRange(), b);
+    }
+
+    void beginStatement(SourceRange sourceRange, Builder b) {
+        beginSourceSection(sourceRange, b);
+        b.beginTag(StatementTag.class);
+        b.beginBlock();
+    }
+
+    void endStatement(Builder b) {
+        b.endBlock();
+        b.endTag(StatementTag.class);
+        endSourceSection(b);
     }
 
     void beginReturn(Builder b) {
@@ -1099,9 +1082,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 if (returnLastStmt && lastStatement instanceof StmtTy.Expr expr) {
                     // Return the value of the last statement for interop eval.
                     beginReturn(b);
-                    boolean closeTag = beginSourceSection(expr, b);
+                    beginStatement(expr, b);
                     expr.value.accept(statementCompiler);
-                    endSourceSection(b, closeTag);
+                    endStatement(b);
                     endReturn(b);
                 } else {
                     if (lastStatement != null) {
@@ -1388,7 +1371,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     StackValue collection,
                     BiConsumer<StatementCompiler, StackValue> accumulateProducer) {
         ComprehensionTy comp = generators[index];
-        boolean newStatement = beginSourceSection(comp, b);
+        beginSourceSection(comp, b);
         StatementCompiler statementCompiler = new StatementCompiler(b);
 
         if (comp.isAsync) {
@@ -1438,7 +1421,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             endTemporaryLocal(localValue, b);
         }
 
-        endSourceSection(b, newStatement);
+        endSourceSection(b);
     }
 
     private void emitComprehensionBody(ComprehensionTy[] generators, int index,
@@ -2101,7 +2084,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Attribute node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             beginGetAttribute(node.attr, b);
@@ -2109,7 +2092,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endGetAttribute();
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
 
             return null;
         }
@@ -2124,11 +2107,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside async function");
             }
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             emitAwait(() -> node.value.accept(this));
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2145,7 +2128,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.BinOp node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             int startLine = node.getSourceRange().startLine;
             switch (node.op) {
@@ -2218,7 +2201,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     throw new UnsupportedOperationException("" + node.getClass());
             }
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2237,7 +2220,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.BoolOp node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             b.beginBlock();
             emitTraceLineChecked(node, b);
 
@@ -2256,7 +2239,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2521,13 +2504,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Call node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             b.beginBlock();
             emitTraceLineChecked(node, b);
             checkCaller(ctx.errorCallback, node.func);
             emitCall(node.func, node.args, node.keywords);
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2627,7 +2610,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          */
         @Override
         public Void visit(ExprTy.Compare node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             checkCompare(ctx.errorCallback, node);
 
             boolean multipleComparisons = node.comparators.length > 1;
@@ -2697,7 +2680,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endBlock();
             }
 
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2779,17 +2762,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Constant node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             createConstant(node.value);
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Dict node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             if (len(node.keys) == 0) {
@@ -2809,7 +2792,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2821,7 +2804,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.FormattedValue node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             b.beginFormat();
 
@@ -2855,7 +2838,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.endFormat();
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
 
             return null;
         }
@@ -2868,7 +2851,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.IfExp node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             b.beginConditional();
@@ -2878,13 +2861,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endConditional();
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.JoinedStr node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             if (node.values.length == 1) {
@@ -2896,23 +2879,23 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Lambda node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             emitMakeFunction(node, "<lambda>", node.args);
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.List node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             ConstantCollection constantCollection = tryCollectConstantCollection(node.elements);
@@ -2925,7 +2908,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -2936,7 +2919,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         private void emitMakeAndCallComprehension(ExprTy node, ComprehensionTy[] generators, ComprehensionType type) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             Scope comprehensionScope = ctx.scopeEnvironment.lookupScope(node);
             if (comprehensionScope.isCoroutine() && type != ComprehensionType.GENEXPR) {
@@ -2959,7 +2942,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 // @formatter:on
             }
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
         }
 
         private void emitGetIter(ComprehensionTy[] generators) {
@@ -2976,17 +2959,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Name node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             emitReadLocal(node.id, b);
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.NamedExpr node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             b.beginBlock();
 
@@ -3003,7 +2986,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.endBlock();
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -3145,7 +3128,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Set node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             b.beginMakeSet();
             if (len(node.elements) != 0) {
@@ -3153,7 +3136,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
             b.endMakeSet();
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -3173,7 +3156,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Slice node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             b.beginMakeSlice();
@@ -3185,7 +3168,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endMakeSlice();
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -3196,7 +3179,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Subscript node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             if (node.context == ExprContextTy.Load) {
                 checkSubscripter(ctx.errorCallback, node.value);
@@ -3208,13 +3191,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endBinarySubscript();
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Tuple node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
             b.beginMakeTuple();
@@ -3222,13 +3205,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endMakeTuple();
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.UnaryOp node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             switch (node.op) {
                 case UAdd:
@@ -3256,13 +3239,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Yield node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             if (!scope.isFunction()) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield' outside function");
@@ -3282,7 +3265,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }, this);
 
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -3294,7 +3277,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (scopeType == CompilationScope.AsyncFunction) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield from' inside async function");
             }
-            boolean newStatement = beginSourceSection(node, b);
+            beginSourceSection(node, b);
             beginTraceLineChecked(b);
             emitYieldFrom(() -> {
                 b.beginGetYieldFromIter();
@@ -3302,7 +3285,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endGetYieldFromIter();
             });
             endTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
             return null;
         }
 
@@ -3451,7 +3434,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.AnnAssign node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             b.beginBlock();
             if (node.value != null) {
                 // Emit the assignment if there's an RHS.
@@ -3508,7 +3491,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
             b.endBlock();
             emitTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -3546,7 +3529,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 warn(node, "assertion is always true, perhaps remove parentheses?");
             }
             if (ctx.optimizationLevel <= 0) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginStatement(node, b);
                 b.beginIfThen();
 
                 b.beginNot();
@@ -3563,7 +3546,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                 b.endIfThen();
                 emitTraceLineChecked(node, b);
-                endSourceSection(b, newStatement);
+                endStatement(b);
             }
             return null;
         }
@@ -3603,39 +3586,39 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.Name node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 beginStoreLocal(node.id, b);
                 generateValue.run();
                 endStoreLocal(node.id, b);
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Attribute node) {
                 addStaticAttribute(node);
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
                 beginSetAttribute(node.attr, b);
                 generateValue.run();
                 node.value.accept(StatementCompiler.this);
                 b.endSetAttribute();
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Subscript node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginSetItem();
                 generateValue.run();
                 node.value.accept(StatementCompiler.this);
                 node.slice.accept(StatementCompiler.this);
                 b.endSetItem();
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
@@ -3721,10 +3704,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.Tuple node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 visitIterableAssign(node.elements);
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
@@ -3750,10 +3733,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.List node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 visitIterableAssign(node.elements);
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
         }
@@ -3808,7 +3791,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.Name node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
 
                 beginStoreLocal(node.id, b);
@@ -3818,7 +3801,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 endAugAssign();
                 endStoreLocal(node.id, b);
 
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
@@ -3844,7 +3827,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.Attribute node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginBlock();
 
@@ -3865,13 +3848,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                 // @formatter:on
                 b.endBlock();
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Subscript node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginBlock();
                 // @formatter:off
@@ -3898,19 +3881,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                 // @formatter:on
                 b.endBlock();
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
         }
 
         @Override
         public Void visit(StmtTy.Assign node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             b.beginBlock();
             emitAssignment(node.targets, node.value);
             b.endBlock();
             emitTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -3978,11 +3961,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (scopeType != CompilationScope.AsyncFunction) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async for' outside async function");
             }
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitAsyncFor(node.iter, node.target, node.orElse, false, node, (stmtCompiler, n) -> {
                 stmtCompiler.visitSequence(n.body);
             });
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -4071,19 +4054,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside async function");
             }
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             visitWithRecurse(node.items, 0, node.body, true);
             emitTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.AugAssign node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             node.target.accept(new AugStoreVisitor(node.op, node.value));
             emitTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -4203,7 +4186,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // For type parameters the root node compiler produces intermediate code unit that will
             // assemble the generic parameters and then call __build_class__ and we just need to
             // call that code unit
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             beginStoreLocal(node.name, b);
 
             if (node.decoratorList != null && node.decoratorList.length > 0) {
@@ -4242,7 +4225,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // we didn't properly update lastTracedLine, force next traceline
             lastTracedLine = -1;
             endStoreLocal(node.name, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -4321,7 +4304,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.Subscript node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
 
                 b.beginDeleteItem();
@@ -4329,39 +4312,39 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 node.slice.accept(StatementCompiler.this);
                 b.endDeleteItem();
 
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Attribute node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginDeleteAttribute(toTruffleStringUncached(maybeMangleAndAddName(node.attr)));
                 node.value.accept(StatementCompiler.this);
                 b.endDeleteAttribute();
 
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Name node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 emitNameOperation(node.id, NameOperation.Delete, b);
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Tuple node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginBlock();
                 visitSequence(node.elements);
                 b.endBlock();
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
 
@@ -4387,25 +4370,27 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.List node) {
-                boolean newStatement = beginSourceSection(node, b);
+                beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginBlock();
                 visitSequence(node.elements);
                 b.endBlock();
-                endSourceSection(b, newStatement);
+                endSourceSection(b);
                 return null;
             }
         }
 
         @Override
         public Void visit(StmtTy.Delete node) {
+            beginStatement(node, b);
             new DeleteVisitor().visitSequence(node.targets);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Expr node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             if (isInteractive) {
                 b.beginPrintExpr();
                 node.value.accept(this);
@@ -4414,7 +4399,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 node.value.accept(this);
             }
             emitTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
 
             return null;
         }
@@ -4431,7 +4416,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // <<elses>
             // breakLabel:
             // @formatter:on
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             boolean saveInExceptStar = inExceptStar;
             inExceptStar = false;
@@ -4479,7 +4464,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             endTemporaryLocal(value);
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endStatement(b);
             inExceptStar = saveInExceptStar;
             return null;
         }
@@ -4495,7 +4480,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // that, e.g., breakpoints inside the body fire only once the body actually executes and
             // not is declared. There is no simple way to get the exact line width here, so we just
             // approximate it with name width.
-            boolean newStatement = beginSourceSection(node.getSourceRange().startLineShiftColumn(name.length()), b);
+            beginStatement(node.getSourceRange().startLineShiftColumn(name.length()), b);
             // Note: source range of `node` excludes the source range of the decorators
             beginStoreLocal(name, b);
             if (decoratorList != null && decoratorList.length > 0) {
@@ -4565,7 +4550,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // we didn't properly update lastTracedLine, force next traceline
             lastTracedLine = -1;
             endStoreLocal(name, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
         }
 
         private void emitDefaultArgsArray(ArgumentsTy args) {
@@ -4789,7 +4774,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.If node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             if (node.orElse == null || node.orElse.length == 0) {
                 b.beginIfThen();
@@ -4804,7 +4789,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endIfThenElse();
             }
 
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -4855,7 +4840,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.Import node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             b.beginBlock();
 
@@ -4899,13 +4884,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.ImportFrom node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             if (node.getSourceRange().startLine > ctx.futureLineNumber && "__future__".equals(node.module)) {
                 ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
@@ -4947,14 +4932,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endBlock();
             }
 
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Match node) {
             MatchCaseTy[] cases = node.cases;
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
 
             /*
@@ -4998,7 +4983,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -5106,7 +5091,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              * )
              * @formatter:on
              */
-            boolean newStatement = beginSourceSection(c, b);
+            beginSourceSection(c, b);
             b.beginBlock();
             emitTraceLineChecked(c, b);
 
@@ -5131,7 +5116,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
         }
 
         private void emitCheckPattern(PatternTy pattern, ExprTy guard, PatternContext pc) {
@@ -5206,7 +5191,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          * caller's {@code PatternContext} unchanged.
          */
         private void emitCheckPattern(PatternTy pattern, PatternContext pc) {
-            boolean newStatement = beginSourceSection(pattern, b);
+            beginSourceSection(pattern, b);
             emitTraceLineChecked(pattern, b);
             if (pattern instanceof PatternTy.MatchAs matchAs) {
                 doVisitPattern(matchAs, pc);
@@ -5227,7 +5212,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
         }
 
         private void doVisitPattern(PatternTy.MatchAs node, PatternContext pc) {
@@ -5930,7 +5915,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.Raise node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             b.beginRaise();
 
@@ -5947,13 +5932,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endRaise();
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Return node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             if (!scope.isFunction()) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'return' outside function");
             }
@@ -5974,13 +5959,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             endTraceLineChecked(node, b);
             b.endBlock();
             endReturn(b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Try node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             if (node.finalBody != null && node.finalBody.length != 0) {
                 /**
@@ -6066,7 +6051,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 emitTryExceptElse(node);
             }
 
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -6159,7 +6144,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             b.beginBlock(); // try
                                 SourceRange bareExceptRange = null;
                                 for (ExceptHandlerTy h : node.handlers) {
-                                    boolean newStatement = beginSourceSection(h, b);
+                                    beginSourceSection(h, b);
                                     emitTraceLineChecked(h, b);
                                     if (bareExceptRange != null) {
                                         ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "default 'except:' must be last");
@@ -6217,7 +6202,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                         b.endIfThen();
                                     }
 
-                                    endSourceSection(b, newStatement);
+                                    endSourceSection(b);
                                 }
                             b.endBlock(); // try
 
@@ -6376,7 +6361,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             StackValue exceptionAcc = b.endBindStackValue();
 
                             for (ExceptHandlerTy h : node.handlers) {
-                                boolean newStatement = beginSourceSection(h, b);
+                                beginSourceSection(h, b);
                                 emitTraceLineChecked(h, b);
 
                                 ExceptHandlerTy.ExceptHandler handler = (ExceptHandlerTy.ExceptHandler) h;
@@ -6513,7 +6498,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                 b.endIfThen();
 
                                 b.endBlock(); // handler
-                                endSourceSection(b, newStatement);
+                                endSourceSection(b);
                             } // end handler loop
 
                             b.beginBlock(); // bundle up unmatched exceptions into exceptionAcc and throw them
@@ -6620,7 +6605,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.TryStar node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             if (node.finalBody != null && node.finalBody.length != 0) {
                 /**
@@ -6704,7 +6689,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 emitTryExceptElse(node);
             }
 
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -6715,7 +6700,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.While node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
             boolean saveInExceptStar = inExceptStar;
             inExceptStar = false;
@@ -6749,7 +6734,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.endBlock();
             inExceptStar = saveInExceptStar;
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -6781,7 +6766,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              * is). Once we have entered all of the context managers, we emit the body.
              */
             WithItemTy item = items[index];
-            boolean newStatement = beginSourceSection(item, b);
+            beginSourceSection(item, b);
             emitTraceLineChecked(item, b);
             b.beginBlock();
 
@@ -6899,15 +6884,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             endTemporaryLocal(value);
             endTemporaryLocal(exit);
             b.endBlock();
-            endSourceSection(b, newStatement);
+            endSourceSection(b);
         }
 
         @Override
         public Void visit(StmtTy.With node) {
-            boolean newStatement = beginSourceSection(node, b);
+            beginStatement(node, b);
             visitWithRecurse(node.items, 0, node.body, false);
             emitTraceLineChecked(node, b);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
@@ -6918,7 +6903,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.Break aThis) {
-            boolean newStatement = beginSourceSection(aThis, b);
+            beginStatement(aThis, b);
             emitTraceLineChecked(aThis, b);
             if (inExceptStar) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break', 'continue' and 'return' cannot appear in an except* block");
@@ -6927,13 +6912,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break' outside loop");
             }
             b.emitBranch(breakLabel);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Continue aThis) {
-            boolean newStatement = beginSourceSection(aThis, b);
+            beginStatement(aThis, b);
             emitTraceLineChecked(aThis, b);
             if (inExceptStar) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break', 'continue' and 'return' cannot appear in an except* block");
@@ -6942,14 +6927,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'continue' not properly in loop");
             }
             b.emitBranch(continueLabel);
-            endSourceSection(b, newStatement);
+            endStatement(b);
             return null;
         }
 
         @Override
         public Void visit(TypeAlias node) {
-            // store the value to a variable and also produce it as the result of this block
-            b.beginBlock();
+            beginStatement(node, b);
             String name = ((ExprTy.Name) node.name).id;
             beginStoreLocal(name, b);
 
@@ -6973,7 +6957,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             endStoreLocal(name, b);
             emitReadLocal(name, b);
-            b.endBlock();
+            endStatement(b);
             return null;
         }
 
@@ -7076,7 +7060,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.Pass node) {
+            beginStatement(node, b);
             emitTraceLineChecked(node, b);
+            endStatement(b);
             return null;
         }
     }
