@@ -5101,13 +5101,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 // The case can be irrefutable if it's last or has a guard expression.
                 PatternContext pc = new PatternContext(rootSubject, nextCase, last || c.guard != null);
-                if (c.pattern.getSourceRange().startLine != c.pattern.getSourceRange().endLine) {
-                    // If the pattern spans multiple lines, we will create sub-blocks and be unable to bind values
-                    // to this top-level block. Bind them ahead of time.
-                    for (String name : collectPatternBindings(c.pattern)) {
-                        pc.reserveBindVariable(name);
-                    }
-                }
                 emitCheckPattern(c.pattern, c.guard, pc);
                 visitStatements(c.body);
                 if (!last) {
