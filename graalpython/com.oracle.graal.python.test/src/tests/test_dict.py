@@ -205,6 +205,31 @@ def test_init():
     d.__init__({'d':4})
     assert d == {'a':1, 'b':2, 'c':3, 'd':4}
 
+
+def test_dict_update_does_not_call_overridden_setitem():
+    class DictSubclass(dict):
+        def __setitem__(self, key, value):
+            raise AssertionError("dict update called overridden __setitem__")
+
+    d = DictSubclass()
+    dict.__init__(d, [('key', 'value')])
+    assert d == {'key': 'value'}
+
+    class Mapping:
+        def keys(self):
+            return ['other']
+
+        def __getitem__(self, key):
+            assert key == 'other'
+            return 'value'
+
+    dict.__init__(d, Mapping())
+    assert d == {'key': 'value', 'other': 'value'}
+
+    dict.update(d, [('third', 'value')])
+    assert d == {'key': 'value', 'other': 'value', 'third': 'value'}
+
+
 def test_init1():
     try:
         dict([("a", 1), ("b", 2)], [("c", 3), ("d", 4)])

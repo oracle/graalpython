@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -146,7 +147,7 @@ public abstract class PyDictMerge extends PNodeWithContext {
                         @Cached ListNodes.FastConstructListNode materializeKeys,
                         @Cached SequenceStorageNodes.GetItemScalarNode getKey,
                         @Cached PyObjectGetItem getItem,
-                        @Cached PyObjectSetItem setItem,
+                        @Cached HashingCollectionNodes.SetItemNode setItem,
                         @Cached InlinedLoopConditionProfile loopProfile) {
             PList keys = materializeKeys.execute(frame, inliningTarget, callKeys.execute(frame, keysMethod));
             SequenceStorage keysStorage = keys.getSequenceStorage();
@@ -196,7 +197,7 @@ public abstract class PyDictMerge extends PNodeWithContext {
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object target, Object element, int index,
                         @Cached ListNodes.ConstructListNode createList,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached PyObjectSetItem setItem,
+                        @Cached HashingCollectionNodes.SetItemNode setItem,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached InlinedBranchProfile tupleProfile,
                         @Cached InlinedBranchProfile listProfile,

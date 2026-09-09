@@ -577,6 +577,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NEGATIVE_COUNT = tsLiteral("negative count");
     public static final TruffleString NEGATIVE_SHIFT_COUNT = tsLiteral("negative shift count");
     public static final TruffleString NEGATIVE_SIZE_PASSED = tsLiteral("negative size passed");
+    public static final TruffleString NEED_MORE_THAN_D_VALUES_TO_UNPACK = tsLiteral("need more than %d values to unpack");
     public static final TruffleString NEW_TAKES_ONE_ARG = tsLiteral("object.__new__() takes exactly one argument (the type to instantiate)");
     public static final TruffleString NEW_TAKES_NO_ARGS = tsLiteral("%N() takes no arguments");
     public static final TruffleString NO_ACTIVE_EX_TO_RERAISE = tsLiteral("No active exception to reraise");
@@ -813,6 +814,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSUPPORTED_SIZE_WAS = tsLiteral("unsupported %s size; was: %d");
     public static final TruffleString UNSUPPORTED_TARGET_SIZE = tsLiteral("Unsupported target size: %d");
     public static final TruffleString UNSUPPORTED_USE_OF_SYS_EXECUTABLE = tsLiteral("internal error: unsupported use of sys.executable");
+    public static final TruffleString UPDATE_TAKES_AT_MOST_ONE_POSITIONAL_ARGUMENT_D_GIVEN = tsLiteral("update() takes at most 1 positional argument (%d given)");
     public static final TruffleString UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED = tsLiteral("internal error: updating a finalized digest is not supported");
     public static final TruffleString UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = tsLiteral("utime: cannot use dir_fd and follow_symlinks together on this platform");
     public static final TruffleString VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = tsLiteral("value too large to fit into index-sized integer");
