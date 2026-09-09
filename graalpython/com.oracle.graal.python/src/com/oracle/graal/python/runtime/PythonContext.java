@@ -609,6 +609,17 @@ public final class PythonContext extends Python3Core {
             }
         }
 
+        /**
+         * Enables the PapiRecordCallEnter bytecode instrumentation (and its matching
+         * EpilogForReturn/EpilogForException hooks), the same way {@link #setTraceFun} /
+         * {@link #setProfileFun} do for sys.settrace/sys.setprofile. Used by
+         * {@code __graalpython__.papi_call_start()} -- it doesn't itself set a trace/profile
+         * function, it just shares the same underlying "instrumentation is enabled" switch.
+         */
+        public void enablePapiCallInstrumentation(Node location, PythonLanguage language) {
+            enableTracingOrProfiling(location, language);
+        }
+
         public Object getProfileFun() {
             return profileFun;
         }

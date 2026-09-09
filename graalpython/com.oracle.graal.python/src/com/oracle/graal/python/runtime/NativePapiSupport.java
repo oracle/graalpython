@@ -45,6 +45,9 @@ import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
 import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -155,6 +158,18 @@ public final class NativePapiSupport {
         }
     }
 
+    /**
+     * One recorded call-boundary event: a PAPI snapshot taken exactly at a Python-level function
+     * call's entry or exit. Deliberately just an append-only flat record rather than something
+     * that tracks caller/callee nesting itself -- reconstructing the call tree (and, if desired,
+     * subtracting nested calls to get exclusive-of-children costs) from this flat, chronologically
+     * ordered list is a separate, offline post-processing step: since call/return events are
+     * emitted in strict execution order, a simple stack replay over this list (push on ENTER, pop
+     * on EXIT) is enough to pair them up, without this class needing to maintain any stack itself.
+     */
+    public record CallEvent(boolean isEnter, String name, long[] counters) {
+    }
+
     private final PythonContext pythonContext;
     private final PapiNativeFunctions nativeFunctions;
 
@@ -167,6 +182,13 @@ public final class NativePapiSupport {
 
     private int eventSet = PAPI_NULL;
     private int numEvents;
+
+    /** Whether the per-call bytecode instrumentation (see PBytecodeDSLRootNode's
+     * PapiRecordCallEnter op, and the papi_call_* builtins) should currently append to
+     * {@link #callLog}. Read on every instrumented call/return once instrumentation has been
+     * enabled at all, so this stays a plain field rather than something heavier. */
+    private volatile boolean callRecording;
+    private List<CallEvent> callLog = Collections.emptyList();
 
     private NativePapiSupport(PythonContext context, PapiNativeFunctions nativeFunctions) {
         this.pythonContext = context;
@@ -259,7 +281,70 @@ public final class NativePapiSupport {
         destroyEventSetQuietly(eventSet);
         eventSet = PAPI_NULL;
         numEvents = 0;
+        callRecording = false;
         return totals;
+    }
+
+    /**
+     * Starts per-call recording: from this point on, every Python-level function call/return
+     * (woven in by PBytecodeDSLRootNode's PapiRecordCallEnter instrumentation once enabled) appends
+     * a {@link CallEvent} snapshot to the call log instead of requiring the script to call
+     * {@link #read()} itself at each call site. Requires {@link #start(String[])} to already be
+     * running -- this only toggles *recording of* the counters that are already counting, it
+     * doesn't start/stop PAPI itself.
+     */
+    @TruffleBoundary
+    public void startCallRecording() {
+        ensureRunning();
+        callLog = new ArrayList<>();
+        callRecording = true;
+    }
+
+    @TruffleBoundary
+    public void stopCallRecording() {
+        callRecording = false;
+    }
+
+    public boolean isCallRecording() {
+        return callRecording;
+    }
+
+    /** The recorded call/return events since the last {@link #startCallRecording()}, in
+     * chronological order. Read-only snapshot; further recording appends to a fresh list. */
+    @TruffleBoundary
+    public List<CallEvent> getCallLog() {
+        return Collections.unmodifiableList(callLog);
+    }
+
+    /**
+     * Appends a call-enter/exit snapshot to the call log. Called from the interpreter's per-call
+     * instrumentation hook, so this is deliberately minimal -- no ensureRunning()/checkError()
+     * ceremony, since {@link #isCallRecording()} can only be true while an event set is running
+     * (see {@link #startCallRecording()} and how {@link #stop()} clears {@code callRecording}).
+     * Silently does nothing on a read failure rather than throwing out of the middle of unrelated
+     * Python code.
+     */
+    private void recordCallEvent(boolean isEnter, String name) {
+        long valuesPtr = NativeMemory.mallocLongArray(numEvents);
+        try {
+            if (nativeFunctions.PAPI_read(eventSet, valuesPtr) != PAPI_OK) {
+                return;
+            }
+            long[] values = NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
+            callLog.add(new CallEvent(isEnter, name, values));
+        } finally {
+            NativeMemory.free(valuesPtr);
+        }
+    }
+
+    @TruffleBoundary
+    public void recordCallEnter(String name) {
+        recordCallEvent(true, name);
+    }
+
+    @TruffleBoundary
+    public void recordCallExit(String name) {
+        recordCallEvent(false, name);
     }
 
     private int createEventSet() {

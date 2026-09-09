@@ -244,6 +244,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.NativePapiSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.ProfileEvent;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -406,6 +407,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     addInstrumentation(TraceOrProfileReturn.class).//
                     addInstrumentation(TraceLineWithArgument.class).//
                     addInstrumentation(EnterInstrumentedRoot.class).//
+                    addInstrumentation(PapiRecordCallEnter.class).//
                     addInstrumentation(ResumeYieldGenerator.class).//
                     addInstrumentation(TraceYieldValue.class).//
                     addInstrumentation(ResumeInstrumentedYield.class).//
@@ -578,6 +580,23 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    /**
+     * Records a PAPI counter snapshot on Python-level function-call entry, for per-call
+     * attribution (see {@code __graalpython__.papi_call_start()}). Piggybacks on the same shared
+     * trace/profile instrumentation config and assumption (see TRACE_AND_PROFILE_CONFIG /
+     * noTracingOrProfilingAssumption) rather than introducing a separate one: this op generates no
+     * instructions, and this class's cheap isCallRecording() check isn't reached at all, unless
+     * some kind of instrumentation (trace, profile, or PAPI call recording) has been enabled at
+     * least once -- so plain, uninstrumented execution pays nothing extra.
+     */
+    @Instrumentation(storeBytecodeIndex = false)
+    public static final class PapiRecordCallEnter {
+        @Specialization
+        public static void doEnter(@Bind PBytecodeDSLRootNode root) {
+            root.papiRecordCallEnter();
+        }
+    }
+
     @EpilogReturn(storeBytecodeIndex = true)
     public static final class EpilogForReturn {
         @Specialization
@@ -586,6 +605,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode location) {
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.traceOrProfileReturn(frame, location, returnValue);
+                root.papiRecordCallExit();
             }
             root.calleeContext.exit(frame, root, location);
             return returnValue;
@@ -604,6 +624,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             // We cannot use instrumentation for exceptional exit
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.traceOrProfileReturn(frame, location, null);
+                root.papiRecordCallExit();
             }
             root.calleeContext.exit(frame, root, location);
         }
@@ -751,6 +772,26 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @NonIdempotent
     public final PythonThreadState getThreadState() {
         return PythonContext.get(this).getThreadState(getLanguage());
+    }
+
+    private NativePapiSupport getPapiSupport() {
+        return PythonContext.get(this).getNativePapiSupport();
+    }
+
+    @InliningCutoff
+    private void papiRecordCallEnter() {
+        NativePapiSupport papi = getPapiSupport();
+        if (papi.isCallRecording()) {
+            papi.recordCallEnter(getName());
+        }
+    }
+
+    @InliningCutoff
+    private void papiRecordCallExit() {
+        NativePapiSupport papi = getPapiSupport();
+        if (papi.isCallRecording()) {
+            papi.recordCallExit(getName());
+        }
     }
 
     private TracingNodes getTracingNodes(BytecodeNode location) {

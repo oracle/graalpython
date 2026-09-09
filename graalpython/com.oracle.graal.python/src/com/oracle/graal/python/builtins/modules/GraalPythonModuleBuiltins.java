@@ -1640,4 +1640,73 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
         return PFactory.createTuple(language, objects);
     }
+
+    /**
+     * Enables per-call PAPI attribution: from this point on, every Python-level function
+     * call/return records a counter snapshot (see PBytecodeDSLRootNode's PapiRecordCallEnter
+     * instrumentation), retrievable via {@code papi_call_log()}. Requires {@code papi_start()} to
+     * already be running. Note that -- like {@code sys.settrace} -- the underlying bytecode
+     * instrumentation this enables is sticky: {@code papi_call_stop()} stops new events from being
+     * recorded, but does not undo the one-time reparse/deopt cost of turning it on.
+     */
+    @Builtin(name = "papi_call_start", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PapiCallStartNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static PNone start(@Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context) {
+            NativePapiSupport papi = context.getNativePapiSupport();
+            try {
+                papi.startCallRecording();
+            } catch (NativePapiSupport.PapiException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, e);
+            }
+            context.getThreadState(language).enablePapiCallInstrumentation(inliningTarget, language);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "papi_call_stop", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PapiCallStopNode extends PythonBuiltinNode {
+        @Specialization
+        static PNone stop(@Bind PythonContext context) {
+            context.getNativePapiSupport().stopCallRecording();
+            return PNone.NONE;
+        }
+    }
+
+    /**
+     * Returns the recorded call/return events since the last {@code papi_call_start()}, as a list
+     * of {@code (kind, function_name, *counter_values)} tuples in chronological order -- e.g.
+     * {@code ("call", "foo", 1000, 2000)} / {@code ("return", "foo", 1500, 2600)}. Matching calls
+     * with returns (and, if desired, subtracting nested calls to get exclusive-of-children costs)
+     * is deliberately left to be done from this flat list afterwards -- since events are recorded
+     * in strict execution order, a simple stack replay (push on "call", pop on "return") is enough.
+     */
+    @Builtin(name = "papi_call_log", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PapiCallLogNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static PList log(@Bind PythonLanguage language,
+                        @Bind PythonContext context) {
+            List<NativePapiSupport.CallEvent> events = context.getNativePapiSupport().getCallLog();
+            Object[] rows = new Object[events.size()];
+            for (int i = 0; i < events.size(); i++) {
+                NativePapiSupport.CallEvent event = events.get(i);
+                long[] counters = event.counters();
+                Object[] row = new Object[2 + counters.length];
+                row[0] = toTruffleStringUncached(event.isEnter() ? "call" : "return");
+                row[1] = toTruffleStringUncached(event.name());
+                for (int j = 0; j < counters.length; j++) {
+                    row[2 + j] = counters[j];
+                }
+                rows[i] = PFactory.createTuple(language, row);
+            }
+            return PFactory.createList(language, rows);
+        }
+    }
 }

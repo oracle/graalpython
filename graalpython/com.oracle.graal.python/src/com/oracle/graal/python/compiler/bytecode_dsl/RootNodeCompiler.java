@@ -1945,6 +1945,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         // configuration
         instrumentationDataLocal = b.createLocal();
         b.emitEnterInstrumentedRoot();
+        b.emitPapiRecordCallEnter();
     }
 
     private void copyArguments(ArgumentsTy args, Builder b) {
