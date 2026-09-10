@@ -360,10 +360,10 @@
             metrics: ["time"],
             baseline_benchmarking: false,
             _extra_unicorn_args: [
-                "--config-key", "dataserver/fetch/where/bench-suite-version/enum[]=unknown",
-                "--config-key", "dataserver/fetch/where/bench-suite-version/allow-absent=true",
-                "--config-key", "dataserver/fetch/where/platform.jdk-major-version/enum[]=0",
-                "--config-key", "dataserver/fetch/where/platform.jdk-major-version/allow-absent=true",
+                // Use JSON to preserve the string types expected by Bench Server;
+                // --config-key would coerce numeric-looking values such as "0".
+                "--config-json",
+                "{\"dataserver\":{\"fetch\":{\"where\":{\"bench-suite-version\":{\"enum\":[\"unknown\"],\"allow-absent\":true},\"platform.jdk-major-version\":{\"enum\":[\"0\"],\"allow-absent\":true}}}}}",
             ],
         },
     }),
