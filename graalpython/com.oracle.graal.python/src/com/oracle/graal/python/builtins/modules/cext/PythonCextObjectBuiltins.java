@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
@@ -119,6 +120,7 @@ import com.oracle.graal.python.lib.PyObjectGetAIter;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
@@ -136,6 +138,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -483,6 +486,32 @@ public abstract class PythonCextObjectBuiltins {
                 return 1;
             } finally {
                 writePtr(resultPointer, result);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObjectAsTruffleString, PyObjectPtr}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_GetMethod extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int getMethod(Object receiver, TruffleString name, long resultPointer,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached PyObjectGetMethod getMethodNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached InlinedConditionProfile isBoundProfile) {
+            long resultPointerValue = NULLPTR;
+            try {
+                Object result = getMethodNode.execute(null, inliningTarget, receiver, name);
+                boolean isBound = isBoundProfile.profile(inliningTarget, result instanceof BoundDescriptor);
+                if (isBound) {
+                    result = ((BoundDescriptor) result).descriptor;
+                }
+                resultPointerValue = toNativeNode.executeNewRef(inliningTarget,
+                                ensureNode.execute(context, result, false));
+                return isBound ? 0 : 1;
+            } finally {
+                writePtr(resultPointer, resultPointerValue);
             }
         }
     }

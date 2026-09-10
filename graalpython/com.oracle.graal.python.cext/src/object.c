@@ -1645,6 +1645,14 @@ _PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method)
         }
     }
 
+    /* GraalPy change: Native extension types inherit GraalPy's managed
+       object.__getattribute__ slot rather than PyObject_GenericGetAttr.
+       Do the LOAD_METHOD-style lookup on the managed side so that method
+       descriptors stay unbound. */
+    if (tp->tp_getattro == PyBaseObject_Type.tp_getattro && PyUnicode_CheckExact(name)) {
+        return GraalPyPrivate_Object_GetMethod(obj, name, method);
+    }
+
     if (tp->tp_getattro != PyObject_GenericGetAttr || !PyUnicode_CheckExact(name)) {
         *method = PyObject_GetAttr(obj, name);
         return 0;
