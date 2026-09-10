@@ -171,10 +171,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.Channel;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.IllegalBlockingModeException;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ReadableByteChannel;
@@ -724,6 +726,11 @@ public final class EmulatedPosixSupport extends PosixResources {
             // One selected channel can satisfy multiple entries and both read and write interests.
             assert selected <= countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
             return new SelectResult(resReadfds, resWritefds, resErrfds);
+        } catch (CancelledKeyException e) {
+            // A concurrently closed descriptor cancels its selection key.
+            throw posixException(OSErrorEnum.EBADF);
+        } catch (IllegalBlockingModeException e) {
+            throw posixException(OSErrorEnum.EINVAL);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached()));
         } finally {
@@ -739,17 +746,20 @@ public final class EmulatedPosixSupport extends PosixResources {
                         channel.configureBlocking(true);
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException | IllegalBlockingModeException e) {
                 // We didn't manage to restore the blocking status, ignore
             }
         }
     }
 
-    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, int op) {
+    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, int op) throws PosixException {
         boolean[] result = new boolean[fds.length];
         for (int i = 0; i < channels.length; i++) {
             SelectableChannel channel = channels[i];
             SelectionKey selectionKey = channel.keyFor(selector);
+            if (selectionKey == null || !selectionKey.isValid()) {
+                throw posixException(OSErrorEnum.EBADF);
+            }
             result[i] = (selectionKey.readyOps() & op) != 0;
         }
         return result;
