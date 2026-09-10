@@ -929,6 +929,19 @@ PyObject_VectorcallMethod(PyObject *name, PyObject *const *args,
     assert(args != NULL);
     assert(PyVectorcall_NARGS(nargsf) >= 1);
 
+    /* GraalPy change: Perform the method lookup and call in a single upcall if the receiver is
+       managed, or if a native extension type inherited GraalPy's managed object.__getattribute__
+       slot. In the latter case, _PyObject_GetMethod would upcall for the lookup anyway, only to
+       return to native and potentially upcall again to invoke the resulting managed method.
+       Receivers with a genuinely native attribute lookup continue through CPython's native fast
+       path below. */
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+    if (points_to_py_handle_space(args[0]) ||
+                    (Py_TYPE(args[0])->tp_getattro == PyBaseObject_Type.tp_getattro && PyUnicode_CheckExact(name))) {
+        return GraalPyPrivate_Object_VectorcallMethod(name, args[0], args + 1,
+                                                      nargs - 1, kwnames);
+    }
+
     PyThreadState *tstate = _PyThreadState_GET();
     PyObject *callable = NULL;
     /* Use args[0] as "self" argument */

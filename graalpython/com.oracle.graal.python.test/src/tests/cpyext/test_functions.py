@@ -147,6 +147,14 @@ NativeTypeWithAttr = CPyExtHeapType("NativeTypeWithAttr")
 NativeTypeWithAttr.attr = "str"
 
 
+class VectorcallMethodReceiver:
+    def combine(self, positional, *, keyword="default"):
+        return type(self).__name__, positional, keyword
+
+
+NativeTypeWithAttr.combine = VectorcallMethodReceiver.combine
+
+
 class DelAttrObject:
     def __init__(self):
         self.a = 1
@@ -400,6 +408,40 @@ class TestPyObject(CPyExtTestCase):
         resultspec="O",
         argspec="Oss",
         callfunction="PyObject_CallMethod"
+    )
+    test_PyObject_VectorcallMethod = CPyExtFunction(
+        lambda args: getattr(args[0], args[1])(
+            args[2], **({} if args[3] is None else {"keyword": args[3]})),
+        lambda: (
+            (VectorcallMethodReceiver(), "combine", "managed-positional", "managed-keyword"),
+            (VectorcallMethodReceiver(), "combine", "managed-positional", None),
+            (NativeTypeWithAttr(), "combine", "native-positional", "native-keyword"),
+            (NativeTypeWithAttr(), "combine", "native-positional", None),
+        ),
+        code='''
+        static PyObject* wrap_PyObject_VectorcallMethod(PyObject* receiver, PyObject* name,
+                        PyObject* positional, PyObject* keyword_value) {
+            PyObject* args[3] = {receiver, positional, keyword_value};
+            PyObject* keyword_names = NULL;
+            if (keyword_value != Py_None) {
+                PyObject* keyword_name = PyUnicode_FromString("keyword");
+                if (keyword_name == NULL) {
+                    return NULL;
+                }
+                keyword_names = PyTuple_Pack(1, keyword_name);
+                Py_DECREF(keyword_name);
+                if (keyword_names == NULL) {
+                    return NULL;
+                }
+            }
+            PyObject* result = PyObject_VectorcallMethod(name, args, 2, keyword_names);
+            Py_XDECREF(keyword_names);
+            return result;
+        }
+        ''',
+        arguments=["PyObject* receiver", "PyObject* name", "PyObject* positional", "PyObject* keyword_value"],
+        argspec="OOOO",
+        callfunction="wrap_PyObject_VectorcallMethod",
     )
     test_PyObject_Type = CPyExtFunction(
         type,
