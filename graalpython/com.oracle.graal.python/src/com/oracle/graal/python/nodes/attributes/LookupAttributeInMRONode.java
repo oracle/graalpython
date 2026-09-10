@@ -161,6 +161,12 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     @NeverDefault
+    public static Object findAttr(PythonBuiltinClassType klass, TruffleString key) {
+        CompilerAsserts.neverPartOfCompilation(); // Use overload with Python3Core and pass PythonContext.get(node)
+        return findAttr(PythonContext.get(null), klass, key, ReadAttributeFromPythonObjectNode.getUncached());
+    }
+
+    @NeverDefault
     static Object findAttr(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
         return findAttr(core, klass, key, ReadAttributeFromPythonObjectNode.getUncached());
     }
@@ -488,6 +494,26 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 continue;
             }
             Object value = readTypeAttrNode.execute(kls, key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+        }
+        return PNone.NO_VALUE;
+    }
+
+    /**
+     * The same as {@link #lookupSlowPath(Object, SlowPath)} except that it does not probe dictionaries
+     * that may have side effects, if such dictionary is encountered, returns {@code null}.
+     */
+    public static Object lookupSlowPathNoSideEffects(Object klass, TruffleString key) {
+        CompilerAsserts.neverPartOfCompilation();
+        MroSequenceStorage mro = GetMroStorageNode.executeUncached(klass);
+        for (int i = 0; i < mro.length(); i++) {
+            Object kls = mro.getPythonClassItemNormalized(i);
+            Object value = ReadAttributeFromObjectNoSideEffects.executeUncached(kls, key);
+            if (value == null) {
+                return null;
+            }
             if (value != PNone.NO_VALUE) {
                 return value;
             }

@@ -114,6 +114,8 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -1942,6 +1944,20 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return result;
         }
 
+        private static boolean hasObjectOrModuleGetattro(Node inliningTarget, PythonManagedClass klass, InlineWeakValueProfile slotsValueProfile) {
+            TpSlots slots = slotsValueProfile.execute(inliningTarget, klass.getTpSlots());
+            return GetAttribute.hasObjectOrModuleGetattro(slots);
+        }
+
+        @Idempotent
+        public static boolean isBuiltinWithObjectOrModuleGetattro(Shape cachedShape) {
+            return cachedShape.getDynamicType() instanceof PythonBuiltinClassType type && GetAttribute.hasObjectOrModuleGetattro(type.getSlots());
+        }
+
+        public static PythonManagedClass getManagedClassOrNull(Shape cachedShape) {
+            return cachedShape.getDynamicType() instanceof PythonManagedClass managedClass ? managedClass : null;
+        }
+
         @ForceQuickening
         @Specialization(guards = {
                         "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
@@ -1963,7 +1979,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         static Object getMethodFastPath(PythonObject obj, TruffleString name, Node inliningTarget, PythonManagedClass managedClass, Shape cachedShape, PropertyGetter cachedPropertyGetter,
                         InlineWeakValueProfile slotsValueProfile, InlinedBranchProfile hasInstanceValueBranchProfile, LookupAttributeInMRONode.CachedKeyFastPath getMethod) {
             if (managedClass != null) {
-                if (!GetAttribute.hasObjectOrModuleGetattro(inliningTarget, managedClass, slotsValueProfile)) {
+                if (!hasObjectOrModuleGetattro(inliningTarget, managedClass, slotsValueProfile)) {
                     return null;
                 }
             }
@@ -2126,86 +2142,66 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return loadTypeInstanceValue(frame, inliningTarget, receiver, getObjectSlotsNode, callSlotDescrGet, getter, hasNonDescriptorValueProfile);
         }
 
-        // The convention is that if klass is null, then the object is assumed to be of a builtin
-        // type that has the object's or module's tp_getattro - we do not need to recheck that
-        // dynamically
-        public static Object loadInstanceValue(Node inliningTarget, PythonObject object, PythonManagedClass klass,
-                        TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
-                        InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
-            checkCanLoadInstanceValue(inliningTarget, object, klass, key, getDesc, cachedShape, slotsValueProfile);
-            Object value = cachedPropertyGetter.get(object);
-            if (value == PNone.NO_VALUE) {
-                throw FastPathBailoutException.INSTANCE;
-            }
-            return value;
-        }
-
-        public static int loadInstanceValueInt(Node inliningTarget, PythonObject object, PythonManagedClass klass,
-                        TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
-                        InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException, UnexpectedResultException {
-            checkCanLoadInstanceValue(inliningTarget, object, klass, key, getDesc, cachedShape, slotsValueProfile);
-            return getIntValue(cachedPropertyGetter, object);
-        }
-
-        private static void checkCanLoadInstanceValue(Node inliningTarget, PythonObject object, PythonManagedClass klass,
-                        TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape,
-                        InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
-            if (klass == null || hasObjectOrModuleGetattro(inliningTarget, klass, slotsValueProfile)) {
-                Object descr = getDesc.execute(inliningTarget, cachedShape.getDynamicType(), key);
-                if (descr == PNone.NO_VALUE) {
-                    assert object.checkDictFlags();
-                    return;
-                }
-            }
-            throw FastPathBailoutException.INSTANCE;
-        }
-
-        private static boolean hasObjectOrModuleGetattro(Node inliningTarget, PythonManagedClass klass, InlineWeakValueProfile slotsValueProfile) {
-            TpSlots slots = slotsValueProfile.execute(inliningTarget, klass.getTpSlots());
-            return hasObjectOrModuleGetattro(slots);
-        }
-
         private static boolean hasObjectOrModuleGetattro(TpSlots slots) {
             return slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro() || slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro();
         }
 
-        public static PythonManagedClass getManagedClassOrNull(Shape cachedShape) {
-            return cachedShape.getDynamicType() instanceof PythonManagedClass managedClass ? managedClass : null;
+        public static boolean canBypassDescriptorLookup(Shape cachedShape, TruffleString key) {
+            assert PythonContext.get(null).ownsGil(); // otherwise re-check cachedMroLookupVersion, cachedShape
+            CompilerAsserts.neverPartOfCompilation();
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClass pbc) {
+                type = pbc.getType();
+            }
+            if (type instanceof PythonBuiltinClassType pbct) {
+                // builtins cannot change
+                return hasObjectOrModuleGetattro(pbct.getSlots()) && LookupAttributeInMRONode.findAttr(pbct, key) == PNone.NO_VALUE;
+            } else if (type instanceof PythonClass klass) {
+                return hasObjectOrModuleGetattro(klass.getTpSlots()) && LookupAttributeInMRONode.lookupSlowPathNoSideEffects(klass, key) == PNone.NO_VALUE;
+            }
+            return false;
         }
 
-        @Idempotent
-        public static boolean isBuiltinWithObjectOrModuleGetattro(Shape cachedShape) {
-            return cachedShape.getDynamicType() instanceof PythonBuiltinClassType type && hasObjectOrModuleGetattro(type.getSlots());
+        public static PythonClass getPythonClassOrNull(Shape cachedShape) {
+            CompilerAsserts.neverPartOfCompilation();
+            return cachedShape.getDynamicType() instanceof PythonClass kls ? kls : null;
         }
 
-        @StoreBytecodeIndex // looking up attribute in MRO may have side effects
+        public static Assumption getTypeStableAssumption(PythonClass klass) {
+            return klass == null ? Assumption.ALWAYS_VALID : klass.getTypeStableAssumption();
+        }
+
         @Specialization(guards = {
-                        "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)"}, //
-                        rewriteOn = {FastPathBailoutException.class, UnexpectedResultException.class}, limit = "3")
+                        /* static checks: */ "noDescriptor", "!hasMaterializedDict(cachedShape)", "getter != null",
+                        /* dynamic checks: */ "getter.accepts(receiver)"}, //
+                        assumptions = "typeStableAssumption", //
+                        rewriteOn = {FastPathBailoutException.class, UnexpectedResultException.class}, limit = "3", excludeForUncached = true)
         static int doInstanceValueInt(TruffleString key, PythonObject receiver,
                         @Bind Node inliningTarget,
                         @Cached("receiver.getShape()") Shape cachedShape,
-                        @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Exclusive @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
-                        @Exclusive @Cached InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException, UnexpectedResultException {
-            return loadInstanceValueInt(inliningTarget, receiver, managedClass, key, getDesc, cachedShape, getter, slotsValueProfile);
+                        @Cached("canBypassDescriptorLookup(cachedShape, key)") boolean noDescriptor,
+                        @Cached("getPythonClassOrNull(cachedShape)") PythonClass cachedPythonClass,
+                        @Cached("getTypeStableAssumption(cachedPythonClass)") Assumption typeStableAssumption,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter) throws FastPathBailoutException, UnexpectedResultException {
+            assert cachedPythonClass == null || PythonLanguage.get(null).isSingleContext();
+            return getIntValue(getter, receiver);
         }
 
         @ForceQuickening
         @Specialization(guards = {
-                        "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)"}, //
-                        replaces = "doInstanceValueInt", rewriteOn = FastPathBailoutException.class, limit = "3")
+                        /* static checks: */ "noDescriptor", "!hasMaterializedDict(cachedShape)", "getter != null", //
+                        /* dynamic checks: */ "getter.accepts(receiver)"}, //
+                        assumptions = "typeStableAssumption", //
+                        replaces = "doInstanceValueInt", rewriteOn = FastPathBailoutException.class, limit = "3", excludeForUncached = true)
         static Object doInstanceValue(TruffleString key, PythonObject receiver,
                         @Bind Node inliningTarget,
                         @Cached("receiver.getShape()") Shape cachedShape,
-                        @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Exclusive @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
-                        @Exclusive @Cached InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
-            return loadInstanceValue(inliningTarget, receiver, managedClass, key, getDesc, cachedShape, getter, slotsValueProfile);
+                        @Cached("canBypassDescriptorLookup(cachedShape, key)") boolean noDescriptor,
+                        @Cached("getPythonClassOrNull(cachedShape)") PythonClass cachedPythonClass,
+                        @Cached("getTypeStableAssumption(cachedPythonClass)") Assumption typeStableAssumption,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter) throws FastPathBailoutException {
+            assert cachedPythonClass == null || PythonLanguage.get(null).isSingleContext();
+            return getValue(getter, receiver);
         }
 
         @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType"})
@@ -2229,37 +2225,42 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, GetAttribute.class})
     public static final class SetAttribute {
-        @NonIdempotent
-        public static boolean canStoreInstanceValue(Node inliningTarget, TruffleString key, PythonManagedClass managedClass, Shape cachedShape, LookupAttributeInMRONode.CachedKeyFastPath getDesc,
-                        GetObjectSlotsNode getDescSlotsNode, InlineWeakValueProfile slotsValueProfile) {
-            if (managedClass == null || slotsValueProfile.execute(inliningTarget, managedClass.getTpSlots()).tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro()) {
-                Object descr = getDesc.execute(inliningTarget, cachedShape.getDynamicType(), key);
-                return descr != null && (descr == PNone.NO_VALUE || getDescSlotsNode.execute(inliningTarget, descr).tp_descr_set() == null);
-            }
-            return false;
+        private static boolean hasObjectSetattro(TpSlots slots) {
+            return slots.tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro();
         }
 
-        public static boolean canSkipDescriptorCheck(Shape cachedShape, TruffleString key) {
-            if (cachedShape.getDynamicType() instanceof PythonBuiltinClassType type && type.getSlots().tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro()) {
-                Object descr = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, key);
-                if (descr == PNone.NO_VALUE) {
-                    return true;
+        public static boolean canBypassDescriptorLookupForStore(Shape cachedShape, TruffleString key) {
+            assert PythonContext.get(null).ownsGil(); // otherwise: re-check cachedShape, cachedMroLookupVersion
+            CompilerAsserts.neverPartOfCompilation();
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClass pbc) {
+                type = pbc.getType();
+            }
+            if (type instanceof PythonBuiltinClassType pbct) {
+                if (!hasObjectSetattro(pbct.getSlots())) {
+                    return false;
                 }
-                return descr instanceof PythonObject pyDescr && pyDescr.getPythonClass() instanceof PythonBuiltinClassType descrType &&
-                                descrType.getSlots().tp_descr_set() == null;
+                Object descr = LookupAttributeInMRONode.findAttr(pbct, key);
+                return descr == PNone.NO_VALUE || isBuiltinNonDataDescr(descr);
+            } else if (type instanceof PythonClass klass) {
+                if (!hasObjectSetattro(klass.getTpSlots())) {
+                    return false;
+                }
+                Object descr = LookupAttributeInMRONode.lookupSlowPathNoSideEffects(klass, key);
+                return descr != null && (descr == PNone.NO_VALUE || isBuiltinNonDataDescr(descr));
             }
             return false;
         }
 
-        @Idempotent
-        public static boolean isBuiltinWithObjectSetattro(Shape cachedShape) {
-            return cachedShape.getDynamicType() instanceof PythonBuiltinClassType type && type.getSlots().tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro();
-        }
-
-        public static PythonManagedClass getManagedClassOrNull(Shape cachedShape) {
-            return cachedShape.getDynamicType() instanceof PythonManagedClass managedClass ? managedClass : null;
+        private static boolean isBuiltinNonDataDescr(Object descr) {
+            // This handles the situation where instance attribute is shadowed by a descriptor
+            // that's not writeable (e.g., instance attribute and a method of the same name). This is only
+            // valid, because we invalidate the type-stable assumption on any write and not just write of a new
+            // attribute and the `descr` has builtin type, whose slots cannot be modified to gain tp_descr_set
+            Object descrClass = GetClassNode.executeUncached(descr);
+            return descrClass instanceof PythonBuiltinClassType descrType && descrType.getSlots().tp_descr_set() == null;
         }
 
         @Idempotent
@@ -2269,18 +2270,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @ForceQuickening
         @Specialization(guards = {
-                        "hasNoSlotsOrMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectSetattro(cachedShape)", //
-                        "cachedShape.check(receiver)",  //
-                        "skipDescriptorCheck || canStoreInstanceValue(inliningTarget, cachedKey, managedClass, cachedShape, getDesc, getDescSlotsNode, slotsValueProfile)"}, limit = "3")
+                        /* static checks: */ "noDescriptor", "hasNoSlotsOrMaterializedDict(cachedShape)", //
+                        /* dynamic checks: */ "cachedShape.check(receiver)"}, //
+                        assumptions = "typeStableAssumption", //
+                        limit = "3")
         static void doInstanceValue(TruffleString key, Object value, PythonObject receiver,
-                        @Bind Node inliningTarget,
-                        @Cached("key") TruffleString cachedKey,
                         @Cached("receiver.getShape()") Shape cachedShape,
-                        @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
-                        @Cached("canSkipDescriptorCheck(cachedShape, key)") boolean skipDescriptorCheck,
-                        @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
-                        @Cached GetObjectSlotsNode getDescSlotsNode,
-                        @Cached InlineWeakValueProfile slotsValueProfile,
+                        @Cached("canBypassDescriptorLookupForStore(cachedShape, key)") boolean noDescriptor,
+                        @Cached("getPythonClassOrNull(cachedShape)") PythonClass cachedPythonClass,
+                        @Cached("getTypeStableAssumption(cachedPythonClass)") Assumption typeStableAssumption,
                         @Cached DynamicObject.PutNode putNode) {
             putNode.execute(receiver, key, value);
         }

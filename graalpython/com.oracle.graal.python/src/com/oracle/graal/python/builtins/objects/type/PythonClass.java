@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.SuppressFBWarnings;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 /**
  * Mutable class.
@@ -61,6 +63,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonClass extends PythonManagedClass {
 
     private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
+    private static final int TYPE_STABLE_INVALIDATIONS_MAX = 100;
 
     /**
      * MroShape is only set if all base classes in MRO have mroShape set.
@@ -69,16 +72,58 @@ public final class PythonClass extends PythonManagedClass {
     private MroShape mroShape;
     private byte mroShapeInvalidationsCount;
 
+    /** Assumption for instance attribute fast paths, which are only used in single-context mode. */
+    private final CyclicAssumption typeStableAssumption;
+    private byte typeStableInvalidationsCount = 0;
+
     public PythonClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
-        super(location, lang, typeClass, classShape, null, name, base, baseClasses, null);
+        this(location, lang, typeClass, classShape, name, true, true, base, baseClasses);
     }
 
     public PythonClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] baseClasses) {
-        super(location, lang, typeClass, classShape, null, name, invokeMro, false, base, baseClasses, null);
+        this(location, lang, typeClass, classShape, name, invokeMro, false, base, baseClasses);
+    }
+
+    private PythonClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, boolean initDocAttr, Object base,
+                    PythonAbstractClass[] baseClasses) {
+        super(location, lang, typeClass, classShape, null, name, invokeMro, initDocAttr, base, baseClasses, null);
+        typeStableAssumption = lang.isSingleContext() ? new CyclicAssumption("Python class stable") : null;
     }
 
     public void setTpSlots(TpSlots tpSlots) {
         this.tpSlots = tpSlots;
+        invalidateTypeStableAssumption();
+    }
+
+    public Assumption getTypeStableAssumption() {
+        return typeStableAssumption == null ? Assumption.NEVER_VALID : typeStableAssumption.getAssumption();
+    }
+
+    /**
+     * Invalidates instance attribute fast paths after a type dictionary is changed without going
+     * through the regular managed attribute update path, for example by {@code PyType_Modified}.
+     */
+    @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")
+    @TruffleBoundary
+    public void invalidateTypeStableAssumption() {
+        // Also called by attribute initialization in the superclass constructor.
+        if (typeStableAssumption == null) {
+            return;
+        }
+        byte invalidationsCount = typeStableInvalidationsCount;
+        if (invalidationsCount < TYPE_STABLE_INVALIDATIONS_MAX) {
+            typeStableInvalidationsCount = (byte) (invalidationsCount + 1);
+            typeStableAssumption.invalidate();
+        } else {
+            // Do not create new Assumption, just make sure that the current one is invalid
+            typeStableAssumption.getAssumption().invalidate();
+        }
+    }
+
+    public static void invalidateTypeStableAssumption(PythonAbstractClass klass) {
+        if (klass instanceof PythonClass pythonClass) {
+            pythonClass.invalidateTypeStableAssumption();
+        }
     }
 
     @Override
@@ -87,6 +132,12 @@ public final class PythonClass extends PythonManagedClass {
     public void setAttribute(TruffleString key, Object value) {
         super.setAttribute(key, value);
         invalidateMroShapeSubTypes();
+    }
+
+    @Override
+    void onAttributeUpdateSelf(TruffleString key, Object value) {
+        invalidateTypeStableAssumption();
+        super.onAttributeUpdateSelf(key, value);
     }
 
     @ExportMessage(library = InteropLibrary.class)
@@ -192,10 +243,12 @@ public final class PythonClass extends PythonManagedClass {
         super.setMRO(mro);
         mroShape = null;
         invalidateMroShapeSubTypes();
+        invalidateTypeStableAssumption();
     }
 
     public void setMRO(PythonAbstractClass[] mro, PythonLanguage language) {
         super.setMRO(mro);
+        invalidateTypeStableAssumption();
         if (!language.isSingleContext()) {
             mroShape = null;
             invalidateMroShapeSubTypes();

@@ -110,7 +110,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             unsafeSetSuperClass(baseClasses);
         }
 
-        this.setMRO(ComputeMroNode.doSlowPath(location, this, invokeMro));
+        // set field directly to avoid any invalidations, there is no-one that can rely on the MRO yet
+        methodResolutionOrder = new MroSequenceStorage(name, ComputeMroNode.doSlowPath(location, this, invokeMro));
         if (invokeMro) {
             mroInitialized = true;
         }
@@ -249,7 +250,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * Non-recursive part of the {@link #onAttributeUpdate(TruffleString, Object)}.
      */
-    private void onAttributeUpdateSelf(TruffleString key, Object value) {
+    void onAttributeUpdateSelf(TruffleString key, Object value) {
         methodResolutionOrder.invalidateFinalAttributeAssumption(key);
     }
 
