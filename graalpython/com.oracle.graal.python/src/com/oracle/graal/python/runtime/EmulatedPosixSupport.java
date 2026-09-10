@@ -811,12 +811,9 @@ public final class EmulatedPosixSupport extends PosixResources {
         assert fds.length == events.length && fds.length == revents.length;
         java.util.Arrays.fill(revents, 0);
         int pollIn = pollFlag(PosixConstants.POLLIN);
-        int pollPri = pollFlag(PosixConstants.POLLPRI);
         int pollOut = pollFlag(PosixConstants.POLLOUT);
         int pollRdNorm = pollFlag(PosixConstants.POLLRDNORM);
-        int pollRdBand = pollFlag(PosixConstants.POLLRDBAND);
         int pollWrNorm = pollFlag(PosixConstants.POLLWRNORM);
-        int pollWrBand = pollFlag(PosixConstants.POLLWRBAND);
         int[] readFds = new int[fds.length];
         int[] writeFds = new int[fds.length];
         int readCount = 0;
@@ -828,10 +825,10 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             try {
                 SelectableChannel channel = getSelectableChannel(fds[i]);
-                if ((events[i] & (pollIn | pollPri | pollRdNorm | pollRdBand)) != 0 && (channel.validOps() & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0) {
+                if ((events[i] & (pollIn | pollRdNorm)) != 0 && (channel.validOps() & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0) {
                     readFds[readCount++] = fds[i];
                 }
-                if ((events[i] & (pollOut | pollWrNorm | pollWrBand)) != 0 && (channel.validOps() & SelectionKey.OP_WRITE) != 0) {
+                if ((events[i] & (pollOut | pollWrNorm)) != 0 && (channel.validOps() & SelectionKey.OP_WRITE) != 0) {
                     writeFds[writeCount++] = fds[i];
                 }
             } catch (ChannelNotSelectableException e) {
