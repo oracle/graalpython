@@ -1317,9 +1317,12 @@ GP_EXPORT int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen
     return result;
 }
 
-GP_EXPORT int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
-    int8_t selected = 0;
-    return call_select(1, writing ? NULL : &fd, writing ? 0 : 1, writing ? &fd : NULL, writing ? 1 : 0, NULL, 0, timeoutSec, timeoutUsec, &selected);
+GP_EXPORT int32_t call_poll(void *poll_data, int32_t count, int32_t timeout) {
+    (void)poll_data;
+    (void)count;
+    (void)timeout;
+    set_posix_errno(ENOSYS);
+    return -1;
 }
 
 GP_EXPORT int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
@@ -2232,7 +2235,7 @@ GP_EXPORT void call_initialize(void) {
 }
 
 GP_EXPORT int32_t init_constants(int64_t* out, int32_t len) {
-    if (len != 33)
+    if (len != 40)
         return -1;
     out[0] = sizeof(struct sockaddr);
     out[1] = sizeof(((struct sockaddr*)0)->sa_family);
@@ -2262,11 +2265,18 @@ GP_EXPORT int32_t init_constants(int64_t* out, int32_t len) {
     out[25] = sizeof(struct in6_addr);
     out[26] = sizeof(((struct in6_addr*)0)->s6_addr);
     out[27] = offsetof(struct in6_addr, s6_addr);
-    out[28] = sizeof(struct sockaddr_un);
-    out[29] = sizeof(((struct sockaddr_un*)0)->sun_family);
-    out[30] = offsetof(struct sockaddr_un, sun_family);
-    out[31] = sizeof(((struct sockaddr_un*)0)->sun_path);
-    out[32] = offsetof(struct sockaddr_un, sun_path);
+    out[28] = 0;
+    out[29] = 0;
+    out[30] = 0;
+    out[31] = 0;
+    out[32] = 0;
+    out[33] = 0;
+    out[34] = 0;
+    out[35] = sizeof(struct sockaddr_un);
+    out[36] = sizeof(((struct sockaddr_un*)0)->sun_family);
+    out[37] = offsetof(struct sockaddr_un, sun_family);
+    out[38] = sizeof(((struct sockaddr_un*)0)->sun_path);
+    out[39] = offsetof(struct sockaddr_un, sun_path);
     return 0;
 }
 
@@ -2491,37 +2501,13 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     CAPTURE_ERRNO_AND_RETURN(-1, (int32_t) result);
 }
 
-int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
+int32_t call_poll(struct pollfd *poll_data, int32_t count, int32_t timeout) {
 #ifdef _WIN32
-    // for windows, use select() as a worse fallback
-    int selected[2] = {0, 0};
-    return call_select(1,
-                       writing ? NULL : &fd, writing ? 0 : 1,
-                       writing ? &fd : NULL, writing ? 1 : 0,
-                       NULL, 0,
-                       timeoutSec, timeoutUsec, &selected);
+    errno = ENOSYS;
+    capture_errno();
+    return -1;
 #else
-    struct pollfd pollfd;
-    pollfd.fd = fd;
-    pollfd.events = writing ? POLLOUT : POLLIN;
-
-    int timeout_ms;
-    if (timeoutSec < 0) {
-        timeout_ms = -1;
-    } else if (timeoutSec > INT_MAX / 1000) {
-        errno = EINVAL;
-        capture_errno();
-        return -1;
-    } else {
-        int64_t timeout_ms_64 = timeoutSec * 1000 + timeoutUsec / 1000;
-        if (timeout_ms_64 > INT_MAX) {
-            errno = EINVAL;
-            capture_errno();
-            return -1;
-        }
-        timeout_ms = (int)timeout_ms_64;
-    }
-    CAPTURE_ERRNO_AND_RETURN(-1, poll(&pollfd, 1, timeout_ms));
+    CAPTURE_ERRNO_AND_RETURN(-1, poll(poll_data, (nfds_t)count, timeout));
 #endif
 }
 
@@ -3540,7 +3526,7 @@ int32_t get_error_source() {
 
 // start generated
 int32_t init_constants(int64_t* out, int32_t len) {
-    if (len != 33)
+    if (len != 40)
         return -1;
     out[0] = sizeof(struct sockaddr);
     out[1] = sizeof(((struct sockaddr*)0)->sa_family);
@@ -3570,11 +3556,18 @@ int32_t init_constants(int64_t* out, int32_t len) {
     out[25] = sizeof(struct in6_addr);
     out[26] = sizeof(((struct in6_addr*)0)->s6_addr);
     out[27] = offsetof(struct in6_addr, s6_addr);
-    out[28] = unix_or_0(sizeof(struct sockaddr_un));
-    out[29] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_family));
-    out[30] = unix_or_0(offsetof(struct sockaddr_un, sun_family));
-    out[31] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_path));
-    out[32] = unix_or_0(offsetof(struct sockaddr_un, sun_path));
+    out[28] = unix_or_0(sizeof(struct pollfd));
+    out[29] = unix_or_0(sizeof(((struct pollfd*)0)->fd));
+    out[30] = unix_or_0(offsetof(struct pollfd, fd));
+    out[31] = unix_or_0(sizeof(((struct pollfd*)0)->events));
+    out[32] = unix_or_0(offsetof(struct pollfd, events));
+    out[33] = unix_or_0(sizeof(((struct pollfd*)0)->revents));
+    out[34] = unix_or_0(offsetof(struct pollfd, revents));
+    out[35] = unix_or_0(sizeof(struct sockaddr_un));
+    out[36] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_family));
+    out[37] = unix_or_0(offsetof(struct sockaddr_un, sun_family));
+    out[38] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_path));
+    out[39] = unix_or_0(offsetof(struct sockaddr_un, sun_path));
     return 0;
 }
 // end generated

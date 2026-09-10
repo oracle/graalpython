@@ -68,6 +68,16 @@ class PosixConstantsDarwin {
         constants.put("SEEK_HOLE", 3);
         constants.put("SOMAXCONN", 128);
         constants.put("PIPE_BUF", 512);
+        constants.put("POLLIN", 0x00000001);
+        constants.put("POLLPRI", 0x00000002);
+        constants.put("POLLOUT", 0x00000004);
+        constants.put("POLLERR", 0x00000008);
+        constants.put("POLLHUP", 0x00000010);
+        constants.put("POLLNVAL", 0x00000020);
+        constants.put("POLLRDNORM", 0x00000040);
+        constants.put("POLLRDBAND", 0x00000080);
+        constants.put("POLLWRNORM", 0x00000004);
+        constants.put("POLLWRBAND", 0x00000100);
         constants.put("SEM_VALUE_MAX", 32767);
         constants.put("RUSAGE_CHILDREN", -1);
         constants.put("RUSAGE_SELF", 0);

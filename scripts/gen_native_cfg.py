@@ -74,6 +74,7 @@ includes = '''
 # include <netdb.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
+# include <poll.h>
 # include <sys/mman.h>
 # include <sys/resource.h>
 # include <sys/select.h>
@@ -149,6 +150,19 @@ constant_defs = '''
   i SOMAXCONN
 
 * i PIPE_BUF
+
+[pollFlags]
+* x POLLIN
+* x POLLPRI
+* x POLLOUT
+* x POLLERR
+* x POLLHUP
+* x POLLNVAL
+* x POLLRDNORM
+* x POLLRDBAND
+* x POLLWRNORM
+* x POLLWRBAND
+* x POLLMSG
 
 * i SEM_VALUE_MAX
 
@@ -516,6 +530,11 @@ layout_defs = '''
 [struct in6_addr]
   s6_addr
 
+[struct pollfd] u
+  fd
+  events
+  revents
+
 [struct sockaddr_un] u
   sun_family
   sun_path
@@ -691,7 +710,7 @@ def generate_platform():
         subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=output_file, universal_newlines=True)
         output_file.seek(0)
         output = output_file.read()[:-1]
-    uname = " ".join(tuple(plat.uname()))
+    uname = " ".join(tuple(plat.uname())).rstrip()
 
     out_path = DIR / f'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstants{platform}.java'
 

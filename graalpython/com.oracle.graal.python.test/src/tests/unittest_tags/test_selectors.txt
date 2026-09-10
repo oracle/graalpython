@@ -17,6 +17,7 @@ test.test_selectors.DefaultSelectorTestCase.test_unregister @ darwin-arm64,linux
 test.test_selectors.DefaultSelectorTestCase.test_unregister_after_fd_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.DefaultSelectorTestCase.test_unregister_after_fd_close_and_reuse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_selectors.DefaultSelectorTestCase.test_unregister_after_socket_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_selectors.PollSelectorTestCase.test_select_interrupt_noraise @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_selectors.SelectSelectorTestCase.test_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.SelectSelectorTestCase.test_context_manager @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.SelectSelectorTestCase.test_empty_select @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

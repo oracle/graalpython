@@ -44,13 +44,16 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAG
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.TimeUtils;
@@ -100,9 +103,26 @@ public class SocketUtils {
                 try {
                     gil.release(true);
                     try {
-                        // CPython uses poll for a single fd when available here, so even higher fd
-                        // socket connections can be established
-                        if (!posixLib.poll(posixSupport, socket.getFd(), writing, selectTimeout)) {
+                        boolean ready;
+                        if (PosixConstants.IS_WIN32) {
+                            int[] errorfds = connect ? new int[]{socket.getFd()} : EMPTY_INT_ARRAY;
+                            if (writing) {
+                                SelectResult selected = posixLib.select(posixSupport, EMPTY_INT_ARRAY, new int[]{socket.getFd()}, errorfds, selectTimeout);
+                                ready = selected.getWriteFds()[0] || connect && selected.getErrorFds()[0];
+                            } else {
+                                SelectResult selected = posixLib.select(posixSupport, new int[]{socket.getFd()}, EMPTY_INT_ARRAY, errorfds, selectTimeout);
+                                ready = selected.getReadFds()[0] || connect && selected.getErrorFds()[0];
+                            }
+                        } else {
+                            int event = (writing ? PosixConstants.POLLOUT : PosixConstants.POLLIN).getValueIfDefined();
+                            if (connect) {
+                                event |= PosixConstants.POLLERR.getValueIfDefined();
+                            }
+                            int[] revents = new int[1];
+                            posixLib.poll(posixSupport, new int[]{socket.getFd()}, new int[]{event}, revents, pollTimeout(selectTimeout));
+                            ready = revents[0] != 0;
+                        }
+                        if (!ready) {
                             throw constructAndRaiseNode.get(inliningTarget).raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                         }
                     } finally {
@@ -143,6 +163,14 @@ public class SocketUtils {
                 }
             }
         }
+    }
+
+    private static int pollTimeout(Timeval timeout) {
+        if (timeout == null) {
+            return -1;
+        }
+        long milliseconds = timeout.getSeconds() * 1000 + (timeout.getMicroseconds() + 999) / 1000;
+        return milliseconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) milliseconds;
     }
 
     public static class TimeoutHelper {

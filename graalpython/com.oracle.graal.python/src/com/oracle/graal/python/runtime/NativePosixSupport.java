@@ -48,6 +48,9 @@ import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_POLLFD_EVENTS;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_POLLFD_FD;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_POLLFD_REVENTS;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT;
@@ -57,6 +60,7 @@ import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRU
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_POLLFD;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
@@ -250,8 +254,8 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER, SINT32, POINTER, SINT32, SINT64, SINT64, POINTER})
         abstract int call_select(int nfds, long readfds, int readfdsLen, long writefds, int writefdsLen, long errfds, int errfdsLen, long timeoutSec, long timeoutUsec, long selected);
 
-        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT64, SINT64})
-        abstract int call_poll(int fd, int writing, long timeoutSec, long timeoutUsec);
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, SINT32})
+        abstract int call_poll(long pollData, int count, int timeout);
 
         @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, SINT64, SINT32})
         abstract long call_lseek(int fd, long offset, int whence);
@@ -940,20 +944,33 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public boolean poll(int fd, boolean forWriting, Timeval timeout) throws PosixException {
-        long secs = -1, usecs = -1;
-        if (timeout != null) {
-            secs = timeout.getSeconds();
-            usecs = timeout.getMicroseconds();
-        }
-        int result = posixNativeFunctionInvoker.call_poll(fd, forWriting ? 1 : 0, secs, usecs);
-        if (result < 0) {
-            throw getErrnoAndThrowPosixException();
-        }
-        if (result == 0) {
-            return false;
-        } else {
-            return true;
+    public void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
+        assert fds.length == events.length && fds.length == revents.length;
+        int count = fds.length;
+        long nativePollData = NULLPTR;
+        try {
+            long pollfdSize = getConstant(SIZEOF_STRUCT_POLLFD);
+            long fdOffset = getConstant(OFFSETOF_STRUCT_POLLFD_FD);
+            long eventsOffset = getConstant(OFFSETOF_STRUCT_POLLFD_EVENTS);
+            long reventsOffset = getConstant(OFFSETOF_STRUCT_POLLFD_REVENTS);
+            if (count != 0) {
+                nativePollData = NativeMemory.malloc(pollfdSize * count);
+                for (int i = 0; i < count; i++) {
+                    long pollfd = nativePollData + pollfdSize * i;
+                    NativeMemory.writeInt(pollfd + fdOffset, fds[i]);
+                    NativeMemory.writeShort(pollfd + eventsOffset, (short) events[i]);
+                    NativeMemory.writeShort(pollfd + reventsOffset, (short) 0);
+                }
+            }
+            int result = posixNativeFunctionInvoker.call_poll(nativePollData, count, timeout);
+            if (result < 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            for (int i = 0; i < count; i++) {
+                revents[i] = Short.toUnsignedInt(NativeMemory.readShort(nativePollData + pollfdSize * i + reventsOffset));
+            }
+        } finally {
+            NativeMemory.free(nativePollData);
         }
     }
 
