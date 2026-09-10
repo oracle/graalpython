@@ -76,10 +76,12 @@ The Java backend's state is disconnected from the actual OS state:
 - **File access checks:** `os.access()` and functionality based on the `faccessat` POSIX function do not support:
   - Effective IDs
   - `follow_symlinks=False` unless the mode is only `F_OK`
+- **select.select:** Temporarily sets file descriptors to non-blocking mode which could affect other threads.
+- **select.poll:** Temporarily sets file descriptors to non-blocking mode which could affect other threads. Only supports `POLLIN` and `POLLOUT` events. EOF is reported as `POLLIN`/`POLLOUT`.
 
 ## Context Security Configuration
 
-When embedding GraalPy using the Polyglot API, you can configure security and access permissions through the `Context.Builder` class. 
+When embedding GraalPy using the Polyglot API, you can configure security and access permissions through the `Context.Builder` class.
 These settings control what system resources and host functionality your embedded Python code can access.
 
 This table shows the common security methods:
