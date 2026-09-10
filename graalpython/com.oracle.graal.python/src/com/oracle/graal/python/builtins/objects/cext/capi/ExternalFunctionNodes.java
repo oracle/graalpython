@@ -2374,6 +2374,7 @@ public abstract class ExternalFunctionNodes {
      * instances.
      */
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class CreateNativeKwNamesTupleNode extends Node {
 
         public abstract long execute(PythonContext context, Object[] args);

@@ -1670,6 +1670,57 @@ def test_tp_call_calls():
         assert obj.__call__({'b': 2}, a=1) == {'a': 1, 'b': 2}
 
 
+def test_native_vectorcall():
+    NativeVectorcall = CPyExtType(
+        name='NativeVectorcall',
+        cmembers='vectorcallfunc vectorcall;',
+        code=r'''
+            static PyObject* native_vectorcall(PyObject* self, PyObject* const* args, size_t nargsf, PyObject* kwnames) {
+                Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+                Py_ssize_t nkwargs = kwnames ? PyTuple_GET_SIZE(kwnames) : 0;
+                PyObject* positional = PyTuple_New(nargs);
+                PyObject* keywords = PyDict_New();
+                if (!positional || !keywords) {
+                    Py_XDECREF(positional);
+                    Py_XDECREF(keywords);
+                    return NULL;
+                }
+                for (Py_ssize_t i = 0; i < nargs; i++) {
+                    Py_INCREF(args[i]);
+                    PyTuple_SET_ITEM(positional, i, args[i]);
+                }
+                for (Py_ssize_t i = 0; i < nkwargs; i++) {
+                    if (PyDict_SetItem(keywords, PyTuple_GET_ITEM(kwnames, i), args[nargs + i]) < 0) {
+                        Py_DECREF(positional);
+                        Py_DECREF(keywords);
+                        return NULL;
+                    }
+                }
+                return Py_BuildValue("NN", positional, keywords);
+            }
+
+            static PyObject* native_tp_call(PyObject* self, PyObject* args, PyObject* kwargs) {
+                return PyUnicode_FromString("tp_call");
+            }
+
+            static PyObject* native_vectorcall_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                NativeVectorcallObject* self = (NativeVectorcallObject*)type->tp_alloc(type, 0);
+                if (self) {
+                    self->vectorcall = native_vectorcall;
+                }
+                return (PyObject*)self;
+            }
+        ''',
+        tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_VECTORCALL',
+        tp_vectorcall_offset='offsetof(NativeVectorcallObject, vectorcall)',
+        tp_call='native_tp_call',
+        tp_new='native_vectorcall_new',
+    )
+
+    callable_obj = NativeVectorcall()
+    assert callable_obj(1, 2, keyword=3) == ((1, 2), {'keyword': 3})
+
+
 def test_richcmp():
     MyNativeIntSubType = CPyExtType("MyNativeIntSubTypeForRichCmpTest",
                              ready_code = "MyNativeIntSubTypeForRichCmpTestType.tp_new = PyLong_Type.tp_new;",
