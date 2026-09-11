@@ -51,7 +51,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageClear;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIntersect;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStoragePop;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -59,7 +63,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -282,6 +288,37 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Idempotent
+        static boolean isBuiltinDictMappingproxy(Object other) {
+            return other instanceof PMappingproxy proxy && proxy.getMapping() instanceof PDict dict && PGuards.isBuiltinDict(dict);
+        }
+
+        @Specialization(guards = "isBuiltinDictMappingproxy(other)")
+        static void updateMappingproxy(VirtualFrame frame, PHashingCollection collection, PMappingproxy other,
+                        @Bind Node inliningTarget,
+                        @Cached HashingStorageGetIterator getStorageIter,
+                        @Cached HashingStorageIteratorNext storageIterNext,
+                        @Cached HashingStorageIteratorKey storageIterKey,
+                        @Cached HashingStorageLen lenNode,
+                        @Exclusive @Cached HashingStorageSetItem setStorageItem,
+                        @Cached PRaiseNode raiseNode) {
+            HashingStorage source = ((PDict) other.getMapping()).getDictStorage();
+            HashingStorageIterator iterator = getStorageIter.execute(inliningTarget, source);
+            int size = lenNode.execute(inliningTarget, source);
+            HashingStorage curStorage = collection.getDictStorage();
+            // Avoid Python iterator dispatch, but preserve its size checks and hashing behavior.
+            // HashingStorageAddAllToOther may reuse stored hashes, whereas iterating a mappingproxy
+            // must still call user-defined __hash__ methods, which may also mutate the source.
+            while (storageIterNext.execute(inliningTarget, source, iterator)) {
+                if (lenNode.execute(inliningTarget, source) != size) {
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
+                }
+                Object key = storageIterKey.execute(inliningTarget, source, iterator);
+                curStorage = setStorageItem.execute(frame, inliningTarget, curStorage, key, PNone.NONE);
+            }
+            collection.setDictStorage(curStorage);
+        }
+
+        @Idempotent
         static boolean isBuiltinSequence(Node inliningTarget, Object other, GetPythonObjectClassNode getClassNode) {
             return other instanceof PSequence && getClassNode.execute(inliningTarget, (PSequence) other) instanceof PythonBuiltinClassType;
         }
@@ -303,7 +340,8 @@ public final class SetBuiltins extends PythonBuiltins {
             collection.setDictStorage(curStorage);
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(inliningTarget, other, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinDictMappingproxy(other)",
+                        "!isBuiltinSequence(inliningTarget, other, getClassNode)"}, limit = "1")
         static void doIterable(VirtualFrame frame, PHashingCollection collection, Object other,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,

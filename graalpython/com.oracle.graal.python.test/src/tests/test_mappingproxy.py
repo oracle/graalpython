@@ -139,6 +139,170 @@ def test_iter():
     mp_keys = set([k for k in mp])
     assert d.keys() == mp_keys
 
+
+def test_set_update_mappingproxy_storage_and_live_changes():
+    class Owner:
+        pass
+
+    obj = Owner()
+    for i in range(40):
+        setattr(obj, f'key{i}', i)
+    for d in ({}, {'a': 1, 2: 3, (4, 5): 6}, obj.__dict__):
+        proxy = _mappingproxy(d)
+        result = {'existing'}
+        result.update(proxy)
+        assert result == {'existing'} | set(d)
+        d['added'] = 42
+        result = set()
+        result.update(proxy)
+        assert result == set(d)
+        del d['added']
+        result = set()
+        result.update(proxy)
+        assert result == set(d)
+
+
+def test_set_update_mappingproxy_custom_iteration():
+    calls = []
+
+    class CustomDict(dict):
+        def __iter__(self):
+            calls.append('dict iter')
+            return iter(('projected',))
+
+    class CustomMapping:
+        def __getitem__(self, key):
+            raise AssertionError('values must not be fetched')
+
+        def __iter__(self):
+            calls.append('mapping iter')
+            return iter(('custom',))
+
+    for mapping, expected, call in (({'plain': 1}, {'plain'}, None),
+                                    (CustomDict(hidden=1), {'projected'}, 'dict iter'),
+                                    (CustomMapping(), {'custom'}, 'mapping iter'),
+                                    ({'plain_again': 1}, {'plain_again'}, None)):
+        for proxy in (_mappingproxy(mapping), _mappingproxy(_mappingproxy(mapping))):
+            calls.clear()
+            result = set()
+            result.update(proxy)
+            assert result == expected
+            assert calls == ([] if call is None else [call])
+
+
+def test_set_update_mappingproxy_hash_side_effects():
+    calls = []
+    fail = False
+
+    class Key:
+        def __hash__(self):
+            calls.append('hash')
+            if fail:
+                raise ValueError('hash failed')
+            return 42
+
+    key = Key()
+    proxy = _mappingproxy({key: 'value'})
+    calls.clear()
+    result = set()
+    result.update(proxy)
+    assert calls == ['hash']
+    assert next(iter(result)) is key
+    fail = True
+    assert_raises(ValueError, set().update, proxy)
+
+
+def test_set_update_mappingproxy_detects_mutation():
+    for mutation in ('add', 'delete', 'value'):
+        active = False
+
+        class Key:
+            def __hash__(self):
+                if active:
+                    if mutation == 'add':
+                        d['extra'] = 1
+                    elif mutation == 'delete':
+                        del d['last']
+                    else:
+                        d['last'] = 'changed'
+                return 42
+
+        key = Key()
+        d = {key: 1, 'middle': 2, 'last': 3}
+        active = True
+        if mutation == 'value':
+            result = set()
+            result.update(_mappingproxy(d))
+            assert len(result) == 3
+            assert d['last'] == 'changed'
+        else:
+            assert_raises(RuntimeError, set().update, _mappingproxy(d))
+
+    d = {'trigger': 1, 'last': 2}
+
+    class CollidingKey:
+        def __hash__(self):
+            return hash('trigger')
+
+        def __eq__(self, other):
+            d['extra'] = 3
+            return False
+
+    result = {CollidingKey()}
+    assert_raises(RuntimeError, result.update, _mappingproxy(d))
+
+
+def test_dir_mappingproxy_inheritance_and_tombstones():
+    class Base:
+        base = 1
+
+    class Left(Base):
+        left = 2
+
+    class Right(Base):
+        right = 3
+
+    class Derived(Left, Right):
+        own = 4
+
+    obj = Derived()
+    obj.instance = 5
+    for i in range(10):
+        Derived.temporary = i
+        del Derived.temporary
+        if i % 2:
+            Derived.temporary = i
+        expected = set(obj.__dict__)
+        for cls in Derived.__mro__:
+            expected.update(cls.__dict__)
+        assert dir(obj) == sorted(expected)
+
+
+def test_dir_mappingproxy_custom_metaclass_and_dir():
+    calls = []
+
+    class Meta(type):
+        def __getattribute__(cls, name):
+            if name == '__dict__':
+                calls.append('dict')
+                return _mappingproxy({'projected': 1})
+            return super().__getattribute__(name)
+
+    class Owner(metaclass=Meta):
+        hidden = 1
+
+    names = dir(Owner)
+    assert 'projected' in names
+    assert 'hidden' not in names
+    assert calls == ['dict']
+
+    class CustomDir:
+        def __dir__(self):
+            return ['z', 'a']
+
+    assert dir(CustomDir()) == ['a', 'z']
+
+
 def test_create():
     _mappingproxy(dict())
     mp = _mappingproxy({'a': 1})
