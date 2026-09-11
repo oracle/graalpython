@@ -350,7 +350,7 @@ public final class CApiContext {
 
     private final NativeLibraryLocator nativeLibraryLocator;
 
-    public final BackgroundGCTask gcTask;
+    private final BackgroundGCTask gcTask;
     private Thread backgroundGCTaskThread;
     private final ReferenceQueueWatcherTask referenceQueueWatcherTask;
 
