@@ -43,9 +43,9 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.LazyCyclicAssumption;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -59,12 +59,13 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
+    private static final int LOOKUP_STABLE_INVALIDATIONS_MAX = Integer.getInteger("org.graalvm.python.internal.lookupStableInvalidationsMax", 3);
+
     private final TruffleString className;
     /**
      * This assumption will be invalidated whenever the mro changes.
      */
-    private Assumption lookupStableAssumption;
-    private int lookupStableAssumptionInvalidations;
+    private final LazyCyclicAssumption lookupStableAssumption;
 
     /**
      * These assumptions will be invalidated whenever the value of the given slot changes. All
@@ -125,7 +126,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
-        this.lookupStableAssumption = createLookupStableAssumption();
+        this.lookupStableAssumption = new LazyCyclicAssumption(className.toJavaStringUncached());
         this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
@@ -135,7 +136,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
         this.length = 0;
-        this.lookupStableAssumption = createLookupStableAssumption();
+        this.lookupStableAssumption = new LazyCyclicAssumption(className.toJavaStringUncached());
         this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
@@ -188,7 +189,8 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     public Assumption getLookupStableAssumption() {
-        return lookupStableAssumption;
+        assert PythonContext.get(null).ownsGil();
+        return lookupStableAssumption.getAssumption();
     }
 
     public FinalAttributeAssumptionPair getFinalAttributeAssumption(TruffleString name) {
@@ -218,24 +220,13 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
     public void lookupChanged() {
         CompilerAsserts.neverPartOfCompilation();
+        assert PythonContext.get(null).ownsGil();
         if (attributesInMROFinalAssumptions != null) {
             for (FinalAttributeAssumptionPair assumptionPair : attributesInMROFinalAssumptions.values()) {
                 assumptionPair.invalidate();
             }
         }
-        if (lookupStableAssumption != Assumption.NEVER_VALID) {
-            lookupStableAssumption.invalidate();
-            if (lookupStableAssumptionInvalidations < PythonLanguage.get(null).getEngineOption(PythonOptions.MaxTypeInvalidationCount)) {
-                lookupStableAssumption = createLookupStableAssumption();
-                lookupStableAssumptionInvalidations++;
-            } else {
-                lookupStableAssumption = Assumption.NEVER_VALID;
-            }
-        }
-    }
-
-    private Assumption createLookupStableAssumption() {
-        return Truffle.getRuntime().createAssumption(className.toJavaStringUncached());
+        lookupStableAssumption.invalidate(LOOKUP_STABLE_INVALIDATIONS_MAX);
     }
 
     public NativeSequenceStorage getNativeMirror() {

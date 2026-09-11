@@ -103,6 +103,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.tpSlots = slots;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
+        // following code may read and even override methodResolutionOrder
 
         if (baseClasses.length == 1 && baseClasses[0] == null) {
             this.baseClasses = new PythonAbstractClass[]{};
@@ -110,8 +111,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             unsafeSetSuperClass(baseClasses);
         }
 
-        // set field directly to avoid any invalidations, there is no-one that can rely on the MRO yet
-        methodResolutionOrder = new MroSequenceStorage(name, ComputeMroNode.doSlowPath(location, this, invokeMro));
+        this.setMRO(ComputeMroNode.doSlowPath(location, this, invokeMro));
         if (invokeMro) {
             mroInitialized = true;
         }
