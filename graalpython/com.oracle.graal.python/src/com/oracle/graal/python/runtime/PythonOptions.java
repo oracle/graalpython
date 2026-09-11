@@ -288,6 +288,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "<limit>", help = "") //
     public static final OptionKey<Integer> NodeRecursionLimit = new OptionKey<>(1);
 
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "<count>", help = "") //
+    public static final OptionKey<Integer> MaxTypeInvalidationCount = new OptionKey<>(3);
+
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Force to automatically import site.py module.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
 
