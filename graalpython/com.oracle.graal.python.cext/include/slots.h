@@ -6,6 +6,10 @@
 #ifndef _Py_HAVE_SLOTS_H
 #define _Py_HAVE_SLOTS_H
 
+#if !defined(Py_BUILD_CORE) && !defined(Py_TARGET_ABI3T)
+#  error "slots.h requires Py_TARGET_ABI3T"
+#endif
+
 typedef void (*_Py_funcptr_t)(void);
 
 struct PySlot {

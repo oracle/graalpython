@@ -76,7 +76,7 @@ struct PyModuleDef_Slot {
     void *value;
 };
 
-#if defined(Py_TARGET_ABI3T) || (defined(Py_LIMITED_API) && Py_LIMITED_API+0 >= 0x030f0000)
+#if defined(Py_TARGET_ABI3T)
 #  define Py_mod_create 84
 #  define Py_mod_exec 85
 #  define Py_mod_multiple_interpreters 86
@@ -127,14 +127,14 @@ struct PyModuleDef_Slot {
 PyAPI_FUNC(int) PyUnstable_Module_SetGIL(PyObject *module, void *gil);
 #endif
 
-#if !defined(Py_LIMITED_API) || defined(Py_TARGET_ABI3T) || Py_LIMITED_API+0 >= 0x030f0000
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
 PyAPI_FUNC(PyObject *) PyModule_FromSlotsAndSpec(const PySlot *slots, PyObject *spec);
 PyAPI_FUNC(int) PyModule_Exec(PyObject *module);
 PyAPI_FUNC(int) PyModule_GetStateSize(PyObject *module, Py_ssize_t *result);
 PyAPI_FUNC(int) PyModule_GetToken(PyObject *module, void **result);
 PyAPI_FUNC(void *) PyModule_GetState_DuringGC(PyObject *module);
 PyAPI_FUNC(int) PyModule_GetToken_DuringGC(PyObject *module, void **result);
-#endif
+#endif /* Py_BUILD_CORE || Py_TARGET_ABI3T */
 
 struct PyModuleDef {
   PyModuleDef_Base m_base;

@@ -73,7 +73,7 @@ struct timeval;
 // Include Python header files
 #include "pyport.h"
 
-#ifdef _MSC_VER
+#if (defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)) && defined(_MSC_VER)
 // Ignore MSC warning C4201: "nonstandard extension used: nameless
 // struct/union".  (Only generated for C standard versions less than C11, which
 // we don't *officially* support.)
@@ -91,7 +91,9 @@ __pragma(warning(disable: 4201))
 #include "lock.h"
 #include "object.h"
 #include "objimpl.h"
-#include "slots.h"
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
+#  include "slots.h"
+#endif
 #include "typeslots.h"
 #include "pyhash.h"
 #include "cpython/pydebug.h"
@@ -153,7 +155,7 @@ __pragma(warning(disable: 4201))
 #include "cpython/pyfpe.h"
 #include "cpython/tracemalloc.h"
 
-#ifdef _MSC_VER
+#if (defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)) && defined(_MSC_VER)
 __pragma(warning(pop))  // warning(disable: 4201)
 #endif
 

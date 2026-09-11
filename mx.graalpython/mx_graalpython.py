@@ -2000,6 +2000,19 @@ def graalpython_gate_runner(_, tasks):
                 parallel=6,
             )
 
+    with Task('GraalPython ABI3T unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
+        if task:
+            env = os.environ.copy()
+            env['GRAALPY_TEST_ABI3T'] = 'true'
+            run_python_unittests(
+                graalpy_standalone_jvm(),
+                paths=['graalpython/com.oracle.graal.python.test/src/tests/cpyext/test_abi3t.py'],
+                env=env,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report(),
+                parallel=0,
+            )
+
     with Task('GraalPython BouncyCastle unittests', tasks, tags=[GraalPythonTags.unittest_bouncycastle]) as task:
         if task:
             bc_unit_tests = [

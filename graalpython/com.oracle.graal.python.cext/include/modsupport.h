@@ -139,7 +139,7 @@ PyAPI_FUNC(PyObject *) PyModule_FromDefAndSpec2(PyModuleDef *def,
 
 #endif /* New in 3.5 */
 
-#if !defined(Py_LIMITED_API) || defined(Py_TARGET_ABI3T) || Py_LIMITED_API+0 >= 0x030f0000
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
 typedef struct PyABIInfo {
     uint8_t abiinfo_major_version;
     uint8_t abiinfo_minor_version;
@@ -169,7 +169,7 @@ PyAPI_FUNC(int) PyABIInfo_Check(PyABIInfo *info, const char *module_name);
 
 #define PyABIInfo_VAR(NAME) \
     static PyABIInfo NAME = {1, 0, PyABIInfo_DEFAULT_FLAGS, PY_VERSION_HEX, PyABIInfo_DEFAULT_ABI_VERSION};
-#endif
+#endif /* Py_BUILD_CORE || Py_TARGET_ABI3T */
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_MODSUPPORT_H

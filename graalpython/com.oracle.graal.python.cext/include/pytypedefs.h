@@ -19,8 +19,9 @@ typedef struct PyModuleDef_Slot PyModuleDef_Slot;
 typedef struct PyMethodDef PyMethodDef;
 typedef struct PyGetSetDef PyGetSetDef;
 typedef struct PyMemberDef PyMemberDef;
-// GraalPy change: added _Py_ANONYMOUS from 3.15
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
 typedef struct PySlot PySlot;
+#endif
 
 typedef struct _object PyObject;
 typedef struct _longobject PyLongObject;

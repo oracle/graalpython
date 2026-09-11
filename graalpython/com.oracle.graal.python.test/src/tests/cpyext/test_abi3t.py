@@ -151,7 +151,10 @@ PyInit_abi3t_smoke(void)
 """
 
 
-@unittest.skipUnless(sys.implementation.name == "graalpy", "requires GraalPy")
+@unittest.skipUnless(
+    sys.implementation.name == "graalpy" and os.environ.get("GRAALPY_TEST_ABI3T"),
+    "requires the GraalPy ABI3T opt-in test run",
+)
 class TestAbi3t(unittest.TestCase):
     def test_option_exposed(self):
         code = "import __graalpython__; print(__graalpython__.abi3t_enabled)"

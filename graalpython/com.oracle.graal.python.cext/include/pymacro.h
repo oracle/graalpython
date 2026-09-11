@@ -28,6 +28,7 @@
 #  define static_assert _Static_assert
 #endif
 
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
 // GraalPy change: added _Py_ANONYMOUS from 3.15
 // _Py_ANONYMOUS: modifier for declaring an anonymous union.
 // Usage: _Py_ANONYMOUS union { ... };
@@ -48,6 +49,7 @@
 #       define _Py_ANONYMOUS
 #   endif
 #endif
+#endif /* Py_BUILD_CORE || Py_TARGET_ABI3T */
 
 /* Minimum value between x and y */
 #define Py_MIN(x, y) (((x) > (y)) ? (y) : (x))
