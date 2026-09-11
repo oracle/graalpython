@@ -124,6 +124,9 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Cached InlinedIntValueProfile regularVarCountProfile,
                         @Cached HashingStorageSetItem setItem) {
             HashingStorage storage = new DynamicObjectStorage(language);
+            if (locals == null) {
+                return PFactory.createDict(language, storage);
+            }
             BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) locals.getFrameDescriptorInfo();
             int regularVarCount = regularVarCountProfile.profile(inliningTarget, info.getRegularVariableCount());
             int varCount = varCountProfile.profile(inliningTarget, info.getVariableCount());

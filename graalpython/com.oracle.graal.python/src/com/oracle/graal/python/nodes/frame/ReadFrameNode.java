@@ -306,7 +306,7 @@ public abstract class ReadFrameNode extends Node {
     public static PFrame readFrameInThreadLocal(Access access, Reference startFrameInfo, FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
                     MaterializeFrameNode materializeFrameNode, boolean forceEscape) {
         Node location = access.getLocation();
-        if (location instanceof PBytecodeDSLRootNode) {
+        if (location instanceof RootNode root && PBytecodeDSLRootNode.cast(root) != null) {
             // See AsyncPythonAction#execute for explanation
             location = PythonLanguage.get(null).unavailableSafepointLocation;
         }
@@ -340,8 +340,8 @@ public abstract class ReadFrameNode extends Node {
         if (callerFrameResult != null) {
             Node location = getMaterializationLocation(callerFrameResult);
             PFrame pFrame = materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsMaterializedLocals(callerFlags), callerFrameResult.frame);
-            if (CallerFlags.needsMaterializedLocals(callerFlags)) {
-                BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+            if (CallerFlags.needsMaterializedLocals(callerFlags) && bytecodeNode != null) {
                 pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) callerFrameResult.frame), true);
             }
             return pFrame;

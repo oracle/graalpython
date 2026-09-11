@@ -104,6 +104,9 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
 
     private static int findSlot(VirtualFrame frame, Node inliningTarget, PFrameLocalsProxy self, Object key, PyObjectRichCompareBool equals) {
         BytecodeFrame bytecodeFrame = self.getBytecodeFrame();
+        if (bytecodeFrame == null) {
+            return -1;
+        }
         BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
         // Cell parameters occur in both varnames and cellvars. The function prologue moves their
         // value to the cell slot and clears the regular slot, so prefer the later cell slot.
@@ -158,8 +161,9 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
 
     private static PDict snapshot(PFrameLocalsProxy self, PythonLanguage language, Node inliningTarget, HashingStorageSetItem setItem) {
         PDict result = PFactory.createDict(language);
-        BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) self.getBytecodeFrame().getFrameDescriptorInfo();
-        for (int i = 0; i < info.getVariableCount(); i++) {
+        BytecodeFrame bytecodeFrame = self.getBytecodeFrame();
+        BytecodeDSLFrameInfo info = bytecodeFrame == null ? null : (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
+        for (int i = 0; info != null && i < info.getVariableCount(); i++) {
             Object value = getSlotValue(self, i);
             if (value != null) {
                 result.setDictStorage(setItem.execute(inliningTarget, result.getDictStorage(), info.getVariableName(i), value));
@@ -281,8 +285,9 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
 
         private static int count(PFrameLocalsProxy self, Node inliningTarget, HashingStorageLen storageLen) {
             int count = 0;
-            BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) self.getBytecodeFrame().getFrameDescriptorInfo();
-            for (int i = 0; i < info.getVariableCount(); i++) {
+            BytecodeFrame bytecodeFrame = self.getBytecodeFrame();
+            BytecodeDSLFrameInfo info = bytecodeFrame == null ? null : (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
+            for (int i = 0; info != null && i < info.getVariableCount(); i++) {
                 if (getSlotValue(self, i) != null) {
                     count++;
                 }
