@@ -122,6 +122,24 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester, "GetAttribute$Type$int")
 
 
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_type_mutable_non_descriptor():
+        class Value:
+            pass
+
+        value = Value()
+
+        class Q:
+            MY_ATTR = value
+
+        def tester(o):
+            return o.MY_ATTR
+
+        for i in range(5):
+            assert tester(Q) is value
+        assert_contains_bytecode(tester, "GetAttribute$TypeMutableNonDescriptor")
+
+
     def test_get_method_str_quickening():
         def tester(s):
             return s.rstrip()
@@ -138,7 +156,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         d = {i:i for i in reversed(range(5))}
         for i in range(5):
             assert tester(d)[0] == i
-        assert_contains_bytecode(tester, "GetMethod$FastPath")
+        assert_contains_bytecode(tester, "GetMethod$FastPathBuiltin")
 
 
     def test_get_method_module_quickening():
