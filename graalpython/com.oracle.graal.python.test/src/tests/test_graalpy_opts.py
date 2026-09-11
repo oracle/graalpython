@@ -84,6 +84,22 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester, "GetAttribute$Module")
 
 
+    def test_get_attr_quickening_module_with_getattr():
+        module = types.ModuleType("test_module")
+        module.value = "original"
+        module.__getattr__ = lambda name: "fallback: " + name
+
+        def tester(mod):
+            return mod.value
+
+        for _ in range(5):
+            assert tester(module) == "original"
+        assert_contains_bytecode(tester, "GetAttribute$Module")
+
+        del module.value
+        assert tester(module) == "fallback: value"
+
+
     @skipUnlessSingleContext
     def test_get_attr_quickening_module_int():
         def tester_i(s):
