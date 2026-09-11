@@ -2851,8 +2851,6 @@ def python_checkcopyrights(args):
     finally:
         os.unlink(listfilename)
 
-    _python_checkpatchfiles()
-
 
 def python_run_mx_filetests(_):
     for test in glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
@@ -2886,7 +2884,7 @@ def check_unused_operations():
 
 
 
-def _python_checkpatchfiles():
+def verify_patches(args):
     env = os.environ.copy()
     mx_dir = Path(__file__).parent
     root_dir = mx_dir.parent
@@ -2895,7 +2893,7 @@ def _python_checkpatchfiles():
     # We use the CPython that is used for running our unittests, not the one mx is running with.
     # This is done to make sure it can import the pip wheel.
     mx.run(
-        [get_cpython(), str(mx_dir / 'verify_patches.py'), str(root_dir / 'graalpython' / 'lib-graalpython' / 'patches')],
+        [get_cpython(), str(mx_dir / 'verify_patches.py'), *args, str(root_dir / 'graalpython' / 'lib-graalpython' / 'patches')],
         env=env,
         nonZeroIsFatal=True,
     )
@@ -3719,6 +3717,7 @@ mx.update_commands(SUITE, {
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
+    'verify-patches': [verify_patches, '[--git-mode]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
