@@ -228,7 +228,6 @@ public final class PythonCextLongBuiltins {
         return (mode & 0x4) == 0;
     }
 
-    @TruffleBoundary
     private static long convertBuiltinInteger(Node inliningTarget, Object object, int signed, int targetTypeSize, boolean exact) throws OverflowException {
         if (targetTypeSize != Integer.BYTES && targetTypeSize != Long.BYTES) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
