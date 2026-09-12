@@ -159,6 +159,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -1649,17 +1650,30 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
      * instrumentation this enables is sticky: {@code papi_call_stop()} stops new events from being
      * recorded, but does not undo the one-time reparse/deopt cost of turning it on.
      */
-    @Builtin(name = "papi_call_start", minNumOfPositionalArgs = 0)
+    @Builtin(name = "papi_call_start", minNumOfPositionalArgs = 0, parameterNames = {"capacity"},
+                    doc = "Optional capacity: pre-allocate the call log for this many events, to avoid " +
+                                    "resize/copy overhead (and the measurement noise it adds) while recording. " +
+                                    "0 (the default) leaves it to grow on demand.")
+    @ArgumentClinic(name = "capacity", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    public abstract static class PapiCallStartNode extends PythonBuiltinNode {
+    public abstract static class PapiCallStartNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GraalPythonModuleBuiltinsClinicProviders.PapiCallStartNodeClinicProviderGen.INSTANCE;
+        }
+
         @TruffleBoundary
         @Specialization
-        static PNone start(@Bind Node inliningTarget,
+        static PNone start(int capacity,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Bind PythonContext context) {
+            if (capacity < 0) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "capacity");
+            }
             NativePapiSupport papi = context.getNativePapiSupport();
             try {
-                papi.startCallRecording();
+                papi.startCallRecording(capacity);
             } catch (NativePapiSupport.PapiException e) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, e);
             }

@@ -295,8 +295,21 @@ public final class NativePapiSupport {
      */
     @TruffleBoundary
     public void startCallRecording() {
+        startCallRecording(0);
+    }
+
+    /**
+     * Same as {@link #startCallRecording()}, but pre-sizes the call log to {@code expectedEvents}
+     * entries. Recording appends to this list on every instrumented call/return, so letting an
+     * ArrayList grow on demand means occasional resize-and-copy pauses land in the middle of
+     * whatever's being measured -- pre-allocating when you have a rough idea of the call volume
+     * avoids that source of noise. {@code expectedEvents <= 0} behaves like the no-arg overload
+     * (grow on demand, from an empty list).
+     */
+    @TruffleBoundary
+    public void startCallRecording(int expectedEvents) {
         ensureRunning();
-        callLog = new ArrayList<>();
+        callLog = expectedEvents > 0 ? new ArrayList<>(expectedEvents) : new ArrayList<>();
         callRecording = true;
     }
 
