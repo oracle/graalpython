@@ -183,7 +183,7 @@ public final class NativePapiSupport {
     private int eventSet = PAPI_NULL;
     private int numEvents;
     /** Scratch buffer for PAPI_read()/PAPI_stop()'s output values, sized to numEvents longs and
-     * reused for the life of one start()..stop() session -- see start(). */
+     * reused for the life of one start()..stop() session. */
     private long valuesPtr = NativeMemory.NULLPTR;
 
     /** Whether the per-call bytecode instrumentation (see PBytecodeDSLRootNode's
@@ -254,10 +254,6 @@ public final class NativePapiSupport {
         }
         eventSet = newEventSet;
         numEvents = eventNames.length;
-        // Reused by every read()/PAPI_read() call for the rest of this session instead of
-        // malloc'ing and freeing a scratch buffer every time -- numEvents is fixed until stop(),
-        // and recordCallEvent() below is on a hot path (fires on every instrumented call/return),
-        // where doing that per call would add real overhead and noise to what's being measured.
         valuesPtr = NativeMemory.mallocLongArray(numEvents);
     }
 
@@ -278,13 +274,17 @@ public final class NativePapiSupport {
             checkError(nativeFunctions.PAPI_stop(eventSet, valuesPtr));
             totals = NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
         } finally {
+            // Tear down unconditionally, even if PAPI_stop itself failed: leaving isRunning() true
+            // while valuesPtr is freed would mean the next read()/stop() hands PAPI a null pointer
+            // to write into (valuesPtr is shared across the session now, not a fresh per-call
+            // allocation), risking a native crash instead of a catchable PapiException.
             NativeMemory.free(valuesPtr);
             valuesPtr = NativeMemory.NULLPTR;
+            destroyEventSetQuietly(eventSet);
+            eventSet = PAPI_NULL;
+            numEvents = 0;
+            callRecording = false;
         }
-        destroyEventSetQuietly(eventSet);
-        eventSet = PAPI_NULL;
-        numEvents = 0;
-        callRecording = false;
         return totals;
     }
 
