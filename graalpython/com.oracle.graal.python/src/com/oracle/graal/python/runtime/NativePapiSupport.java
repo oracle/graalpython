@@ -182,6 +182,9 @@ public final class NativePapiSupport {
 
     private int eventSet = PAPI_NULL;
     private int numEvents;
+    /** Scratch buffer for PAPI_read()/PAPI_stop()'s output values, sized to numEvents longs and
+     * reused for the life of one start()..stop() session -- see start(). */
+    private long valuesPtr = NativeMemory.NULLPTR;
 
     /** Whether the per-call bytecode instrumentation (see PBytecodeDSLRootNode's
      * PapiRecordCallEnter op, and the papi_call_* builtins) should currently append to
@@ -251,32 +254,32 @@ public final class NativePapiSupport {
         }
         eventSet = newEventSet;
         numEvents = eventNames.length;
+        // Reused by every read()/PAPI_read() call for the rest of this session instead of
+        // malloc'ing and freeing a scratch buffer every time -- numEvents is fixed until stop(),
+        // and recordCallEvent() below is on a hot path (fires on every instrumented call/return),
+        // where doing that per call would add real overhead and noise to what's being measured.
+        valuesPtr = NativeMemory.mallocLongArray(numEvents);
     }
 
     /** Cumulative counter values since {@link #start(String[])}; does not stop or reset counting. */
     @TruffleBoundary
     public long[] read() {
         ensureRunning();
-        long valuesPtr = NativeMemory.mallocLongArray(numEvents);
-        try {
-            checkError(nativeFunctions.PAPI_read(eventSet, valuesPtr));
-            return NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
-        } finally {
-            NativeMemory.free(valuesPtr);
-        }
+        checkError(nativeFunctions.PAPI_read(eventSet, valuesPtr));
+        return NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
     }
 
     /** Stops counting, returns the final cumulative counter values, and releases the event set. */
     @TruffleBoundary
     public long[] stop() {
         ensureRunning();
-        long valuesPtr = NativeMemory.mallocLongArray(numEvents);
         long[] totals;
         try {
             checkError(nativeFunctions.PAPI_stop(eventSet, valuesPtr));
             totals = NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
         } finally {
             NativeMemory.free(valuesPtr);
+            valuesPtr = NativeMemory.NULLPTR;
         }
         destroyEventSetQuietly(eventSet);
         eventSet = PAPI_NULL;
@@ -338,16 +341,11 @@ public final class NativePapiSupport {
      * Python code.
      */
     private void recordCallEvent(boolean isEnter, String name) {
-        long valuesPtr = NativeMemory.mallocLongArray(numEvents);
-        try {
-            if (nativeFunctions.PAPI_read(eventSet, valuesPtr) != PAPI_OK) {
-                return;
-            }
-            long[] values = NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
-            callLog.add(new CallEvent(isEnter, name, values));
-        } finally {
-            NativeMemory.free(valuesPtr);
+        if (nativeFunctions.PAPI_read(eventSet, valuesPtr) != PAPI_OK) {
+            return;
         }
+        long[] values = NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
+        callLog.add(new CallEvent(isEnter, name, values));
     }
 
     @TruffleBoundary
