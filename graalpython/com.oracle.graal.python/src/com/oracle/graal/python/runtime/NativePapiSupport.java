@@ -161,11 +161,7 @@ public final class NativePapiSupport {
     /**
      * One recorded call-boundary event: a PAPI snapshot taken exactly at a Python-level function
      * call's entry or exit. Deliberately just an append-only flat record rather than something
-     * that tracks caller/callee nesting itself -- reconstructing the call tree (and, if desired,
-     * subtracting nested calls to get exclusive-of-children costs) from this flat, chronologically
-     * ordered list is a separate, offline post-processing step: since call/return events are
-     * emitted in strict execution order, a simple stack replay over this list (push on ENTER, pop
-     * on EXIT) is enough to pair them up, without this class needing to maintain any stack itself.
+     * that tracks caller/callee nesting itself: any post-processing needs to be done manually.
      */
     public record CallEvent(boolean isEnter, String name, long[] counters) {
     }
@@ -274,10 +270,7 @@ public final class NativePapiSupport {
             checkError(nativeFunctions.PAPI_stop(eventSet, valuesPtr));
             totals = NativeMemory.readLongArrayElements(valuesPtr, 0, numEvents);
         } finally {
-            // Tear down unconditionally, even if PAPI_stop itself failed: leaving isRunning() true
-            // while valuesPtr is freed would mean the next read()/stop() hands PAPI a null pointer
-            // to write into (valuesPtr is shared across the session now, not a fresh per-call
-            // allocation), risking a native crash instead of a catchable PapiException.
+            // Tear down unconditionally and "at all costs", so that we won't call PAPI_read in invalid state
             NativeMemory.free(valuesPtr);
             valuesPtr = NativeMemory.NULLPTR;
             destroyEventSetQuietly(eventSet);
