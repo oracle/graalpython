@@ -167,7 +167,6 @@ public final class NativePapiSupport {
 
     private int eventSet = PAPI_NULL;
     private int numEvents;
-    private long[] prevValues;
 
     private NativePapiSupport(PythonContext context, PapiNativeFunctions nativeFunctions) {
         this.pythonContext = context;
@@ -209,7 +208,8 @@ public final class NativePapiSupport {
     /**
      * Creates an event set for the given PAPI event names (e.g. {@code "PAPI_TOT_CYC"},
      * {@code "PAPI_TOT_INS"}) and starts counting. Counters run cumulatively until {@link #stop()}
-     * -- use {@link #read()} or {@link #delta()} to take non-destructive checkpoints in between.
+     * -- use {@link #read()} to take non-destructive checkpoints in between (callers can diff
+     * successive read() results themselves to get a delta since their own last checkpoint).
      */
     @TruffleBoundary
     public void start(String[] eventNames) {
@@ -229,7 +229,6 @@ public final class NativePapiSupport {
         }
         eventSet = newEventSet;
         numEvents = eventNames.length;
-        prevValues = new long[numEvents];
     }
 
     /** Cumulative counter values since {@link #start(String[])}; does not stop or reset counting. */
@@ -243,19 +242,6 @@ public final class NativePapiSupport {
         } finally {
             NativeMemory.free(valuesPtr);
         }
-    }
-
-    /** Convenience checkpoint: counter values since the last {@link #read()}/{@link #delta()}
-     * call (or since {@link #start(String[])}, for the first call). */
-    @TruffleBoundary
-    public long[] delta() {
-        long[] now = read();
-        long[] d = new long[numEvents];
-        for (int i = 0; i < numEvents; i++) {
-            d[i] = now[i] - prevValues[i];
-        }
-        prevValues = now;
-        return d;
     }
 
     /** Stops counting, returns the final cumulative counter values, and releases the event set. */
@@ -273,7 +259,6 @@ public final class NativePapiSupport {
         destroyEventSetQuietly(eventSet);
         eventSet = PAPI_NULL;
         numEvents = 0;
-        prevValues = null;
         return totals;
     }
 
