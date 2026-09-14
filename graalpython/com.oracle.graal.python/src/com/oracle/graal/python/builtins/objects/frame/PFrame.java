@@ -232,7 +232,8 @@ public final class PFrame extends PythonBuiltinObject {
 
     /**
      * Get the bytecode frame with locals backing this frame. May be copied from the real frame or it might be materialized,
-     * depending on how the PFrame was synced. May be null when using custom locals. In most
+     * depending on how the PFrame was synced. May be null when using custom locals or when a
+     * safepoint could not recover the executing BytecodeNode. In most
      * cases, you should use {@link GetFrameLocalsNode} to get a copy of the locals instead of this method.
      */
     public BytecodeFrame getBytecodeFrame() {
@@ -294,7 +295,9 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean syncsLocals() {
-        return customLocals == null && !materializedFrame;
+        // An unavailable safepoint location cannot provide locals. A later materialization with
+        // a valid BytecodeNode restores synchronization.
+        return customLocals == null && !materializedFrame && bytecodeNode != null;
     }
 
     public PFrame.Reference getRef() {

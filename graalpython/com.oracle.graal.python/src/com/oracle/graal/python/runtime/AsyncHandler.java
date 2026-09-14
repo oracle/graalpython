@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.graalvm.polyglot.SandboxPolicy;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -79,6 +80,8 @@ import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.Debugger;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
@@ -200,11 +203,27 @@ public class AsyncHandler {
                             resetEncapsulatingNode = true;
                         }
                     }
+                    PFrame.Reference injectedCallerInfo = null;
+                    AsyncHandler asyncHandler = context.getAsyncHandler();
+                    if (CallerFlags.needsFrameReference(asyncHandler.rootNode.getCallerFlags()) && context.peekTopFrameInfo(language) == null) {
+                        Frame callerFrame = ReadFrameNode.getCurrentFrame(encapsulatingNodeRef.get(), FrameInstance.FrameAccess.READ_ONLY,
+                                        CallerFlags.NEEDS_FRAME_REFERENCE);
+                        injectedCallerInfo = callerFrame != null ? PArguments.getCurrentFrameInfo(callerFrame) : PFrame.Reference.EMPTY;
+                        // SimpleIndirectInvokeNode passes caller information through the thread
+                        // state when invoked without a VirtualFrame. Async actions do not have a
+                        // normal call site that could prepare it, so supply the interrupted frame
+                        // after CallRootNode has requested it.
+                        threadState.setTopFrameInfo(injectedCallerInfo);
+                    }
                     try {
-                        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().getCallTarget(), args);
+                        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(asyncHandler.getCallTarget(), args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {
+                        if (injectedCallerInfo != null) {
+                            PFrame.Reference restoredCallerInfo = threadState.popTopFrameInfo();
+                            assert restoredCallerInfo == injectedCallerInfo;
+                        }
                         if (resetEncapsulatingNode) {
                             encapsulatingNodeRef.set(prev);
                         }

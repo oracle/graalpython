@@ -127,12 +127,20 @@ public abstract class MaterializeFrameNode extends Node {
      *            {@code continueAt} method. We must use the on-stack BytecodeNode to resolve the
      *            BCI that we read from its stack frame. For a frame that is on top of the stack,
      *            this must be some adopted node in the AST that is currently being executed.
+     *            The explicit {@link PythonLanguage#unavailableSafepointLocation} marker permits
+     *            materialization without bytecode information when an async action has no usable
+     *            location.
      */
     public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
         assert frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
         assert !(location instanceof PBytecodeDSLRootNode) : String.format("Materialized frame: location must not be PBytecodeDSLRootNode, was: %s",
                         location);
         BytecodeNode bytecodeNode = BytecodeNode.get(location);
+        // A root-level safepoint can run after the bytecode interpreter has returned. Expect the
+        // explicit unavailable location in that case, but tolerate missing bytecode information
+        // from other locations as well when assertions are disabled.
+        assert bytecodeNode != null || !(PArguments.getCurrentFrameInfo(frameToMaterialize).getRootNode() instanceof PBytecodeDSLRootNode) ||
+                        location == PythonLanguage.get(null).unavailableSafepointLocation : "Missing BytecodeNode when materializing a Python frame";
         return executeImpl(bytecodeNode, markAsEscaped, forceSync, frameToMaterialize);
     }
 
@@ -156,10 +164,16 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
-    static PFrame freshPFrameForGenerator(BytecodeNode bytecodeNode, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize) {
+    static PFrame freshPFrameForGenerator(BytecodeNode bytecodeNode, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
+                    @Bind PythonLanguage language) {
         MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        PFrame escapedFrame = materializeGeneratorFrame(bytecodeNode, generatorFrame, PArguments.getFunctionObject(frameToMaterialize), PArguments.getGlobals(frameToMaterialize), frameRef);
+        PFrame escapedFrame;
+        if (bytecodeNode != null) {
+            escapedFrame = materializeGeneratorFrame(bytecodeNode, generatorFrame, PArguments.getFunctionObject(frameToMaterialize), PArguments.getGlobals(frameToMaterialize), frameRef);
+        } else {
+            escapedFrame = PFactory.createPFrame(language, frameRef, null, PArguments.getFunctionObject(frameToMaterialize), null);
+        }
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, bytecodeNode, null);
     }
 
@@ -167,6 +181,8 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame alreadyEscapedFrame(BytecodeNode bytecodeNode, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
+        // Restore the node before syncsLocals() is checked if an earlier safepoint had no location.
+        pyFrame.setBytecodeNode(bytecodeNode);
         pyFrame.setLastCallerFlags(getCallerFlags(forceSync));
         if (forceSync) {
             syncValuesNode.execute(pyFrame, frameToMaterialize, bytecodeNode);
@@ -261,7 +277,9 @@ public abstract class MaterializeFrameNode extends Node {
 
         @Specialization(guards = {"pyFrame.syncsLocals()", "isGeneratorFrame(frameToSync)"})
         static void doGenerator(PFrame pyFrame, Frame frameToSync, BytecodeNode bytecodeNode) {
-            pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) frameToSync), true);
+            if (bytecodeNode != null) {
+                pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) frameToSync), true);
+            }
         }
 
         @Specialization(guards = "!pyFrame.syncsLocals()")
