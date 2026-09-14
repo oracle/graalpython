@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
@@ -109,10 +110,17 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PythonCextLongBuiltins {
 
+    private static final CApiTiming TIMING_PYLONG_GETINFO = CApiTiming.create(false, "PyLong_GetInfo");
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
     static long PyLong_GetInfo() {
-        Object result = SysModuleBuiltins.createIntInfo(PythonLanguage.get(null));
-        return PythonToNativeInternalNode.executeNewRefUncached(result);
+        CApiTiming.enter();
+        try {
+            Object result = SysModuleBuiltins.createIntInfo(PythonLanguage.get(null));
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
+        } finally {
+            CApiTiming.exit(TIMING_PYLONG_GETINFO);
+        }
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
@@ -126,10 +134,17 @@ public final class PythonCextLongBuiltins {
         }
     }
 
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMDOUBLE = CApiTiming.create(false, "GraalPyPrivate_Long_FromDouble");
+
     @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false)
     static long GraalPyPrivate_Long_FromDouble(double d) {
-        Object result = PyLongFromDoubleNode.executeUncached(d);
-        return PythonToNativeInternalNode.executeNewRefUncached(result);
+        CApiTiming.enter();
+        try {
+            Object result = PyLongFromDoubleNode.executeUncached(d);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_LONG_FROMDOUBLE);
+        }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int}, call = Ignored)
@@ -280,30 +295,51 @@ public final class PythonCextLongBuiltins {
         throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
     }
 
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMLONGLONG = CApiTiming.create(false, "GraalPyPrivate_Long_FromLongLong");
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
     static long GraalPyPrivate_Long_FromLongLong(long n) {
-        return PythonToNativeInternalNode.executeNewRefUncached(n);
+        CApiTiming.enter();
+        try {
+            return PythonToNativeInternalNode.executeNewRefUncached(n);
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_LONG_FROMLONGLONG);
+        }
     }
+
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMUNSIGNEDLONGLONG = CApiTiming.create(false, "GraalPyPrivate_Long_FromUnsignedLongLong");
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false)
     static long GraalPyPrivate_Long_FromUnsignedLongLong(long n) {
-        Object result = n >= 0 ? n : PFactory.createInt(PythonLanguage.get(null), PInt.longToUnsignedBigInteger(n));
-        return PythonToNativeInternalNode.executeNewRefUncached(result);
+        CApiTiming.enter();
+        try {
+            Object result = n >= 0 ? n : PFactory.createInt(PythonLanguage.get(null), PInt.longToUnsignedBigInteger(n));
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_LONG_FROMUNSIGNEDLONGLONG);
+        }
     }
+
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_NUMBITS = CApiTiming.create(false, "GraalPyPrivate_Long_NumBits");
 
     @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
     static long GraalPyPrivate_Long_NumBits(long objPtr) {
-        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
-        if (obj instanceof Integer value) {
-            return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(value));
-        } else if (obj instanceof Long value) {
-            return Long.SIZE - Long.numberOfLeadingZeros(Math.abs(value));
-        } else if (obj instanceof PInt value) {
-            return value.bitLength();
-        } else if (obj instanceof Boolean value) {
-            return value ? 1 : 0;
+        CApiTiming.enter();
+        try {
+            Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+            if (obj instanceof Integer value) {
+                return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(value));
+            } else if (obj instanceof Long value) {
+                return Long.SIZE - Long.numberOfLeadingZeros(Math.abs(value));
+            } else if (obj instanceof PInt value) {
+                return value.bitLength();
+            } else if (obj instanceof Boolean value) {
+                return value ? 1 : 0;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_LONG_NUMBITS);
         }
-        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
@@ -449,32 +485,39 @@ public final class PythonCextLongBuiltins {
     private static final int ALLOW_INDEX = 16;
     private static final int PYLONG_BITS_IN_DIGIT = 30;
 
+    private static final CApiTiming TIMING_PYLONG_ASNATIVEBYTES = CApiTiming.create(false, "PyLong_AsNativeBytes");
+
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Pointer, Py_ssize_t, Int}, call = Direct)
     static long PyLong_AsNativeBytes(long objectPtr, long buffer, long size, int flags) {
-        if (objectPtr == 0 || size < 0) {
-            throw PythonCextBuiltins.badInternalCall("PyLong_AsNativeBytes", objectPtr == 0 ? "object" : "size");
-        }
-
-        Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
-        Object integer = object;
-        if (!PyLongCheckNode.executeUncached(object)) {
-            if (flags != -1 && (flags & ALLOW_INDEX) != 0) {
-                integer = PyNumberIndexNode.executeUncached(object);
-            } else {
-                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
+        CApiTiming.enter();
+        try {
+            if (objectPtr == 0 || size < 0) {
+                throw PythonCextBuiltins.badInternalCall("PyLong_AsNativeBytes", objectPtr == 0 ? "object" : "size");
             }
-        }
 
-        BigInteger value = CastToJavaBigIntegerNode.executeUncached(integer);
-        if (flags != -1 && (flags & REJECT_NEGATIVE) != 0 && value.signum() < 0) {
-            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
-        }
+            Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
+            Object integer = object;
+            if (!PyLongCheckNode.executeUncached(object)) {
+                if (flags != -1 && (flags & ALLOW_INDEX) != 0) {
+                    integer = PyNumberIndexNode.executeUncached(object);
+                } else {
+                    throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
+                }
+            }
 
-        boolean littleEndian = resolveEndianness(flags);
-        if (size > 0) {
-            writeNativeBytes(buffer, size, value, littleEndian);
+            BigInteger value = CastToJavaBigIntegerNode.executeUncached(integer);
+            if (flags != -1 && (flags & REJECT_NEGATIVE) != 0 && value.signum() < 0) {
+                throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
+            }
+
+            boolean littleEndian = resolveEndianness(flags);
+            if (size > 0) {
+                writeNativeBytes(buffer, size, value, littleEndian);
+            }
+            return requiredNativeBytesSize(value, size, flags);
+        } finally {
+            CApiTiming.exit(TIMING_PYLONG_ASNATIVEBYTES);
         }
-        return requiredNativeBytesSize(value, size, flags);
     }
 
     @TruffleBoundary
@@ -526,33 +569,47 @@ public final class PythonCextLongBuiltins {
         return result;
     }
 
+    private static final CApiTiming TIMING_PYLONG_FROMNATIVEBYTES = CApiTiming.create(false, "PyLong_FromNativeBytes");
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
     static long PyLong_FromNativeBytes(long buffer, long size, int flags) {
-        if (buffer == 0) {
-            throw PythonCextBuiltins.badInternalCall("PyLong_FromNativeBytes", "buffer");
+        CApiTiming.enter();
+        try {
+            if (buffer == 0) {
+                throw PythonCextBuiltins.badInternalCall("PyLong_FromNativeBytes", "buffer");
+            }
+            if (size != (int) size) {
+                throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+            }
+            boolean littleEndian = resolveEndianness(flags);
+            boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
+            byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
+            Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, signed);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
+        } finally {
+            CApiTiming.exit(TIMING_PYLONG_FROMNATIVEBYTES);
         }
-        if (size != (int) size) {
-            throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
-        }
-        boolean littleEndian = resolveEndianness(flags);
-        boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
-        byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
-        Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, signed);
-        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
+
+    private static final CApiTiming TIMING_PYLONG_FROMUNSIGNEDNATIVEBYTES = CApiTiming.create(false, "PyLong_FromUnsignedNativeBytes");
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
     static long PyLong_FromUnsignedNativeBytes(long buffer, long size, int flags) {
-        if (buffer == 0) {
-            throw PythonCextBuiltins.badInternalCall("PyLong_FromUnsignedNativeBytes", "buffer");
+        CApiTiming.enter();
+        try {
+            if (buffer == 0) {
+                throw PythonCextBuiltins.badInternalCall("PyLong_FromUnsignedNativeBytes", "buffer");
+            }
+            if (size != (int) size) {
+                throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+            }
+            boolean littleEndian = resolveEndianness(flags);
+            byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
+            Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, false);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
+        } finally {
+            CApiTiming.exit(TIMING_PYLONG_FROMUNSIGNEDNATIVEBYTES);
         }
-        if (size != (int) size) {
-            throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
-        }
-        boolean littleEndian = resolveEndianness(flags);
-        byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
-        Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, false);
-        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     private static boolean resolveEndianness(int flags) {
