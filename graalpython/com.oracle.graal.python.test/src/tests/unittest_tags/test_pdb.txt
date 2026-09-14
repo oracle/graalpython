@@ -14,6 +14,7 @@ DocTestCase.test.test_pdb.test_pdb_display_command @ darwin-arm64,linux-aarch64,
 DocTestCase.test.test_pdb.test_pdb_displayhook @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_empty_line @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_f_trace_lines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+DocTestCase.test.test_pdb.test_pdb_function_break @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_interact_command @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_invalid_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_issue_20766 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
