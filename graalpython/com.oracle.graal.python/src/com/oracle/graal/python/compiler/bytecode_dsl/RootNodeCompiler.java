@@ -1368,33 +1368,36 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private void emitComprehension(ComprehensionTy[] generators, int index, Builder b, ComprehensionType type,
-                    StackValue collection,
+                    StackValue initialIterator, StackValue collection,
                     BiConsumer<StatementCompiler, StackValue> accumulateProducer) {
         ComprehensionTy comp = generators[index];
         beginSourceSection(comp, b);
         StatementCompiler statementCompiler = new StatementCompiler(b);
 
         if (comp.isAsync) {
-            ExprTy iter = null;
-            if (index > 0) {
-                iter = comp.iter;
+            if (index == 0) {
+                assert initialIterator != null;
+                statementCompiler.emitAsyncFor(initialIterator, comp.target, null, true, index,
+                                (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collection, accumulateProducer, stmtComp));
+            } else {
+                statementCompiler.emitAsyncFor(comp.iter, comp.target, null, true, index,
+                                (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collection, accumulateProducer, stmtComp));
             }
-            statementCompiler.emitAsyncFor(iter, comp.target, null, true, index,
-                            (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collection, accumulateProducer, stmtComp));
         } else {
             BytecodeLocal localValue = beginTemporaryLocalOrGetLocal(comp.target, b);
 
             b.beginBlock();
-            b.beginBindStackValue();
+            StackValue iter;
             if (index == 0) {
-                // The iterator is the function argument for the outermost generator
-                b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
+                assert initialIterator != null;
+                iter = initialIterator;
             } else {
+                b.beginBindStackValue();
                 b.beginGetIter();
                 comp.iter.accept(statementCompiler);
                 b.endGetIter();
+                iter = b.endBindStackValue();
             }
-            StackValue iter = b.endBindStackValue();
 
             b.beginWhile();
 
@@ -1440,7 +1443,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (index == generators.length - 1) {
             accumulateProducer.accept(statementCompiler, collection);
         } else {
-            emitComprehension(generators, index + 1, b, type, collection, accumulateProducer);
+            emitComprehension(generators, index + 1, b, type, null, collection, accumulateProducer);
         }
 
         if (comp.ifs != null) {
@@ -1473,6 +1476,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return compileRootNode(type.name, new ArgumentInfo(1, 0, 0, false, false), node, b -> {
             beginRootNode(node, null, b);
 
+            b.beginBlock();
+            // The iterator is passed as an argument. Stash it on the stack.
+            b.beginBindStackValue();
+            b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
+            StackValue initialIterator = b.endBindStackValue();
+
             assert scope.isGenerator() == (type == ComprehensionType.GENEXPR);
             if (scope.isCoroutine() || scope.isGenerator()) {
                 b.beginResumeYieldGenerator();
@@ -1481,7 +1490,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             StatementCompiler statementCompiler = new StatementCompiler(b);
-            b.beginBlock();
             StackValue collection = null;
             if (!scope.isGenerator()) {
                 b.beginBindStackValue();
@@ -1489,7 +1497,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 collection = b.endBindStackValue();
             }
 
-            emitComprehension(generators, 0, b, type, collection, accumulateProducer);
+            emitComprehension(generators, 0, b, type, initialIterator, collection, accumulateProducer);
 
             beginReturn(b);
             if (scope.isGenerator()) {
@@ -3969,24 +3977,22 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return null;
         }
 
-        /**
-        * @param iterOrNull If {@code null}, then it assumes that the first argument holds the
-        *                   iterator, i.e., it won't call {@code __aiter__} on it and just use it as is.
-        *                   This is the calling convention for async comprehensions.
-        */
-        private <T> void emitAsyncFor(ExprTy iterOrNull, ExprTy target, StmtTy[] orElse, boolean isComprehension,
+        private <T> void emitAsyncFor(ExprTy iterExpr, ExprTy target, StmtTy[] orElse, boolean isComprehension,
+                        T arg, BiConsumer<StatementCompiler, T> body) {
+            b.beginBlock();
+            b.beginBindStackValue();
+            b.beginGetAIter();
+            iterExpr.accept(this);
+            b.endGetAIter();
+            StackValue iterStackValue = b.endBindStackValue();
+            emitAsyncFor(iterStackValue, target, orElse, isComprehension, arg, body);
+            b.endBlock();
+        }
+
+        private <T> void emitAsyncFor(StackValue iterStackValue, ExprTy target, StmtTy[] orElse, boolean isComprehension,
                         T arg, BiConsumer<StatementCompiler, T> body) {
             assert !isComprehension || orElse == null;
             b.beginBlock();
-            b.beginBindStackValue();
-            if (iterOrNull == null) {
-                b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
-            } else {
-                b.beginGetAIter();
-                iterOrNull.accept(this);
-                b.endGetAIter();
-            }
-            StackValue iterStackValue = b.endBindStackValue();
 
             BytecodeLocal result = beginTemporaryLocal();
             BytecodeLabel loopEnd = b.createLabel();
