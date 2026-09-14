@@ -87,9 +87,9 @@ test.test_ftplib.TestTLS_FTPClassMixin.test_storlines @ darwin-arm64,linux-aarch
 test.test_ftplib.TestTLS_FTPClassMixin.test_storlines_too_long @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ftplib.TestTLS_FTPClassMixin.test_voidcmd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ftplib.TestTLS_FTPClassMixin.test_with_statement @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_ftplib.TestTimeouts.testTimeoutConnect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_ftplib.TestTimeouts.testTimeoutDefault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_ftplib.TestTimeouts.testTimeoutDifferentOrder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_ftplib.TestTimeouts.testTimeoutDirectAccess @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ftplib.TestTimeouts.testTimeoutConnect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_ftplib.TestTimeouts.testTimeoutDefault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_ftplib.TestTimeouts.testTimeoutDifferentOrder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_ftplib.TestTimeouts.testTimeoutDirectAccess @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_ftplib.TestTimeouts.testTimeoutNone @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_ftplib.TestTimeouts.testTimeoutValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_ftplib.TestTimeouts.testTimeoutValue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
