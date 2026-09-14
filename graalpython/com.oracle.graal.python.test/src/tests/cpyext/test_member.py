@@ -231,6 +231,15 @@ class TestMethod(unittest.TestCase):
         import warnings
         warnings.simplefilter("ignore")
 
+        def assert_overflow(member, value, message, expected_value):
+            try:
+                setattr(obj, member, value)
+            except OverflowError as e:
+                assert str(e) == message
+            else:
+                assert False, "expected OverflowError"
+            assert getattr(obj, member) == expected_value
+
         # char, uchar, short, ushort, int, uint, long, ulong, Py_ssize_t
         max_values = obj.get_max_values()
         min_values = obj.get_min_values()
@@ -255,20 +264,34 @@ class TestMethod(unittest.TestCase):
             assert val != min_values[i], "was: %r" % getattr(obj, m)
             assert_raises(TypeError, setattr, obj, m, "hello")
             assert_raises(OverflowError, setattr, obj, m, int(-1e40))
-            assert_raises(OverflowError, setattr, obj, m, int(1e40))
+            setattr(obj, m, 42)
+            message = "Python int too large to convert to C unsigned long" if m == "member_uint" else "Python int too large to convert to C long"
+            assert_overflow(m, int(1e40), message, 42)
 
         # T_LONG, T_ULONG, T_PYSSIZET
         max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF)
-        err_values = (-1, 0xFFFFFFFFFFFFFFFF, -1, -1, 0xFFFFFFFFFFFFFFFF)
+        err_values = (-1, 42, -1, -1, 42)
+        err_messages = ("Python int too large to convert to C long",
+                        "Python int too large to convert to C unsigned long",
+                        "Python int too large to convert to C ssize_t",
+                        "int too big to convert",
+                        "int too big to convert")
         for i, m in enumerate(("member_long", "member_ulong", "member_pyssizet", "member_longlong", "member_ulonglong")):
             assert type(getattr(obj, m)) is int
             assert getattr(obj, m) == 0
             assert_raises(TypeError, delattr, obj, m)
             setattr(obj, m, max_values[i])
             assert getattr(obj, m) == max_values[i]
-            assert_raises(OverflowError, setattr, obj, m, max_values[i] + 1)
-            val = getattr(obj, m)
-            assert val == err_values[i], "member: %s ;; was: %r" % (m, val)
+            setattr(obj, m, 42)
+            assert_overflow(m, max_values[i] + 1, err_messages[i], err_values[i])
+
+        class Indexable:
+            def __index__(self):
+                return 42
+
+        obj.member_pyssizet = 42
+        assert_raises(TypeError, setattr, obj, "member_pyssizet", Indexable())
+        assert obj.member_pyssizet == -1
 
         # T_FLOAT, T_DOUBLE
         for i, m in enumerate(("member_float", "member_double")):

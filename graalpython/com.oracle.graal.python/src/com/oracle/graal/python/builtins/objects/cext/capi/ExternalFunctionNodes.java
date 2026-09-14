@@ -98,6 +98,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -119,11 +120,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadAndClearNativeException;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
@@ -186,7 +185,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1540,13 +1538,11 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other", "op"), true, false);
         @Child private ReadIndexedArgumentNode readOtherNode;
         @Child private ReadIndexedArgumentNode readOpNode;
-        @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
         RichCmpFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.readOtherNode = ReadIndexedArgumentNode.create(1);
             this.readOpNode = ReadIndexedArgumentNode.create(2);
-            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.RICHCMPFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, int.class})
@@ -1554,15 +1550,11 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
-            try {
-                Object self = readSelf(frame);
-                assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
-                Object arg1 = ensurePythonObject(readOtherNode.execute(frame));
-                Object arg2 = ensurePythonObject(readOpNode.execute(frame));
-                return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, arg1, asSsizeTNode.executeIntCached(arg2, 1, Integer.BYTES)));
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object arg1 = ensurePythonObject(readOtherNode.execute(frame));
+            Object arg2 = ensurePythonObject(readOpNode.execute(frame));
+            return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, arg1, PyLongAsIntNodeGen.getUncached().execute(frame, this, arg2)));
         }
 
         @Override

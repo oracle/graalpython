@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.byteIndexToCodepointIndex;
@@ -56,8 +55,8 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByte
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShortArrayElement;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.SURROGATE_CODE_POINT_SET;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.Charset;
@@ -84,10 +83,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -102,25 +99,18 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -342,53 +332,6 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
-    @GenerateUncached
-    @ImportStatic(PGuards.class)
-    public abstract static class ConvertPIntToPrimitiveNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize, boolean exact);
-
-        public final Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize) {
-            return execute(inliningTarget, o, signed, targetTypeSize, true);
-        }
-
-        public final long executeLongCached(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(this, o, signed, targetTypeSize, exact));
-        }
-
-        public final int executeIntCached(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, exact));
-        }
-
-        public final long executeLongCached(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(this, o, signed, targetTypeSize, true));
-        }
-
-        public final int executeIntCached(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, true));
-        }
-
-        @Specialization
-        static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
-                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
-        }
-
-        @Specialization
-        static Object doLong(long value, int signed, int targetTypeSize, boolean exact,
-                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
-        }
-
-        @Specialization(replaces = {"doInt", "doLong"})
-        static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
-        }
-    }
-
     /**
      * Use this node to transform an exception to native if a Python exception was thrown during an
      * upcall and before returning to native code. This node will reify the exception appropriately
@@ -591,347 +534,6 @@ public abstract class CExtCommonNodes {
     }
 
     /**
-     * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
-     * {@code long}).<br/>
-     * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
-     * coercion and may raise a Python exception if coercion fails. <br/>
-     * Allowed {@code targetTypeSize} values are {@code 4} and {@code 8}. <br/>
-     * If {@code exact} is {@code false}, then casting can be lossy without raising an error.
-     */
-    @GenerateUncached
-    @ImportStatic(PGuards.class)
-    @GenerateInline(false) // footprint reduction 32 -> 15, triggers GR-44020
-    public abstract static class AsNativePrimitiveNode extends Node {
-
-        public final int toInt32(Object value, boolean exact) {
-            return (int) execute(value, 1, 4, exact);
-        }
-
-        public final int toUInt32(Object value, boolean exact) {
-            return (int) execute(value, 0, 4, exact);
-        }
-
-        public final long toInt64(Object value, boolean exact) {
-            return (long) execute(value, 1, 8, exact);
-        }
-
-        public final long toUInt64(Object value, boolean exact) {
-            return (long) execute(value, 0, 8, exact);
-        }
-
-        public abstract Object execute(byte value, int signed, int targetTypeSize, boolean exact);
-
-        public abstract Object execute(int value, int signed, int targetTypeSize, boolean exact);
-
-        public abstract Object execute(long value, int signed, int targetTypeSize, boolean exact);
-
-        public abstract Object execute(Object value, int signed, int targetTypeSize, boolean exact);
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed != 0"})
-        @SuppressWarnings("unused")
-        static int doIntToInt32(int value, int signed, int targetTypeSize, boolean exact) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static int doIntToUInt32Pos(int value, int signed, int targetTypeSize, boolean exact) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
-        @SuppressWarnings("unused")
-        static int doIntToUInt32(int value, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            if (exact && value < 0) {
-                throw raiseNegativeValue(inliningTarget, raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doIntToInt64(int obj, int signed, int targetTypeSize, boolean exact) {
-            return obj;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doIntToUInt64Pos(int value, int signed, int targetTypeSize, boolean exact) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
-        @SuppressWarnings("unused")
-        static long doIntToUInt64(int value, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            if (exact && value < 0) {
-                throw raiseNegativeValue(inliningTarget, raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doLongToInt64(long value, int signed, int targetTypeSize, boolean exact) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doLongToUInt64Pos(long value, int signed, int targetTypeSize, boolean exact) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
-        @SuppressWarnings("unused")
-        static long doLongToUInt64(long value, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            if (exact && value < 0) {
-                throw raiseNegativeValue(inliningTarget, raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
-        @SuppressWarnings("unused")
-        static int doLongToInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return PInt.intValueExact(obj);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-            }
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0", "obj >= 0"})
-        @SuppressWarnings("unused")
-        static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (Integer.toUnsignedLong((int) obj) == obj) {
-                return (int) obj;
-            } else {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-            }
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"}, replaces = "doLongToUInt32PosExact")
-        @SuppressWarnings("unused")
-        static int doLongToUInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (obj < 0) {
-                throw raiseNegativeValue(inliningTarget, raiseNode);
-            }
-            return doLongToUInt32PosExact(obj, signed, targetTypeSize, exact, inliningTarget, raiseNode);
-        }
-
-        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
-        @SuppressWarnings("unused")
-        static int doLongToInt32Lossy(long obj, int signed, int targetTypeSize, boolean exact) {
-            return (int) obj;
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4"})
-        @SuppressWarnings("unused")
-        @TruffleBoundary
-        static int doPIntTo32Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                if (signed != 0) {
-                    return obj.intValueExact();
-                } else if (obj.bitLength() <= 32) {
-                    if (obj.isNegative()) {
-                        throw raiseNegativeValue(inliningTarget, raiseNode);
-                    }
-                    return obj.intValue();
-                }
-            } catch (OverflowException e) {
-                // fall through
-            }
-            throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 8"})
-        @SuppressWarnings("unused")
-        @TruffleBoundary
-        static long doPIntTo64Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                if (signed != 0) {
-                    return obj.longValueExact();
-                } else if (obj.bitLength() <= 64) {
-                    if (obj.isNegative()) {
-                        throw raiseNegativeValue(inliningTarget, raiseNode);
-                    }
-                    return obj.longValue();
-                }
-            } catch (OverflowException e) {
-                // fall through
-            }
-            throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
-        @SuppressWarnings("unused")
-        static int doPIntToInt32Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
-            return obj.intValue();
-        }
-
-        @Specialization(guards = {"!exact", "targetTypeSize == 8"})
-        @SuppressWarnings("unused")
-        static long doPIntToInt64Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
-            return obj.longValue();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4 || targetTypeSize == 8"}, //
-                        replaces = {"doIntToInt32", "doIntToUInt32Pos", "doIntToUInt32", //
-                                        "doIntToInt64", "doIntToUInt64Pos", "doIntToUInt64", //
-                                        "doLongToInt64", "doLongToUInt64Pos", "doLongToUInt64", //
-                                        "doLongToInt32Exact", "doLongToUInt32PosExact", "doLongToUInt32Exact", "doLongToInt32Lossy", //
-                                        "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
-        static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object result = indexNode.execute(null, inliningTarget, obj);
-            /*
-             * The easiest would be to recursively use this node and ensure that this generic case
-             * isn't taken but we cannot guarantee that because the uncached version will always try
-             * the generic case first. Hence, the 'toInt32' and 'toInt64' handle all cases in
-             * if-else style. This won't be as bad as it looks in source code because arguments
-             * 'signed', 'targetTypeSize', and 'exact' are usually constants.
-             */
-            if (targetTypeSize == 4) {
-                return toInt32(inliningTarget, result, signed, exact, raiseNode);
-            } else if (targetTypeSize == 8) {
-                return toInt64(inliningTarget, result, signed, exact, raiseNode);
-            }
-            throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        @SuppressWarnings("unused")
-        static int doUnsupportedTargetSize(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        private static PException raiseNegativeValue(Node inliningTarget, PRaiseNode raiseNativeNode) {
-            throw raiseNativeNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
-        }
-
-        /**
-         * Slow-path conversion of an object to a signed or unsigned 32-bit value.
-         */
-        private static int toInt32(Node inliningTarget, Object object, int signed, boolean exact,
-                        PRaiseNode raiseNode) {
-            if (object instanceof Integer) {
-                int ival = (int) object;
-                if (signed != 0) {
-                    return ival;
-                }
-                return doIntToUInt32(ival, signed, 4, exact, inliningTarget, raiseNode);
-            } else if (object instanceof Long) {
-                long lval = (long) object;
-                if (exact) {
-                    if (signed != 0) {
-                        return doLongToInt32Exact(lval, 1, 4, true, inliningTarget, raiseNode);
-                    }
-                    return doLongToUInt32Exact(lval, signed, 4, true, inliningTarget, raiseNode);
-                }
-                return doLongToInt32Lossy(lval, 0, 4, false);
-            } else if (object instanceof PInt) {
-                PInt pval = (PInt) object;
-                if (exact) {
-                    return doPIntTo32Bit(pval, signed, 4, true, inliningTarget, raiseNode);
-                }
-                return doPIntToInt32Lossy(pval, signed, 4, false);
-            }
-            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
-        }
-
-        /**
-         * Slow-path conversion of an object to a signed or unsigned 64-bit value.
-         */
-        private static Object toInt64(Node inliningTarget, Object object, int signed, boolean exact,
-                        PRaiseNode raiseNode) {
-            if (object instanceof Integer) {
-                Integer ival = (Integer) object;
-                if (signed != 0) {
-                    return ival.longValue();
-                }
-                return doIntToUInt64(ival, signed, 8, exact, inliningTarget, raiseNode);
-            } else if (object instanceof Long) {
-                long lval = (long) object;
-                if (signed != 0) {
-                    return doLongToInt64(lval, 1, 8, exact);
-                }
-                return doLongToUInt64(lval, signed, 8, exact, inliningTarget, raiseNode);
-            } else if (object instanceof PInt) {
-                PInt pval = (PInt) object;
-                if (exact) {
-                    return doPIntTo64Bit(pval, signed, 8, true, inliningTarget, raiseNode);
-                }
-                return doPIntToInt64Lossy(pval, signed, 8, false);
-            }
-            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
-        }
-    }
-
-    /**
-     * This node converts a C Boolean value to Python Boolean.
-     */
-    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
-    @GenerateUncached
-    public abstract static class NativePrimitiveAsPythonBooleanNode extends Node {
-
-        public abstract Object execute(Object value);
-
-        @Specialization
-        static Boolean doBoolean(Boolean b) {
-            return b;
-        }
-
-        @Specialization
-        static Object doByte(byte b) {
-            return b != 0;
-        }
-
-        @Specialization
-        static Object doShort(short i) {
-            return i != 0;
-        }
-
-        @Specialization
-        static Object doLong(long l) {
-            // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // semantics as we should just read a single byte.
-            return l != 0;
-        }
-
-        @Specialization(replaces = {"doBoolean", "doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(Object n,
-                        @CachedLibrary("n") InteropLibrary lib) {
-            if (lib.fitsInLong(n)) {
-                try {
-                    return lib.asLong(n) != 0;
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    /**
      * Converts a Python character (1-element Python string) into a UTF-8 encoded C {@code char}.
      * According to CPython, we need to encode the whole Python string before we access the first
      * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
@@ -957,31 +559,6 @@ public abstract class CExtCommonNodes {
     }
 
     /**
-     * Converts a Python object to a C primitive value with a fixed size and sign.
-     *
-     * @see AsNativePrimitiveNode
-     */
-    public abstract static class AsFixedNativePrimitiveNode extends Node {
-
-        private final int targetTypeSize;
-        private final int signed;
-
-        protected AsFixedNativePrimitiveNode(int targetTypeSize, boolean signed) {
-            this.targetTypeSize = targetTypeSize;
-            this.signed = PInt.intValue(signed);
-        }
-
-        public abstract Object execute(Object object);
-
-        // Adding specializations for primitives does not make a lot of sense just to avoid
-        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
-        @Specialization
-        Object doGeneric(Object value,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
-        }
-    }
-
     /**
      * Implements semantics of function {@code typeobject.c: getindex}.
      */
