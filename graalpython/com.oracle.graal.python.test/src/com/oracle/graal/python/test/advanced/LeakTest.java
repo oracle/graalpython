@@ -62,6 +62,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -104,7 +105,8 @@ public class LeakTest extends AbstractLanguageLauncher {
     private boolean nullStdout = false;
     private boolean forbidCApiResidue = false;
     private String languageId;
-    private String code;
+    private String code = "";
+    private Source source;
     private List<String> forbiddenClasses = new ArrayList<>();
 
     private static final int REPEAT_AND_CHECK_BASLINE_ITERATION = 32;
@@ -378,10 +380,11 @@ public class LeakTest extends AbstractLanguageLauncher {
         if (nullStdout) {
             contextBuilder.out(OutputStream.nullOutputStream());
         }
+        source = Source.create(getLanguageId(), code);
 
         try (Context c = contextBuilder.build()) {
             try {
-                c.eval(getLanguageId(), code);
+                eval(c);
             } catch (PolyglotException e) {
                 handleException(e);
             }
@@ -397,7 +400,7 @@ public class LeakTest extends AbstractLanguageLauncher {
                 }
                 try (Context c = contextBuilder.build()) {
                     try {
-                        c.eval(getLanguageId(), code);
+                        eval(c);
                     } catch (PolyglotException e) {
                         handleException(e);
                     }
@@ -415,6 +418,10 @@ public class LeakTest extends AbstractLanguageLauncher {
         }
 
         throw new SystemExit();
+    }
+
+    private void eval(Context context) {
+        context.eval(source);
     }
 
     private void handleException(PolyglotException e) {
