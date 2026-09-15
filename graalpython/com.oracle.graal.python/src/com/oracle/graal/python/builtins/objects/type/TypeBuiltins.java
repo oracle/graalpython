@@ -153,7 +153,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
@@ -798,20 +798,18 @@ public final class TypeBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doType(PythonBuiltinClassType self,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached GetDictIfExistsNode getDict) {
-            return doManaged(getContext().lookupType(self), language, getDict);
+                        @Shared @Cached GetOrCreateDictNode getDict) {
+            return doManaged(getContext().lookupType(self), inliningTarget, language, getDict);
         }
 
         @Specialization
         static Object doManaged(PythonManagedClass self,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached GetDictIfExistsNode getDict) {
-            PDict dict = getDict.execute(self);
-            if (dict == null) {
-                dict = PFactory.createDictFixedStorage(language, self);
-                // The mapping is unmodifiable, so we don't have to assign it back
-            }
+                        @Shared @Cached GetOrCreateDictNode getDict) {
+            PDict dict = getDict.execute(inliningTarget, self);
             return PFactory.createMappingproxy(language, dict);
         }
 
