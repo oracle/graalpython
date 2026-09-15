@@ -49,10 +49,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -79,6 +85,48 @@ public class PDictTest {
 
     static int length(PDict dict) {
         return HashingStorageLen.executeUncached(dict.getDictStorage());
+    }
+
+    @Test
+    public void dynamicStorageAttributeWrites() {
+        PythonObject object = PFactory.createSimpleNamespace(PythonLanguage.get(null));
+        WriteAttributeToPythonObjectNode.executeUncached(object, ts("key"), 1);
+        PDict dict = GetOrCreateDictNode.executeUncached(object);
+        assertEquals(1, length(dict));
+        WriteAttributeToObjectNode.getUncached().execute(object, ts("key"), PNone.NO_VALUE);
+        assertEquals(0, length(dict));
+        WriteAttributeToObjectNode.getUncached().execute(object, ts("key"), 2);
+        assertEquals(1, length(dict));
+        WriteAttributeToObjectNode.getUncached().execute(object, ts("key"), PNone.NO_VALUE);
+        assertEquals(0, length(dict));
+    }
+
+    @Test(expected = AssertionError.class)
+    public void directAttributeWriteRejectsBackingDict() {
+        PythonObject object = PFactory.createSimpleNamespace(PythonLanguage.get(null));
+        GetOrCreateDictNode.executeUncached(object);
+        WriteAttributeToPythonObjectNode.executeUncached(object, ts("key"), 1);
+    }
+
+    @Test(expected = AssertionError.class)
+    public void dynamicStorageDetectsStaleTemporaryWrapper() {
+        PythonObject object = PFactory.createSimpleNamespace(PythonLanguage.get(null));
+        DynamicObjectStorage storage = new DynamicObjectStorage(object);
+        assertEquals(0, HashingStorageLen.executeUncached(storage));
+        WriteAttributeToObjectNode.getUncached().execute(object, ts("key"), 1);
+        HashingStorageLen.executeUncached(storage);
+    }
+
+    @Test(expected = AssertionError.class)
+    public void dynamicStorageDetectsStaleTemporaryWrapperWithDict() {
+        PythonObject object = PFactory.createSimpleNamespace(PythonLanguage.get(null));
+        PDict dict = GetOrCreateDictNode.executeUncached(object);
+        DynamicObjectStorage storage = new DynamicObjectStorage(object);
+        assertEquals(0, HashingStorageLen.executeUncached(storage));
+        assertEquals(0, length(dict));
+        WriteAttributeToObjectNode.getUncached().execute(object, ts("key"), 1);
+        assertEquals(1, length(dict));
+        HashingStorageLen.executeUncached(storage);
     }
 
     @Test

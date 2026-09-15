@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -54,10 +55,9 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
- * object has dict, also bypasses any other additional logic in {@link WriteAttributeToObjectNode}.
- * This node does not provide any functionality on top of
- * {@link com.oracle.truffle.api.object.DynamicObject.PutNode}, its purpose is to provide an
+ * Writes an attribute directly to the underlying {@link DynamicObject}. The caller must ensure
+ * that the object has no backing dictionary. Otherwise, use {@link WriteAttributeToObjectNode}.
+ * This node bypasses the additional logic in that node. Its purpose is to provide an
  * abstraction in preparation for the transition from {@link DynamicObject} to
  * {@link com.oracle.graal.python.builtins.objects.common.ObjectHashMap}.
  */
@@ -85,6 +85,7 @@ public abstract class WriteAttributeToPythonObjectNode extends PNodeWithContext 
     @Specialization
     static void write(PythonObject dynamicObject, TruffleString key, Object value,
                     @Cached DynamicObject.PutNode putNode) {
+        assert GetDictIfExistsNode.getDictUncached(dynamicObject) == null : "direct attribute write with a backing dictionary";
         putNode.execute(dynamicObject, key, value);
     }
 }

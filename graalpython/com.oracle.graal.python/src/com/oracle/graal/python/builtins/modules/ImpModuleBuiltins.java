@@ -98,7 +98,7 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -627,13 +627,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
-            WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
+            WriteAttributeToObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(code.getRootCallTarget(), PArguments.withGlobals(code, module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
-        WriteAttributeToPythonObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);
+        WriteAttributeToObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);
 
         return module;
     }

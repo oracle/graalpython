@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Speci
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -93,6 +95,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     public static final int EXPLODE_LOOP_SIZE_LIMIT = 16;
 
     final DynamicObject store;
+    int cachedLength = -1;
 
     static final class Store extends DynamicObject {
         public Store(Shape shape) {
@@ -126,7 +129,37 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         public abstract int execute(DynamicObjectStorage storage);
 
-        @Specialization(guards = {"cachedShape == self.store.getShape()", "keys.length < EXPLODE_LOOP_SIZE_LIMIT"}, limit = "2")
+        @Specialization(guards = "self.cachedLength >= 0")
+        static int cachedLength(DynamicObjectStorage self) {
+            assert self.cachedLength == actualLength(self) : "stale DynamicObjectStorage length";
+            return self.cachedLength;
+        }
+
+        @TruffleBoundary
+        private static int actualLength(DynamicObjectStorage self) {
+            int len = 0;
+            ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
+            for (Object key : keyArray(self)) {
+                len = incrementLen(self, readNode, len, key);
+            }
+            return len;
+        }
+
+        @Specialization(guards = {"self.cachedLength < 0", "hasNoDeletedProperties(self)"})
+        static int shapeLength(DynamicObjectStorage self) {
+            return cacheLength(self, self.store.getShape().getPropertyCount());
+        }
+
+        static boolean hasNoDeletedProperties(DynamicObjectStorage self) {
+            return self.store instanceof PythonManagedClass && (self.store.getShape().getFlags() & PythonObject.HAS_NO_VALUE_PROPERTIES) == 0;
+        }
+
+        private static int cacheLength(DynamicObjectStorage self, int length) {
+            self.cachedLength = length;
+            return length;
+        }
+
+        @Specialization(guards = {"self.cachedLength < 0", "!hasNoDeletedProperties(self)", "cachedShape == self.store.getShape()", "keys.length < EXPLODE_LOOP_SIZE_LIMIT"}, limit = "2")
         @ExplodeLoop
         static int cachedLen(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
@@ -136,10 +169,10 @@ public final class DynamicObjectStorage extends HashingStorage {
             for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
             }
-            return len;
+            return cacheLength(self, len);
         }
 
-        @Specialization(replaces = "cachedLen")
+        @Specialization(guards = {"self.cachedLength < 0", "!hasNoDeletedProperties(self)"}, replaces = "cachedLen")
         static int length(DynamicObjectStorage self,
                         @Shared @Cached(inline = false) ReadAttributeFromPythonObjectNode readNode,
                         @Cached DynamicObject.GetKeyArrayNode keyArrayNode) {
@@ -148,7 +181,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
             }
-            return len;
+            return cacheLength(self, len);
         }
 
         private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromPythonObjectNode readNode) {
@@ -269,12 +302,31 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    void setStringKey(TruffleString key, Object value, DynamicObject.PutNode putNode) {
+    void setStringKey(Node inliningTarget, TruffleString key, Object value, DynamicObject.PutNode putNode,
+                    InlinedBranchProfile invalidateLengthProfile, DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+        invalidateLength(inliningTarget, value, invalidateLengthProfile, setShapeFlagsNode);
         putNode.execute(store, key, assertNoJavaString(value));
     }
 
-    boolean setStringKeyIfPresent(TruffleString key, Object value, DynamicObject.PutNode putNode) {
+    boolean setStringKeyIfPresent(Node inliningTarget, TruffleString key, Object value, DynamicObject.PutNode putNode,
+                    InlinedBranchProfile invalidateLengthProfile, DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+        invalidateLength(inliningTarget, value, invalidateLengthProfile, setShapeFlagsNode);
         return putNode.executeIfPresent(store, key, assertNoJavaString(value));
+    }
+
+    private void invalidateLength(Node inliningTarget, InlinedBranchProfile invalidateLengthProfile) {
+        if (cachedLength >= 0) {
+            invalidateLengthProfile.enter(inliningTarget);
+            cachedLength = -1;
+        }
+    }
+
+    private void invalidateLength(Node inliningTarget, Object value, InlinedBranchProfile invalidateLengthProfile, DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+        invalidateLength(inliningTarget, invalidateLengthProfile);
+        // Dictionary writes bypass WriteAttributeToObjectNode's maintenance of this flag.
+        if (value == PNone.NO_VALUE && store instanceof PythonManagedClass) {
+            setShapeFlagsNode.executeAdd(store, PythonObject.HAS_NO_VALUE_PROPERTIES);
+        }
     }
 
     boolean shouldTransitionOnPut() {
@@ -293,8 +345,10 @@ public final class DynamicObjectStorage extends HashingStorage {
         public abstract HashingStorage execute(Node node, HashingStorage receiver);
 
         @Specialization(guards = "!isPythonObject(receiver.getStore())")
-        static HashingStorage clearPlain(DynamicObjectStorage receiver,
+        static HashingStorage clearPlain(Node inliningTarget, DynamicObjectStorage receiver,
+                        @Cached InlinedBranchProfile invalidateLengthProfile,
                         @Cached DynamicObject.ResetShapeNode resetShapeNode) {
+            receiver.invalidateLength(inliningTarget, invalidateLengthProfile);
             resetShapeNode.execute(receiver.getStore(), PythonLanguage.get(resetShapeNode).getEmptyShape());
             return receiver;
         }
@@ -341,8 +395,10 @@ public final class DynamicObjectStorage extends HashingStorage {
     public abstract static class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
         @Specialization
         static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
-                        @Cached DynamicObject.PutNode putNode) {
-            ((DynamicObjectStorage) self).setStringKey(key, value, putNode);
+                        @Cached DynamicObject.PutNode putNode,
+                        @Cached InlinedBranchProfile invalidateLengthProfile,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+            ((DynamicObjectStorage) self).setStringKey(inliningTarget, key, value, putNode, invalidateLengthProfile, setShapeFlagsNode);
         }
     }
 }

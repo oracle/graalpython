@@ -144,7 +144,6 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -156,8 +155,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -856,31 +853,6 @@ public final class PythonCextBuiltins {
             }
         }
         throw PRaiseNode.raiseStatic(null, PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class PyObjectSetAttrNode extends PNodeWithContext {
-
-        abstract void execute(Node inliningTarget, Object object, TruffleString key, Object value);
-
-        @Specialization
-        static void doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
-                        @Exclusive @Cached WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, key, value);
-        }
-
-        @Specialization
-        static void doNativeClass(PythonNativeClass object, TruffleString key, Object value,
-                        @Exclusive @Cached WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, key, value);
-        }
-
-        @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        static void doObject(PythonObject object, TruffleString key, Object value,
-                        @Exclusive @Cached WriteAttributeToPythonObjectNode writeAttrToPythonObjectNode) {
-            writeAttrToPythonObjectNode.execute(object, key, value);
-        }
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObjectRawPointer}, call = Ignored)
