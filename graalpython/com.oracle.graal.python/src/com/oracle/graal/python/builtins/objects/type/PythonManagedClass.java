@@ -103,6 +103,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.tpSlots = slots;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
+        // following code may read and even override methodResolutionOrder
 
         if (baseClasses.length == 1 && baseClasses[0] == null) {
             this.baseClasses = new PythonAbstractClass[]{};
@@ -249,7 +250,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * Non-recursive part of the {@link #onAttributeUpdate(TruffleString, Object)}.
      */
-    private void onAttributeUpdateSelf(TruffleString key, Object value) {
+    void onAttributeUpdateSelf(TruffleString key, Object value) {
         methodResolutionOrder.invalidateFinalAttributeAssumption(key);
     }
 

@@ -1493,6 +1493,13 @@ public record TpSlots(TpSlot nb_bool, //
     @TruffleBoundary
     public static void updateAllSlots(PythonAbstractClass klass, PythonAbstractClass[] allSubclasses) {
         updateSlot(klass, SLOTDEFS.entrySet(), allSubclasses);
+        // MRO recomputation may execute arbitrary Python code before reaching this point. Such
+        // code can specialize instance attribute accesses while the old slot table is still in
+        // use. Invalidate again after the update, including when no individual slot changed.
+        PythonClass.invalidateTypeStableAssumption(klass);
+        for (PythonAbstractClass subclass : allSubclasses) {
+            PythonClass.invalidateTypeStableAssumption(subclass);
+        }
     }
 
     /**

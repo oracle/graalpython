@@ -171,12 +171,16 @@ public final class DynamicObjectStorage extends HashingStorage {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class GetItemNode extends Node {
+    public abstract static class GetItemNode extends Node {
         /**
          * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
          * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
          */
         public abstract Object execute(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash);
+
+        public static Object executeSlowPath(DynamicObjectStorage storage, TruffleString key, Object defaultValue) {
+            return DynamicObject.GetNode.getUncached().execute(storage.store, key, defaultValue);
+        }
 
         @Specialization
         static Object string(Node inliningTarget, DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash,

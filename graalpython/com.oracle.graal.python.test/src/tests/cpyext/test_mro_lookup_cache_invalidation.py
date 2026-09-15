@@ -187,6 +187,24 @@ def test_pytype_modified_on_python_type_invalidates_subclass_lookups():
         assert bool(x) is True
 
 
+def test_pytype_modified_on_python_type_invalidates_instance_attribute_fast_path():
+    class PythonType:
+        pass
+
+    x = PythonType()
+    x.value = "instance"
+
+    def do_lookup(obj):
+        return obj.value
+
+    for i in range(10):
+        assert do_lookup(x) == "instance"
+
+    TypeAttrHelper.changeAttr(PythonType, "value", property(lambda self: "descriptor"))
+    for i in range(10):
+        assert do_lookup(x) == "descriptor"
+
+
 def test_pytype_modified_after_deleting_special_method_invalidates_slot_lookup():
     class PythonBase:
         def __len__(self):

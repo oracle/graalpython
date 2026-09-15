@@ -37,6 +37,201 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import gc
+import warnings
+
+
+def test_cached_instance_load_after_descriptor_added():
+    class C:
+        pass
+
+    def read(obj):
+        return obj.attr
+
+    obj = C()
+    obj.attr = "instance"
+    for _ in range(20):
+        assert read(obj) == "instance"
+
+    C.attr = property(lambda self: "descriptor")
+    assert read(obj) == "descriptor"
+
+
+def test_cached_instance_int_load_after_inherited_descriptor_added():
+    class Base:
+        pass
+
+    class C(Base):
+        pass
+
+    def read(obj):
+        return obj.attr + 1
+
+    obj = C()
+    obj.attr = 41
+    for _ in range(20):
+        assert read(obj) == 42
+
+    Base.attr = property(lambda self: 99)
+    assert read(obj) == 100
+
+
+def test_cached_instance_load_after_getattribute_added():
+    class C:
+        pass
+
+    def read(obj):
+        return obj.attr
+
+    obj = C()
+    obj.attr = "instance"
+    for _ in range(20):
+        assert read(obj) == "instance"
+
+    C.__getattribute__ = lambda self, name: "override"
+    assert read(obj) == "override"
+
+
+def test_cached_instance_store_after_descriptor_replaced():
+    class C:
+        def attr(self):
+            pass
+
+    def write(obj, value):
+        obj.attr = value
+
+    obj = C()
+    for value in range(20):
+        write(obj, value)
+    assert obj.attr == 19
+
+    writes = []
+    C.attr = property(lambda self: "descriptor", lambda self, value: writes.append(value))
+    write(obj, 42)
+    assert writes == [42]
+    assert obj.__dict__["attr"] == 19
+
+
+def test_cached_instance_store_after_inherited_setattr_added():
+    class Base:
+        pass
+
+    class C(Base):
+        pass
+
+    def write(obj, value):
+        obj.attr = value
+
+    obj = C()
+    for value in range(20):
+        write(obj, value)
+    assert obj.attr == 19
+
+    writes = []
+    Base.__setattr__ = lambda self, name, value: writes.append((name, value))
+    write(obj, 42)
+    assert writes == [("attr", 42)]
+    assert obj.__dict__["attr"] == 19
+
+
+def _change_base_while_warming_attribute_access(new_base, warmup):
+    class Base:
+        pass
+
+    class C(Base):
+        pass
+
+    obj = C()
+    obj.attr = 41
+    armed = False
+
+    class Meta(type):
+        def mro(cls):
+            if armed:
+                # C's MRO has already changed and invalidated its lookup caches,
+                # but its slots still come from Base. Specializing here must not
+                # leave cached attribute accesses valid after the slots change.
+                warmup(obj)
+            return super().mro()
+
+    class Child(C, metaclass=Meta):
+        pass
+
+    armed = True
+    C.__bases__ = (new_base,)
+    return obj
+
+
+def test_cached_instance_load_during_bases_change():
+    class Override:
+        def __getattribute__(self, name):
+            return 99
+
+    def read(obj):
+        return obj.attr
+
+    def warmup(obj):
+        for _ in range(20):
+            read(obj)
+
+    obj = _change_base_while_warming_attribute_access(Override, warmup)
+    assert getattr(obj, "attr") == 99
+    assert read(obj) == 99
+
+
+def test_cached_instance_int_load_during_bases_change():
+    class Override:
+        def __getattribute__(self, name):
+            return 99
+
+    def read(obj):
+        return obj.attr + 1
+
+    def warmup(obj):
+        for _ in range(20):
+            read(obj)
+
+    obj = _change_base_while_warming_attribute_access(Override, warmup)
+    assert getattr(obj, "attr") == 99
+    assert read(obj) == 100
+
+
+def test_cached_instance_store_during_bases_change():
+    writes = []
+
+    class Override:
+        def __setattr__(self, name, value):
+            writes.append((name, value))
+
+    def write(obj, value):
+        obj.attr = value
+
+    def warmup(obj):
+        for value in range(20):
+            write(obj, value)
+
+    obj = _change_base_while_warming_attribute_access(Override, warmup)
+    writes.clear()
+    value_before = obj.attr
+    write(obj, 42)
+    assert writes == [("attr", 42)]
+    assert obj.attr == value_before
+
+
+def test_instance_store_with_non_string_class_dict_key():
+    # Such a namespace requires a dictionary that cannot be probed by the
+    # side-effect-free descriptor lookup used when specializing STORE_ATTR.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        C = type("C", (), {1: None})
+
+    def write(obj, value):
+        obj.attr = value
+
+    obj = C()
+    for value in range(20):
+        write(obj, value)
+        assert obj.attr == value
+
 
 def test_evil_getattribute():
     # Variation of a CPython test from test_descr.py

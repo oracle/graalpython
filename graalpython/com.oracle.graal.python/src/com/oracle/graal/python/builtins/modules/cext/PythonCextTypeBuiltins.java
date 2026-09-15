@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -259,14 +260,17 @@ public final class PythonCextTypeBuiltins {
         public static void invalidateMroLookup(PythonAbstractClass klass) {
             // Note: PyType_Modified should not recompute the slots, just invalidate lookup caches
             PythonAbstractClass[] allSubclasses = GetSubclassesAsArrayNode.executeRecursiveUncached(klass);
+            PythonClass.invalidateTypeStableAssumption(klass);
             TpSlots.updateSlotWrappersLookups(klass, allSubclasses);
             MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(klass);
             mroStorage.lookupChanged();
             for (PythonAbstractClass subclass : allSubclasses) {
+                PythonClass.invalidateTypeStableAssumption(subclass);
                 MroSequenceStorage subClassMroStorage = TypeNodes.GetMroStorageNode.executeUncached(subclass);
                 subClassMroStorage.lookupChanged();
             }
         }
+
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
