@@ -1007,9 +1007,11 @@ def punittest(ars, report: Union[Task, bool, None] = False):
         with set_env(PATH=path):
             mx_unittest.unittest(c.args, test_report_tags=({"task": f"punittest-{c.identifier}-{'w' if c.useResources else 'wo'}-resources"} if c.reportConfig else None))
 
-    if skip_leak_tests:
-        return
+    if not skip_leak_tests:
+        leak_tests([])
 
+
+def leak_tests(args):
     # test leaks with Python code only
     run_leak_launcher(["--code", "pass", ])
     run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
@@ -3859,6 +3861,7 @@ mx.update_commands(SUITE, {
     'clean': [python_clean, '[--just-pyc]'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
+    'python-leak-tests': [leak_tests, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'verify-patches': [verify_patches, '[--git-mode]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
