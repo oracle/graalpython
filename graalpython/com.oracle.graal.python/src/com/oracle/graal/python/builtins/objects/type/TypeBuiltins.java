@@ -77,6 +77,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -180,6 +181,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1242,9 +1244,18 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static PList dir(VirtualFrame frame, Object klass,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context,
                         @Cached ConstructListNode constructListNode,
+                        @Cached InlinedBranchProfile slowPathBranch,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
+            Object[] fastNames = dirFast(language, context, klass);
+            if (fastNames != null) {
+                return PFactory.createList(language, fastNames);
+            }
+
+            slowPathBranch.enter(inliningTarget);
+            PSet names = PFactory.createSet(language);
             Object state = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 dir(names, klass);
@@ -1252,6 +1263,56 @@ public final class TypeBuiltins extends PythonBuiltins {
                 BoundaryCallContext.exit(frame, boundaryCallData, state);
             }
             return constructListNode.execute(frame, names);
+        }
+
+        @TruffleBoundary
+        private static Object[] dirFast(PythonLanguage language, PythonContext context, Object klass) {
+            if (!isFastPathEligible(context, klass)) {
+                return null;
+            }
+            LinkedHashSet<TruffleString> names = new LinkedHashSet<>();
+            collectDynamicObjectStorageKeys(names, context, klass);
+            return names.toArray();
+        }
+
+        private static boolean isFastPathEligible(PythonContext context, Object klass) {
+            PythonManagedClass managedClass = asManagedClass(context, klass);
+            if (managedClass == null || PGuards.hasMaterializedDict(managedClass.getShape())) {
+                return false;
+            }
+            for (PythonAbstractClass base : managedClass.getBaseClasses()) {
+                if (!isFastPathEligible(context, base)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static PythonManagedClass asManagedClass(PythonContext context, Object klass) {
+            if (GetClassNode.executeUncached(klass) != PythonBuiltinClassType.PythonClass) {
+                return null;
+            }
+            if (klass instanceof PythonManagedClass pythonManagedClass) {
+                return pythonManagedClass;
+            } else if (klass instanceof PythonBuiltinClassType builtinClassType) {
+                return context.lookupType(builtinClassType);
+            }
+            return null;
+        }
+
+        private static void collectDynamicObjectStorageKeys(LinkedHashSet<TruffleString> names, PythonContext context, Object klass) {
+            PythonManagedClass managedClass = asManagedClass(context, klass);
+            assert managedClass != null && !PGuards.hasMaterializedDict(managedClass.getShape());
+            DynamicObject.GetNode getNode = DynamicObject.GetNode.getUncached();
+            for (Object key : DynamicObject.GetKeyArrayNode.getUncached().execute(managedClass)) {
+                if (key instanceof TruffleString stringKey && getNode.execute(managedClass, stringKey, NO_VALUE) != NO_VALUE) {
+                    names.add(stringKey);
+                }
+            }
+
+            for (PythonAbstractClass base : managedClass.getBaseClasses()) {
+                collectDynamicObjectStorageKeys(names, context, base);
+            }
         }
 
         @TruffleBoundary
