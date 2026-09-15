@@ -80,8 +80,6 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.PropertyGetter;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
@@ -98,14 +96,6 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     public abstract PDict execute(PythonAbstractNativeObject object);
 
     public abstract PDict execute(PythonObject object);
-
-    /**
-     * Use this node when the shape is already cached. Use
-     * {@link PropertyGetter#accepts(DynamicObject)} to check the cached shape in a guard. Note that this does not initialize the final property assumption!
-     */
-    public static PropertyGetter createDictPropertyGetter(Shape shape) {
-        return HiddenAttr.DICT.createPropertyGetter(shape);
-    }
 
     @Specialization(guards = {"object.getShape() == cachedShape", "hasNoDict(cachedShape)"}, limit = "1")
     static PDict getNoDictCachedShape(@SuppressWarnings("unused") PythonObject object,
@@ -133,7 +123,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     }
 
     @Idempotent
-    protected boolean dictIsConstant(PythonObject object) {
+    protected static boolean dictIsConstant(PythonObject object) {
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }
 
