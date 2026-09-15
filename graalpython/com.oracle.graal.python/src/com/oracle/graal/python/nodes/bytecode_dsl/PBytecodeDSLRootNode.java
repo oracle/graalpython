@@ -2264,7 +2264,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Idempotent
         public static boolean hasNoSlotsOrMaterializedDict(Shape cachedShape) {
-            return (cachedShape.getFlags() & (PythonObject.HAS_MATERIALIZED_DICT | PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG)) == 0;
+            return (cachedShape.getFlags() & (PythonObject.HAS_DICT | PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG)) == 0;
         }
 
         @ForceQuickening
