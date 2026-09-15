@@ -76,16 +76,10 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
         return getUncached().execute(getUncached(), object, key, defaultValue);
     }
 
-    public final Object execute(PythonObject object, TruffleString key, Object defaultValue) {
-        return execute(this, object, key, defaultValue);
-    }
-
     public final Object execute(PythonObject object, TruffleString key) {
         return execute(this, object, key, PNone.NO_VALUE);
     }
 
-    // used only by DynamicObjectStorage, which will be removed during the transition from
-    // DynamicObject to ObjectHashMap
     public final Object execute(DynamicObject object, TruffleString key, Object defaultValue) {
         return execute(this, object, key, defaultValue);
     }

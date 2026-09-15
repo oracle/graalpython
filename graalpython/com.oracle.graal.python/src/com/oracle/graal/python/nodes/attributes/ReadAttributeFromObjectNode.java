@@ -45,17 +45,23 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetDictIfMaterializedNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.PropertyGetter;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -65,6 +71,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ReportPolymorphism
 @GenerateUncached
 @GenerateInline(false)
+@ImportStatic({PGuards.class, PythonUtils.class})
 public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
 
     @NeverDefault
@@ -82,12 +89,24 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
 
     public abstract Object execute(PythonAbstractNativeObject object, TruffleString key);
 
+    // fast-path for objects without "materialized" dict
+    @Specialization(guards = {"!hasMaterializedDict(cachedShape)", "key == cachedKey", "getter != null", "getter.accepts(object)"}, limit = "2")
+    static Object readDirect(PythonObject object, TruffleString key,
+                    @Bind Node inliningTarget,
+                    @Cached("object.getShape()") Shape cachedShape,
+                    @Cached("key") TruffleString cachedKey,
+                    @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
+                    @Cached ReadAttributeFromPythonObjectNode.ReceiverCast receiverCastNode) {
+        assert object.checkDictFlags();
+        return getter.get(receiverCastNode.execute(inliningTarget, object));
+    }
+
     // any python object attribute read
-    @Specialization
+    @Specialization(replaces = "readDirect")
     static Object readObjectAttribute(PythonObject object, TruffleString key,
                     @Bind Node inliningTarget,
                     @Shared @Cached InlinedConditionProfile profileHasDict,
-                    @Shared @Cached GetDictIfExistsNode getDict,
+                    @Cached GetDictIfMaterializedNode getDict,
                     @Shared @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
                     @Shared @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
@@ -107,7 +126,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization
     static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
                     @Bind Node inliningTarget,
-                    @Shared @Cached GetDictIfExistsNode getDict,
+                    @Cached GetDictIfExistsNode getDict,
                     @Shared @Cached HashingStorageGetItemStringKey getItem) {
         PDict dict = getDict.execute(object);
         if (dict != null) {
