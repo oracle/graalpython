@@ -49,6 +49,7 @@ import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MTIME;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
@@ -156,6 +157,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -477,6 +479,23 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] objectArr = new Object[arr.length];
         System.arraycopy(arr, 0, objectArr, 0, arr.length);
         return objectArr;
+    }
+
+    @Builtin(name = "compile_import_source", minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "optimize"})
+    @ArgumentClinic(name = "filename", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "optimize", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class CompileImportSourceNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        static Object compile(VirtualFrame frame, Object source, TruffleString filename, int optimize,
+                        @Cached("createForImport()") BuiltinFunctions.CompileNode compileNode) {
+            return compileNode.compile(frame, source, filename, T_EXEC, optimize, -1);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GraalPythonModuleBuiltinsClinicProviders.CompileImportSourceNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "load_bytecode_file", minNumOfPositionalArgs = 3)

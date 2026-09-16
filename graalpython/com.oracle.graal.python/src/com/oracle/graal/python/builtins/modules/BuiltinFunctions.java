@@ -966,15 +966,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
          */
         private final boolean mayBeFromFile;
         private final boolean lstrip;
+        private final boolean cacheImportSource;
 
         public CompileNode(boolean mayBeFromFile, boolean lstrip) {
+            this(mayBeFromFile, lstrip, false);
+        }
+
+        public CompileNode(boolean mayBeFromFile, boolean lstrip, boolean cacheImportSource) {
             this.mayBeFromFile = mayBeFromFile;
             this.lstrip = lstrip;
+            this.cacheImportSource = cacheImportSource;
         }
 
         public CompileNode() {
             this.mayBeFromFile = true;
             this.lstrip = false;
+            this.cacheImportSource = false;
         }
 
         public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int optimize, int featureVersion) {
@@ -1057,7 +1064,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             CallTarget ct;
             TruffleString finalCode = code;
             Supplier<CallTarget> createCode = () -> {
-                Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, type, optimize, flags);
+                // The import source cache below owns the lifetime of these call targets, so avoid the Truffle cache
+                Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, type, optimize, flags, !cacheImportSource);
                 if (type != InputType.SINGLE) {
                     return context.getEnv().parsePublic(source);
                 } else {
@@ -1065,10 +1073,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
                 }
             };
-            if (getContext().isCoreInitialized()) {
-                ct = createCode.get();
+            if (cacheImportSource) {
+                ct = context.getLanguage().cacheSourceTarget(filename, finalCode, type, optimize, flags, createCode);
             } else {
-                ct = getContext().getLanguage().cacheCode(filename, createCode);
+                ct = createCode.get();
             }
             return wrapRootCallTarget((RootCallTarget) ct, filename);
         }
@@ -1236,6 +1244,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @NeverDefault
         public static CompileNode create(boolean mapFilenameToUri, boolean lstrip) {
             return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, lstrip, new ReadArgumentNode[]{});
+        }
+
+        @NeverDefault
+        public static CompileNode createForImport() {
+            return BuiltinFunctionsFactory.CompileNodeFactory.create(true, false, true, new ReadArgumentNode[]{});
         }
 
         @Override

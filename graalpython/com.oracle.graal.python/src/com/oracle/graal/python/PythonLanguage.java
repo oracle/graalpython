@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.internString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
@@ -894,6 +896,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static Source newSource(PythonContext ctxt, TruffleString tsrc, TruffleString name, boolean mayBeFile, InputType inputType, int optimize, int flags) {
+        return newSource(ctxt, tsrc, name, mayBeFile, inputType, optimize, flags, true);
+    }
+
+    public static Source newSource(PythonContext ctxt, TruffleString tsrc, TruffleString name, boolean mayBeFile, InputType inputType, int optimize, int flags, boolean cached) {
         try {
             SourceBuilder sourceBuilder = null;
             String src = tsrc.toJavaStringUncached();
@@ -919,6 +925,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 sourceBuilder = Source.newBuilder(ID, src, name.toJavaStringUncached());
             }
             sourceBuilder = PythonLanguage.setPythonOptions(sourceBuilder, inputType, optimize, flags);
+            sourceBuilder.cached(cached);
             return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {
             throw new IllegalStateException(e);
@@ -926,7 +933,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        return newSource(ctxt, Source.newBuilder(ID, src).name(name));
+        return newSource(ctxt, src, name, true);
+    }
+
+    public static Source newSource(PythonContext ctxt, TruffleFile src, String name, boolean cached) throws IOException {
+        return newSource(ctxt, Source.newBuilder(ID, src).name(name).cached(cached));
     }
 
     private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
@@ -951,25 +962,62 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         singleContext = false;
     }
 
-    public record CodeCacheKey(TruffleString filename, long codeHash) {
+    private record BytecodeTargetCacheEntry(long sourceHash, CallTarget callTarget) {
     }
 
-    private final ConcurrentHashMap<CodeCacheKey, CallTarget> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TruffleString, BytecodeTargetCacheEntry> cachedBytecodeTargets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<BytecodeDSLCodeUnit, CallTarget> cachedFrozenTargets = new ConcurrentHashMap<>();
 
-    public CallTarget cacheCode(TruffleString filename, Supplier<CallTarget> createCode) {
-        return cacheCode(new CodeCacheKey(filename, 0), createCode);
+    private record SourceTargetCacheKey(TruffleString filename, InputType inputType, int optimize, int flags) {
+    }
+
+    private record SourceTargetCacheEntry(Source source, CallTarget callTarget) {
+    }
+
+    private final ConcurrentHashMap<SourceTargetCacheKey, SourceTargetCacheEntry> cachedSourceTargets = new ConcurrentHashMap<>();
+
+    @TruffleBoundary
+    public CallTarget cacheBytecodeTarget(TruffleString filename, long sourceHash, Supplier<CallTarget> createTarget) {
+        if (singleContext) {
+            return createTarget.get();
+        }
+        TruffleString key = internString(filename);
+        return cachedBytecodeTargets.compute(key, (k, oldEntry) -> {
+            if (oldEntry != null && oldEntry.sourceHash() == sourceHash) {
+                return oldEntry;
+            }
+            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for bytecode file " + filename);
+            return new BytecodeTargetCacheEntry(sourceHash, createTarget.get());
+        }).callTarget();
     }
 
     @TruffleBoundary
-    public CallTarget cacheCode(CodeCacheKey filename, Supplier<CallTarget> createCode) {
-        if (!singleContext) {
-            return cachedCode.computeIfAbsent(filename, f -> {
-                LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
-                return createCode.get();
-            });
-        } else {
-            return createCode.get();
+    public CallTarget cacheSourceTarget(TruffleString filename, TruffleString sourceText, InputType inputType, int optimize, int flags, Supplier<CallTarget> createTarget) {
+        if (singleContext) {
+            return createTarget.get();
         }
+        SourceTargetCacheKey key = new SourceTargetCacheKey(internString(filename), inputType, optimize, flags);
+        return cachedSourceTargets.compute(key, (k, oldEntry) -> {
+            if (oldEntry != null && sourceText.toJavaStringUncached().contentEquals(oldEntry.source().getCharacters())) {
+                return oldEntry;
+            }
+            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for source file " + filename);
+            RootCallTarget callTarget = (RootCallTarget) createTarget.get();
+            PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) callTarget.getRootNode();
+            Source source = rootNode.getSource();
+            return new SourceTargetCacheEntry(source, callTarget);
+        }).callTarget();
+    }
+
+    @TruffleBoundary
+    public CallTarget cacheFrozenTarget(BytecodeDSLCodeUnit code, Supplier<CallTarget> createTarget) {
+        if (singleContext) {
+            return createTarget.get();
+        }
+        return cachedFrozenTargets.computeIfAbsent(code, k -> {
+            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for frozen code " + code.qualname);
+            return createTarget.get();
+        });
     }
 
     public long cacheKeyForBytecode(byte[] code, int length) {
@@ -979,10 +1027,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         byte[] hashBytes = ImpModuleBuiltins.SourceHashNode.hashSource(0, code, length);
         return ARRAY_ACCESSOR.getLong(hashBytes, 0);
-    }
-
-    public long cacheKeyForBytecode(byte[] code) {
-        return cacheKeyForBytecode(code, code.length);
     }
 
     private static final Source LINEBREAK_REGEX_SOURCE = Source.newBuilder("regex", "/\r\n|[\n\u000B\u000C\r\u0085\u2028\u2029]/", "re_linebreak") //
