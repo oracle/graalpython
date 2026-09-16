@@ -447,7 +447,7 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
         PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        PBytecodeDSLRootNode rN = language.createCachedRootNode(l -> codeUnit.createRootNode(l, outerRootNode.isInternal()), codeUnit);
+        PBytecodeDSLRootNode rN = outerRootNode.getOrCreateChildRootNode(codeUnit);
         return PFactory.createCode(language, rN, rN.getSignature(), codeUnit, getFilename());
     }
 

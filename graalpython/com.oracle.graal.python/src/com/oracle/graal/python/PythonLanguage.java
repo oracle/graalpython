@@ -1186,10 +1186,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
-    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, BytecodeDSLCodeUnit key) {
-        return createCachedRootNodeUnsafe(rootNodeFunction, true, key);
-    }
-
     public <T extends RootNode> T createCachedExternalFunWrapperRootNode(Function<PythonLanguage, T> rootNodeFunction,
                     Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
                     boolean doArgumentAndResultConversion, boolean isStatic) {

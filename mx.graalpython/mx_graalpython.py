@@ -1029,9 +1029,10 @@ def leak_tests(args):
     # test leaks with shared engine Python code only
     run_leak_launcher(["--shared-engine", "--code", "pass"])
     run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
-    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--null-stdout", "--code", "import ipaddress"])
-    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--null-stdout", "--code", "import ipaddress",
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--code", "import ipaddress"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--code", "import ipaddress",
                        "--python.PyCachePrefix=/dev/null"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--code", "for i in range(1000): exec(f'def f{i}(): pass')"])
     # test leaks with shared engine when some C module code is involved
     if HAS_JEP_454:
         run_leak_launcher([
