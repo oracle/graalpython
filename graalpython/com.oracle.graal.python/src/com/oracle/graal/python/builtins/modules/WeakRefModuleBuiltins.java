@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.removeNativeWeakRef;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_CALLABLE_PROXY_TYPE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAK_REF_QUEUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
 
@@ -65,8 +63,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -184,9 +180,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         PythonBuiltinClass refType = core.lookupType(PythonBuiltinClassType.PReferenceType);
         weakrefModule.setAttribute(T_REF, refType);
         HiddenAttr.WriteNode.executeUncached(refType, WEAK_REF_QUEUE, weakRefQueue);
-        // FIXME we should intrinsify those types
-        TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
-        TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_CALLABLE_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
             if (!ctx.getGcState().isEnabled()) {
