@@ -7669,7 +7669,7 @@ GraalPyPrivate_InitNativeDateTime(void)
         (intptr_t)&PyDateTime_DateTimeType, (intptr_t)"datetime.datetime",
         (intptr_t)&PyDateTime_TimeType, (intptr_t)"datetime.time",
         (intptr_t)&PyDateTime_DeltaType, (intptr_t)"datetime.timedelta",
-        (intptr_t)&PyDateTime_TZInfoType, (intptr_t)"datetime.timezone",
+        (intptr_t)&PyDateTime_TZInfoType, (intptr_t)"datetime.tzinfo",
         0, 0
     };
     GraalPyPrivate_InitBuiltinTypesAndStructs(datetime_types);
