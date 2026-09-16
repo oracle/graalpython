@@ -214,12 +214,19 @@ def test_object_new_with_generic_base_and_slots():
 @skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
 def test_flags():
     import functools
+    import typing
 
     def testfunction(self):
         """some doc"""
         return self
 
+    TPFLAGS_SEQUENCE = 1 << 5
+    TPFLAGS_MAPPING = 1 << 6
+    TPFLAGS_HEAPTYPE = 1 << 9
+    TPFLAGS_BASETYPE = 1 << 10
+    TPFLAGS_HAVE_GC = 1 << 14
     TPFLAGS_METHOD_DESCRIPTOR = 1 << 17
+    TPFLAGS_MATCH_SELF = 1 << 22
     TPFLAGS_LONG_SUBCLASS = 1 << 24
     TPFLAGS_LIST_SUBCLASS = 1 << 25
     TPFLAGS_TUPLE_SUBCLASS = 1 << 26
@@ -231,6 +238,16 @@ def test_flags():
 
     cached = functools.lru_cache(1)(testfunction)
 
+    assert typing.Generic.__flags__ & TPFLAGS_HEAPTYPE
+    assert object.__flags__ & TPFLAGS_BASETYPE
+    assert type.__flags__ & TPFLAGS_HAVE_GC
+    assert list.__flags__ & TPFLAGS_SEQUENCE
+    assert list.__flags__ & TPFLAGS_MATCH_SELF
+    assert dict.__flags__ & TPFLAGS_MAPPING
+    assert BaseException.__flags__ & TPFLAGS_BASE_EXC_SUBCLASS
+    assert ValueError.__flags__ & TPFLAGS_BASE_EXC_SUBCLASS
+    assert ValueError.__flags__ & TPFLAGS_HAVE_GC
+    assert type.__flags__ & TPFLAGS_TYPE_SUBCLASS
     assert not type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, 0)
     assert type(list.append).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)
     assert type(list.__add__).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)

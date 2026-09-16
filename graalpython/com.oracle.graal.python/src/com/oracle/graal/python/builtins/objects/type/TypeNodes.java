@@ -58,28 +58,16 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DISALLOW_INSTANTIATION;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MANAGED_DICT;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_FLAGS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
 import static com.oracle.graal.python.nodes.HiddenAttr.BASICSIZE;
 import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
@@ -313,7 +301,7 @@ public abstract class TypeNodes {
         @TruffleBoundary
         private static long computeFlags(PythonManagedClass clazz) {
             if (clazz instanceof PythonBuiltinClass) {
-                return defaultBuiltinFlags(((PythonBuiltinClass) clazz).getType());
+                return ((PythonBuiltinClass) clazz).getType().getFlags();
             }
             // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
             // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
@@ -346,148 +334,6 @@ public abstract class TypeNodes {
                 }
             }
             return result;
-        }
-
-        private static long defaultBuiltinFlags(PythonBuiltinClassType clazz) {
-            long result;
-            switch (clazz) {
-                case MultibyteCodec:
-                case PEllipsis:
-                case PNotImplemented:
-                case PNoDefault:
-                case PNone:
-                    result = DEFAULT;
-                    break;
-                case PythonObject:
-                case MultibyteIncrementalEncoder:
-                case MultibyteIncrementalDecoder:
-                case MultibyteStreamReader:
-                case MultibyteStreamWriter:
-                    result = DEFAULT | BASETYPE;
-                    break;
-                case PArray:
-                    result = DEFAULT | BASETYPE | SEQUENCE;
-                    break;
-                case PythonClass:
-                case Super:
-                case PythonModule:
-                case PReferenceType:
-                case PProperty:
-                case PDeque:
-                case POrderedDict:
-                case PSimpleQueue:
-                case PSimpleNamespace:
-                case PMap:
-                case PStaticmethod:
-                case PZip:
-                case PReverseIterator:
-                case PCycle:
-                case PEnumerate:
-                case PBaseException:
-                    result = DEFAULT | HAVE_GC | BASETYPE;
-                    break;
-                case PFrozenSet:
-                case PSet:
-                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF;
-                    break;
-                case Boolean:
-                    result = DEFAULT | MATCH_SELF;
-                    break;
-                case PFunction:
-                case PBuiltinFunction:
-                case WrapperDescriptor:
-                case PLruCacheWrapper:
-                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
-                    break;
-                case PLruListElem:
-                    result = DEFAULT | HAVE_GC;
-                    break;
-                case PBytesIOBuf:
-                case PMethod:
-                case PBuiltinFunctionOrMethod:
-                case PBuiltinMethod:
-                case MethodWrapper:
-                case PInstancemethod:
-                case GetSetDescriptor:
-                case MemberDescriptor:
-                case PFrame:
-                case PGenerator:
-                case PSlice:
-                case PTraceback:
-                case PDequeIter:
-                case PDequeRevIter:
-                case PArrayIterator:
-                case PAsyncGenerator:
-                case PCell:
-                case PIterator:
-                case PPoll:
-                    result = DEFAULT | HAVE_GC;
-                    break;
-                case PMappingproxy:
-                    result = DEFAULT | HAVE_GC | MAPPING;
-                    break;
-                case PMemoryView:
-                    result = DEFAULT | HAVE_GC | SEQUENCE;
-                    break;
-                case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF | MAPPING;
-                    break;
-                case PDefaultDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | MAPPING;
-                    break;
-                case PList:
-                case PTuple:
-                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF | SEQUENCE;
-                    break;
-                case PRange:
-                    result = DEFAULT | SEQUENCE;
-                    break;
-                case PythonModuleDef:
-                case Capsule:
-                    result = 0;
-                    break;
-                case PByteArray:
-                case PFloat:
-                case PInt:
-                case PString:
-                case PBytes:
-                    result = DEFAULT | BASETYPE | MATCH_SELF;
-                    break;
-                case PIOBase:
-                    result = DEFAULT | BASETYPE | HEAPTYPE;
-                    break;
-                default:
-                    // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
-                    // PNotImplemented, PEllipsis, exceptions
-                    result = DEFAULT;
-                    break;
-            }
-            result |= clazz.isAcceptableBase() ? BASETYPE : 0;
-            result |= clazz.disallowInstantiation() ? DISALLOW_INSTANTIATION : 0;
-            PythonBuiltinClassType iter = clazz;
-            while (iter != null) {
-                if (iter == PythonBuiltinClassType.PBaseException) {
-                    result |= BASE_EXC_SUBCLASS | HAVE_GC;
-                } else if (iter == PythonBuiltinClassType.PythonClass) {
-                    result |= TYPE_SUBCLASS;
-                } else if (iter == PythonBuiltinClassType.PInt) {
-                    result |= LONG_SUBCLASS;
-                } else if (iter == PythonBuiltinClassType.PBytes) {
-                    result |= BYTES_SUBCLASS;
-                } else if (iter == PythonBuiltinClassType.PString) {
-                    result |= UNICODE_SUBCLASS;
-                } else if (iter == PythonBuiltinClassType.PTuple) {
-                    result |= TUPLE_SUBCLASS;
-                } else if (iter == PythonBuiltinClassType.PList) {
-                    result |= LIST_SUBCLASS;
-                } else if (iter == PythonBuiltinClassType.PDict) {
-                    result |= DICT_SUBCLASS;
-                }
-                iter = iter.getBase();
-            }
-            // we always claim that all types are fully initialized
-            // so far, all builtin types we care about are IMMUTABLE
-            return result | READY | IMMUTABLETYPE;
         }
 
         public static GetTypeFlagsNode getUncached() {
