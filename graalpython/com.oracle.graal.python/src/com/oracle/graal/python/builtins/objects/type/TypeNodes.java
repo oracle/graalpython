@@ -2493,23 +2493,7 @@ public abstract class TypeNodes {
         @Specialization
         static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_itemsize, ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
-        }
-
-        private static int getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
-            // Our formatter currently forces all the case labels on a single line
-            // @formatter:off
-            return switch (cls) {
-                case PBytes -> 1;
-                case PCode -> 2;
-                case PInt, Boolean -> 4;
-                case PAsyncGenerator, PFlags, PHashInfo, PTuple, PCoroutine, PGenerator, PThreadInfo, PMemoryView,
-                     PStatResult, PUnameResult, PStructTime, PFloatInfo, PStatvfsResult, PIntInfo, PFrame,
-                     PTerminalSize, PUnraisableHookArgs, PExceptHookArgs -> 8;
-                case PythonClass -> 40;
-                default -> 0;
-            };
-            // @formatter:on
+            return lookup.execute(cls, PyTypeObject__tp_itemsize, ITEMSIZE, PythonBuiltinClassType::getItemsize);
         }
     }
 

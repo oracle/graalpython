@@ -339,10 +339,22 @@ def test_dict():
 
 
 def test_itemsize():
+    import types
+
     assert object.__itemsize__ == 0
     assert list.__itemsize__ == 0
     assert type.__itemsize__ == 40
+    assert bytes.__itemsize__ == 1
+    assert int.__itemsize__ == 4
+    assert bool.__itemsize__ == 4
     assert tuple.__itemsize__ == 8
+    assert types.CodeType.__itemsize__ == 2
+    assert types.GeneratorType.__itemsize__ == 8
+    assert types.CoroutineType.__itemsize__ == 8
+    assert types.AsyncGeneratorType.__itemsize__ == 8
+    assert types.FrameType.__itemsize__ == 8
+    assert memoryview.__itemsize__ == 8
+    assert type(sys.version_info).__itemsize__ == 8
 
     class C: pass
     assert C.__itemsize__ == 0

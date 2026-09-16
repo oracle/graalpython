@@ -320,7 +320,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     When called, it accepts no arguments and returns a new featureless
                     instance that has no instance attributes and cannot be given any.
                     """)),
-    PythonClass("type", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().typeSubclass().addDict(264).slots(TypeBuiltins.SLOTS).doc("""
+    PythonClass("type", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().typeSubclass().addDict(264).itemsize(40).slots(TypeBuiltins.SLOTS).doc("""
                     type(object) -> the object's type
                     type(name, bases, dict, **kwds) -> a new type""")),
     PArray("array", PythonObject, newBuilder().publishInModule("array").basetype().sequence().slots(ArrayBuiltins.SLOTS)),
@@ -358,7 +358,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                       - a bytes or a buffer object
                                       - any object implementing the buffer API.
                                       - an integer""")),
-    PBytes("bytes", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().matchSelf().bytesSubclass().slots(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS).doc("""
+    PBytes("bytes", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().matchSelf().bytesSubclass().itemsize(1).slots(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS).doc("""
                     bytes(iterable_of_ints) -> bytes
                     bytes(string, encoding[, errors]) -> bytes
                     bytes(bytes_or_buffer) -> immutable copy of bytes_or_buffer
@@ -460,7 +460,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     PythonObject,
                     newBuilder().publishInModule(J_BUILTINS).basetype().matchSelf().slots(FloatBuiltins.SLOTS).doc("""
                                     Convert a string or number to a floating point number, if possible.""")),
-    PFrame("frame", PythonObject, newBuilder().haveGC().disallowInstantiation().slots(FrameBuiltins.SLOTS)),
+    PFrame("frame", PythonObject, newBuilder().haveGC().disallowInstantiation().itemsize(8).slots(FrameBuiltins.SLOTS)),
     PFrameLocalsProxy("FrameLocalsProxy", PythonObject, newBuilder().disallowInstantiation().slots(FrameLocalsProxyBuiltins.SLOTS)),
     PFrozenSet(
                     "frozenset",
@@ -471,12 +471,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                                     Build an immutable unordered collection of unique elements.""")),
     PFunction("function", PythonObject, newBuilder().haveGC().methodDescriptor().addDict().slots(AbstractFunctionBuiltins.SLOTS, FunctionBuiltins.SLOTS)),
-    PGenerator("generator", PythonObject, newBuilder().haveGC().disallowInstantiation().slots(GeneratorBuiltins.SLOTS)),
-    PCoroutine("coroutine", PythonObject, newBuilder().slots(CoroutineBuiltins.SLOTS)),
+    PGenerator("generator", PythonObject, newBuilder().haveGC().disallowInstantiation().itemsize(8).slots(GeneratorBuiltins.SLOTS)),
+    PCoroutine("coroutine", PythonObject, newBuilder().itemsize(8).slots(CoroutineBuiltins.SLOTS)),
     PCoroutineWrapper("coroutine_wrapper", PythonObject, newBuilder().slots(CoroutineWrapperBuiltins.SLOTS)),
-    PAsyncGenerator("async_generator", PythonObject, newBuilder().haveGC().slots(AsyncGeneratorBuiltins.SLOTS)),
+    PAsyncGenerator("async_generator", PythonObject, newBuilder().haveGC().itemsize(8).slots(AsyncGeneratorBuiltins.SLOTS)),
     PAnextAwaitable("anext_awaitable", PythonObject, newBuilder().slots(ANextAwaitableBuiltins.SLOTS)),
-    PInt("int", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().matchSelf().longSubclass().slots(IntBuiltins.SLOTS).doc("""
+    PInt("int", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().matchSelf().longSubclass().itemsize(4).slots(IntBuiltins.SLOTS).doc("""
                     int([x]) -> integer
                     int(x, base=10) -> integer
 
@@ -489,7 +489,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     given base.  The literal can be preceded by '+' or '-' and be surrounded
                     by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
                     Base 0 means to interpret the base from the string as an integer literal.""")),
-    Boolean("bool", PInt, newBuilder().publishInModule(J_BUILTINS).matchSelf().slots(BoolBuiltins.SLOTS).doc("""
+    Boolean("bool", PInt, newBuilder().publishInModule(J_BUILTINS).matchSelf().itemsize(4).slots(BoolBuiltins.SLOTS).doc("""
                     bool(x) -> bool
 
                     Returns True when the argument x is true, False otherwise.
@@ -504,7 +504,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMemoryView(
                     "memoryview",
                     PythonObject,
-                    newBuilder().publishInModule(J_BUILTINS).haveGC().sequence().slots(MemoryViewBuiltins.SLOTS).doc("""
+                    newBuilder().publishInModule(J_BUILTINS).haveGC().sequence().itemsize(8).slots(MemoryViewBuiltins.SLOTS).doc("""
                                     Create a new memoryview object which references the given object.""")),
     PMemoryViewIterator("memory_iterator", PythonObject, newBuilder().slots(MemoryViewIteratorBuiltins.SLOTS)),
     PAsyncGenASend("async_generator_asend", PythonObject, newBuilder().slots(AsyncGenSendBuiltins.SLOTS)),
@@ -606,7 +606,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     encoding defaults to sys.getdefaultencoding().
                     errors defaults to 'strict'.""")),
     PTraceback("traceback", PythonObject, newBuilder().basetype().haveGC().slots(TracebackBuiltins.SLOTS)),
-    PTuple("tuple", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().matchSelf().sequence().tupleSubclass().slots(TupleBuiltins.SLOTS).doc("""
+    PTuple("tuple", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().matchSelf().sequence().tupleSubclass().itemsize(8).slots(TupleBuiltins.SLOTS).doc("""
                     Built-in immutable sequence.
 
                     If no argument is given, the constructor returns an empty tuple.
@@ -632,7 +632,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                         @classmethod
                         def cmeth(cls, arg):
                             super().cmeth(arg)""")),
-    PCode("code", PythonObject, newBuilder().slots(CodeBuiltins.SLOTS)),
+    PCode("code", PythonObject, newBuilder().itemsize(2).slots(CodeBuiltins.SLOTS)),
     PGenericAlias("GenericAlias", PythonObject, newBuilder().publishInModule(J_TYPES).basetype().slots(GenericAliasBuiltins.SLOTS)),
     PGenericAliasIterator("generic_alias_iterator", PythonObject, newBuilder().slots(GenericAliasIteratorBuiltins.SLOTS)),
     PUnionType("UnionType", PythonObject, newBuilder().publishInModule(J_TYPES).slots(UnionTypeBuiltins.SLOTS)),
@@ -1549,6 +1549,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         private long flags = TypeFlags.DEFAULT | TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
         private boolean addDict;
         private int dictoffset;
+        private int itemsize;
         private TpSlots slots;
         private String doc;
 
@@ -1651,6 +1652,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
             return this;
         }
 
+        public TypeBuilder itemsize(int itemsize) {
+            this.itemsize = itemsize;
+            return this;
+        }
+
         public TypeBuilder disallowInstantiation() {
             flags |= TypeFlags.DISALLOW_INSTANTIATION;
             return this;
@@ -1687,6 +1693,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final long flags;
     private final boolean isBuiltinWithDict;
     private final int dictoffset;
+    private final int itemsize;
     private final TruffleString doc;
 
     // initialized in static constructor
@@ -1723,6 +1730,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
             dictoffset = base.dictoffset;
         }
         this.dictoffset = dictoffset;
+        this.itemsize = builder.itemsize != 0 ? builder.itemsize : base != null ? base.itemsize : 0;
         this.weaklistoffset = -1;
         this.declaredSlots = builder.slots != null ? builder.slots : TpSlots.createEmpty();
         long flags = builder.flags;
@@ -1775,6 +1783,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public int getDictoffset() {
         return dictoffset;
+    }
+
+    public int getItemsize() {
+        return itemsize;
     }
 
     public long getFlags() {
