@@ -2382,6 +2382,134 @@ class ArchiveProject(mx.ArchivableProject):
             return results
 
 
+class PythonResourceBuildTask(mx.ArchivableBuildTask):
+    def _marker(self):
+        return self.subject.get_output_root() + ".pyc.stamp"
+
+    @staticmethod
+    def _cache_files(source):
+        basename = glob.escape(os.path.basename(source)[:-3])
+        return glob.glob(os.path.join(os.path.dirname(source), "__pycache__", f"{basename}.graalpy*.pyc"))
+
+    def _all_cache_files(self):
+        for root, _, files in os.walk(self.subject.output_dir()):
+            for filename in files:
+                if filename.endswith(".pyc"):
+                    yield os.path.join(root, filename)
+
+    def __str__(self):
+        return f'Copying and compiling Python resources in {self.subject.name}'
+
+    def needsBuild(self, newestInput):
+        if self.args.force:
+            return True, 'forced build'
+        marker = mx.TimeStampFile(self._marker())
+        if not marker.exists():
+            return True, 'Python resource bytecode marker does not exist'
+        if newestInput and marker.isOlderThan(newestInput):
+            return True, f'{marker} is older than {newestInput}'
+        project = cast(PythonResourceProject, self.subject)
+        expected_sources = {relative: source for source, relative in project.getSourceFiles()}
+        actual_sources = {}
+        for root, _, files in os.walk(project.output_dir()):
+            for filename in files:
+                if not filename.endswith(".pyc"):
+                    path = os.path.join(root, filename)
+                    actual_sources[os.path.relpath(path, project.output_dir())] = path
+        if expected_sources.keys() != actual_sources.keys():
+            return True, 'Python resource output does not match its sources'
+        for relative, source in expected_sources.items():
+            if mx.TimeStampFile(actual_sources[relative]).isOlderThan(source):
+                return True, f'Python resource output is older than {source}'
+        expected_caches = set()
+        for relative in expected_sources:
+            if not relative.endswith(".py"):
+                continue
+            output_source = actual_sources[relative]
+            caches = self._cache_files(output_source)
+            if not caches:
+                return True, f'no bytecode cache for {output_source}'
+            if len(caches) > 1:
+                return True, f'multiple bytecode caches for {output_source}'
+            expected_caches.update(caches)
+            if mx.TimeStampFile(caches[0]).isOlderThan(output_source):
+                return True, f'bytecode cache is older than {output_source}'
+        if unexpected_caches := set(self._all_cache_files()) - expected_caches:
+            return True, f'unexpected bytecode cache {next(iter(unexpected_caches))}'
+        return False, 'all Python resource bytecode caches are up to date'
+
+    def newestOutput(self):
+        return mx.TimeStampFile(self._marker())
+
+    def build(self):
+        project = cast(PythonResourceProject, self.subject)
+        output_dir = project.output_dir()
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        for source, relative in project.getSourceFiles():
+            output = os.path.join(output_dir, relative)
+            mx_util.ensure_dir_exists(os.path.dirname(output))
+            shutil.copy2(source, output)
+        args = [
+            "--PosixModuleBackend=java",
+            "--CompressionModulesBackend=java",
+            "--DisableFrozenModules",
+            "-B",
+            "-S",
+            "-m",
+            "compileall",
+            "-f",
+            "-q",
+            "--invalidation-mode",
+            "checked-hash",
+            "-s",
+            output_dir,
+            output_dir,
+        ]
+        if do_run_python(args, jdk=mx.get_jdk(), minimal=True, cwd=self.subject.suite.dir):
+            return True
+        pathlib.Path(self._marker()).touch()
+        return True
+
+    def clean(self, forBuild=False):
+        changed = False
+        if os.path.exists(self.subject.output_dir()):
+            shutil.rmtree(self.subject.output_dir())
+            changed = True
+        if os.path.exists(self._marker()):
+            os.remove(self._marker())
+            changed = True
+        return changed
+
+
+class PythonResourceProject(ArchiveProject):
+    def __init__(self, suite, name, deps, workingSets, theLicense, **kwargs):
+        context = 'project ' + name
+        self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
+        self.sourceDir = kwargs.pop('sourceDir')
+        super().__init__(suite, name, deps, workingSets, theLicense, **kwargs)
+
+    def source_dir(self):
+        source_dir = mx_subst.path_substitutions.substitute(self.sourceDir)
+        return source_dir if os.path.isabs(source_dir) else os.path.join(self.dir, source_dir)
+
+    def output_dir(self):
+        return self.get_output_root()
+
+    def getSourceFiles(self):
+        ignore_regexps = [re.compile(s) for s in getattr(self, "ignorePatterns", [])]
+        source_dir = self.source_dir()
+        for root, dirs, files in os.walk(source_dir):
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+            for filename in files:
+                source = os.path.join(root, filename)
+                if not filename.endswith(".pyc") and not any(r.search(source) for r in ignore_regexps):
+                    yield source, os.path.relpath(source, source_dir)
+
+    def getBuildTask(self, args):
+        return PythonResourceBuildTask(self, args, 1)
+
+
 def deploy_binary_if_main(args):
     """if the active branch is the main branch, deploy binaries for the primary suite to remote maven repository."""
     active_branch = SUITE.vc.active_branch(SUITE.dir)

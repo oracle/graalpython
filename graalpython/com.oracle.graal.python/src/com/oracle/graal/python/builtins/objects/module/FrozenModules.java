@@ -84,7 +84,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule DATETIME = new PythonFrozenModule("DATETIME", "datetime", false);
         private static final PythonFrozenModule CONTEXTLIB = new PythonFrozenModule("CONTEXTLIB", "contextlib", false);
         private static final PythonFrozenModule WARNINGS = new PythonFrozenModule("WARNINGS", "warnings", false);
-        private static final PythonFrozenModule INSPECT = new PythonFrozenModule("INSPECT", "inspect", false);
         private static final PythonFrozenModule IMPORTLIB_UTIL = new PythonFrozenModule("IMPORTLIB_UTIL", "importlib.util", false);
         private static final PythonFrozenModule IMPORTLIB_MACHINERY = new PythonFrozenModule("IMPORTLIB_MACHINERY", "importlib.machinery", false);
         private static final PythonFrozenModule RUNPY = new PythonFrozenModule("RUNPY", "runpy", false);
@@ -185,8 +184,6 @@ public final class FrozenModules {
                 return Map.CONTEXTLIB;
             case "warnings":
                 return Map.WARNINGS;
-            case "inspect":
-                return Map.INSPECT;
             case "importlib.util":
                 return Map.IMPORTLIB_UTIL;
             case "importlib.machinery":

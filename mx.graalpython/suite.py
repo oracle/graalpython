@@ -828,30 +828,32 @@ suite = {
         },
 
         "python-lib": {
-            "class": "ArchiveProject",
-            "outputDir": "graalpython/lib-python/3",
+            "class": "PythonResourceProject",
+            "sourceDir": "graalpython/lib-python/3",
             "type": "dir",
             "prefix": "",
             "ignorePatterns": [
-                ".pyc",
-                "\\/__pycache__\\/",
-                "\\/test\\/",
-                "\\/tests\\/",
-                "\\/idle_test\\/",
-                "\\\\__pycache__\\\\",
-                "\\\\test\\\\",
-                "\\\\tests\\\\",
-                "\\\\idle_test\\\\",
+                "[/\\\\]test[/\\\\](?!support[/\\\\])",
+                "[/\\\\]tests[/\\\\]",
+                "[/\\\\]idle_test[/\\\\]",
+            ],
+            "buildDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON-LAUNCHER",
             ],
             "license": ["PSF-License"],
         },
 
-        "python-test-support-lib": {
-            "class": "ArchiveProject",
-            "outputDir": "graalpython/lib-python/3/test/support",
-            "prefix": "test/support",
+        "python-libgraalpy": {
+            "class": "PythonResourceProject",
+            "sourceDir": "graalpython/lib-graalpython",
+            "prefix": "",
             "ignorePatterns": [],
-            "license": ["PSF-License"],
+            "buildDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON-LAUNCHER",
+            ],
+            "license": ["UPL", "MIT"],
         },
 
         "graalpy_licenses": {
@@ -1302,7 +1304,6 @@ suite = {
             "layout": {
                 "./META-INF/resources/libpython/": [
                     "dependency:graalpython:python-lib/*",
-                    "dependency:graalpython:python-test-support-lib/*",
                 ],
             },
             "maven": False,
@@ -1319,7 +1320,7 @@ suite = {
             "description": "GraalVM Python lib-graalpython resources",
             "layout": {
                 "./META-INF/resources/libgraalpy/": [
-                    "file:graalpython/lib-graalpython/*",
+                    "dependency:graalpython:python-libgraalpy/*",
                 ],
             },
             "maven": False,

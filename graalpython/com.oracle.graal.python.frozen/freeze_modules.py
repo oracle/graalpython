@@ -53,10 +53,6 @@ FROZEN = [
         '_weakrefset',
         'types',
         'enum',
-        # GraalPy change: don't freeze these, they are deprecated, CPython probably just forgot to remove them from here
-        # 'sre_constants',
-        # 'sre_parse',
-        # 'sre_compile',
         'operator',
         'keyword',
         'heapq',
@@ -81,7 +77,6 @@ FROZEN = [
         'datetime',
         'contextlib',
         'warnings',
-        'inspect',
         ]),
     ('runpy - run module with -m', [
         "importlib.util",
