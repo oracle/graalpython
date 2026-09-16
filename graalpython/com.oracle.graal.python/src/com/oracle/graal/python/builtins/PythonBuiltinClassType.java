@@ -320,7 +320,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     When called, it accepts no arguments and returns a new featureless
                     instance that has no instance attributes and cannot be given any.
                     """)),
-    PythonClass("type", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().typeSubclass().addDict(264).itemsize(40).slots(TypeBuiltins.SLOTS).doc("""
+    PythonClass("type", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().typeSubclass().addDict(264).itemsize(40).itemsAtEnd().slots(TypeBuiltins.SLOTS).doc("""
                     type(object) -> the object's type
                     type(name, bases, dict, **kwds) -> a new type""")),
     PArray("array", PythonObject, newBuilder().publishInModule("array").basetype().sequence().slots(ArrayBuiltins.SLOTS)),
@@ -579,8 +579,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     These are exactly the valid indices for a list of 4 elements.
                     When step is given, it specifies the increment (or decrement).""")),
     PReferenceType("ReferenceType", PythonObject, newBuilder().publishInModule("_weakref").basetype().haveGC().slots(ReferenceTypeBuiltins.SLOTS)),
-    PProxyType("ProxyType", PythonObject, newBuilder().moduleName("weakref").publishInModule("_weakref").slots(ProxyTypeBuiltins.SLOTS)),
-    PCallableProxyType("CallableProxyType", PythonObject, newBuilder().moduleName("weakref").publishInModule("_weakref")),
+    PProxyType("ProxyType", PythonObject, newBuilder().haveGC().moduleName("weakref").publishInModule("_weakref").slots(ProxyTypeBuiltins.SLOTS)),
+    PCallableProxyType("CallableProxyType", PythonObject, newBuilder().haveGC().moduleName("weakref").publishInModule("_weakref")),
     PSentinelIterator("callable_iterator", PythonObject, newBuilder().disallowInstantiation().slots(SentinelIteratorBuiltins.SLOTS)),
     PReverseIterator("reversed", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().slots(ReversedBuiltins.SLOTS).doc("""
                     Return a reverse iterator over the values of the given sequence.""")),
@@ -589,7 +589,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     set(iterable) -> new set object
 
                     Build an unordered collection of unique elements.""")),
-    PSlice("slice", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().haveGC().slots(SliceBuiltins.SLOTS).doc("""
+    PSlice("slice", PythonObject, newBuilder().publishInModule(J_BUILTINS).haveGC().slots(SliceBuiltins.SLOTS).doc("""
                     slice(stop)
                     slice(start, stop[, step])
 
@@ -1593,6 +1593,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         public TypeBuilder matchSelf() {
             flags |= TypeFlags.MATCH_SELF;
+            return this;
+        }
+
+        public TypeBuilder itemsAtEnd() {
+            flags |= TypeFlags.ITEMS_AT_END;
             return this;
         }
 

@@ -227,6 +227,7 @@ def test_flags():
     TPFLAGS_HAVE_GC = 1 << 14
     TPFLAGS_METHOD_DESCRIPTOR = 1 << 17
     TPFLAGS_MATCH_SELF = 1 << 22
+    TPFLAGS_ITEMS_AT_END = 1 << 23
     TPFLAGS_LONG_SUBCLASS = 1 << 24
     TPFLAGS_LIST_SUBCLASS = 1 << 25
     TPFLAGS_TUPLE_SUBCLASS = 1 << 26
@@ -240,6 +241,7 @@ def test_flags():
 
     assert typing.Generic.__flags__ & TPFLAGS_HEAPTYPE
     assert object.__flags__ & TPFLAGS_BASETYPE
+    assert not slice.__flags__ & TPFLAGS_BASETYPE
     assert type.__flags__ & TPFLAGS_HAVE_GC
     assert list.__flags__ & TPFLAGS_SEQUENCE
     assert list.__flags__ & TPFLAGS_MATCH_SELF
@@ -247,6 +249,7 @@ def test_flags():
     assert BaseException.__flags__ & TPFLAGS_BASE_EXC_SUBCLASS
     assert ValueError.__flags__ & TPFLAGS_BASE_EXC_SUBCLASS
     assert ValueError.__flags__ & TPFLAGS_HAVE_GC
+    assert type.__flags__ & TPFLAGS_ITEMS_AT_END
     assert type.__flags__ & TPFLAGS_TYPE_SUBCLASS
     assert not type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, 0)
     assert type(list.append).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)

@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
@@ -158,8 +157,6 @@ public abstract class ToNativeTypeNode {
         TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
-        GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
-
         PythonContext ctx = PythonContext.get(null);
         PythonLanguage language = ctx.getLanguage();
 
@@ -171,15 +168,6 @@ public abstract class ToNativeTypeNode {
         } else {
             PythonAbstractObject promotedType = EnsurePythonObjectNode.executeUncached(ctx, GetClassNode.executeUncached(clazz));
             writePtrField(mem, PyObject__ob_type, PythonToNativeInternalNode.executeUncached(promotedType, false));
-        }
-
-        long flags = getTypeFlagsNode.execute(clazz);
-        /*
-         * Our datetime classes are declared as static types in C, but are implemented as
-         * pure-python heaptypes. Make them into static types on the C-side.
-         */
-        if (!heaptype) {
-            flags &= ~TypeFlags.HEAPTYPE;
         }
 
         Object base = GetBaseClassNode.executeUncached(clazz);
@@ -222,6 +210,8 @@ public abstract class ToNativeTypeNode {
         writePtrField(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
         writePtrField(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
         writePtrField(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
+
+        long flags = GetTypeFlagsNodeGen.getUncached().execute(clazz);
         writeLongField(mem, CFields.PyTypeObject__tp_flags, flags);
 
         // return a C string wrapper that really allocates 'char*' on TO_NATIVE
@@ -370,22 +360,20 @@ public abstract class ToNativeTypeNode {
             HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.AS_BUFFER, as_buffer);
         }
 
-        /*
-         * Initialize type flags: If the native type, we are wrapping, already defines 'tp_flags',
-         * we use it because those must stay consistent with slots. For example, native
-         * tp_new/tp_alloc/tp_dealloc/tp_free functions must be consistent with
-         * 'Py_TPFLAGS_HAVE_GC'.
-         */
-        long flags = readLongField(pointer, CFields.PyTypeObject__tp_flags);
-        if (flags == 0) {
-            flags = GetTypeFlagsNode.executeUncached(clazz) | TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
-        }
-        SetTypeFlagsNode.executeUncached(clazz, flags);
+        assert checkFlags(clazz, pointer);
 
         // TODO(fa): revisit this: static classes are immortal; we don't need a
         // PythonObjectReference
         int nativeTypeId = CApiTransitions.createPythonManagedClassReference(clazz, pointer, false);
         assert clazz.isNative();
         return nativeTypeId;
+    }
+
+    private static boolean checkFlags(PythonManagedClass clazz, long pointer) {
+        long nativeFlags = readLongField(pointer, CFields.PyTypeObject__tp_flags);
+        long expectedFlags = nativeFlags | TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
+        long managedFlags = GetTypeFlagsNode.getUncached().execute(clazz);
+        assert nativeFlags == 0 || managedFlags == expectedFlags : String.format("Mismatched flags for builtin type %s: managed 0x%x, native 0x%x", clazz.getQualName(), managedFlags, expectedFlags);
+        return true;
     }
 }
