@@ -99,6 +99,30 @@ class TestObject(unittest.TestCase):
 
             PyAPI_FUNC(int) _PyObject_GetMethod(PyObject *, PyObject *, PyObject **);
 
+            static PyObject* native_descriptor_call(PyObject* self, PyObject* args, PyObject* kwargs) {
+                if (PyTuple_GET_SIZE(args) != 1 || (kwargs != NULL && PyDict_GET_SIZE(kwargs) != 0)) {
+                    PyErr_SetString(PyExc_TypeError, "expected exactly one positional argument");
+                    return NULL;
+                }
+                return Py_NewRef(PyTuple_GET_ITEM(args, 0));
+            }
+
+            static PyObject* native_descriptor_get(PyObject* self, PyObject* obj, PyObject* type) {
+                if (obj == NULL || obj == Py_None) {
+                    return Py_NewRef(self);
+                }
+                return PyMethod_New(self, obj);
+            }
+
+            static PyTypeObject NativeMethodDescriptor_Type = {
+                PyVarObject_HEAD_INIT(NULL, 0)
+                .tp_name = "test_get_method.NativeMethodDescriptor",
+                .tp_basicsize = sizeof(PyObject),
+                .tp_call = native_descriptor_call,
+                .tp_descr_get = native_descriptor_get,
+                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_METHOD_DESCRIPTOR,
+            };
+
             static PyObject* get_method(PyObject* self, PyObject* args) {
                 PyObject* obj;
                 PyObject* name;
@@ -130,7 +154,20 @@ class TestObject(unittest.TestCase):
             };
 
             PyMODINIT_FUNC PyInit_test_get_method(void) {
-                return PyModule_Create(&module);
+                if (PyType_Ready(&NativeMethodDescriptor_Type) < 0) {
+                    return NULL;
+                }
+                PyObject* m = PyModule_Create(&module);
+                if (m == NULL) {
+                    return NULL;
+                }
+                PyObject* descriptor = NativeMethodDescriptor_Type.tp_alloc(&NativeMethodDescriptor_Type, 0);
+                if (descriptor == NULL || PyModule_AddObject(m, "native_method_descriptor", descriptor) < 0) {
+                    Py_XDECREF(descriptor);
+                    Py_DECREF(m);
+                    return NULL;
+                }
+                return m;
             }
             """,
             "test_get_method",
@@ -158,6 +195,16 @@ class TestObject(unittest.TestCase):
         is_method, method = module.get_method(native_obj, "get_self")
         assert is_method is True
         assert method(native_obj) is native_obj
+
+        class WithNativeMethodDescriptor:
+            native_method_descriptor = module.native_method_descriptor
+
+        native_descriptor_obj = WithNativeMethodDescriptor()
+        is_method, method = module.get_method(native_descriptor_obj, "native_method_descriptor")
+        assert is_method is True
+        assert method is module.native_method_descriptor
+        assert method(native_descriptor_obj) is native_descriptor_obj
+        assert native_descriptor_obj.native_method_descriptor() is native_descriptor_obj
 
         obj.method = lambda: "instance attribute"
         is_method, method = module.get_method(obj, "method")
