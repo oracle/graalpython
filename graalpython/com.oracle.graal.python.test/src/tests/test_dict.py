@@ -60,6 +60,20 @@ def test_namespace_reinitialization_with_backing_dict():
     assert obj.c == 3
 
 
+def test_namespace_reinitialization_with_positional_mapping_and_backing_dict():
+    from types import SimpleNamespace
+
+    obj = SimpleNamespace(a=1)
+    mapping = obj.__dict__
+    assert len(mapping) == 1
+    mapping.clear()
+    assert len(mapping) == 0
+    obj.__init__({"b": 2}, c=3)
+    assert len(mapping) == 2
+    assert mapping == {"b": 2, "c": 3}
+    assert obj.__dict__ is mapping
+
+
 def test_namespace_replace_with_backing_dict():
     from types import SimpleNamespace
 
