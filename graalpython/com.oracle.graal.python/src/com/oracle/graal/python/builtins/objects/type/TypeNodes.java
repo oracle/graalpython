@@ -267,16 +267,17 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static long doBuiltinClassType(PythonBuiltinClassType clazz,
-                        @Bind Node inliningTarget,
-                        @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
-                        @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
-                        @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
-            return doManaged(PythonContext.get(inliningTarget).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
+        static long doBuiltinClassType(PythonBuiltinClassType clazz) {
+            return clazz.getFlags();
         }
 
         @Specialization
-        static long doManaged(PythonManagedClass clazz,
+        static long doBuiltinClass(PythonBuiltinClass clazz) {
+            return clazz.getType().getFlags();
+        }
+
+        @Specialization
+        static long doManaged(PythonClass clazz,
                         @Bind Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
@@ -293,16 +294,12 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        @InliningCutoff
         static long doNative(PythonNativeClass clazz) {
             return readLongField(clazz.getPtr(), PyTypeObject__tp_flags);
         }
 
         @TruffleBoundary
-        private static long computeFlags(PythonManagedClass clazz) {
-            if (clazz instanceof PythonBuiltinClass) {
-                return ((PythonBuiltinClass) clazz).getType().getFlags();
-            }
+        private static long computeFlags(PythonClass clazz) {
             // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
             // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
             // should be fine to just set it.
@@ -316,21 +313,13 @@ public abstract class TypeNodes {
                 result |= MANAGED_DICT;
             }
 
-            PythonContext context = PythonContext.get(null);
             // flags are inherited
             MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(clazz);
             int n = mroStorage.length();
             for (int i = 0; i < n; i++) {
                 Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.executeUncached(mroStorage, i);
-                if (mroEntry instanceof PythonBuiltinClassType) {
-                    mroEntry = context.getCore().lookupType((PythonBuiltinClassType) mroEntry);
-                }
-                if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry));
-                } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
-                    long flags = doManaged((PythonManagedClass) mroEntry, null, HiddenAttr.ReadNode.getUncached(), HiddenAttr.WriteNode.getUncached(),
-                                    InlinedCountingConditionProfile.getUncached());
-                    result = setFlags(result, flags);
+                if (mroEntry != clazz) {
+                    result = setFlags(result, GetTypeFlagsNode.getUncached().execute(mroEntry));
                 }
             }
             return result;
@@ -353,13 +342,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static void doPBCT(Node inliningTarget, PythonBuiltinClassType clazz, long flags,
-                        @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode) {
-            doManaged(inliningTarget, PythonContext.get(inliningTarget).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
-        }
-
-        @Specialization
-        static void doManaged(Node inliningTarget, PythonManagedClass clazz, long flags,
+        static void doManaged(Node inliningTarget, PythonClass clazz, long flags,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode) {
             writeHiddenFlagsNode.execute(inliningTarget, clazz, HiddenAttr.FLAGS, flags);
         }

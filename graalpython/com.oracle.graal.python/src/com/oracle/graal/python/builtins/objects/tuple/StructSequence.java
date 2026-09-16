@@ -162,10 +162,13 @@ public class StructSequence {
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
         PythonLanguage language = context.getLanguage();
 
-        long flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
-        if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
-            // Temporarily open the type for mutation
-            TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags & ~TypeFlags.IMMUTABLETYPE);
+        long flags = 0;
+        if (!(klass instanceof PythonBuiltinClass)) {
+            flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
+            if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
+                // Temporarily open the type for mutation
+                TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags & ~TypeFlags.IMMUTABLETYPE);
+            }
         }
 
         // create descriptors for accessing named fields by their names
@@ -213,7 +216,9 @@ public class StructSequence {
         writeAttrNode.execute(klass, T_N_FIELDS, desc.fieldNames.length);
         writeAttrNode.execute(klass, T_N_UNNAMED_FIELDS, unnamedFields);
 
-        TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags);
+        if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
+            TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags);
+        }
     }
 
     private static void copyMethod(PythonLanguage language, PythonAbstractClass klass, TruffleString name, PythonBuiltinClass template) {
