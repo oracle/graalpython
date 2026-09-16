@@ -162,6 +162,7 @@ def test_namespace_with_non_string_keys():
         MyStr("x"): 42
     })
     assert any(type(k) == MyStr for k in A.__dict__.keys())
+    assert any(type(k) == MyStr for k in type.__dir__(A))
 
 
 def test_mro():
@@ -184,6 +185,35 @@ def test_dir_sorted():
 
     assert dir(C) == sorted(dir(C))
     assert dir(C()) == sorted(dir(C()))
+
+
+def test_type_dir_many_string_attributes():
+    base_attributes = {f"base_{i}": i for i in range(200)}
+    attributes = {f"attribute_{i}": i for i in range(1000)}
+    base = type("Base", (), base_attributes)
+    cls = type("ManyAttributes", (base,), attributes)
+    del cls.attribute_5
+    expected = set(base.__dict__) | set(cls.__dict__) | set(object.__dict__)
+    assert set(type.__dir__(cls)) == expected
+    assert dir(cls) == sorted(expected)
+
+
+def test_type_dir_custom_mappingproxy_falls_back():
+    lookups = []
+
+    class Meta(type):
+        @property
+        def __dict__(self):
+            lookups.append(self)
+            return {"custom": 1}
+
+    class C(metaclass=Meta):
+        hidden_by_metaclass = 1
+
+    result = type.__dir__(C)
+    assert "custom" in result
+    assert "hidden_by_metaclass" not in result
+    assert lookups == [C]
 
 
 def test_isinstance_non_type():
