@@ -49,7 +49,6 @@ import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MTIME;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
@@ -122,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
@@ -485,9 +485,29 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CompileImportSourceNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        static Object compile(VirtualFrame frame, Object source, TruffleString filename,
-                        @Cached("createForImport()") BuiltinFunctions.CompileNode compileNode) {
-            return compileNode.compile(frame, source, filename, T_EXEC, true, -1, -1);
+        static Object compile(VirtualFrame frame, PBytes source, TruffleString filename,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached GetInternalByteArrayNode getBytes,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            byte[] bytes = getBytes.execute(inliningTarget, source.getSequenceStorage());
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return compile(source, filename, bytes, source.getSequenceStorage().length(), context);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private static PCode compile(PBytes source, TruffleString filename, byte[] bytes, int bytesLen, PythonContext context) {
+            TruffleString sourceText = BuiltinFunctions.CompileNode.doDecodeSource(context, source, filename, bytes, bytesLen);
+            RootCallTarget callTarget = (RootCallTarget) context.getLanguage().cacheSourceTarget(filename, sourceText, InputType.FILE, -1, 0, () -> {
+                // The import source cache owns the lifetime of this call target, so avoid the Truffle cache.
+                Source truffleSource = PythonLanguage.newSource(context, sourceText, filename, true, InputType.FILE, -1, 0, false);
+                return context.getEnv().parsePublic(truffleSource);
+            });
+            return BuiltinFunctions.CompileNode.wrapRootCallTarget(callTarget, filename);
         }
 
         @Override
