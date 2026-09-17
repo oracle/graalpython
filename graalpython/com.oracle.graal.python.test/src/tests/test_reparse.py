@@ -50,6 +50,8 @@ import time
 import unittest
 from pathlib import Path
 
+from tests.util import run_in_graalpy_subprocess
+
 SYNC_HOST = "127.0.0.1"
 SYNC_TIMEOUT = 180.0
 
@@ -156,12 +158,15 @@ assert lines == [firstlineno + 1, firstlineno + 2], "Code didn't trace when expe
 '''
 
 
+# These tests deliberately remove or damage loaded bytecode, so discard the process after each test.
+@run_in_graalpy_subprocess
 def test_reparse():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(TRACING_TEST, invalidation_mode=invalidation_mode):
             pass
 
 
+@run_in_graalpy_subprocess
 def test_reparse_deleted():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
@@ -171,6 +176,7 @@ def test_reparse_deleted():
             pyc_file.unlink()
 
 
+@run_in_graalpy_subprocess
 def test_reparse_truncated():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
@@ -181,6 +187,7 @@ def test_reparse_truncated():
                 f.truncate()
 
 
+@run_in_graalpy_subprocess
 def test_reparse_truncated_part():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
@@ -191,6 +198,7 @@ def test_reparse_truncated_part():
                 f.truncate(30)
 
 
+@run_in_graalpy_subprocess
 def test_reparse_modified():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(TRACING_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (
@@ -205,6 +213,7 @@ def test_reparse_modified():
             assert pyc_file.exists()
 
 
+@run_in_graalpy_subprocess
 def test_reparse_disabled():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(
@@ -233,12 +242,14 @@ except SystemError as e:
 '''
 
 
+@run_in_graalpy_subprocess
 def test_reparse_co_code():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(CO_CODE_TEST, invalidation_mode=invalidation_mode):
             pass
 
 
+@run_in_graalpy_subprocess
 def test_reparse_co_code_deleted():
     for invalidation_mode in INVALIDATION_MODES:
         with pyc_reparse(CO_CODE_TEST, expect_success=False, invalidation_mode=invalidation_mode) as (

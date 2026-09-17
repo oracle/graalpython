@@ -36,6 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import functools
+import os
 import subprocess
 import sys
 import time
@@ -43,6 +45,44 @@ import unittest
 
 IS_BYTECODE_DSL = sys.implementation.name == 'graalpy'
 TRANSIENT_GRAALPY_STARTUP_BLOCKING_IO = "ERROR: BlockingIOError: [Errno 11] Resource temporarily unavailable"
+GRAALPY_SUBPROCESS_TEST_ENV = "GRAALPY_TEST_SUBPROCESS"
+
+
+def run_in_graalpy_subprocess(test):
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        if sys.implementation.name != "graalpy":
+            return test(*args, **kwargs)
+
+        test_name = test.__qualname__
+        if os.environ.get(GRAALPY_SUBPROCESS_TEST_ENV) == test_name:
+            return test(*args, **kwargs)
+
+        env = os.environ.copy()
+        env.pop('TAGGED_UNITTEST_PARTIAL', None)
+        env[GRAALPY_SUBPROCESS_TEST_ENV] = test_name
+        test_file = test.__globals__["__file__"]
+        test_id = f"{test.__module__}.{test_name}" if "." in test_name else test_name
+        runner = os.path.join(os.path.dirname(os.path.dirname(__file__)), "runner.py")
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "--vm.ea",
+                "--experimental-options=true",
+                "--python.EnableDebuggingBuiltins",
+                runner,
+                "run",
+                f"{test_file}::{test_id}",
+            ],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise AssertionError(f"Subprocess for {test_name} failed:\n{proc.stdout}")
+
+    return wrapper
 
 
 def _is_sandboxed():

@@ -141,13 +141,6 @@ SUBPROCESS_HEAVY_TESTS = [
     'cpyext/test_fatal_exit',
 ]
 
-MULTI_CONTEXT_EXCLUSIONS = [
-    *SUBPROCESS_HEAVY_TESTS,
-    # The test deletes loaded bytecode files, which trips up later reparsing of roots in the shared cache
-    'test_load_bytecode_file',
-]
-
-
 # Allows disabling rebuild for some mx commands such as graalpytest
 DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
 
@@ -2068,7 +2061,7 @@ def graalpython_gate_runner(_, tasks):
                 graalpy,
                 args=args,
                 parallel=0,
-                exclude=MULTI_CONTEXT_EXCLUSIONS,
+                exclude=SUBPROCESS_HEAVY_TESTS,
                 env=env,
                 nonZeroIsFatal=nonZeroIsFatal,
                 report=report(),
@@ -2078,7 +2071,7 @@ def graalpython_gate_runner(_, tasks):
                 graalpy,
                 args=[*args, "-multi-context"],
                 parallel=0,
-                exclude=MULTI_CONTEXT_EXCLUSIONS,
+                exclude=SUBPROCESS_HEAVY_TESTS,
                 env=env,
                 nonZeroIsFatal=nonZeroIsFatal,
                 report=report(),
@@ -2091,7 +2084,7 @@ def graalpython_gate_runner(_, tasks):
                 graalpy_standalone_jvm(),
                 args=["-repeated-run", "-multi-context"],
                 parallel=0,
-                exclude=MULTI_CONTEXT_EXCLUSIONS,
+                exclude=SUBPROCESS_HEAVY_TESTS,
                 nonZeroIsFatal=nonZeroIsFatal,
                 report=report(),
             )
