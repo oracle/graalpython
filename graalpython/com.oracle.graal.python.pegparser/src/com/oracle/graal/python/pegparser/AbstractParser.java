@@ -113,6 +113,7 @@ public abstract class AbstractParser {
         INTERACTIVE_TERMINAL,
         ASYNC_HACKS,
         ALLOW_INCOMPLETE_INPUT,
+        DONT_IMPLY_DEDENT,
     }
 
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
@@ -358,7 +359,7 @@ public abstract class AbstractParser {
         if (startRule == InputType.SINGLE && token.type == Token.Kind.ENDMARKER && parsingStarted) {
             token.type = Token.Kind.NEWLINE;
             parsingStarted = false;
-            if (tokenizer.getCurrentIndentIndex() > 0) {
+            if (tokenizer.getCurrentIndentIndex() > 0 && !flags.contains(Flags.DONT_IMPLY_DEDENT)) {
                 tokenizer.setPendingIndents(-tokenizer.getCurrentIndentIndex());
                 tokenizer.setCurrentIndentIndex(0);
             }

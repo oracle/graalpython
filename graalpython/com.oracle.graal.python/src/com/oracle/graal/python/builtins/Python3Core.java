@@ -1381,7 +1381,7 @@ public abstract class Python3Core {
         LOGGER.log(Level.FINE, () -> "import '" + s + "'");
         Source source = getInternalSource(sourceName, prefix);
         TruffleString sourceText = toTruffleStringUncached(source.getCharacters().toString());
-        Supplier<CallTarget> createTarget = () -> getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
+        Supplier<CallTarget> createTarget = () -> getLanguage().parse(getContext(), source, InputType.FILE, false, 0, null, EnumSet.noneOf(FutureFeature.class));
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheSourceTarget(sourceName, sourceText, InputType.FILE, 0, 0, createTarget);
         PCode code = PFactory.createCode(language, callTarget);
         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, mod));

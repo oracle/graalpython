@@ -1016,6 +1016,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             TruffleString code = expression;
             PythonContext context = getContext();
+            EnumSet<AbstractParser.Flags> parserFlags = EnumSet.noneOf(AbstractParser.Flags.class);
+            if ((flags & PyCF_TYPE_COMMENTS) != 0) {
+                parserFlags.add(AbstractParser.Flags.TYPE_COMMENTS);
+            }
+            if ((flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0) {
+                parserFlags.add(AbstractParser.Flags.ALLOW_INCOMPLETE_INPUT);
+            }
+            if ((flags & PyCF_DONT_IMPLY_DEDENT) != 0) {
+                parserFlags.add(AbstractParser.Flags.DONT_IMPLY_DEDENT);
+            }
             if (lstrip && !code.isEmpty()) {
                 int c = code.codePointAtIndexUncached(0, TS_ENCODING);
                 if (c == ' ' || c == '\t') {
@@ -1026,20 +1036,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, InputType.FILE, optimize, flags);
                 ParserCallbacksImpl parserCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
 
-                EnumSet<AbstractParser.Flags> compilerFlags = EnumSet.noneOf(AbstractParser.Flags.class);
-                if ((flags & PyCF_TYPE_COMMENTS) != 0) {
-                    compilerFlags.add(AbstractParser.Flags.TYPE_COMMENTS);
-                }
                 if (featureVersion < 0) {
                     featureVersion = PythonLanguage.MINOR;
                 }
                 if (featureVersion < 7) {
-                    compilerFlags.add(AbstractParser.Flags.ASYNC_HACKS);
+                    parserFlags.add(AbstractParser.Flags.ASYNC_HACKS);
                 }
                 if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                     PythonLanguage.LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
                 }
-                Parser parser = BytecodeDSLCompiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
+                Parser parser = BytecodeDSLCompiler.createParser(code.toJavaStringUncached(), parserCb, type, parserFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 parserCb.triggerDeprecationWarnings();
                 int astOptimizationLevel = (flags & PyCF_OPTIMIZED_AST) == PyCF_OPTIMIZED_AST ? resolveOptimizeLevel(context, optimize) : -2;
@@ -1053,8 +1059,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (type != InputType.SINGLE) {
                 ct = context.getEnv().parsePublic(source);
             } else {
-                boolean allowIncomplete = (flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0;
-                ct = context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
+                ct = context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, parserFlags, null, FutureFeature.fromFlags(flags));
             }
             return wrapRootCallTarget((RootCallTarget) ct, filename);
         }
