@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.benchmarks.jmh;
 
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
@@ -114,7 +113,13 @@ public class HostInteropMicroBenchmarks {
 
     @State(Scope.Thread)
     public static class IntArrayArgument {
-        public int[] data = IntStream.range(0, 1000).toArray();
+        public int[] data = new int[1000];
+
+        public IntArrayArgument() {
+            for (int i = 0; i < data.length; i++) {
+                data[i] = i;
+            }
+        }
     }
 
     @Benchmark

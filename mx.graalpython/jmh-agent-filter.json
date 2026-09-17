@@ -1,0 +1,7 @@
+{
+    "rules": [
+        {"includeClasses": "com.oracle.graal.python.benchmarks.**"},
+        {"includeClasses": "com.oracle.truffle.polyglot.PolyglotObjectProxyHandler"},
+        {"includeClasses": "com.oracle.truffle.polyglot.PolyglotFunctionProxyHandler"}
+    ]
+}

@@ -203,6 +203,13 @@
         java_embedding_enterprise_multi_shared: PYTHON_VM.java_embedding_multi_shared + JVM_VM.server_libgraal_ee,
         java_embedding_enterprise_interpreter_multi_shared: PYTHON_VM.java_embedding_interpreter_multi_shared + JVM_VM.server_libgraal_ee,
         java_jmh_enterprise: JVM_VM.server_libgraal_ee,
+        java_jmh_native_enterprise: {
+            jvm: 'native-image',
+            jvm_config: 'default-ee',
+            dy: ["--dynamicimports", DY.ee],
+            env: ["--env", "jmh-native-ee"],
+            edition: 'ee',
+        },
 
         // basline vms
         cpython: PYTHON_VM.cpython + JVM_VM.none,

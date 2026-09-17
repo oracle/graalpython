@@ -457,9 +457,11 @@
         }),
         for bench in ["heap", "micro_small_heap"]
     } + {
-        // interop benchmarks only for graalpython, weekly is enough
-        [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
+        // JMH embedding benchmarks on both JVM and Native Image.
+        // Native Image forks are dispatched by mx rather than JMH itself.
+        [bench]: bench_task(bench) + task_spec({bench_args:: ["-f", "5"]}) + platform_spec(no_jobs) + bench_variants({
             "vm_name:java_jmh_enterprise"                            : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
+            "vm_name:java_jmh_native_enterprise"                     : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
         }),
         for bench in ["jmh"]
     } + {

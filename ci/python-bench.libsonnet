@@ -139,6 +139,7 @@
         target:: null,
         mx_args:: [],
         mx_bench_args:: [],
+        bench_args:: [],
         vm_config_name:: "--python-vm-config",
         variations:: [],
         os:: null,
@@ -166,7 +167,7 @@
         logs +: logs(self.os, self.arch),
         setup: [],
         run: [
-            bench_cmd(self.bench, self.mx_args, self.mx_bench_args, self.vm, self.vm_config_name, self.vm_info),
+            bench_cmd(self.bench, self.mx_args, self.mx_bench_args, self.vm, self.vm_config_name, self.vm_info, bench_args=self.bench_args),
         ],
         teardown: [
             ["bench-uploader.py", "${BENCH_RESULTS_FILE_PATH}"],
