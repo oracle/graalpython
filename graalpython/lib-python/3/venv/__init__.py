@@ -466,7 +466,10 @@ class EnvBuilder:
         # legitimate user preferences (such as not writing bytecode). All we
         # really need is to ensure that the path variables do not overrule
         # normal venv handling.
-        args = [context.env_exec_cmd, *py_args]
+        # Begin GraalPy change: these helper invocations are short-lived, so
+        # compiling their code is only overhead.
+        args = [context.env_exec_cmd, '-X', 'jit=0', *py_args]
+        # End GraalPy change
         kwargs['env'] = env = os.environ.copy()
         env['VIRTUAL_ENV'] = context.env_dir
         env.pop('PYTHONHOME', None)

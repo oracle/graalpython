@@ -248,6 +248,11 @@ class BasicTest(BaseTest):
                     cmd,
                     [
                         expect_exe,
+                        # Begin GraalPy change: venv helper invocations disable
+                        # JIT compilation because they are short-lived.
+                        '-X',
+                        'jit=0',
+                        # End GraalPy change
                         '-m',
                         'pip',
                         'install',

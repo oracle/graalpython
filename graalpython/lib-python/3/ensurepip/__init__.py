@@ -77,6 +77,10 @@ runpy.run_module("pip", run_name="__main__", alter_sys=True)
 
     cmd = [
         sys.executable,
+        # Begin GraalPy change: pip bootstrapping is a one-shot process.
+        '-X',
+        'jit=0',
+        # End GraalPy change
         '-W',
         'ignore::DeprecationWarning',
         '-c',
