@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -209,11 +210,16 @@ public abstract class HashingCollectionNodes {
             return copyNode.execute(inliningTarget, other.getDictStorage());
         }
 
-        @Specialization(replaces = "doSet")
+        @Specialization(guards = "canCloneStorage(other, givenValue)", replaces = "doSet")
         static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object givenValue,
                         @Shared @Cached(inline = false) GetClonedHashingCollectionNode hashingCollectionNode) {
             Object value = givenValue == PNone.NO_VALUE ? PNone.NONE : givenValue;
             return hashingCollectionNode.execute(frame, other.getDictStorage(), value);
+        }
+
+        protected static boolean canCloneStorage(PHashingCollection other, Object givenValue) {
+            // Set constructors ignore set subclass iterators; dict.fromkeys must honor them.
+            return PGuards.isBuiltinHashingCollection(other) || (givenValue == PNone.NO_VALUE && other instanceof PBaseSet);
         }
 
         @Specialization
@@ -245,7 +251,7 @@ public abstract class HashingCollectionNodes {
             return storage;
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})
+        @Fallback
         @InliningCutoff
         static HashingStorage doIterable(VirtualFrame frame, Node inliningTarget, Object other, Object value,
                         @Cached PyObjectGetIter getIter,

@@ -180,6 +180,91 @@ def test_fromkeys():
     assert set(d.values()) == {None}
 
 
+def test_fromkeys_dict_subclass_iter():
+    class DictSubclass(dict):
+        def __iter__(self):
+            return iter((1,))
+
+    for contents in ({}, {2: 'value'}):
+        source = DictSubclass(contents)
+        assert dict.fromkeys(source) == {1: None}
+        value = object()
+        assert dict.fromkeys(source, value) == {1: value}
+        assert source == contents
+
+    DictSubclass.__iter__ = None
+    assert_raises(TypeError, dict.fromkeys, DictSubclass())
+
+
+def test_fromkeys_dict_subclass_rehashes_keys():
+    class DictSubclass(dict):
+        pass
+
+    class Key:
+        hash_calls = 0
+
+        def __hash__(self):
+            self.hash_calls += 1
+            return 42
+
+    for cls in (dict, DictSubclass, defaultdict):
+        key = Key()
+        source = cls()
+        source[key] = 'value'
+        key.hash_calls = 0
+        result = dict.fromkeys(source)
+        assert key.hash_calls == (0 if cls is dict else 1)
+        assert len(result) == 1 and next(iter(result)) is key
+
+
+def test_fromkeys_ordered_dict():
+    from collections import OrderedDict
+
+    source = OrderedDict(a=1, b=2)
+    source.move_to_end('a')
+    for value in (None, object()):
+        result = dict.fromkeys(source, value)
+        assert list(result) == ['b', 'a']
+        assert all(v is value for v in result.values())
+
+
+def test_fromkeys_set_subclass_iter():
+    for base in (set, frozenset):
+        class SetSubclass(base):
+            def __iter__(self):
+                return iter((1,))
+
+        for contents in ((), (2,)):
+            source = SetSubclass(contents)
+            assert dict.fromkeys(source) == {1: None}
+            value = object()
+            assert dict.fromkeys(source, value) == {1: value}
+
+        SetSubclass.__iter__ = None
+        assert_raises(TypeError, dict.fromkeys, SetSubclass())
+
+
+def test_fromkeys_set_subclass_rehashes_keys():
+    class Key:
+        hash_calls = 0
+
+        def __hash__(self):
+            self.hash_calls += 1
+            return 42
+
+    for base in (set, frozenset):
+        class SetSubclass(base):
+            pass
+
+        for cls in (base, SetSubclass):
+            key = Key()
+            source = cls((key,))
+            key.hash_calls = 0
+            result = dict.fromkeys(source)
+            assert key.hash_calls == (0 if cls is base else 1)
+            assert len(result) == 1 and next(iter(result)) is key
+
+
 def test_init():
     d = dict(a=1, b=2, c=3)
     assert len(d) == 3
