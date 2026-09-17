@@ -23,12 +23,10 @@ work. One should use importlib as the public-facing version of this module.
 _bootstrap = None
 
 # Import builtin modules
-import _imp
 import _io
-import sys
 import _warnings
 import marshal
-
+import sys
 
 _MS_WINDOWS = (sys.platform == 'win32')
 if _MS_WINDOWS:
@@ -1178,7 +1176,7 @@ class SourceLoader(_LoaderBasics):
             # this only for real file loaders that use the standard source retrieval and compilation
             # hooks; arbitrary compile() calls and custom loaders do not have a stable source identity.
             code_object = __graalpython__.compile_import_source(
-                source_bytes, source_path, -1)
+                source_bytes, source_path)
         else:
             code_object = self.source_to_code(source_bytes, source_path)
         _bootstrap._verbose_message('code object from {}', source_path)

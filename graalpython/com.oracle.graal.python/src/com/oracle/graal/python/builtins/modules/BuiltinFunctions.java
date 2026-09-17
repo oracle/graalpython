@@ -887,7 +887,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTarget,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invoke,
                         @Cached PRaiseNode raiseNode) {
-            PCode code = compileNode.compile(frame, source, T_STRING_SOURCE, mode, -1, -1);
+            PCode code = compileNode.compile(frame, source, T_STRING_SOURCE, mode, false, -1, -1);
             if (code.getFreeVars().length > 0) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CODE_OBJ_NO_FREE_VARIABLES, mode);
             }
@@ -984,8 +984,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             this.cacheImportSource = false;
         }
 
-        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int optimize, int featureVersion) {
-            return (PCode) executeInternal(frame, source, filename, mode, 0, false, optimize, featureVersion);
+        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, boolean dontInherit, int optimize, int featureVersion) {
+            return (PCode) executeInternal(frame, source, filename, mode, 0, dontInherit, optimize, featureVersion);
         }
 
         protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,

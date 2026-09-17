@@ -157,7 +157,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -481,15 +480,14 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         return objectArr;
     }
 
-    @Builtin(name = "compile_import_source", minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "optimize"})
+    @Builtin(name = "compile_import_source", minNumOfPositionalArgs = 2, parameterNames = {"source", "filename"})
     @ArgumentClinic(name = "filename", conversion = ArgumentClinic.ClinicConversion.TString)
-    @ArgumentClinic(name = "optimize", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class CompileImportSourceNode extends PythonTernaryClinicBuiltinNode {
+    abstract static class CompileImportSourceNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        static Object compile(VirtualFrame frame, Object source, TruffleString filename, int optimize,
+        static Object compile(VirtualFrame frame, Object source, TruffleString filename,
                         @Cached("createForImport()") BuiltinFunctions.CompileNode compileNode) {
-            return compileNode.compile(frame, source, filename, T_EXEC, optimize, -1);
+            return compileNode.compile(frame, source, filename, T_EXEC, true, -1, -1);
         }
 
         @Override
