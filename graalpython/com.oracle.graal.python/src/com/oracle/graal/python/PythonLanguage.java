@@ -982,13 +982,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return createTarget.get();
         }
         TruffleString key = internString(filename);
-        return cachedBytecodeTargets.compute(key, (k, oldEntry) -> {
+        CallTarget callTarget = cachedBytecodeTargets.compute(key, (k, oldEntry) -> {
             if (oldEntry != null && oldEntry.sourceHash() == sourceHash) {
                 return oldEntry;
             }
             LOGGER.log(Level.FINEST, () -> "Caching CallTarget for bytecode file " + filename);
             return new BytecodeTargetCacheEntry(sourceHash, createTarget.get());
         }).callTarget();
+        /*
+         * A source import may have populated the source cache before it created its bytecode file.
+         * Once we have successfully loaded that bytecode file, keep only the bytecode file cached.
+         */
+        cachedSourceTargets.keySet().removeIf(sourceKey -> sourceKey.filename() == key);
+        return callTarget;
     }
 
     @TruffleBoundary
