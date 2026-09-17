@@ -339,6 +339,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             if (self.isCoroutine() && self.isFinished()) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
+            if (self.isFinished()) {
+                throw PException.fromObject(instance, inliningTarget, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
@@ -352,7 +355,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // nothing that would handle it.
                 // Instead, we throw the exception here and fake entering the generator by adding
                 // its frame to the traceback manually.
-                self.markAsFinished();
                 RootNode rootNode = self.getCurrentCallTarget().getRootNode();
                 BytecodeNode bytecodeNode = ((PBytecodeDSLRootNode) self.getRootNode()).getBytecodeNode();
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
@@ -364,6 +366,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 PTraceback newTraceback = PFactory.createTraceback(language, pFrame, pFrame.getLine(),
                                 (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);
                 setTracebackNode.execute(inliningTarget, instance, newTraceback);
+                self.markAsFinished();
                 throw PException.fromObject(instance, inliningTarget, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
         }
