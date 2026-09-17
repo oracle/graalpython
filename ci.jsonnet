@@ -187,7 +187,7 @@
         "python-unittest-multi-context": gpgate + require(GPY_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
             "linux:aarch64:jdk-latest"   : daily     + t("02:00:00"),
-            "windows:amd64:jdk-latest"   : daily     + t("02:00:00"),
+            "windows:amd64:jdk-latest"   : daily     + t("02:30:00"),
         }),
         "python-unittest-jython": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("00:30:00") + require(GPY_JVM21_STANDALONE),
