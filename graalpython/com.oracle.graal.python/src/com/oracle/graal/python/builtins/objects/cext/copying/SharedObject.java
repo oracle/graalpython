@@ -100,8 +100,9 @@ abstract class SharedObject implements AutoCloseable {
         }
     }
 
-    protected static TruffleProcessBuilder newProcessBuilder(PythonContext context) {
+    protected static TruffleProcessBuilder newProcessBuilder(PythonContext context, TruffleFile workingDirectory) {
         var pb = context.getEnv().newProcessBuilder();
+        pb.directory(workingDirectory);
         pb.redirectOutput(pb.createRedirectToStream(new LoggingOutputStream()));
         pb.redirectError(pb.createRedirectToStream(new LoggingOutputStream()));
         return pb;

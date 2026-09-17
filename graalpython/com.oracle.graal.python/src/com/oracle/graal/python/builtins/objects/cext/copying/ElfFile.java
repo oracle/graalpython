@@ -69,7 +69,7 @@ final class ElfFile extends SharedObject {
         var command = new String[arguments.length + 1];
         command[0] = getPatchelf();
         System.arraycopy(arguments, 0, command, 1, arguments.length);
-        var pb = newProcessBuilder(context);
+        var pb = newProcessBuilder(context, tempfile.getParent());
         var stderr = new ByteArrayOutputStream();
         pb.redirectError(pb.createRedirectToStream(stderr));
         pb.command(command);
