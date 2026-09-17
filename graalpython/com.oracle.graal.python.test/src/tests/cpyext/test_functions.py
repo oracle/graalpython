@@ -155,6 +155,57 @@ class VectorcallMethodReceiver:
 NativeTypeWithAttr.combine = VectorcallMethodReceiver.combine
 
 
+NativeVectorcallMethodReceiver = CPyExtHeapType(
+    "NativeVectorcallMethodReceiver",
+    code='''
+    static PyObject* native_combine(PyObject* self, PyObject* const* args,
+                    Py_ssize_t nargs, PyObject* kwnames) {
+        PyObject* positional = PyTuple_New(nargs);
+        if (positional == NULL) {
+            return NULL;
+        }
+        for (Py_ssize_t i = 0; i < nargs; i++) {
+            PyTuple_SET_ITEM(positional, i, Py_NewRef(args[i]));
+        }
+        PyObject* keywords = PyDict_New();
+        if (keywords == NULL) {
+            Py_DECREF(positional);
+            return NULL;
+        }
+        if (kwnames != NULL) {
+            Py_ssize_t nkw = PyTuple_GET_SIZE(kwnames);
+            for (Py_ssize_t i = 0; i < nkw; i++) {
+                if (PyDict_SetItem(keywords, PyTuple_GET_ITEM(kwnames, i), args[nargs + i]) < 0) {
+                    Py_DECREF(positional);
+                    Py_DECREF(keywords);
+                    return NULL;
+                }
+            }
+        }
+        PyObject* result = PyTuple_Pack(2, positional, keywords);
+        Py_DECREF(positional);
+        Py_DECREF(keywords);
+        return result;
+    }
+
+    static PyMethodDef native_methods[] = {
+        {"combine", (PyCFunction)(void(*)(void))native_combine, METH_FASTCALL | METH_KEYWORDS, NULL},
+        {NULL, NULL, 0, NULL}
+    };
+    ''',
+    slots=['{Py_tp_methods, native_methods}'],
+)
+
+
+class NativeVectorcallMethodSubclass(NativeVectorcallMethodReceiver):
+    pass
+
+
+native_vectorcall_method_shadowed = NativeVectorcallMethodSubclass()
+native_vectorcall_method_shadowed.combine = lambda positional, *, keyword="default": (
+    "shadowed", positional, keyword)
+
+
 class DelAttrObject:
     def __init__(self):
         self.a = 1
@@ -417,6 +468,9 @@ class TestPyObject(CPyExtTestCase):
             (VectorcallMethodReceiver(), "combine", "managed-positional", None),
             (NativeTypeWithAttr(), "combine", "native-positional", "native-keyword"),
             (NativeTypeWithAttr(), "combine", "native-positional", None),
+            (NativeVectorcallMethodReceiver(), "combine", "native-method-positional", "native-method-keyword"),
+            (NativeVectorcallMethodReceiver(), "combine", "native-method-positional", None),
+            (native_vectorcall_method_shadowed, "combine", "shadowed-positional", "shadowed-keyword"),
         ),
         code='''
         static PyObject* wrap_PyObject_VectorcallMethod(PyObject* receiver, PyObject* name,

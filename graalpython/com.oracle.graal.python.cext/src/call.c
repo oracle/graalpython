@@ -931,15 +931,27 @@ PyObject_VectorcallMethod(PyObject *name, PyObject *const *args,
 
     /* GraalPy change: Perform the method lookup and call in a single upcall if the receiver is
        managed, or if a native extension type inherited GraalPy's managed object.__getattribute__
-       slot. In the latter case, _PyObject_GetMethod would upcall for the lookup anyway, only to
-       return to native and potentially upcall again to invoke the resulting managed method.
-       Receivers with a genuinely native attribute lookup continue through CPython's native fast
-       path below. */
+       slot. If the lookup finds an unbound native method descriptor, the upcall returns the
+       descriptor instead of invoking it. This keeps native extension method calls in native code
+       without duplicating managed MRO and instance-dict lookup semantics here. */
     Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
     if (points_to_py_handle_space(args[0]) ||
                     (Py_TYPE(args[0])->tp_getattro == PyBaseObject_Type.tp_getattro && PyUnicode_CheckExact(name))) {
-        return GraalPyPrivate_Object_VectorcallMethod(name, args[0], args + 1,
-                                                      nargs - 1, kwnames);
+        PyObject *result = NULL;
+        int native_method = GraalPyPrivate_Object_VectorcallMethod(name, args[0], args + 1,
+                                                                  nargs - 1, kwnames, &result);
+        if (native_method <= 0) {
+            return result;
+        }
+
+        /* The receiver is still args[0], so the descriptor can use the original argument array.
+           Do not expose PY_VECTORCALL_ARGUMENTS_OFFSET: the native callee must not modify the
+           slot immediately preceding args. */
+        nargsf &= ~PY_VECTORCALL_ARGUMENTS_OFFSET;
+        PyObject *call_result = _PyObject_VectorcallTstate(_PyThreadState_GET(), result,
+                                                           args, nargsf, kwnames);
+        Py_DECREF(result);
+        return call_result;
     }
 
     PyThreadState *tstate = _PyThreadState_GET();

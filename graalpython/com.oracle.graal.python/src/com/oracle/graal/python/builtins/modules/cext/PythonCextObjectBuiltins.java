@@ -78,6 +78,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -91,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -160,13 +162,11 @@ import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorag
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -296,57 +296,57 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_VectorcallMethod extends CApi5BuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject, PyObjectPtr}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_VectorcallMethod extends CApi6BuiltinNode {
 
         @Specialization
-        static Object doMethodNoKeywords(TruffleString methodName, Object receiver, long argsArray, long nargs,
-                        @SuppressWarnings("unused") PNone keywordNames,
+        static int doMethod(TruffleString methodName, Object receiver, long argsArray, long nargs, Object keywordNames, long resultPointer,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached CStructAccess.ReadObjectNode readNode,
-                        @Exclusive @Cached PyObjectGetMethod getMethodNode,
-                        @Exclusive @Cached InlinedConditionProfile isBoundProfile,
-                        @Exclusive @Cached CallNode callNode) {
-            Object callable = getMethodNode.execute(null, inliningTarget, receiver, methodName);
-            boolean isBound = isBoundProfile.profile(inliningTarget, callable instanceof BoundDescriptor);
-            Object[] args = readArguments(readNode, argsArray, (int) nargs, receiver, isBound);
-            if (isBound) {
-                callable = ((BoundDescriptor) callable).descriptor;
-            }
-            return callNode.execute(null, callable, args, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        @Specialization
-        static Object doMethodWithKeywords(TruffleString methodName, Object receiver, long argsArray, long nargs, Object keywordNames,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached CStructAccess.ReadObjectNode readNode,
-                        @Exclusive @Cached CStructAccess.ReadObjectNode readKwNode,
+                        @Bind PythonContext context,
+                        @Cached CStructAccess.ReadObjectNode readNode,
+                        @Cached CStructAccess.ReadObjectNode readKwNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Exclusive @Cached PyObjectGetMethod getMethodNode,
-                        @Exclusive @Cached InlinedConditionProfile isBoundProfile,
-                        @Exclusive @Cached CallNode callNode) {
+                        @Cached PyObjectGetMethod getMethodNode,
+                        @Cached InlinedConditionProfile isBoundProfile,
+                        @Cached CallNode callNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long resultPointerValue = NULLPTR;
             try {
                 Object callable = getMethodNode.execute(null, inliningTarget, receiver, methodName);
                 boolean isBound = isBoundProfile.profile(inliningTarget, callable instanceof BoundDescriptor);
+                if (!isBound && callable instanceof PythonAbstractNativeObject) {
+                    resultPointerValue = toNativeNode.executeNewRef(inliningTarget, callable);
+                    return 1;
+                }
                 Object[] args = readArguments(readNode, argsArray, (int) nargs, receiver, isBound);
                 if (isBound) {
                     callable = ((BoundDescriptor) callable).descriptor;
                 }
 
-                SequenceStorage storage = getTupleStorage.execute(inliningTarget, keywordNames);
-                int kwcount = storage.length();
-                Object[] kwValues = readKwNode.readPyObjectArray(argsArray, kwcount, (int) nargs);
-                PKeyword[] keywords = new PKeyword[kwcount];
-                for (int i = 0; i < kwcount; i++) {
-                    TruffleString name = castToTruffleStringNode.execute(inliningTarget, getItemScalarNode.execute(inliningTarget, storage, i));
-                    keywords[i] = new PKeyword(name, kwValues[i]);
+                PKeyword[] keywords;
+                if (keywordNames instanceof PNone) {
+                    keywords = PKeyword.EMPTY_KEYWORDS;
+                } else {
+                    SequenceStorage storage = getTupleStorage.execute(inliningTarget, keywordNames);
+                    int kwcount = storage.length();
+                    Object[] kwValues = readKwNode.readPyObjectArray(argsArray, kwcount, (int) nargs);
+                    keywords = new PKeyword[kwcount];
+                    for (int i = 0; i < kwcount; i++) {
+                        TruffleString name = castToTruffleStringNode.execute(inliningTarget, getItemScalarNode.execute(inliningTarget, storage, i));
+                        keywords[i] = new PKeyword(name, kwValues[i]);
+                    }
                 }
-                return callNode.execute(null, callable, args, keywords);
+                Object result = callNode.execute(null, callable, args, keywords);
+                resultPointerValue = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, result, false));
+                return 0;
             } catch (CannotCastException e) {
                 // PyVectorcall_NARGS cannot exceed Py_ssize_t, and GraalPy arrays are int-sized.
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                writePtr(resultPointer, resultPointerValue);
             }
         }
 
