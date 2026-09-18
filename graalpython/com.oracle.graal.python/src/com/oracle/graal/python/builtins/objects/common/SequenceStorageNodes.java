@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.RepeatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
@@ -1323,6 +1324,11 @@ public abstract class SequenceStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class SetItemScalarNode extends AbstractSetItemScalarNode {
+
+        @TruffleBoundary
+        public static void executeUncached(SequenceStorage storage, int idx, Object value) {
+            SetItemScalarNodeGen.getUncached().execute(null, storage, idx, value);
+        }
 
         @InliningCutoff
         @Specialization
@@ -2829,6 +2835,11 @@ public abstract class SequenceStorageNodes {
                 return ListGeneralizationNodeGen.create();
             }
         };
+
+        @TruffleBoundary
+        public static SequenceStorage executeUncached(SequenceStorage toGeneralize, Object indicationValue) {
+            return ListGeneralizationNodeGen.getUncached().execute(null, toGeneralize, indicationValue);
+        }
 
         @Override
         public final SequenceStorage executeCached(SequenceStorage toGeneralize, Object indicationValue) {

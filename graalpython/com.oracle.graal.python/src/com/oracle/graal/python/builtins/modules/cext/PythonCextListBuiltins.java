@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -68,9 +69,14 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
@@ -95,31 +101,31 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextListBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    abstract static class PyList_New extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "size < 0")
-        static Object newListError(long size,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
-        }
+    private static final CApiTiming TIMING_PYLIST_NEW = CApiTiming.create(false, "PyList_New");
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "size == 0")
-        static Object newEmptyList(long size,
-                        @Bind PythonLanguage language) {
-            return PFactory.createList(language);
-        }
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct, acquireGil = false)
+    static long PyList_New(long size) {
+        CApiTiming.enter();
+        try {
+            if (size < 0) {
+                throw PRaiseNode.raiseStatic(null, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
+            }
 
-        @Specialization(guards = "size > 0")
-        static Object newList(long size,
-                        @Bind PythonLanguage language) {
-            return PFactory.createList(language, array(size));
-        }
-
-        private static Object[] array(long size) {
-            Object[] a = new Object[(int) size];
-            Arrays.fill(a, PNone.NO_VALUE);
-            return a;
+            PythonLanguage language = PythonLanguage.get(null);
+            PList result;
+            if (size == 0) {
+                result = PFactory.createList(language);
+            } else {
+                if (!PInt.fitsInInt(size)) {
+                    throw PRaiseNode.raiseStatic(null, MemoryError);
+                }
+                Object[] a = new Object[(int) size];
+                Arrays.fill(a, PNone.NO_VALUE);
+                result = PFactory.createList(language, a);
+            }
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
+        } finally {
+            CApiTiming.exit(TIMING_PYLIST_NEW);
         }
     }
 
@@ -157,58 +163,50 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class PyList_GetItemRef extends CApiBinaryBuiltinNode {
+    private static final CApiTiming TIMING_PYLIST_GETITEMREF = CApiTiming.create(false, "PyList_GetItemRef");
 
-        @Specialization
-        static Object doPList(PList list, long key,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached EnsurePythonObjectNode ensureNode,
-                        @Cached ListGeneralizationNode generalizationNode,
-                        @Cached SetItemScalarNode setItemNode,
-                        @Cached GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode raiseNode) {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
+    static long PyList_GetItemRef(long opPtr, long key) {
+        CApiTiming.enter();
+        try {
+            Object op = NativeToPythonInternalNode.executeUncached(opPtr, false);
+            if (!(op instanceof PList list)) {
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_A_LIST);
+            }
             SequenceStorage sequenceStorage = list.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= sequenceStorage.length()) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+                throw PRaiseNode.raiseStatic(null, IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
             }
-            Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
+            Object result = GetItemScalarNode.executeUncached(sequenceStorage, (int) key);
             // See the note in PyDict_GetItemRef
-            Object promotedValue = ensureNode.execute(context, result, false);
+            Object promotedValue = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), result, false);
             if (promotedValue != result) {
-                sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
+                sequenceStorage = ListGeneralizationNode.executeUncached(sequenceStorage, promotedValue);
                 list.setSequenceStorage(sequenceStorage);
-                setItemNode.execute(inliningTarget, sequenceStorage, (int) key, promotedValue);
-                return promotedValue;
+                SetItemScalarNode.executeUncached(sequenceStorage, (int) key, promotedValue);
             }
-            return result;
-        }
-
-        @Fallback
-        static Object fallback(@SuppressWarnings("unused") Object list, @SuppressWarnings("unused") Object pos,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_LIST);
+            return PythonToNativeInternalNode.executeNewRefUncached(promotedValue);
+        } finally {
+            CApiTiming.exit(TIMING_PYLIST_GETITEMREF);
         }
     }
 
+    private static final CApiTiming TIMING_PYLIST_APPEND = CApiTiming.create(false, "PyList_Append");
+
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyList_Append extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        int append(PList list, Object newItem,
-                        @Cached AppendNode appendNode) {
-            if (newItem == PNone.NO_VALUE) {
-                throw badInternalCall("newitem");
+    static int PyList_Append(long opPtr, long itemPtr) {
+        CApiTiming.enter();
+        try {
+            Object op = NativeToPythonInternalNode.executeUncached(opPtr, false);
+            Object item = NativeToPythonInternalNode.executeUncached(itemPtr, false);
+            if (op instanceof PList list && item != PNone.NO_VALUE) {
+                AppendNode.appendObjectGeneric(list, item, null, SequenceStorageNodes.AppendNode.getUncached(), AppendNode.getUpdateStoreProfileUncached());
+                return 0;
             }
-            appendNode.execute(list, newItem);
-            return 0;
-        }
-
-        @Fallback
-        int fallback(Object list, @SuppressWarnings("unused") Object newItem) {
-            throw raiseFallback(list, PythonBuiltinClassType.PList);
+            throw PythonCextBuiltins.badInternalCall("PyList_Append", "op");
+        } finally {
+            CApiTiming.exit(TIMING_PYLIST_APPEND);
         }
     }
 
@@ -293,21 +291,23 @@ public final class PythonCextListBuiltins {
         }
     }
 
+    private static final CApiTiming TIMING_PYLIST_SIZE = CApiTiming.create(false, "PyList_Size");
+
     /*
      * A pure-C Py_SIZE implementation regressed mixed managed/native/list-subclass workload by
      * about 1.26x.
      */
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyList_Size extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long size(PList list) {
-            return list.getSequenceStorage().length();
-        }
-
-        @Fallback
-        long fallback(Object list) {
-            throw raiseFallback(list, PythonBuiltinClassType.PList);
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct, acquireGil = false)
+    static long PyList_Size(long opPtr) {
+        CApiTiming.enter();
+        try {
+            Object op = NativeToPythonInternalNode.executeUncached(opPtr, false);
+            if (op instanceof PList list) {
+                return list.getSequenceStorage().length();
+            }
+            throw PythonCextBuiltins.badInternalCall("PyList_Size", "op");
+        } finally {
+            CApiTiming.exit(TIMING_PYLIST_SIZE);
         }
     }
 
