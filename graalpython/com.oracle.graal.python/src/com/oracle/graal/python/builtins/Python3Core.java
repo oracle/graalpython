@@ -396,7 +396,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -974,7 +974,7 @@ public abstract class Python3Core {
         boolean useFrozenModules = bootstrap != null;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
-        WriteAttributeToPythonObjectNode writeNode = WriteAttributeToPythonObjectNode.getUncached();
+        WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.getUncached();
         ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
         PyDictSetItem setItem = PyDictSetItem.getUncached();
 

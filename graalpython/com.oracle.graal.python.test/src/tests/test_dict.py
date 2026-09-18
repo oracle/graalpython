@@ -42,6 +42,130 @@ from collections import defaultdict
 
 graalpy_only = unittest.skipUnless(sys.implementation.name == "graalpy", "GraalPy-specific dict storage test")
 
+
+def test_namespace_reinitialization_with_backing_dict():
+    from types import SimpleNamespace
+
+    obj = SimpleNamespace(a=1)
+    mapping = obj.__dict__
+    assert len(mapping) == 1
+    obj.__init__(b=2)
+    assert len(mapping) == 2
+    assert mapping == {"a": 1, "b": 2}
+    mapping.clear()
+    mapping = obj.__dict__
+    assert len(mapping) == 0
+    obj.__init__(c=3)
+    assert mapping == {"c": 3}
+    assert obj.c == 3
+
+
+def test_namespace_reinitialization_with_positional_mapping_and_backing_dict():
+    from types import SimpleNamespace
+
+    obj = SimpleNamespace(a=1)
+    mapping = obj.__dict__
+    assert len(mapping) == 1
+    mapping.clear()
+    assert len(mapping) == 0
+    obj.__init__({"b": 2}, c=3)
+    assert len(mapping) == 2
+    assert mapping == {"b": 2, "c": 3}
+    assert obj.__dict__ is mapping
+
+
+def test_namespace_replace_with_backing_dict():
+    from types import SimpleNamespace
+
+    class Namespace(SimpleNamespace):
+        def __init__(self):
+            self.seed = 1
+            assert len(self.__dict__) == 1
+
+    obj = Namespace()
+    obj.extra = 2
+    result = obj.__replace__(extra=3)
+    assert result.__dict__ == {"seed": 1, "extra": 3}
+    assert len(result.__dict__) == 2
+
+
+def test_object_dict_length_after_attribute_mutations():
+    class Object:
+        pass
+
+    obj = Object()
+    obj.deleted = 1
+    del obj.deleted  # Ordinary objects do not maintain HAS_NO_VALUE_PROPERTIES.
+    mapping = obj.__dict__
+    assert len(mapping) == 0
+    for _ in range(3):
+        obj.value = 1
+        assert len(mapping) == 1
+        obj.value = 2
+        assert len(mapping) == 1
+        del obj.value
+        assert len(mapping) == 0
+        mapping.update(a=1, b=2)
+        assert len(mapping) == 2
+        assert mapping.pop("a") == 1
+        assert len(mapping) == 1
+        mapping.clear()
+        assert len(mapping) == 0
+        mapping = obj.__dict__
+
+
+def test_type_dict_length_and_dir_after_mutations():
+    for size in (3, 1000):
+        for delete_before_dict in (False, True):
+            cls = type("ManyAttributes", (), {f"attr_{i}": i for i in range(size)})
+            if delete_before_dict:
+                del cls.attr_0
+            mapping = cls.__dict__
+            expected = set(mapping)
+            for _ in range(3):
+                assert len(mapping) == len(expected)
+                assert set(dir(cls)) == expected | set(dir(object))
+                cls.attr_0 = 42
+                expected.add("attr_0")
+                assert len(mapping) == len(expected)
+                assert "attr_0" in dir(cls)
+                del cls.attr_0
+                expected.remove("attr_0")
+                assert len(mapping) == len(expected)
+                assert "attr_0" not in dir(cls)
+                copied = mapping.copy()
+                assert len(copied) == len(expected)
+                assert set(copied) == expected
+
+
+@graalpy_only
+def test_dynamic_storage_cached_length_mutations():
+    import __graalpython__
+
+    mapping = __graalpython__.set_storage_strategy({}, "dynamicobject")
+    assert len(mapping) == 0
+    for _ in range(3):
+        mapping["a"] = 1
+        assert len(mapping) == 1
+        mapping["a"] = 2
+        assert len(mapping) == 1
+        del mapping["a"]
+        assert len(mapping) == 0
+        mapping.setdefault("a", 3)
+        assert len(mapping) == 1
+        mapping.update(b=4)
+        assert len(mapping) == 2
+        assert mapping.pop("a") == 3
+        assert len(mapping) == 1
+        copied = mapping.copy()
+        assert len(copied) == 1
+        copied["c"] = 5
+        assert len(copied) == 2
+        assert len(mapping) == 1
+        mapping.clear()
+        assert len(mapping) == 0
+
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:

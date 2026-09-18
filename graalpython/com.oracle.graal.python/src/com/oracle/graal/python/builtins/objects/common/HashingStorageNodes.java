@@ -328,9 +328,11 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
-                        @Cached DynamicObject.PutNode putNode) {
-            self.setStringKey(key, value, putNode);
+        static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
+                        @Cached DynamicObject.PutNode putNode,
+                        @Cached InlinedBranchProfile invalidateLengthProfile,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+            self.setStringKey(inliningTarget, key, value, putNode, invalidateLengthProfile, setShapeFlagsNode);
             return self;
         }
 
@@ -379,8 +381,10 @@ public class HashingStorageNodes {
             static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value, boolean transition,
                             @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                             @Cached CastBuiltinStringToTruffleStringNode castStr,
-                            @Cached DynamicObject.PutNode putNode) {
-                self.setStringKey(castStr.execute(inliningTarget, key), value, putNode);
+                            @Cached DynamicObject.PutNode putNode,
+                            @Cached InlinedBranchProfile invalidateLengthProfile,
+                            @Shared("setShapeFlags") @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+                self.setStringKey(inliningTarget, castStr.execute(inliningTarget, key), value, putNode, invalidateLengthProfile, setShapeFlagsNode);
                 return self;
             }
 
@@ -389,7 +393,7 @@ public class HashingStorageNodes {
                             @Cached PyObjectHashNode hashNode,
                             @Cached ObjectHashMap.PutNode putUnsafeNode,
                             @Cached PutNode putNode,
-                            @Cached DynamicObject.SetShapeFlagsNode setShapeFlags,
+                            @Shared("setShapeFlags") @Cached DynamicObject.SetShapeFlagsNode setShapeFlags,
                             @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
                             @Cached DynamicObject.GetNode getNode) {
                 EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, setShapeFlags, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
@@ -453,9 +457,11 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, Object value,
-                        @Cached DynamicObject.PutNode putNode) {
-            self.setStringKey(key, value, putNode);
+        static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, TruffleString key, Object value,
+                        @Cached DynamicObject.PutNode putNode,
+                        @Cached InlinedBranchProfile invalidateLengthProfile,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+            self.setStringKey(inliningTarget, key, value, putNode, invalidateLengthProfile, setShapeFlagsNode);
             return self;
         }
 
@@ -509,8 +515,10 @@ public class HashingStorageNodes {
             static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, Object value, boolean transition,
                             @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                             @Cached DynamicObject.PutNode putNode,
-                            @Cached CastBuiltinStringToTruffleStringNode castStr) {
-                self.setStringKey(castStr.execute(inliningTarget, key), value, putNode);
+                            @Cached CastBuiltinStringToTruffleStringNode castStr,
+                            @Cached InlinedBranchProfile invalidateLengthProfile,
+                            @Shared("setShapeFlags") @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+                self.setStringKey(inliningTarget, castStr.execute(inliningTarget, key), value, putNode, invalidateLengthProfile, setShapeFlagsNode);
                 return self;
             }
 
@@ -519,7 +527,7 @@ public class HashingStorageNodes {
                             @Cached PyObjectHashNode hashNode,
                             @Cached ObjectHashMap.PutNode putUnsafeNode,
                             @Cached PutNode putNode,
-                            @Cached DynamicObject.SetShapeFlagsNode setShapeFlags,
+                            @Shared("setShapeFlags") @Cached DynamicObject.SetShapeFlagsNode setShapeFlags,
                             @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
                             @Cached DynamicObject.GetNode getNode) {
                 EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, setShapeFlags, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
@@ -594,7 +602,9 @@ public class HashingStorageNodes {
                         @Cached CastBuiltinStringToTruffleStringNode castStr,
                         @Exclusive @Cached PyObjectHashNode hashNode,
                         @Cached DynamicObject.GetNode getNode,
-                        @Cached DynamicObject.PutNode putNode) {
+                        @Cached DynamicObject.PutNode putNode,
+                        @Exclusive @Cached InlinedBranchProfile invalidateLengthProfile,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
             if (!isBuiltinString.execute(inliningTarget, keyObj)) {
                 // Just for the potential side effects
                 hashNode.execute(frame, inliningTarget, keyObj);
@@ -607,11 +617,11 @@ public class HashingStorageNodes {
                 if (val == PNone.NO_VALUE) {
                     return null;
                 } else {
-                    self.setStringKey(key, PNone.NO_VALUE, putNode);
+                    self.setStringKey(inliningTarget, key, PNone.NO_VALUE, putNode, invalidateLengthProfile, setShapeFlagsNode);
                     return val;
                 }
             } else {
-                return self.setStringKeyIfPresent(key, PNone.NO_VALUE, putNode);
+                return self.setStringKeyIfPresent(inliningTarget, key, PNone.NO_VALUE, putNode, invalidateLengthProfile, setShapeFlagsNode);
             }
         }
 

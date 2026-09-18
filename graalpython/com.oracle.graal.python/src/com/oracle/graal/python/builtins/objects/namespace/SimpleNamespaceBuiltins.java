@@ -88,7 +88,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -149,7 +149,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorKey iteratorKey,
                         @Cached HashingStorageIteratorValue iteratorValue,
                         @Cached CastToTruffleStringNode castString,
-                        @Cached WriteAttributeToPythonObjectNode writeAttrNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached PRaiseNode raiseNode) {
             if (args.length > 1) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_AT_MOST_ONE_ARG_GOT_D,
@@ -238,7 +238,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
                         @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
-                        @Cached WriteAttributeToPythonObjectNode writeAttrNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached PRaiseNode raiseNode) {
             if (args.length > 0) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SIMPLE_NAMESPACE_REPLACE_NO_POSITIONAL);
