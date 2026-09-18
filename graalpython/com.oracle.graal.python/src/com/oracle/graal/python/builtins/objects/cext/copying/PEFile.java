@@ -95,7 +95,7 @@ final class PEFile extends SharedObject {
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws NativeLibraryToolException {
-        var pb = newProcessBuilder(context);
+        var pb = newProcessBuilder(context, tempfile.getParent());
         var stderr = new ByteArrayOutputStream();
         pb.redirectError(pb.createRedirectToStream(stderr));
         String delvewheel = getDelvewheel();

@@ -55,7 +55,7 @@ public class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
-    private final MaterializedFrame frame;
+    private MaterializedFrame frame;
     private final PythonObject globals;
     private final PFunction generatorFunction;
     private final PBytecodeDSLRootNode rootNode;
@@ -217,6 +217,7 @@ public class PGenerator extends PythonBuiltinObject {
 
     public final void markAsFinished() {
         finished = true;
+        frame = null;
     }
 
     @Override

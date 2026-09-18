@@ -251,6 +251,11 @@ class ResourceTracker(object):
             args = [
                 exe,
                 *util._args_from_interpreter_flags(),
+                # Begin GraalPy change: the resource tracker only performs
+                # lightweight bookkeeping, so JIT compilation is overhead.
+                '-X',
+                'jit=0',
+                # End GraalPy change
                 '-c',
                 f'from multiprocessing.resource_tracker import main;main({r})',
             ]

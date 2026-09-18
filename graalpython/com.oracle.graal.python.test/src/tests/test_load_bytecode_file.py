@@ -46,6 +46,8 @@ import types
 import unittest
 from pathlib import Path
 
+from tests.util import run_in_graalpy_subprocess
+
 INVALIDATION_MODES = (
     py_compile.PycInvalidationMode.TIMESTAMP,
     py_compile.PycInvalidationMode.CHECKED_HASH,
@@ -61,6 +63,8 @@ class LoadBytecodeFileTests(unittest.TestCase):
         source_stat = source_path.stat()
         return {"mtime": source_stat.st_mtime, "size": source_stat.st_size}
 
+    # Do not leave cached roots backed by bytecode in a deleted TemporaryDirectory in the test worker.
+    @run_in_graalpy_subprocess
     def test_outdated_timestamp(self):
         with tempfile.TemporaryDirectory() as tempdir:
             source_path = Path(tempdir) / "example.py"
@@ -78,6 +82,7 @@ class LoadBytecodeFileTests(unittest.TestCase):
             )
             self.assertIsNone(code)
 
+    @run_in_graalpy_subprocess
     def test_too_short(self):
         with tempfile.TemporaryDirectory() as tempdir:
             source_path = Path(tempdir) / "example.py"
@@ -90,6 +95,7 @@ class LoadBytecodeFileTests(unittest.TestCase):
             )
             self.assertIsNone(code)
 
+    @run_in_graalpy_subprocess
     def test_invalidation_and_hash_check_modes(self):
         original_check_hash_based_pycs = _imp.check_hash_based_pycs
         self.addCleanup(setattr, _imp, "check_hash_based_pycs", original_check_hash_based_pycs)
