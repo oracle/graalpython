@@ -47,7 +47,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
     def assert_contains_bytecode(fun, bytecode_str):
         bytecode = __graalpython__.dis(fun)
-        assert bytecode_str in bytecode, bytecode
+        assert bytecode_str + ' ' in bytecode, bytecode
 
 
     def test_read_name_quickening_local():
@@ -356,6 +356,84 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
             instance.attr = -i
             assert tester(instance) == -i
         assert_contains_bytecode(tester, "GetAttribute$Property")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_indexed_slot():
+        class K:
+            __slots__ = ("attr",)
+
+        def tester(o):
+            return o.attr
+
+        instance = K()
+        for i in range(5):
+            instance.attr = i
+            assert tester(instance) == i
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor")
+        K.attr = property(lambda self: "overridden")
+        assert tester(instance) == "overridden"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_indexed_slot_int():
+        class K:
+            __slots__ = ("attr",)
+
+        def tester(o):
+            return o.attr + 5
+
+        instance = K()
+        for i in range(5):
+            instance.attr = i
+            assert tester(instance) == i + 5
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor$int")
+
+        instance.attr = 1.5
+        assert tester(instance) == 6.5
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor$Generic")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_indexed_slot_int_invalidation():
+        class K:
+            __slots__ = ("attr",)
+
+        def tester(o):
+            return o.attr + 5
+
+        instance = K()
+        instance.attr = 37
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor$int")
+        K.attr = property(lambda self: 38)
+        for _ in range(5):
+            assert tester(instance) == 43
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_inherited_indexed_slot():
+        class Base:
+            __slots__ = ("attr",)
+
+        class Child(Base):
+            pass
+
+        def tester(o):
+            return o.attr
+
+        instance = Child()
+        instance.attr = 42
+        instance.__dict__["attr"] = "shadow"
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor")
+        del instance.attr
+        with unittest.TestCase().assertRaises(AttributeError):
+            tester(instance)
+        instance.attr = 43
+        assert tester(instance) == 43
 
 
     @skipUnlessSingleContext

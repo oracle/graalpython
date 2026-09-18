@@ -55,6 +55,31 @@ class TestSlots(unittest.TestCase):
             obj.world
         obj.world = "world"
         self.assertEqual(obj.world, "world")
+
+    def test_repeated_uninitialized_slot_read(self):
+        class C:
+            __slots__ = ("attr",)
+
+        def read_attr(obj):
+            return obj.attr
+
+        for _ in range(5):
+            with self.assertRaises(AttributeError):
+                read_attr(C())
+
+    def test_slot_descriptor_wrong_owner(self):
+        class Owner:
+            __slots__ = ("attr",)
+
+        class Other:
+            __slots__ = ("other",)
+            attr = Owner.attr
+
+        instance = Other()
+        instance.other = 42
+        for _ in range(5):
+            with self.assertRaises(TypeError):
+                instance.attr
         
     def test_slots_must_be_identifiers(self):
         class C: __slots__ = ['a', '_1', '_', 'a1']
