@@ -61,9 +61,9 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 try:
                     fn(*args, **kwargs)
                     return
-                except Exception:
+                except Exception as e:
                     retries -= 1
-                    print("Retrying test")
+                    print(f"Retrying test after {e!r}")
                     continue
             fn(*args, **kwargs)
 
@@ -75,16 +75,41 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         prompt: str
         input: str
         output: str
+        keys: str | None = None
+        autoindent: int | None = None
+
+
+    ANSI_ESCAPE = re.compile(r'\x1b(?:[=>]|\[[0-?]*[ -/]*[@-~])')
+
+
+    def normalize_terminal_output(output):
+        output = ANSI_ESCAPE.sub('', output)
+        output = re.sub(r'\r+\n', '\n', output).replace('\r', '')
+        return re.sub(r'<python-input-\d+>', '<stdin>', output)
 
 
     @autoretry
-    def validate_repl(stdin, python_args=(), ignore_preamble=True, extra_input_and_output=()):
+    def validate_repl(stdin, python_args=(), ignore_preamble=True, extra_input_and_output=(),
+                      repls=('basic', 'pyrepl'), extra_env=None):
+        for repl in repls:
+            try:
+                _validate_repl(stdin, repl, python_args, ignore_preamble, extra_input_and_output,
+                               extra_env)
+            except Exception as e:
+                e.add_note(f'while testing the {repl} REPL')
+                raise
+
+
+    def _validate_repl(stdin, repl, python_args, ignore_preamble, extra_input_and_output, extra_env):
         env = {
             'TERM': 'ansi',
             'NO_COLOR': '1',
             'PYTHONIOENCODING': 'utf-8',
-            'PYTHON_BASIC_REPL': '1',
         }
+        if repl == 'basic':
+            env['PYTHON_BASIC_REPL'] = '1'
+        if extra_env:
+            env.update(extra_env)
         pty_parent, pty_child = os.openpty()
         try:
             import termios
@@ -96,6 +121,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 stdout=pty_child,
                 stderr=pty_child,
             )
+            raw_out = ''
             out = ''
             input_and_output: list[ExpectedInOutItem] = []
             expected_preamble = ''
@@ -113,37 +139,56 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             while True:
                 rlist, _, _ = select.select([pty_parent], [], [], 60)
                 assert pty_parent in rlist, f"Timed out waiting for REPL output. Output: {whole_out}{out}"
-                out += os.read(pty_parent, 1024).decode('utf-8')
-                # Strip terminal control sequences, including the mode 2027 and device-attributes
-                # probes emitted by JLine 4 while detecting grapheme-cluster support.
-                out = re.sub(r'\x1b\[(?:\?2004[hl]|\?2027\$p|c|\d+[A-G])', '', out)
-                out = re.sub(r'\r+\n', '\n', out)
-                if out.endswith(('\n... ', '>>> ')):
+                raw_out += os.read(pty_parent, 1024).decode('utf-8')
+                out = normalize_terminal_output(raw_out)
+                prompt_match = re.search(r'(>>> |\.\.\. )( *)$', out)
+                if prompt_match and select.select([pty_parent], [], [], 0.05)[0]:
+                    # Both line editors can emit cursor-control sequences after the visible prompt.
+                    # Wait for the terminal update to settle before sending the next input.
+                    continue
+                if prompt_match and (index < 0 or prompt_match.start() > 0):
                     prompt = out[:3]
-                    actual_end = len(out) - 4
+                    autoindent = len(prompt_match.group(2))
+                    actual_end = prompt_match.start()
                     if actual_end > 0 and out[actual_end - 1] == '\n':
                         actual_end -= 1
                     actual = out[:actual_end]
                     if index >= 0:
                         current = input_and_output[index]
-                        assert prompt == current.prompt, f"Actual prompt: {prompt}\nExpected prompt: {current.prompt}"
+                        assert prompt == current.prompt, f"Actual prompt: {prompt}\nExpected prompt: {current.prompt}\nOutput: {whole_out}{out}"
                         expected = f'{current.prompt} {current.input}{current.output}'
                     else:
                         expected = expected_preamble
                     if index >= 0 or not ignore_preamble:
                         assert actual == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}\nWhole output:\n{whole_out}{out}'
                     index += 1
-                    whole_out += out[:-4]
-                    out = out[-4:]
+                    if index < len(input_and_output):
+                        expected_autoindent = input_and_output[index].autoindent
+                        if expected_autoindent is not None:
+                            assert autoindent == expected_autoindent, \
+                                f'Actual autoindent: {autoindent}\nExpected autoindent: {expected_autoindent}'
+                    whole_out += out[:actual_end]
+                    raw_out = prompt_match.group(1)
                     if index >= len(input_and_output):
                         os.write(pty_parent, b'\x04')  # Ctrl-D / EOF
                         proc.wait(timeout=60)
                         out = os.read(pty_parent, 1024).decode('utf-8')
-                        out = re.sub(r'\x1b\[(?:\?2004[hl]|\?2027\$p|c)', '', out)
+                        out = normalize_terminal_output(out)
                         assert not out.strip(), f"Garbage after EOF:\n{out!r}"
                         return
                     else:
-                        next_in = input_and_output[index].input
+                        current = input_and_output[index]
+                        next_in = current.keys if current.keys is not None else current.input
+                        if repl == 'pyrepl' and autoindent:
+                            expected_input = current.input
+                            indentation = expected_input[:len(expected_input) - len(expected_input.lstrip())]
+                            raw_out += indentation
+                            if next_in.strip() and current.keys is None:
+                                next_in = next_in[len(indentation):]
+                            elif not next_in.strip():
+                                # Clear PyREPL's automatic indentation so an empty line terminates
+                                # the compound statement.
+                                next_in = '\x15'
                         os.write(pty_parent, next_in.encode('utf-8') + b'\r')
         finally:
             os.close(pty_child)
@@ -162,6 +207,17 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         """))
 
 
+    def test_repl_selection():
+        validate_repl(dedent("""\
+            >>> hasattr(__import__('__main__'), '__file__')
+            False
+        """), repls=('basic',))
+        validate_repl(dedent("""\
+            >>> __import__('__main__').__file__.endswith('/_pyrepl/__main__.py')
+            True
+        """), repls=('pyrepl',))
+
+
     @unittest.skipIf(sys.platform == 'darwin', "Fails with garbage after EOF")
     def test_basic_repl_no_readline():
         validate_repl(dedent("""\
@@ -176,11 +232,36 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
 
 
     @autoretry
-    def test_repl_flushes_std_streams():
+    def test_basic_repl_flushes_std_streams():
         validate_repl("", extra_input_and_output=[
             ExpectedInOutItem('>>>', '40 + 2', '\n42'),
-            ExpectedInOutItem('>>>', '_ = __import__("sys").stderr.write("stderr")', '\nstderr'),
-            ExpectedInOutItem('>>>', '_ = __import__("sys").stdout.write("stdout")', '\nstdout'),
+            ExpectedInOutItem('>>>', 'import sys; _ = sys.stderr.write("stderr")', '\nstderr'),
+            ExpectedInOutItem('>>>', 'import sys; _ = sys.stdout.write("stdout")', '\nstdout'),
+        ], repls=('basic',))
+
+
+    @autoretry
+    def test_pyrepl_flushes_stdout():
+        # CPython's PyREPL flushes stdout, but not stderr, before reading the next line.
+        validate_repl("", extra_input_and_output=[
+            ExpectedInOutItem('>>>', '40 + 2', '\n42'),
+            ExpectedInOutItem('>>>', 'import sys; _ = sys.stdout.write("stdout")', '\nstdout'),
+        ], repls=('pyrepl',))
+
+
+    def test_pyrepl_autoindent():
+        validate_repl("", extra_input_and_output=[
+            ExpectedInOutItem('>>>', 'def answer():', ''),
+            ExpectedInOutItem('...', '    return 42', '', autoindent=4),
+            ExpectedInOutItem('...', '', ''),
+            ExpectedInOutItem('>>>', 'answer()', '\n42'),
+        ], repls=('pyrepl',))
+
+
+    def test_repl_tab_completion():
+        validate_repl("", extra_input_and_output=[
+            ExpectedInOutItem('>>>', "print('completion-marker')", '\ncompletion-marker',
+                              keys="prin\t'completion-marker')"),
         ])
 
 
