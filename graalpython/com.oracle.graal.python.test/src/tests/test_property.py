@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -129,6 +129,37 @@ def test_property_error():
     except BaseException as e:
         assert isinstance(e, AttributeError), "did not get AttributeError, was %s" % type(e)
         assert str(e) == ERROR_FROM_GETTER, "did not get expected error message; was %s" % str(e)
+
+def test_property_subclass_override():
+    class CustomProperty(property):
+        def __get__(self, obj, cls=None):
+            return 43
+
+    class K:
+        attr = CustomProperty(lambda self: 42)
+
+    def read_attr(obj):
+        return obj.attr
+
+    for _ in range(5):
+        assert read_attr(K()) == 43
+
+
+def test_property_without_getter():
+    class K:
+        attr = property()
+
+    def read_attr(obj):
+        return obj.attr
+
+    for _ in range(5):
+        try:
+            read_attr(K())
+        except AttributeError:
+            pass
+        else:
+            assert False, "property without a getter did not raise AttributeError"
+
 
 def test_get_set_propert_attr():
     p = C.__dict__['prop_x']

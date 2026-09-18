@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
+import static com.oracle.graal.python.util.PythonUtils.checkAssumption;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -112,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -315,6 +317,7 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.SlowPathException;
@@ -2218,6 +2221,59 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return klass == null ? Assumption.ALWAYS_VALID : klass.getTypeStableAssumption();
         }
 
+        public static Assumption getTypeStableAssumption(Shape cachedShape) {
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClassType || type instanceof PythonBuiltinClass) {
+                return null;
+            } else if (type instanceof PythonClass pythonClass) {
+                return pythonClass.getTypeStableAssumption();
+            }
+            // Earlier guards ensure a Python class or an immutable builtin class.
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        static PProperty getProperty(Shape cachedShape, TruffleString key) {
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClass pbc) {
+                type = pbc.getType();
+            }
+            Object value;
+            if (type instanceof PythonBuiltinClassType pbct) {
+                if (!hasObjectOrModuleGetattro(pbct.getSlots())) {
+                    return null;
+                }
+                value = LookupAttributeInMRONode.findAttr(pbct, key);
+            } else if (type instanceof PythonClass klass) {
+                if (!hasObjectOrModuleGetattro(klass.getTpSlots())) {
+                    return null;
+                }
+                value = LookupAttributeInMRONode.lookupSlowPathNoSideEffects(klass, key);
+            } else {
+                return null;
+            }
+            // Property subclasses can override __get__, so only bypass exact builtin properties.
+            return value instanceof PProperty property && GetClassNode.executeUncached(property) == PythonBuiltinClassType.PProperty ? property : null;
+        }
+
+        @ForceQuickening
+        @StoreBytecodeIndex
+        @Specialization(guards = {
+                        /* static checks: */ "property != null", //
+                        /* dynamic checks: */ "cachedShape.check(receiver)"},
+                        rewriteOn = {FastPathBailoutException.class, InvalidAssumptionException.class}, limit = "3", excludeForUncached = true)
+        static Object doProperty(VirtualFrame frame, TruffleString key, PythonObject receiver,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getProperty(cachedShape, key)") PProperty property,
+                        @Cached("getTypeStableAssumption(cachedShape)") Assumption typeStableAssumption,
+                        @Cached CallUnaryMethodNode callNode) throws FastPathBailoutException, InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            Object fget = property.getFget();
+            if (fget == null) {
+                throw FastPathBailoutException.INSTANCE;
+            }
+            return callNode.executeObject(frame, fget, receiver);
+        }
+
         @Specialization(guards = {
                         /* static checks: */ "noDescriptor", "!hasMaterializedDict(cachedShape)", "getter != null",
                         /* dynamic checks: */ "getter.accepts(receiver)"}, //
@@ -2251,7 +2307,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return getValue(getter, receiver);
         }
 
-        @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType"})
+        @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType", "doProperty"})
         @StoreBytecodeIndex
         public static Object doIt(VirtualFrame frame,
                         TruffleString key,

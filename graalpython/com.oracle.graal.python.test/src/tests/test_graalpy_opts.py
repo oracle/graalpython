@@ -311,6 +311,97 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
 
     @skipUnlessSingleContext
+    def test_get_attr_quickening_property():
+        class K:
+            @property
+            def attr(self):
+                return 42
+
+        def tester(o):
+            return o.attr
+
+        for _ in range(5):
+            assert tester(K()) == 42
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        del K.attr
+        instance = K()
+        instance.attr = 43
+        assert tester(instance) == 43
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_property_with_setter():
+        class K:
+            def __init__(self):
+                self._attr = 0
+
+            @property
+            def attr(self):
+                return self._attr
+
+            @attr.setter
+            def attr(self, value):
+                self._attr = value
+
+        def tester(o):
+            return o.attr
+
+        instance = K()
+        for i in range(5):
+            instance.attr = i
+            assert tester(instance) == i
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+
+        for i in range(5):
+            instance.attr = -i
+            assert tester(instance) == -i
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_property_reinitialized():
+        class K:
+            attr = property(lambda self: 42)
+
+        def tester(o):
+            return o.attr
+
+        instance = K()
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        K.attr.__init__(lambda self: 43)
+        for _ in range(5):
+            assert tester(instance) == 43
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        K.attr = property()
+        with unittest.TestCase().assertRaises(AttributeError):
+            tester(instance)
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_inherited_property():
+        class Base:
+            attr = property(lambda self: 42)
+
+        class Child(Base):
+            pass
+
+        def tester(o):
+            return o.attr
+
+        instance = Child()
+        instance.__dict__["attr"] = "shadow"
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        Base.attr = property(lambda self: 43)
+        assert tester(instance) == 43
+        Child.__getattribute__ = lambda self, name: 44
+        assert tester(instance) == 44
+
+
+    @skipUnlessSingleContext
     def test_get_attr_quickening_instance_int():
         class K2:
             def __init__(self):
