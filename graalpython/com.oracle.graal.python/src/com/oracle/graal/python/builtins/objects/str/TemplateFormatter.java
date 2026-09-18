@@ -61,7 +61,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -83,8 +82,6 @@ public final class TemplateFormatter {
     private static final int ANS_INIT = 1;
     private static final int ANS_AUTO = 2;
     private static final int ANS_MANUAL = 3;
-
-    private static final BigInteger MAXSIZE = BigInteger.valueOf(SysModuleBuiltins.MAXSIZE);
 
     private final String template;
     private String empty;
@@ -362,17 +359,25 @@ public final class TemplateFormatter {
     }
 
     private static int toInt(Node node, String s) {
-        try {
-            BigInteger bigInt = new BigInteger(s);
-            if (bigInt.signum() >= 0) {
-                return bigInt.intValueExact();
-            }
+        if (s.isEmpty()) {
             return -1;
-        } catch (NumberFormatException e) {
-            return -1;
-        } catch (ArithmeticException e) {
-            throw PRaiseNode.raiseStatic(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
         }
+        int value = 0;
+        for (int offset = 0; offset < s.length();) {
+            int codePoint = s.codePointAt(offset);
+            int digit = Character.digit(codePoint, 10);
+            if (digit < 0) {
+                // Only decimal digits denote an index; signs also make this a string key.
+                return -1;
+            }
+            // Match CPython's left-to-right parsing: overflow precedes any later non-digit.
+            if (value > (SysModuleBuiltins.MAXSIZE - digit) / 10) {
+                throw PRaiseNode.raiseStatic(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+            }
+            value = value * 10 + digit;
+            offset += Character.charCount(codePoint);
+        }
+        return value;
     }
 
     private Object renderField(Node node, int start, int end, boolean recursive, int level, PyObjectFormat formatNode) {
@@ -430,16 +435,7 @@ public final class TemplateFormatter {
             }
             i += 1;
         }
-        int index;
-        if (i == 0) {
-            index = -1;
-        } else {
-            try {
-                index = Integer.parseInt(name.substring(0, i));
-            } catch (NumberFormatException e) {
-                index = -1;
-            }
-        }
+        int index = toInt(node, name.substring(0, i));
         Object first;
         if (index >= 0) {
             first = index;
