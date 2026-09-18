@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import errno
 import os
 import platform
 import re
@@ -44,31 +45,13 @@ import select
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from dataclasses import dataclass
-from functools import wraps
 from textwrap import dedent
 
 if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() != 'aarch64')) and (
         sys.implementation.name != 'graalpy' or __graalpython__.posix_module_backend() != 'java'):
-
-    # The terminal tests can be flaky
-    def autoretry(fn):
-        @wraps(fn)
-        def decorated(*args, **kwargs):
-            retries = 3
-            while retries:
-                try:
-                    fn(*args, **kwargs)
-                    return
-                except Exception as e:
-                    retries -= 1
-                    print(f"Retrying test after {e!r}")
-                    continue
-            fn(*args, **kwargs)
-
-        return decorated
-
 
     @dataclass
     class ExpectedInOutItem:
@@ -88,7 +71,6 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         return re.sub(r'<python-input-\d+>', '<stdin>', output)
 
 
-    @autoretry
     def validate_repl(stdin, python_args=(), ignore_preamble=True, extra_input_and_output=(),
                       repls=('basic', 'pyrepl'), extra_env=None):
         for repl in repls:
@@ -111,6 +93,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         if extra_env:
             env.update(extra_env)
         pty_parent, pty_child = os.openpty()
+        proc = None
         try:
             import termios
             termios.tcsetwinsize(pty_parent, (60, 80))
@@ -121,6 +104,8 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 stdout=pty_child,
                 stderr=pty_child,
             )
+            os.close(pty_child)
+            pty_child = None
             raw_out = ''
             out = ''
             input_and_output: list[ExpectedInOutItem] = []
@@ -171,8 +156,29 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                     raw_out = prompt_match.group(1)
                     if index >= len(input_and_output):
                         os.write(pty_parent, b'\x04')  # Ctrl-D / EOF
-                        proc.wait(timeout=60)
-                        out = os.read(pty_parent, 1024).decode('utf-8')
+                        # Keep draining the PTY while waiting for the child. In particular, PyREPL
+                        # restores the terminal with TCSADRAIN, which can block on macOS until the
+                        # master consumes all pending terminal-control output.
+                        eof_output = bytearray()
+                        deadline = time.monotonic() + 60
+                        while True:
+                            remaining = deadline - time.monotonic()
+                            if remaining <= 0:
+                                raise subprocess.TimeoutExpired(proc.args, 60, output=bytes(eof_output))
+                            rlist, _, _ = select.select([pty_parent], [], [], remaining)
+                            if not rlist:
+                                raise subprocess.TimeoutExpired(proc.args, 60, output=bytes(eof_output))
+                            try:
+                                chunk = os.read(pty_parent, 1024)
+                            except OSError as e:
+                                if e.errno == errno.EIO:
+                                    break
+                                raise
+                            if not chunk:
+                                break
+                            eof_output.extend(chunk)
+                        proc.wait(timeout=max(0, deadline - time.monotonic()))
+                        out = eof_output.decode('utf-8')
                         out = normalize_terminal_output(out)
                         assert not out.strip(), f"Garbage after EOF:\n{out!r}"
                         return
@@ -189,10 +195,18 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                                 # Clear PyREPL's automatic indentation so an empty line terminates
                                 # the compound statement.
                                 next_in = '\x15'
-                        os.write(pty_parent, next_in.encode('utf-8') + b'\r')
+                        os.write(pty_parent, next_in.encode('utf-8') + b'\n')
         finally:
-            os.close(pty_child)
             os.close(pty_parent)
+            if pty_child is not None:
+                os.close(pty_child)
+            if proc is not None and proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
 
 
     def test_basic_repl():
@@ -231,7 +245,6 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         """), python_args=['-S'])
 
 
-    @autoretry
     def test_basic_repl_flushes_std_streams():
         validate_repl("", extra_input_and_output=[
             ExpectedInOutItem('>>>', '40 + 2', '\n42'),
@@ -240,7 +253,6 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         ], repls=('basic',))
 
 
-    @autoretry
     def test_pyrepl_flushes_stdout():
         # CPython's PyREPL flushes stdout, but not stderr, before reading the next line.
         validate_repl("", extra_input_and_output=[
