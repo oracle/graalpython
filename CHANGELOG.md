@@ -4,11 +4,12 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 25.6
-- New Java-based `decimal` module with significanlty better performance
+* Add support for PyREPL and make it the default. It can be turned off by setting `PYTHON_BASIC_REPL=1` environment variable
+* New Java-based `decimal` module with significantly better performance
 
 ## Version 25.5
-- Added `select.poll()` on Linux and Mac OS
-- Better Windows console support and Windows version reporting
+* Added `select.poll()` on Linux and Mac OS
+* Better Windows console support and Windows version reporting
 
 ## Version 25.4
 * Remove BouncyCastle entirely. BouncyCastle was only needed for legacy RSA, DSA, and EC private keys versions 0 and 1. To support these from Python embeddings, BouncyCastle must now be explicitly enabled by adding the `org.graalvm.python:python-bouncycastle-support` Maven _and_ adding `bcprov-jdk18on`, `bcpkix-jdk18on`, and `bcutil-jdk18on` dependencies.
