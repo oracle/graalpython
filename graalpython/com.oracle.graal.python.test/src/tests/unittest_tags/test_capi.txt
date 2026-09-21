@@ -474,11 +474,11 @@ test.test_capi.test_pyatomic.PyAtomicTests.test_atomic_release_acquire @ darwin-
 test.test_capi.test_structmembers.ReadWriteTests_NewAPI.test_bad_assignments @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_structmembers.ReadWriteTests_NewAPI.test_bool @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_structmembers.ReadWriteTests_NewAPI.test_inplace_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_capi.test_structmembers.ReadWriteTests_NewAPI.test_py_ssize_t @ linux-x86_64-github
+test.test_capi.test_structmembers.ReadWriteTests_NewAPI.test_py_ssize_t @ linux-aarch64-github,linux-x86_64-github
 test.test_capi.test_structmembers.ReadWriteTests_OldAPI.test_bad_assignments @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_structmembers.ReadWriteTests_OldAPI.test_bool @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_structmembers.ReadWriteTests_OldAPI.test_inplace_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_capi.test_structmembers.ReadWriteTests_OldAPI.test_py_ssize_t @ linux-x86_64-github
+test.test_capi.test_structmembers.ReadWriteTests_OldAPI.test_py_ssize_t @ linux-aarch64-github,linux-x86_64-github
 test.test_capi.test_sys.CAPITest.test_sys_formatstderr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_sys.CAPITest.test_sys_formatstdout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_sys.CAPITest.test_sys_writestderr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

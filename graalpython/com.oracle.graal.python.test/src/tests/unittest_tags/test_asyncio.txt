@@ -190,7 +190,7 @@ test.test_asyncio.test_events.PollEventLoopTests.test_run_until_complete @ linux
 test.test_asyncio.test_events.PollEventLoopTests.test_run_until_complete_stopped @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_server_close @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_ssl_connect_accepted_socket @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_close_after_finish @ linux-x86_64-github
+test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_close_after_finish @ linux-aarch64-github,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_exec_invalid_args @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_shell @ linux-aarch64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_shell_invalid_args @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -72,7 +72,7 @@ test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_allowed @ darwin-arm6
 test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_disallowed_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_disallowed_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_disallowed_03 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_type_params.TypeParamsPickleTest.test_pickling_classes @ linux-x86_64-github
+test.test_type_params.TypeParamsPickleTest.test_pickling_classes @ linux-aarch64-github,linux-x86_64-github
 test.test_type_params.TypeParamsPickleTest.test_pickling_functions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsRuntimeTest.test_broken_class_namespace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsRuntimeTest.test_name_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
