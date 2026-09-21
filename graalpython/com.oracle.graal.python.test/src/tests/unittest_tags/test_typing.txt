@@ -243,7 +243,7 @@ test.test_typing.GenericTests.test_pep_695_generic_function_with_future_annotati
 test.test_typing.GenericTests.test_pep_695_generic_method_with_future_annotations @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_pep_695_generic_method_with_future_annotations_name_clash_with_global_vars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_pep_695_generics_with_future_annotations_nested_in_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_typing.GenericTests.test_pickle @ linux-x86_64
+test.test_typing.GenericTests.test_pickle @ linux-x86_64,linux-x86_64-github
 test.test_typing.GenericTests.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_repr_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_repr_3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -453,7 +453,7 @@ test.test_typing.ProtocolTests.test_protocols_isinstance_properties_and_descript
 test.test_typing.ProtocolTests.test_protocols_isinstance_py36 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ProtocolTests.test_protocols_issubclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ProtocolTests.test_protocols_issubclass_non_callable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_typing.ProtocolTests.test_protocols_pickleable @ linux-x86_64
+test.test_typing.ProtocolTests.test_protocols_pickleable @ linux-x86_64,linux-x86_64-github
 test.test_typing.ProtocolTests.test_protocols_support_register @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ProtocolTests.test_reversible @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ProtocolTests.test_runtime_checkable_generic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
