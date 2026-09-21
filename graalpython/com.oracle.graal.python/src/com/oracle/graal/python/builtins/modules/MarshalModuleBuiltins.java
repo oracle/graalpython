@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -115,6 +114,7 @@ import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -1488,7 +1488,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (language.isSingleContext() || cacheKey == 0) {
                 callTarget = supplier.get();
             } else {
-                callTarget = language.cacheCode(new PythonLanguage.CodeCacheKey(fileName, cacheKey), supplier);
+                callTarget = language.cacheBytecodeTarget(fileName, cacheKey, supplier);
             }
             return PFactory.createCode(language, (RootCallTarget) callTarget, flags, firstLineNo, lnoTab, fileName);
         }

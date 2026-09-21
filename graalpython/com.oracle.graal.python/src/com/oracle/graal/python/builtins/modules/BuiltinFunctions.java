@@ -280,7 +280,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1055,20 +1054,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
             }
             CallTarget ct;
-            TruffleString finalCode = code;
-            Supplier<CallTarget> createCode = () -> {
-                Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, type, optimize, flags);
-                if (type != InputType.SINGLE) {
-                    return context.getEnv().parsePublic(source);
-                } else {
-                    boolean allowIncomplete = (flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0;
-                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
-                }
-            };
-            if (getContext().isCoreInitialized()) {
-                ct = createCode.get();
+            Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, type, optimize, flags);
+            if (type != InputType.SINGLE) {
+                ct = context.getEnv().parsePublic(source);
             } else {
-                ct = getContext().getLanguage().cacheCode(filename, createCode);
+                boolean allowIncomplete = (flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0;
+                ct = context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
             }
             return wrapRootCallTarget((RootCallTarget) ct, filename);
         }
@@ -1120,7 +1111,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, TruffleString filename) {
+        public static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, TruffleString filename) {
             RootNode rootNode = rootCallTarget.getRootNode();
             if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
                 bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
@@ -1196,9 +1187,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 try {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(source);
                     int bytesLen = bufferLib.getBufferLength(source);
-                    return doDecodeSource(source, filename, bytes, bytesLen);
-                } catch (PythonFileDetector.InvalidEncodingException e) {
-                    throw raiseInvalidSyntax(filename, "(unicode error) %s", e.getEncodingName());
+                    return doDecodeSource(getContext(), source, filename, bytes, bytesLen);
                 } finally {
                     bufferLib.release(buffer, frame, InteropCallData.getUncached());
                 }
@@ -1206,23 +1195,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private TruffleString doDecodeSource(Object source, TruffleString filename, byte[] bytes, int bytesLen) {
-            Charset charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
+        public static TruffleString doDecodeSource(PythonContext context, Object source, TruffleString filename, byte[] bytes, int bytesLen) {
+            Charset charset;
+            try {
+                charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
+            } catch (PythonFileDetector.InvalidEncodingException e) {
+                throw raiseInvalidSyntax(context, filename, "(unicode error) %s", e.getEncodingName());
+            }
             TruffleString pythonEncoding = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
             CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(charset, bytes, bytesLen, CodingErrorAction.REPORT);
             if (!decoder.decodingStep(true)) {
                 int pos = decoder.getInputPosition();
                 Object exception = CallNode.executeUncached(PythonBuiltinClassType.UnicodeDecodeError, pythonEncoding, source, pos, pos + decoder.getErrorLength(), decoder.getErrorReason());
-                throw raiseInvalidSyntax(filename, "(unicode error) %s", PyObjectStrAsTruffleStringNode.executeUncached(exception));
+                throw raiseInvalidSyntax(context, filename, "(unicode error) %s", PyObjectStrAsTruffleStringNode.executeUncached(exception));
             }
             return decoder.getString();
         }
 
-        @TruffleBoundary
-        private RuntimeException raiseInvalidSyntax(TruffleString filename, String format, Object... args) {
-            PythonContext context = getContext();
+        private static RuntimeException raiseInvalidSyntax(PythonContext context, TruffleString filename, String format, Object... args) {
             // Create non-empty source to avoid overwriting the message with "unexpected EOF"
-            Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, InputType.FILE, 0, 0);
+            Source source = Source.newBuilder(PythonLanguage.ID, " ", filename.toJavaStringUncached()).build();
             SourceRange sourceRange = new SourceRange(1, 0, 1, 0);
             TruffleString message = toTruffleStringUncached(String.format(format, args));
             throw raiseSyntaxError(ParserCallbacks.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));

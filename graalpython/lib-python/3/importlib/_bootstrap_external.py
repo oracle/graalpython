@@ -23,12 +23,10 @@ work. One should use importlib as the public-facing version of this module.
 _bootstrap = None
 
 # Import builtin modules
-import _imp
 import _io
-import sys
 import _warnings
 import marshal
-
+import sys
 
 _MS_WINDOWS = (sys.platform == 'win32')
 if _MS_WINDOWS:
@@ -1172,7 +1170,15 @@ class SourceLoader(_LoaderBasics):
                                                  source_path=source_path)
         if source_bytes is None:
             source_bytes = self.get_data(source_path)
-        code_object = self.source_to_code(source_bytes, source_path)
+        if (type(self).get_data is FileLoader.get_data and
+                type(self).source_to_code is SourceLoader.source_to_code):
+            # GraalPy change: share compiled source between contexts using the same engine. We do
+            # this only for real file loaders that use the standard source retrieval and compilation
+            # hooks; arbitrary compile() calls and custom loaders do not have a stable source identity.
+            code_object = __graalpython__.compile_import_source(
+                source_bytes, source_path)
+        else:
+            code_object = self.source_to_code(source_bytes, source_path)
         _bootstrap._verbose_message('code object from {}', source_path)
         if (not sys.dont_write_bytecode and bytecode_path is not None and
                 source_mtime is not None):

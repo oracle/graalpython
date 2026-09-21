@@ -1328,7 +1328,7 @@ public abstract class Python3Core {
         TruffleFile file = env.getInternalTruffleFile(prefix + suffix);
         String errorMessage;
         try {
-            return PythonLanguage.newSource(ctxt, file, basename.toJavaStringUncached());
+            return PythonLanguage.newSource(ctxt, file, basename.toJavaStringUncached(), false);
         } catch (IOException e) {
             errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         } catch (SecurityException e) {
@@ -1363,11 +1363,10 @@ public abstract class Python3Core {
         }
 
         LOGGER.log(Level.FINE, () -> "import '" + s + "'");
-        Supplier<CallTarget> getCode = () -> {
-            Source source = getInternalSource(sourceName, prefix);
-            return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
-        };
-        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(sourceName, getCode);
+        Source source = getInternalSource(sourceName, prefix);
+        TruffleString sourceText = toTruffleStringUncached(source.getCharacters().toString());
+        Supplier<CallTarget> createTarget = () -> getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheSourceTarget(sourceName, sourceText, InputType.FILE, 0, 0, createTarget);
         PCode code = PFactory.createCode(language, callTarget);
         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, mod));
     }

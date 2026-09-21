@@ -58,7 +58,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -436,6 +438,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient int maxProfileCEventStackSize;
     @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
 
+    private transient Map<BytecodeDSLCodeUnit, PBytecodeDSLRootNode> childRootNodes;
+
     /*
      * We don't want to store the assumption in MakeFunction node to be able to have an uncached
      * version of it. So we put it into the root of the function that MakeFunction is creating.
@@ -472,10 +476,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @TruffleBoundary
     protected void prepareForInstrumentation(Set<Class<?>> materializedTags) {
         super.prepareForInstrumentation(materializedTags);
-        PythonLanguage language = getLanguage();
         for (Object constant : co.constants) {
             if (constant instanceof BytecodeDSLCodeUnit codeUnit) {
-                PBytecodeDSLRootNode rootNode = language.createCachedRootNode(l -> codeUnit.createRootNode(l, isInternal()), codeUnit);
+                PBytecodeDSLRootNode rootNode = getOrCreateChildRootNode(codeUnit);
                 rootNode.getCallTarget();
             }
         }
@@ -483,6 +486,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     public final PythonLanguage getLanguage() {
         return getLanguage(PythonLanguage.class);
+    }
+
+    @TruffleBoundary
+    public final synchronized PBytecodeDSLRootNode getOrCreateChildRootNode(BytecodeDSLCodeUnit codeUnit) {
+        if (childRootNodes == null) {
+            childRootNodes = new HashMap<>();
+        }
+        return childRootNodes.computeIfAbsent(codeUnit, unit -> unit.createRootNode(getLanguage(), isInternal()));
     }
 
     public void setMetadata(BytecodeDSLCodeUnit co, ParserCallbacksImpl parserErrorCallback, boolean internal) {

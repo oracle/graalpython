@@ -1007,9 +1007,11 @@ def punittest(ars, report: Union[Task, bool, None] = False):
         with set_env(PATH=path):
             mx_unittest.unittest(c.args, test_report_tags=({"task": f"punittest-{c.identifier}-{'w' if c.useResources else 'wo'}-resources"} if c.reportConfig else None))
 
-    if skip_leak_tests:
-        return
+    if not skip_leak_tests:
+        leak_tests([])
 
+
+def leak_tests(args):
     # test leaks with Python code only
     run_leak_launcher(["--code", "pass", ])
     run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
@@ -1027,6 +1029,10 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     # test leaks with shared engine Python code only
     run_leak_launcher(["--shared-engine", "--code", "pass"])
     run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--code", "import ipaddress"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--code", "import ipaddress",
+                       "--python.PyCachePrefix=/dev/null"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "100", "--code", "for i in range(1000): exec(f'def f{i}(): pass')"])
     # test leaks with shared engine when some C module code is involved
     if HAS_JEP_454:
         run_leak_launcher([
@@ -3503,12 +3509,34 @@ class GraalpythonProject(mx.ArchivableProject):
 
 
 class GraalpythonFrozenModuleBuildTask(GraalpythonBuildTask):
+    def _build_completion_file(self):
+        return f"{self._saved_config_path}.build-complete"
+
+    def needsBuild(self, newestInput):
+        if not os.path.exists(self._build_completion_file()):
+            return True, "previous frozen modules build did not complete"
+        return super().needsBuild(newestInput)
+
     def build(self):
+        completion_file = self._build_completion_file()
+        if os.path.exists(completion_file):
+            os.remove(completion_file)
+
         args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in cast(GraalpythonProject, self.subject).args]
 
         vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN' in os.environ else []
 
-        return bool(self.run_for(args, "dsl", extra_vm_args=vm_args))
+        result = self.run_for(args, "dsl", extra_vm_args=vm_args)
+        mx_util.ensure_dir_exists(os.path.dirname(completion_file))
+        with open(completion_file, "w", encoding="utf-8"):
+            pass
+        return bool(result)
+
+    def clean(self, forBuild=False):
+        completion_file = self._build_completion_file()
+        if os.path.exists(completion_file):
+            os.remove(completion_file)
+        return super().clean(forBuild=forBuild)
 
     def run_for(self, args, interpreter_kind, extra_vm_args=None):
         mx.log(f"Building frozen modules for {interpreter_kind} interpreter.")
@@ -3837,6 +3865,7 @@ mx.update_commands(SUITE, {
     'clean': [python_clean, '[--just-pyc]'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
+    'python-leak-tests': [leak_tests, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'verify-patches': [verify_patches, '[--git-mode]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],

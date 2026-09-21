@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
@@ -477,6 +478,42 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] objectArr = new Object[arr.length];
         System.arraycopy(arr, 0, objectArr, 0, arr.length);
         return objectArr;
+    }
+
+    @Builtin(name = "compile_import_source", minNumOfPositionalArgs = 2, parameterNames = {"source", "filename"})
+    @ArgumentClinic(name = "filename", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class CompileImportSourceNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        static Object compile(VirtualFrame frame, PBytes source, TruffleString filename,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached GetInternalByteArrayNode getBytes,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            byte[] bytes = getBytes.execute(inliningTarget, source.getSequenceStorage());
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return compile(source, filename, bytes, source.getSequenceStorage().length(), context);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private static PCode compile(PBytes source, TruffleString filename, byte[] bytes, int bytesLen, PythonContext context) {
+            TruffleString sourceText = BuiltinFunctions.CompileNode.doDecodeSource(context, source, filename, bytes, bytesLen);
+            RootCallTarget callTarget = (RootCallTarget) context.getLanguage().cacheSourceTarget(filename, sourceText, InputType.FILE, -1, 0, () -> {
+                // The import source cache owns the lifetime of this call target, so avoid the Truffle cache.
+                Source truffleSource = PythonLanguage.newSource(context, sourceText, filename, true, InputType.FILE, -1, 0, false);
+                return context.getEnv().parsePublic(truffleSource);
+            });
+            return BuiltinFunctions.CompileNode.wrapRootCallTarget(callTarget, filename);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GraalPythonModuleBuiltinsClinicProviders.CompileImportSourceNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "load_bytecode_file", minNumOfPositionalArgs = 3)
