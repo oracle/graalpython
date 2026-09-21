@@ -372,11 +372,10 @@ def _init_posix(vars):
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""
-    # GraalPy change: init first with posix vars, because of the toolchain we use
-    _init_posix(vars)
-    # set basic install directories
-    import _winapi
+    # GraalPy change: add runtime toolchain vars without loading POSIX sysconfigdata
     import _sysconfig
+    _sysconfig._update_posix_vars(vars)
+    # set basic install directories
     vars['LIBDEST'] = get_path('stdlib')
     vars['BINLIBDEST'] = get_path('platstdlib')
     vars['INCLUDEPY'] = get_path('include')
@@ -385,10 +384,10 @@ def _init_non_posix(vars):
     vars.update(_sysconfig.config_vars())
 
     vars['LIBDIR'] = _safe_realpath(os.path.join(get_config_var('installed_base'), 'libs'))
-    if hasattr(sys, 'dllhandle'):
-        dllhandle = _winapi.GetModuleFileName(sys.dllhandle)
-        vars['LIBRARY'] = os.path.basename(_safe_realpath(dllhandle))
-        vars['LDLIBRARY'] = vars['LIBRARY']
+    # GraalPy change: expose the stable public DLL name. sys.dllhandle refers to
+    # the internal python-native.dll and is only initialized when ctypes is loaded.
+    vars['LIBRARY'] = f'python{_PY_VERSION_SHORT_NO_DOT}.dll'
+    vars['LDLIBRARY'] = vars['LIBRARY']
     vars['EXE'] = '.exe'
     vars['VERSION'] = _PY_VERSION_SHORT_NO_DOT
     vars['BINDIR'] = os.path.dirname(_safe_realpath(sys.executable))

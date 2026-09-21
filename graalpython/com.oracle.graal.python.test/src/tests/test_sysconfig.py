@@ -47,6 +47,7 @@ def test_sysconfig():
     # must not fail
 
 
+@unittest.skipIf(sys.platform == "win32", "Windows does not use _sysconfigdata")
 def test_platform_sysconfigdata():
     import importlib
     import sysconfig
@@ -57,3 +58,25 @@ def test_platform_sysconfigdata():
     assert mod.build_time_vars["ABIFLAGS"] == sys.abiflags
     assert mod.build_time_vars["INSTSONAME"] == mod.build_time_vars["LDLIBRARY"]
     assert sys.abiflags in sysconfig.get_config_var("INCLUDEPY")
+
+
+@unittest.skipUnless(sys.platform == "win32", "Windows-specific sysconfig behavior")
+def test_windows_libpython_is_not_exposed():
+    import sysconfig
+    assert "LIBPYTHON" not in sysconfig.get_config_vars()
+
+
+@unittest.skipUnless(sys.platform == "win32", "Windows-specific sysconfig behavior")
+def test_windows_library_names():
+    import sysconfig
+    expected = f"python{sys.version_info.major}{sys.version_info.minor}.dll"
+    assert sysconfig.get_config_var("LIBRARY") == expected
+    assert sysconfig.get_config_var("LDLIBRARY") == expected
+
+
+@unittest.skipUnless(sys.platform == "win32", "Windows-specific sys behavior")
+def test_windows_platform_specific_sys_attributes():
+    assert not hasattr(sys, "abiflags")
+    assert not hasattr(sys, "getdlopenflags")
+    assert not hasattr(sys, "setdlopenflags")
+    assert not hasattr(sys, "windowsversion")

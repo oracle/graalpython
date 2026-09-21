@@ -989,7 +989,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     sys.version_info
 
                     Version information as a named tuple.""")),
-    PWindowsVersion("windowsversion", PTuple, newBuilder().publishInModule("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).doc("""
+    PWindowsVersion("getwindowsversion", PTuple, newBuilder().moduleName("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).doc("""
                     sys.getwindowsversion
 
                     Return info about the running version of Windows as a named tuple.""")),
