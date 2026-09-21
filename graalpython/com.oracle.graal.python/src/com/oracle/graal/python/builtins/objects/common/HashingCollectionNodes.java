@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetClonedHashingStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
@@ -53,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -61,7 +58,6 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -79,8 +75,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class HashingCollectionNodes {
 
@@ -227,28 +221,6 @@ public abstract class HashingCollectionNodes {
                         @Shared @Cached(inline = false) GetClonedHashingCollectionNode hashingCollectionNode) {
             Object value = givenValue == PNone.NO_VALUE ? PNone.NONE : givenValue;
             return hashingCollectionNode.execute(frame, other.getWrappedStorage(), value);
-        }
-
-        @Specialization(guards = "isString(strObj)")
-        @InliningCutoff
-        static HashingStorage doString(Node inliningTarget, Object strObj, Object value,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Exclusive @Cached HashingStorageSetItem setStorageItem,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            TruffleString str = castToStringNode.execute(inliningTarget, strObj);
-            HashingStorage storage = PDict.createNewStorage(codePointLengthNode.execute(str, TS_ENCODING));
-            Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
-            TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
-            while (it.hasNext()) {
-                // TODO: GR-37219: use SubstringNode with lazy=true?
-                int codePoint = nextNode.execute(it, TS_ENCODING);
-                TruffleString key = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
-                storage = setStorageItem.execute(inliningTarget, storage, key, val);
-            }
-            return storage;
         }
 
         @Fallback
