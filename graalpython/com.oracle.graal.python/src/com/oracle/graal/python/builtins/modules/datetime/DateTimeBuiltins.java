@@ -1034,12 +1034,13 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
             if (tzInfo == null) {
                 // convert from UTC to system timezone
-                TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(getContext(inliningTarget));
+                PythonContext context = PythonContext.get(inliningTarget);
+                TimeZone timeZone = context.getGlobalTimeZone();
                 ZoneId zoneId = timeZone.toZoneId();
                 ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, zoneId).plusNanos(microseconds * 1_000);
 
                 final int fold;
-                if (isBackwardTransitionDetected(instant, getContext(inliningTarget))) {
+                if (isBackwardTransitionDetected(instant, context)) {
                     fold = 1;
                 } else {
                     fold = 0;
@@ -2002,7 +2003,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         // CPython: local_timezone_from_local()
         private static PTimeZone getSystemTimeZoneAt(LocalDateTime localDateTime, int fold, Node inliningTarget) {
-            TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(getContext(inliningTarget));
+            TimeZone timeZone = PythonContext.get(inliningTarget).getGlobalTimeZone();
             ZoneId zoneId = timeZone.toZoneId();
             ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId);
 
@@ -2255,7 +2256,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             DateTimeValue self = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, selfObj);
             if (tzInfo == null) {
                 // CPython: local_to_seconds()
-                TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(getContext(inliningTarget));
+                TimeZone timeZone = PythonContext.get(inliningTarget).getGlobalTimeZone();
                 ZoneId zoneId = timeZone.toZoneId();
 
                 LocalDateTime localDateTime = self.toLocalDateTime();
@@ -2603,7 +2604,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
      */
     @TruffleBoundary
     private static boolean isBackwardTransitionDetected(Instant instant, PythonContext context) {
-        TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(context);
+        TimeZone timeZone = context.getGlobalTimeZone();
         int offsetMillis = timeZone.getOffset(instant.toEpochMilli());
 
         Instant probe = instant.minusSeconds(MAX_FOLD_SECONDS);

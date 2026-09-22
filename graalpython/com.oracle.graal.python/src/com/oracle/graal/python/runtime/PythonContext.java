@@ -75,6 +75,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
+import java.time.ZoneId;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,6 +85,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -821,6 +823,9 @@ public final class PythonContext extends Python3Core {
     /** State for the locale module, the default locale can be passed as an option */
     private PythonLocale currentLocale;
 
+    /** The current time zone, which can be changed by {@code time.tzset()}. */
+    private ZoneId currentZoneId;
+
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
     @CompilationFinal private long perfCounterStart = System.nanoTime();
@@ -1165,6 +1170,22 @@ public final class PythonContext extends Python3Core {
         return currentLocale;
     }
 
+    public ZoneId getCurrentZoneId() {
+        return currentZoneId;
+    }
+
+    public void setCurrentZoneId(ZoneId currentZoneId) {
+        this.currentZoneId = currentZoneId;
+    }
+
+    /**
+     * Return the current time zone, which can be changed by {@code time.tzset()}.
+     */
+    @TruffleBoundary
+    public TimeZone getGlobalTimeZone() {
+        return TimeZone.getTimeZone(currentZoneId);
+    }
+
     public boolean isInitialized() {
         return isInitialized;
     }
@@ -1334,6 +1355,7 @@ public final class PythonContext extends Python3Core {
             initializeHashSecret();
         }
         initializeLocale();
+        currentZoneId = env.getTimeZone();
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
         if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             nativeZlib = NativeZlibSupport.createNative(this, "");
