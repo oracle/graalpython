@@ -47,7 +47,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
     def assert_contains_bytecode(fun, bytecode_str):
         bytecode = __graalpython__.dis(fun)
-        assert bytecode_str in __graalpython__.dis(fun), bytecode
+        assert bytecode_str in bytecode, bytecode
 
 
     def test_read_name_quickening_local():
@@ -141,7 +141,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester, "GetMethod$FastPath")
 
 
-    def test_get_method_module_instance_quickening():
+    def test_get_method_module_quickening():
         module = types.ModuleType("test_module")
         module.func = lambda: "instance"
 
@@ -150,15 +150,31 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
         for _ in range(5):
             assert tester(module) == "instance"
-        assert_contains_bytecode(tester, "GetMethod$InstanceFastPath")
+        assert_contains_bytecode(tester, "GetMethod$ModuleFastPath")
 
         del module.func
         module.__getattr__ = lambda name: lambda: "fallback: " + name
         assert tester(module) == "fallback: func"
 
 
-    @skipUnlessSingleContext
-    def test_get_method_instance_shadows_non_descriptor_quickening():
+    def test_get_method_module_subclass_not_quickened():
+        class ModuleSubclass(types.ModuleType):
+            def __getattribute__(self, name):
+                if name == "func":
+                    return lambda: "override"
+                return super().__getattribute__(name)
+
+        module = ModuleSubclass("test_module_subclass")
+        module.func = lambda: "instance"
+
+        def tester(mod):
+            return mod.func()
+
+        for _ in range(5):
+            assert tester(module) == "override"
+
+
+    def test_get_method_instance_not_quickened():
         class K:
             func = 42
 
@@ -170,7 +186,6 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
         for _ in range(5):
             assert tester(obj) == "instance"
-        assert_contains_bytecode(tester, "GetMethod$InstanceFastPath")
 
         del obj.func
         assert obj.func == 42

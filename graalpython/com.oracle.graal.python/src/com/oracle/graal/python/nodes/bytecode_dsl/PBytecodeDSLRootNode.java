@@ -122,7 +122,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.compiler.MakeTypeParamKind;
@@ -316,7 +315,6 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.SlowPathException;
@@ -2005,45 +2003,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @ForceQuickening
         @Specialization(guards = {
-                        /* static checks: */ "!hasMaterializedDict(cachedShape)", "canLoadInstanceAttr", "getter != null", //
+                        /* static checks: */ "!canBeSpecial", "!hasMaterializedDict(cachedShape)", "isBuiltinModule(cachedShape)", "getter != null", //
                         /* dynamic checks: */ "getter.accepts(obj)"}, //
-                        rewriteOn = {GetAttribute.FastPathBailoutException.class, InvalidAssumptionException.class}, //
+                        rewriteOn = GetAttribute.FastPathBailoutException.class, //
                         limit = "2", excludeForUncached = true)
-        public static Object doInstanceFastPath(VirtualFrame frame, TruffleString name, PythonObject obj,
+        public static Object doModuleFastPath(VirtualFrame frame, TruffleString name, PythonModule obj,
                         @Cached("obj.getShape()") Shape cachedShape,
-                        @Cached("canLoadInstanceAttr(cachedShape, name)") boolean canLoadInstanceAttr,
-                        @Cached("getTypeStableAssumption(cachedShape)") Assumption typeStableAssumption,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, name)") PropertyGetter getter) throws GetAttribute.FastPathBailoutException, InvalidAssumptionException {
-            assert typeStableAssumption == null || PythonLanguage.get(null).isSingleContext();
-            if (typeStableAssumption != null) {
-                typeStableAssumption.check();
-            }
+                        @Cached("canBeSpecialMethod(name)") boolean canBeSpecial,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, name)") PropertyGetter getter) throws GetAttribute.FastPathBailoutException {
             return new BoundDescriptor(GetAttribute.getValue(getter, obj));
-        }
-
-        public static boolean canLoadInstanceAttr(Shape cachedShape, TruffleString key) {
-            Object klass = cachedShape.getDynamicType();
-            TpSlots klassSlots = null;
-            if (klass instanceof PythonBuiltinClassType type) {
-                klassSlots = type.getSlots();
-            } else if (klass instanceof PythonClass pyClass) {
-                klassSlots = pyClass.getTpSlots();
-            }
-            if (klassSlots == null || !GetAttribute.hasObjectOrModuleGetattro(klassSlots)) {
-                return false;
-            }
-
-            Object descr;
-            if (klass instanceof PythonBuiltinClassType type) {
-                descr = LookupAttributeInMRONode.findAttr(type, key);
-            } else {
-                descr = LookupAttributeInMRONode.lookupSlowPathNoSideEffects(klass, key);
-            }
-            if (descr == PNone.NO_VALUE) {
-                return true;
-            }
-            Object descrClass = GetClassNode.executeUncached(descr);
-            return descrClass instanceof PythonBuiltinClassType descrType && !TpSlotDescrSet.PyDescr_IsData(descrType.getSlots());
         }
 
         public static Object loadCacheableAttr(PythonObject object, Shape cachedShape, TruffleString key) {
@@ -2075,7 +2043,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return PNone.NO_VALUE;
         }
 
-        @Specialization(replaces = {"doStringFastPath", "doFastPath", "doFastPathBuiltin", "doInstanceFastPath"})
+        @Specialization(replaces = {"doStringFastPath", "doFastPath", "doFastPathBuiltin", "doModuleFastPath"})
         @ForceQuickening
         @StoreBytecodeIndex
         public static Object doIt(VirtualFrame frame,
