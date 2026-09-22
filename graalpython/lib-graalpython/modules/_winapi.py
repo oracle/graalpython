@@ -426,7 +426,7 @@ def _structures():
 def _winerror(code=None):
     ctypes, _, kernel32 = _native()
     if code is None:
-        code = kernel32.GetLastError()
+        code = ctypes.get_last_error()
     if hasattr(ctypes, "WinError"):
         error = ctypes.WinError(code)
         if code in (ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND):
@@ -553,7 +553,7 @@ class _WinapiOverlapped:
             code = 0
             self.pending = False
         else:
-            code = kernel32.GetLastError()
+            code = ctypes.get_last_error()
             if code != ERROR_IO_INCOMPLETE:
                 self.pending = False
         self._last_result = (transferred.value, code)
@@ -676,10 +676,10 @@ def DuplicateHandle(
 
 
 def GetFileType(handle):
-    _, wintypes, kernel32 = _native()
+    ctypes, wintypes, kernel32 = _native()
     kernel32.SetLastError(0)
     result = kernel32.GetFileType(wintypes.HANDLE(_as_handle(handle)))
-    if result == FILE_TYPE_UNKNOWN and kernel32.GetLastError() != 0:
+    if result == FILE_TYPE_UNKNOWN and ctypes.get_last_error() != 0:
         _raise_last_error()
     return result
 
@@ -876,7 +876,7 @@ def ConnectNamedPipe(handle, overlapped=False):
         if result:
             ov._completed_result = (0, 0)
             return ov
-        code = kernel32.GetLastError()
+        code = ctypes.get_last_error()
         if code == ERROR_IO_PENDING:
             ov.pending = True
             return ov
@@ -888,7 +888,7 @@ def ConnectNamedPipe(handle, overlapped=False):
     result = kernel32.ConnectNamedPipe(wintypes.HANDLE(_as_handle(handle)), None)
     if result:
         return None
-    code = kernel32.GetLastError()
+    code = ctypes.get_last_error()
     if code == ERROR_PIPE_CONNECTED:
         return None
     raise _winerror(code)
@@ -921,7 +921,7 @@ def ReadFile(handle, size, overlapped=False):
             ov._completed_result = (transferred.value, 0)
             ov._last_result = ov._completed_result
             return ov, 0
-        code = kernel32.GetLastError()
+        code = ctypes.get_last_error()
         if code == ERROR_IO_PENDING:
             ov.pending = True
             return ov, code
@@ -939,7 +939,7 @@ def ReadFile(handle, size, overlapped=False):
         None,
     )
     if not result:
-        code = kernel32.GetLastError()
+        code = ctypes.get_last_error()
         if code == ERROR_MORE_DATA:
             return buffer.raw[: transferred.value], code
         raise _winerror(code)
@@ -965,7 +965,7 @@ def WriteFile(handle, buffer, overlapped=False):
             ov._completed_result = (transferred.value, 0)
             ov._last_result = ov._completed_result
             return ov, 0
-        code = kernel32.GetLastError()
+        code = ctypes.get_last_error()
         if code == ERROR_IO_PENDING:
             ov.pending = True
             return ov, code
