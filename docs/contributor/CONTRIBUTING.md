@@ -444,6 +444,47 @@ mx benchmark meso:nbody3 \
 For debugging native problems in benchmark runs, there's `BENCHMARK_DEBUG_ARGS` in `mx_graalpython_benchmark.py` to log more stuff for debugging, at the cost of performance.
 This is intended for focused reproducer runs on a branch.
 
+### Java embedding benchmarks (JMH)
+
+`python-jmh:GRAALPYTHON_BENCH` runs the Java embedding benchmarks, including
+`ContextInitSharedEngineBenchmark.initCtx`. That benchmark initializes Python in successive
+contexts sharing one engine; context construction and teardown are outside the measured operation.
+
+Build the benchmarks, Native Image toolchain, and GraalJDK for the JVM comparison from the same
+sources (this does not build a GraalPy native standalone):
+
+```bash
+mx --java-home=lookup:default --env jmh-native-ce sforceimports
+mx --java-home=lookup:default --env jmh-native-ce build \
+    --dependencies 'GRAALPYTHON_BENCH,GRAALVM,{MAVEN_TAG_DISTRIBUTIONS:graaljdk}'
+```
+
+Run the full suite on the JVM and as a native executable:
+
+```bash
+mx --java-home=lookup:default --env jmh-native-ce benchmark python-jmh:GRAALPYTHON_BENCH \
+    --results-file jmh-jvm-results.json -- --jvm=server --jvm-config=graal-core -- -f 5
+mx --java-home=lookup:default --env jmh-native-ce benchmark python-jmh:GRAALPYTHON_BENCH \
+    --results-file jmh-native-results.json -- --jvm=native-image --jvm-config=default-ce -- -f 5
+```
+
+Append `ContextInitSharedEngineBenchmark.initCtx` after `-f 5` to compare just shared-engine
+initialization. For a smoke test, replace `-f 5` with `-f 1 -wi 1 -i 1 -w 1 -r 1 -foe true`;
+these short runs are not suitable for performance comparisons.
+
+Native Image first runs the benchmarks with the tracing agent to collect reachability metadata,
+then builds one image and executes it in a fresh process for each requested fork. Pass a positive
+`-f` explicitly: the native dispatcher defaults to one fork and does not use JMH's default or
+`@Fork` annotations. Native results are reported per fork rather than aggregated across forks.
+The `--results-file` output contains all forks with VM/configuration dimensions; `jmh_result.json`
+is an intermediate file and is overwritten on each run. Image-build metrics are separate from
+benchmark execution metrics.
+
+The daily CI jobs run both JVM (`java_jmh_enterprise`) and Native Image
+(`java_jmh_native_enterprise`) variants and upload `bench-results.json`. The native job uses
+`--env jmh-native-ee --jvm=native-image --jvm-config=default-ee`; with access to the enterprise
+suites, use `jmh-native-ee` for the build command above to reproduce it.
+
 ### A note on terminology
 
 Note that there may be a little confusion about the configuration names of benchmarks.

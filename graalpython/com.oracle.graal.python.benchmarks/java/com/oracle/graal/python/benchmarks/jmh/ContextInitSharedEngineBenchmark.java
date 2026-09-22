@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,12 @@ public class ContextInitSharedEngineBenchmark {
     @Setup(Level.Trial)
     public void setupEngine() {
         engine = Engine.newBuilder().option("engine.WarnInterpreterOnly", "false").build();
+    }
+
+    @TearDown(Level.Trial)
+    public void tearDownEngine() {
+        engine.close();
+        engine = null;
     }
 
     @Setup(Level.Invocation)

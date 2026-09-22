@@ -130,6 +130,34 @@ class CombinationsTests(unittest.TestCase):
         self.assertEqual(list(tee(g([1, 2]))[0]), [1, 2])
         self.assertEqual(list(zip_longest(g2([2,3]))), [((2, 2),), ((3, 3),)])
 
+    def _test_combinatorics_bytes(self, func, *args):
+        for sequence_type in (bytes, bytearray):
+            for values in ([], list(range(256))):
+                with self.subTest(sequence_type=sequence_type, size=len(values), func=func):
+                    result = list(func(sequence_type(values), *args))
+                    self.assertEqual(result, [(value,) for value in values])
+                    for value, in result:
+                        self.assertIs(type(value), int)
+
+    def test_combinatorics_bytes(self):
+        self._test_combinatorics_bytes(product)
+        self._test_combinatorics_bytes(permutations, 1)
+        self._test_combinatorics_bytes(combinations, 1)
+        self._test_combinatorics_bytes(combinations_with_replacement, 1)
+
+    def _test_combinatorics_bytes_pairs(self, func, *args, **kwargs):
+        values = [0, 127, 128, 129, 255]
+        for sequence_type in (bytes, bytearray):
+            with self.subTest(sequence_type=sequence_type, func=func):
+                self.assertEqual(list(func(sequence_type(values), *args, **kwargs)),
+                                 list(func(values, *args, **kwargs)))
+
+    def test_combinatorics_bytes_pairs(self):
+        self._test_combinatorics_bytes_pairs(product, repeat=2)
+        self._test_combinatorics_bytes_pairs(permutations, 2)
+        self._test_combinatorics_bytes_pairs(combinations, 2)
+        self._test_combinatorics_bytes_pairs(combinations_with_replacement, 2)
+
     def test_product_repeat_index(self):
         class Index:
             def __init__(self, value):

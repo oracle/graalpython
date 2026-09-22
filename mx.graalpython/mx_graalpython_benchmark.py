@@ -1391,7 +1391,7 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
         return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
 
-class PythonJMHDistMxBenchmarkSuite(mx_benchmark.JMHDistBenchmarkSuite):
+class PythonJMHDistMxBenchmarkSuite(mx_benchmark.JMHDistBenchmarkSuite, mx_sdk_benchmark.JMHNativeImageBenchmarkMixin):
     def name(self):
         return "python-jmh"
 
@@ -1406,6 +1406,31 @@ class PythonJMHDistMxBenchmarkSuite(mx_benchmark.JMHDistBenchmarkSuite):
         # but by overriding this method we fix that and also get the nice property
         # that one cannot accidentally run some other JMH benchmarks via this class
         return dist.name == 'GRAALPYTHON_BENCH'
+
+    def run(self, benchmarks, bmSuiteArgs):
+        return self.intercept_run(super(), benchmarks, bmSuiteArgs)
+
+    def successPatterns(self):
+        return super().successPatterns() + self.native_image_success_patterns()
+
+    def get_dispatcher(self, state):
+        if self.is_native_mode(state.bm_suite_args):
+            return mx_sdk_benchmark.JMHNativeImageDispatcher(state)
+        return super().get_dispatcher(state)
+
+    def extra_agentlib_options(self, benchmark, args, image_run_args):
+        # The agent's built-in filters exclude com.oracle.graal.**, including our
+        # generated JMH harness classes and host interop interfaces. Also retain
+        # proxy creation from Truffle's handlers for Value.as(JavaInterface.class).
+        agent_filter = DIR / 'jmh-agent-filter.json'
+        return super().extra_agentlib_options(benchmark, args, image_run_args) + [
+            f'caller-filter-file={agent_filter}',
+            f'access-filter-file={agent_filter}',
+        ]
+
+    def checkSamplesInPgo(self):
+        # Sampling does not support images that use Truffle runtime compilation.
+        return False
 
 
 class LiveHeapTracker(mx_benchmark.Tracker):

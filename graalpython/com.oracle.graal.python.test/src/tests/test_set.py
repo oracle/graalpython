@@ -65,17 +65,17 @@ def test_set_or_union():
     s2 = {4, 5, 6}
     s3 = {1, 2, 4}
     s4 = {1, 2, 3}
-    
+
     sstr1 = {'a', 'b', 'c'}
     sstr2 = {'d', 'e', 'f'}
     sstr3 = {'a', 'b', 'd'}
     sstr4 = {'a', 'b', 'c'}
-    
+
     or_result = s1 | s2
     union_result = s1.union(s2)
     assert or_result == {1, 2, 3, 4, 5, 6}
     assert union_result == {1, 2, 3, 4, 5, 6}
-    
+
     or_result = s2 | s1
     union_result = s2.union(s1)
     assert or_result == {1, 2, 3, 4, 5, 6}
@@ -90,27 +90,27 @@ def test_set_or_union():
     union_result = s1.union(sstr2)
     assert or_result == {1, 2, 3, 'd', 'e', 'f'}
     assert union_result == {1, 2, 3, 'd', 'e', 'f'}
-    
+
     or_result = sstr1 | s1
     union_result = sstr1.union(s1)
     assert or_result == {1, 2, 3, 'a', 'b', 'c'}
     assert union_result == {1, 2, 3, 'a', 'b', 'c'}
-    
+
     or_result = s1 | s3
     union_result = s1.union(s3)
     assert or_result == {1, 2, 3, 4}
     assert union_result == {1, 2, 3, 4}
-    
+
     or_result = s3 | s1
     union_result = s3.union(s1)
     assert or_result == {1, 2, 3, 4}
     assert union_result == {1, 2, 3, 4}
-    
+
     or_result = sstr1 | sstr3
     union_result = sstr1.union(sstr3)
     assert or_result == {'a', 'b', 'c', 'd'}
     assert union_result == {'a', 'b', 'c', 'd'}
-    
+
     or_result = sstr3 | sstr1
     union_result = sstr3.union(sstr1)
     assert or_result == {'a', 'b', 'c', 'd'}
@@ -125,22 +125,22 @@ def test_set_or_union():
     union_result = sstr1.union(s3)
     assert or_result == {1, 2, 4, 'a', 'b', 'c'}
     assert union_result == {1, 2, 4, 'a', 'b', 'c'}
-    
+
     or_result = s1 | s4
     union_result = s1.union(s4)
     assert or_result == {1, 2, 3}
     assert union_result == {1, 2, 3}
-    
+
     or_result = s4 | s1
     union_result = s4.union(s1)
     assert or_result == {1, 2, 3}
     assert union_result == {1, 2, 3}
-    
+
     or_result = sstr1 | sstr4
     union_result = sstr1.union(sstr4)
     assert or_result == {'a','b','c'}
     assert union_result == {'a','b','c'}
-    
+
     or_result = sstr4 | sstr1
     union_result = sstr4.union(sstr1)
     assert or_result == {'a','b','c'}
@@ -148,11 +148,11 @@ def test_set_or_union():
 
     assert frozenset((1,2)) | {1:2}.items() == {1, 2, (1, 2)}
     assert frozenset((1,2)) | {1:2}.keys() == {1, 2}
-    
+
     assert frozenset(('a','b')) | {1:2}.keys() == {'a', 'b', 1}
     assert frozenset(('a','b')) | {1:2, 3:4}.keys() == {'a', 'b', 1, 3}
     assert frozenset((1,2)) | {'a':2, 'b':4}.keys() == {'a', 'b', 1, 2}
-    
+
     assert {1,2} | {3:4, 5:6}.keys() == {1, 2, 3, 5}
     assert {3:4, 5:6}.keys() | {1,2} == {1, 2, 3, 5}
     assert {1,2} | {'a':1, 'b':2}.keys() == {1, 2, 'a', 'b'}
@@ -322,6 +322,142 @@ def test_init():
     assert s == {4}
     s.__init__()
     assert s == set()
+
+def test_init_dict_subclass_iter():
+    calls = []
+
+    class DictSubclass(dict):
+        def __iter__(self):
+            calls.append(self)
+            return iter((1,))
+
+    class InheritedIter(DictSubclass):
+        pass
+
+    for constructor in (set, frozenset):
+        for cls in (DictSubclass, InheritedIter):
+            for contents in ({}, {2: 'value'}):
+                source = cls(contents)
+                calls.clear()
+                assert constructor(source) == {1}
+                assert len(calls) == 1 and calls[0] is source
+                assert source == contents
+
+
+def test_init_dict_subclass_iter_errors():
+    class RaisingIter(dict):
+        def __iter__(self):
+            raise ValueError('iteration failed')
+
+    class DisabledIter(dict):
+        __iter__ = None
+
+    class InvalidIter(dict):
+        def __iter__(self):
+            return (1,)
+
+    class UnhashableIter(dict):
+        def __iter__(self):
+            return iter(([],))
+
+    for constructor in (set, frozenset):
+        for cls, error in ((RaisingIter, ValueError), (DisabledIter, TypeError),
+                           (InvalidIter, TypeError), (UnhashableIter, TypeError)):
+            for contents in ({}, {2: 'value'}):
+                assert_raises(error, constructor, cls(contents))
+
+
+def test_init_dict_subclass_iter_changed():
+    for constructor in (set, frozenset):
+        class DictSubclass(dict):
+            pass
+
+        class InheritedIter(DictSubclass):
+            pass
+
+        source = InheritedIter({2: 'value'})
+
+        def check(expected):
+            for _ in range(5):
+                assert constructor(source) == expected
+
+        check({2})
+        DictSubclass.__iter__ = lambda self: iter((1,))
+        check({1})
+        DictSubclass.__iter__ = dict.__iter__
+        check({2})
+        DictSubclass.__iter__ = None
+        assert_raises(TypeError, constructor, source)
+        del DictSubclass.__iter__
+        check({2})
+
+
+def test_init_dict_subclass_rehashes_keys():
+    from collections import defaultdict
+
+    class DictSubclass(dict):
+        pass
+
+    class Key:
+        hash_calls = 0
+
+        def __hash__(self):
+            self.hash_calls += 1
+            return 42
+
+    for constructor in (set, frozenset):
+        for cls in (dict, DictSubclass, defaultdict):
+            key = Key()
+            source = cls()
+            source[key] = 'value'
+            key.hash_calls = 0
+            result = constructor(source)
+            assert key.hash_calls == (0 if cls is dict else 1)
+            assert len(result) == 1 and next(iter(result)) is key
+
+
+def test_init_set_subclass_iter_ignored():
+    for base in (set, frozenset):
+        class SetSubclass(base):
+            def __iter__(self):
+                raise AssertionError('set subclass iterator must not be called')
+
+        for constructor in (set, frozenset):
+            def convert(source):
+                return constructor(source)
+
+            source = SetSubclass((2,))
+            assert convert(source) == {2}
+            # Exercise the specialization that replaces the set-only fast path.
+            assert convert({3: None}) == {3}
+            assert convert(source) == {2}
+
+
+def test_init_set_subclass_does_not_rehash_keys():
+    class Key:
+        hash_calls = 0
+
+        def __hash__(self):
+            self.hash_calls += 1
+            return 42
+
+    for base in (set, frozenset):
+        class SetSubclass(base):
+            pass
+
+        key = Key()
+        source = SetSubclass((key,))
+        for constructor in (set, frozenset):
+            def convert(source):
+                return constructor(source)
+
+            for _ in range(2):
+                key.hash_calls = 0
+                result = convert(source)
+                assert key.hash_calls == 0
+                assert len(result) == 1 and next(iter(result)) is key
+                assert convert({3: None}) == {3}
+
 
 def test_rich_compare():
     class TestRichSetCompare:

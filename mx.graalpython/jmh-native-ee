@@ -1,0 +1,5 @@
+DYNAMIC_IMPORTS=/tools,/graalpython-enterprise,/graal-enterprise,/truffle-enterprise,/vm-enterprise,/substratevm-enterprise
+BUILD_TARGETS=GRAALPYTHON_BENCH,GRAALVM
+COMPONENTS=Native Image Enterprise,Truffle SVM Macro Enterprise
+NATIVE_IMAGES=lib:native-image-agent
+GRAALVM_SKIP_ARCHIVE=true

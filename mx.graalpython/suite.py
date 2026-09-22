@@ -1262,6 +1262,7 @@ suite = {
                 # We run the benchmarks with Python home served from resources
                 "GRAALPYTHON_RESOURCES",
                 "sdk:POLYGLOT",
+                "truffle:TRUFFLE_RUNTIME",
             ],
             "testDistribution": True,
             "maven": False,

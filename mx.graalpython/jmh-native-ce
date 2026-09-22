@@ -1,0 +1,5 @@
+DYNAMIC_IMPORTS=/tools,/compiler,/substratevm
+BUILD_TARGETS=GRAALPYTHON_BENCH,GRAALVM
+COMPONENTS=Native Image,Truffle SVM Macro
+NATIVE_IMAGES=lib:native-image-agent
+GRAALVM_SKIP_ARCHIVE=true
