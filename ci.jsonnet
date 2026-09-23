@@ -475,6 +475,7 @@
         [bench]: bench_task(bench, PY_BENCHMARKS) + platform_spec(no_jobs) + raw_results + bench_variants({
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00") + need_pgo},
+            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00") + need_pgo},
             "vm_name:cpython_launcher"                                  : {"linux:amd64:jdk-latest" : monthly     + t("08:00:00")},
             "vm_name:pypy_launcher"                                     : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
         }),

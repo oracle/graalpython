@@ -160,6 +160,10 @@ class AbstractPythonVm(OutputCapturingVm, ABC):
     def post_process_command_line_args(self, args):
         return args
 
+    @contextmanager
+    def run_environment(self):
+        yield
+
     def run_vm(self, args, out=None, err=None, cwd=None, nonZeroIsFatal=False, env=None):
         cmd = [self.interpreter] + args
         cmd = mx.apply_command_mapper_hooks(cmd, self.command_mapper_hooks)
@@ -338,6 +342,20 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         if ("forced uncached interpreter: True" not in out) == is_uncached_config:
             mx.abort(f"ERROR: benchmark config '{CONFIGURATION_UNCACHED}' not consistent with what runtime reported.")
         return code, out, dims
+
+    @contextmanager
+    def run_environment(self):
+        with super().run_environment():
+            from mx_graalpython import set_env
+
+            existing = os.environ.get("GRAAL_PYTHON_VM_ARGS")
+            if existing:
+                existing_args = existing[1:].split("\v") if existing.startswith("\v") else shlex.split(existing)
+            else:
+                existing_args = []
+            value = "\v" + "\v".join(existing_args + list(self.get_extra_polyglot_args()))
+            with set_env(GRAAL_PYTHON_VM_ARGS=value):
+                yield
 
     def get_extra_polyglot_args(self):
         return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]

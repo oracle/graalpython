@@ -534,39 +534,40 @@ class PyPerformanceSuite(PySuite):
             bms = ["-b", ",".join(benchmarks)]
         else:
             bms = ["-b", ",".join(DEFAULT_PYPERFORMANCE_BENCHMARKS)]
-        json_file = f"{vm_venv}.json"
-        retcode = mx.run(
-            [
-                join(vm_venv, "bin", "pyperformance"),
-                "run",
-                "--inherit-environ",
-                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS,GRAAL_PYTHON_VM_ARGS",
-                "-o",
-                json_file,
-                *bms,
-            ],
-            cwd=workdir,
-            nonZeroIsFatal=False,
-        )
-        mx.log(f"Return code of benchmark harness: {retcode}")
-        # run again in single shot mode for memory measurements
-        json_file_memory = f"{vm_venv}_memory.json"
-        retcode = mx.run(
-            [
-                join(vm_venv, "bin", "pyperformance"),
-                "run",
-                "--debug-single-value",
-                "--track-memory",
-                "--inherit-environ",
-                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS,GRAAL_PYTHON_VM_ARGS",
-                "-o",
-                json_file_memory,
-                *bms,
-            ],
-            cwd=workdir,
-            nonZeroIsFatal=False,
-        )
-        mx.log(f"Return code of benchmark harness: {retcode}")
+        with vm.run_environment():
+            json_file = f"{vm_venv}.json"
+            retcode = mx.run(
+                [
+                    join(vm_venv, "bin", "pyperformance"),
+                    "run",
+                    "--inherit-environ",
+                    "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS,GRAAL_PYTHON_VM_ARGS",
+                    "-o",
+                    json_file,
+                    *bms,
+                ],
+                cwd=workdir,
+                nonZeroIsFatal=False,
+            )
+            mx.log(f"Return code of benchmark harness: {retcode}")
+            # run again in single shot mode for memory measurements
+            json_file_memory = f"{vm_venv}_memory.json"
+            retcode = mx.run(
+                [
+                    join(vm_venv, "bin", "pyperformance"),
+                    "run",
+                    "--debug-single-value",
+                    "--track-memory",
+                    "--inherit-environ",
+                    "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS,GRAAL_PYTHON_VM_ARGS",
+                    "-o",
+                    json_file_memory,
+                    *bms,
+                ],
+                cwd=workdir,
+                nonZeroIsFatal=False,
+            )
+            mx.log(f"Return code of benchmark harness: {retcode}")
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         shutil.copy(join(workdir, json_file_memory), join(SUITE.dir, "raw_results_memory.json"))
         return retcode, ",".join([join(workdir, json_file), join(workdir, json_file_memory)]), vm_dims
@@ -637,18 +638,19 @@ class PyPySuite(PySuite):
             bms = ["-b", ",".join(benchmarks)]
         else:
             bms = ["-b", ",".join(DEFAULT_PYPY_BENCHMARKS)]
-        retcode = mx.run(
-            [
-                sys.executable,
-                join(workdir, "benchmarks", "run_local.py"),
-                f"{vm_venv}/bin/python",
-                "-o",
-                join(workdir, json_file),
-                *bms,
-            ],
-            cwd=workdir,
-            nonZeroIsFatal=False,
-        )
+        with vm.run_environment():
+            retcode = mx.run(
+                [
+                    sys.executable,
+                    join(workdir, "benchmarks", "run_local.py"),
+                    f"{vm_venv}/bin/python",
+                    "-o",
+                    join(workdir, json_file),
+                    *bms,
+                ],
+                cwd=workdir,
+                nonZeroIsFatal=False,
+            )
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
         return retcode, join(workdir, json_file), vm_dims
@@ -739,23 +741,24 @@ class NumPySuite(PySuite):
 
         if not benchmarks:
             benchmarks = DEFAULT_NUMPY_BENCHMARKS
-        retcode = mx.run(
-            [
-                join(workdir, vm_venv, "bin", "asv"),
-                "run",
-                "--strict",
-                "--record-samples",
-                "-e",
-                "--python=same",
-                "--set-commit-hash",
-                f"v{self.VERSION}",
-                "-b", create_asv_benchmark_selection(
-                    benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS, skipped_patterns=SKIPPED_NUMPY_BENCHMARK_PATTERNS
-                ),
-            ],
-            cwd=benchdir,
-            nonZeroIsFatal=False,
-        )
+        with vm.run_environment():
+            retcode = mx.run(
+                [
+                    join(workdir, vm_venv, "bin", "asv"),
+                    "run",
+                    "--strict",
+                    "--record-samples",
+                    "-e",
+                    "--python=same",
+                    "--set-commit-hash",
+                    f"v{self.VERSION}",
+                    "-b", create_asv_benchmark_selection(
+                        benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS, skipped_patterns=SKIPPED_NUMPY_BENCHMARK_PATTERNS
+                    ),
+                ],
+                cwd=benchdir,
+                nonZeroIsFatal=False,
+            )
 
         json_file = glob.glob(join(benchdir, "results", "*", "*numpy*.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
@@ -885,21 +888,22 @@ class PandasSuite(PySuite):
 
         if not benchmarks:
             benchmarks = DEFAULT_PANDAS_BENCHMARKS
-        retcode = mx.run(
-            [
-                join(workdir, vm_venv, "bin", "asv"),
-                "run",
-                "--strict",
-                "--record-samples",
-                "-e",
-                "--python=same",
-                "--set-commit-hash",
-                self.VERSION_TAG,
-                "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_PANDAS_BENCHMARKS),
-            ],
-            cwd=benchdir,
-            nonZeroIsFatal=False,
-        )
+        with vm.run_environment():
+            retcode = mx.run(
+                [
+                    join(workdir, vm_venv, "bin", "asv"),
+                    "run",
+                    "--strict",
+                    "--record-samples",
+                    "-e",
+                    "--python=same",
+                    "--set-commit-hash",
+                    self.VERSION_TAG,
+                    "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_PANDAS_BENCHMARKS),
+                ],
+                cwd=benchdir,
+                nonZeroIsFatal=False,
+            )
 
         json_file = glob.glob(join(benchdir, "results", "*", "*pandas*.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
