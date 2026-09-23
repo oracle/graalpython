@@ -2383,6 +2383,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return getValue(getter, receiver);
         }
 
+        @ForceQuickening
         @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType", "doProperty", "doIndexedSlotDescriptor"})
         @StoreBytecodeIndex
         public static Object doIt(VirtualFrame frame,
