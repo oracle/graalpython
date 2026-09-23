@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtHeapType
+from . import CPyExtTestCase, CPyExtHeapType, CPyExtType
 
 
 class BaseWithSlots:
@@ -95,6 +95,30 @@ class TestIndexedSlots(CPyExtTestCase):
         x.a, x.b, x.c = 22, 23, 24
         self.assertEqual((22, 23, 24), (x.a, x.b, x.c))
 
+    def test_weaklistoffset_in_subclass(self):
+        NativeWeakref = CPyExtType(
+            'NativeWeakref',
+            '''
+            static PyObject* get_native_layout(PyObject* cls) {
+                PyTypeObject* type = (PyTypeObject*)cls;
+                return Py_BuildValue("(nn)", type->tp_basicsize, type->tp_weaklistoffset);
+            }
+            ''',
+            cmembers='''long value;
+            PyObject *link;
+            PyObject *weakrefs;
+            ''',
+            tp_methods='{"get_native_layout", (PyCFunction)get_native_layout, METH_NOARGS | METH_CLASS, ""}',
+            ready_code='NativeWeakrefType.tp_weaklistoffset = offsetof(NativeWeakrefObject, weakrefs);',
+        )
+
+        class ManagedSubclass(NativeWeakref):
+            __slots__ = ('extra',)
+
+        self.assertEqual(
+            (ManagedSubclass.__basicsize__, ManagedSubclass.__weakrefoffset__),
+            ManagedSubclass.get_native_layout(),
+        )
 
     def test_slots_in_base_and_subclass(self):
         N1 = CPyExtHeapType('Nd1', bases=(BaseWithSlots,), cmembers=cmembers(4))
