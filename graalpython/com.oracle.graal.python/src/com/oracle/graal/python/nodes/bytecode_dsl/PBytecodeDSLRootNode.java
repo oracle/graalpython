@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -115,13 +116,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
+import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.compiler.MakeTypeParamKind;
@@ -237,6 +241,7 @@ import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -1933,6 +1938,157 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    /**
+     * Specialized instruction for {@code super(T, o)} calls where T and o may be null, which means
+     * the arguments were not provided. This operation either produces the super object, or returns
+     * placeholder {@link #BUILTIN_SUPER} that indicates that the following operation
+     * SuperGetAttribute can take the fast-path.
+     * <p>
+     * TODO: when Bytecode DSL supports multi-value return operations, we can return the super
+     * object/placeholder and {@code actualType} and {@code actualObject} directly instead of taking
+     * LocalAccessors.
+     */
+    @Operation(storeBytecodeIndex = false)
+    @ConstantOperand(type = LocalAccessor.class)
+    @ConstantOperand(type = LocalAccessor.class)
+    @ImportStatic(PythonBuiltinClassType.class)
+    public static final class SuperCall {
+        static final Object BUILTIN_SUPER = new Object();
+
+        @ForceQuickening
+        @Specialization(guards = "isBuiltinSuperProfile.profileClass(inliningTarget, callable, Super)", //
+                        limit = "1", rewriteOn = FastPathBailoutException.class, excludeForUncached = false)
+        public static Object check(VirtualFrame frame,
+                        LocalAccessor actualType, LocalAccessor actualObject, Object callable, Object explicitType, Object explicitObject,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Cached IsBuiltinClassExactProfile isBuiltinSuperProfile,
+                        @Cached CellBuiltins.GetRefNode getRefNode,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached IsForeignObjectNode isForeignObjectNode) throws FastPathBailoutException {
+            Object type = explicitType;
+            Object object = explicitObject;
+            if (type == null) {
+                PCell classCell = root.readClassCell(frame, location);
+                type = classCell == null ? null : getRefNode.execute(inliningTarget, classCell);
+                object = root.readSelf(frame, location);
+            }
+            /*
+             * Keep all observable validation, including proxy __class__ lookup and error creation,
+             * on the ordinary super constructor path. The fast path only accepts cases that can be
+             * validated without executing Python code.
+             */
+            if (type == null || object == null || object instanceof PNone || isForeignObjectNode.execute(inliningTarget, object) || !isTypeNode.execute(inliningTarget, type)) {
+                throw FastPathBailoutException.INSTANCE;
+            }
+            if (!isTypeNode.execute(inliningTarget, object) || !isSubtypeNode.execute(object, type)) {
+                Object objectType = getClassNode.execute(inliningTarget, object);
+                if (!isSubtypeNode.execute(objectType, type)) {
+                    throw FastPathBailoutException.INSTANCE;
+                }
+            }
+            actualType.setObject(location, frame, type);
+            actualObject.setObject(location, frame, object);
+            return BUILTIN_SUPER;
+        }
+
+        @InliningCutoff
+        @StoreBytecodeIndex
+        @Specialization(replaces = "check")
+        public static Object doSuper(VirtualFrame frame,
+                        LocalAccessor actualType, LocalAccessor actualObject, Object callable, Object explicitType, Object explicitObject,
+                        @Bind BytecodeNode location,
+                        @Cached CallNode callNode) {
+            // SuperGetAttribute still consumes both locals on the generic path.
+            actualType.setObject(location, frame, PNone.NO_VALUE);
+            actualObject.setObject(location, frame, PNone.NO_VALUE);
+            if (explicitType == null) {
+                return callNode.execute(frame, callable);
+            }
+            return callNode.execute(frame, callable, explicitType, explicitObject);
+        }
+
+    }
+
+    /**
+     * Specialized instruction for super attribute accesses of form {@code super(T, o).foo}. The
+     * first argument is either the {@link SuperCall#BUILTIN_SUPER} placeholder or the actual super
+     * object. If the first argument is the placeholder, then the following two arguments are the
+     * {@code T} and {@code o} from the {@code super} call that wasn't actually performed - this
+     * indicates that we can take a fast-path for what would be a builtin super object.
+     */
+    @Operation(storeBytecodeIndex = true)
+    @ConstantOperand(type = TruffleString.class)
+    @ConstantOperand(type = boolean.class)
+    @ConstantOperand(type = LocalAccessor.class)
+    @ImportStatic(SuperCall.class)
+    public static final class SuperGetAttribute {
+        @ForceQuickening
+        @Specialization(guards = "superObject == BUILTIN_SUPER")
+        public static Object doFastPath(VirtualFrame frame,
+                        TruffleString key, boolean method, @SuppressWarnings("unused") LocalAccessor receiver,
+                        Object superObject, Object type, Object object,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached LookupAttributeInMRONode.Super lookupNode,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotDescrGet callGetSlotNode,
+                        @Cached InlinedConditionProfile hasDescrGetProfile,
+                        @Cached InlinedConditionProfile classBindingProfile,
+                        @Cached CallSlotGetAttrNode getAttrNode) {
+            Object objectType;
+            if (isTypeNode.execute(inliningTarget, object) && isSubtypeNode.execute(object, type)) {
+                objectType = object;
+            } else {
+                objectType = getClassNode.execute(inliningTarget, object);
+            }
+            Object result = lookupNode.execute(type, objectType, key);
+            if (result == PNone.NO_VALUE || result == LookupAttributeInMRONode.Super.NO_MRO_SUFFIX) {
+                /*
+                 * Search only attributes of the proxy itself. Re-entering super.__getattribute__
+                 * would repeat an MRO lookup, including arbitrary dictionary-key equality.
+                 */
+                SuperObject proxy = PFactory.createSuperObject(PythonLanguage.get(root));
+                proxy.init(type, objectType, object);
+                result = getAttrNode.execute(frame, inliningTarget, ObjectBuiltins.SLOTS, proxy, key);
+                return method ? new BoundDescriptor(result) : result;
+            }
+            boolean classBinding = classBindingProfile.profile(inliningTarget, object == objectType);
+            if (method && !classBinding && MaybeBindDescriptorNode.isMethodDescriptor(result)) {
+                return result;
+            }
+            TpSlots slots = getSlotsNode.execute(inliningTarget, result);
+            if (hasDescrGetProfile.profile(inliningTarget, slots.tp_descr_get() != null)) {
+                Object instance = classBinding ? PNone.NO_VALUE : object;
+                result = callGetSlotNode.execute(frame, inliningTarget, slots.tp_descr_get(), result, instance, objectType);
+            }
+            return method ? new BoundDescriptor(result) : result;
+        }
+
+        @ForceQuickening
+        @Specialization(replaces = "doFastPath")
+        public static Object doGeneric(VirtualFrame frame,
+                        TruffleString key, boolean method, LocalAccessor receiver,
+                        Object superObject, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode location,
+                        @Cached PyObjectGetAttr getAttributeNode) {
+            Object result = getAttributeNode.execute(frame, inliningTarget, superObject, key);
+            if (method) {
+                receiver.setObject(location, frame, superObject);
+                return new BoundDescriptor(result);
+            }
+            return result;
+        }
+    }
+
     @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = TruffleString.class)
     @ImportStatic({PythonUtils.class, PGuards.class, GetAttribute.class})
@@ -2005,12 +2161,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = {
                         /* static checks: */ "!canBeSpecial", "!hasMaterializedDict(cachedShape)", "isBuiltinModule(cachedShape)", "getter != null", //
                         /* dynamic checks: */ "getter.accepts(obj)"}, //
-                        rewriteOn = GetAttribute.FastPathBailoutException.class, //
+                        rewriteOn = FastPathBailoutException.class, //
                         limit = "2", excludeForUncached = true)
         public static Object doModuleFastPath(VirtualFrame frame, TruffleString name, PythonModule obj,
                         @Cached("obj.getShape()") Shape cachedShape,
                         @Cached("canBeSpecialMethod(name)") boolean canBeSpecial,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, name)") PropertyGetter getter) throws GetAttribute.FastPathBailoutException {
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, name)") PropertyGetter getter) throws FastPathBailoutException {
             return new BoundDescriptor(GetAttribute.getValue(getter, obj));
         }
 
@@ -2086,14 +2242,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     throw FastPathBailoutException.INSTANCE;
                 }
                 throw e;
-            }
-        }
-
-        public static final class FastPathBailoutException extends SlowPathException {
-            private static final long serialVersionUID = 8275772171120097556L;
-            private static final FastPathBailoutException INSTANCE = new FastPathBailoutException();
-
-            private FastPathBailoutException() {
             }
         }
 
@@ -4720,6 +4868,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 return true;
             }
             return false;
+        }
+    }
+
+    public static final class FastPathBailoutException extends SlowPathException {
+        private static final long serialVersionUID = 8275772171120097556L;
+        private static final FastPathBailoutException INSTANCE = new FastPathBailoutException();
+
+        private FastPathBailoutException() {
         }
     }
 }

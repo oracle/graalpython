@@ -40,6 +40,7 @@
 import sys
 import types
 import unittest
+import builtins
 
 if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncached_interpreter:
 

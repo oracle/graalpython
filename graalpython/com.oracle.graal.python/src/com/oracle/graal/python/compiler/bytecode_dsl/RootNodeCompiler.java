@@ -59,6 +59,7 @@ import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerU
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.hasDefaultKwargs;
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.len;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SUPER;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FIRSTLINENO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___STATIC_ATTRIBUTES__;
@@ -2095,14 +2096,75 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
-            beginGetAttribute(node.attr, b);
-            node.value.accept(this);
-            b.endGetAttribute();
+            ExprTy.Call superCall = getOptimizableSuperCall(node);
+            if (superCall != null) {
+                b.beginBlock();
+                StackValue[] values = emitSuperLookup(superCall, node.attr, false);
+                b.emitLoadStackValue(values[0]);
+                b.endBlock();
+            } else {
+                beginGetAttribute(node.attr, b);
+                node.value.accept(this);
+                b.endGetAttribute();
+            }
 
             endTraceLineChecked(node, b);
             endSourceSection(b);
 
             return null;
+        }
+
+        private void emitArgOrNull(ExprTy[] args, int index) {
+            if (index < args.length) {
+                args[index].accept(this);
+            } else {
+                b.emitLoadNull();
+            }
+        }
+
+        /**
+         * Emits a direct super lookup and returns its callable and, for method lookups, receiver.
+         * The caller must own a block that keeps the returned stack values alive.
+         */
+        private StackValue[] emitSuperLookup(ExprTy.Call superCall, String attribute, boolean method) {
+            // @formatter:off
+            BytecodeLocal typeArg = beginTemporaryLocal();
+            BytecodeLocal valueArg = beginTemporaryLocal();
+            b.beginBindStackValue();
+                // SuperGetAttribute handles the placeholder from SuperCall or a real fallback result.
+                b.beginSuperGetAttribute(toTruffleStringUncached(maybeMangleAndAddName(attribute)), method, valueArg);
+                    enterProfileCEventCall();
+                        b.beginInstrumentCallReturn();
+                            // SuperCall returns a placeholder for the builtin, otherwise the real call result.
+                            b.beginSuperCall(typeArg, valueArg);
+                                b.beginInstrumentCallable();
+                                    superCall.func.accept(this);
+                                b.endInstrumentCallable();
+                                assert superCall.args.length == 0 || superCall.args.length == 2;
+                                emitArgOrNull(superCall.args, 0);
+                                // The last argument is instrumented with the call event.
+                                b.beginInstrumentCall();
+                                beginTraceLineChecked(b);
+                                    emitArgOrNull(superCall.args, 1);
+                                endTraceLineChecked(superCall.func, b);
+                                b.endInstrumentCall();
+                            b.endSuperCall();
+                        b.endInstrumentCallReturn();
+                    exitProfileCEventCall();
+                    b.emitLoadLocal(typeArg);
+                    b.emitLoadLocal(valueArg);
+                b.endSuperGetAttribute();
+            StackValue callable = b.endBindStackValue();
+            endTemporaryLocal(typeArg);
+            if (method) {
+                b.beginBindStackValue();
+                loadAndEndTemporaryLocal(valueArg);
+                StackValue receiver = b.endBindStackValue();
+                return new StackValue[]{callable, receiver};
+            }
+            endTemporaryLocal(valueArg);
+            return new StackValue[]{callable, null};
+            // @formatter:on
         }
 
         @Override
@@ -2278,6 +2340,54 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return node instanceof ExprTy.Attribute && ((ExprTy.Attribute) node).context == ExprContextTy.Load;
         }
 
+        /**
+         * Returns the "super" call node if the expression is of form {@code super().attr} or {@code super(X, self).attr}.
+         * Otherwise, returns {@code null}.
+         * <p>
+         * For zero-argument {@code super()}, this only checks that a {@code __class__} closure cell
+         * exists. {@link PBytecodeDSLRootNode.SuperCall} reads and validates the cell's current value
+         * at runtime, so changes to the cell are observed by the optimized path.
+         */
+        private ExprTy.Call getOptimizableSuperCall(ExprTy.Attribute attr) {
+            assert attr.context == ExprContextTy.Load;
+            if (J___CLASS__.equals(attr.attr)) {
+                return null;
+            }
+            if (!(attr.value instanceof ExprTy.Call call) || !(call.func instanceof ExprTy.Name name) || !J_SUPER.equals(name.id) || //
+                            call.keywords.length != 0 || (call.args.length != 0 && call.args.length != 2)) {
+                return null;
+            }
+            assert name.context == ExprContextTy.Load;
+            for (ExprTy arg : call.args) {
+                if (arg instanceof ExprTy.Starred) {
+                    return null;
+                }
+            }
+            EnumSet<DefUse> uses = scope.getUseOfName(J_SUPER);
+            if (!uses.contains(DefUse.GlobalImplicit)) {
+                return null;
+            }
+            if (call.args.length == 0 && (!hasPositionalFirstParameter() || !freevars.containsKey(J___CLASS__))) {
+                // we need __class__ and first positional param for "super()"
+                return null;
+            }
+            return call;
+        }
+
+        private boolean hasPositionalFirstParameter() {
+            ArgumentsTy args;
+            if (startNode instanceof FunctionDef functionDef) {
+                args = functionDef.args;
+            } else if (startNode instanceof AsyncFunctionDef functionDef) {
+                args = functionDef.args;
+            } else if (startNode instanceof Lambda lambda) {
+                args = lambda.args;
+            } else {
+                return false;
+            }
+            return args.posOnlyArgs.length != 0 || args.args.length != 0;
+        }
+
         private static final int NUM_ARGS_MAX_FIXED = 4;
 
         private void enterProfileCEventCall() {
@@ -2388,14 +2498,24 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             StackValue receiver = null;
+            StackValue directSuperCallable = null;
             if (isMethodCall) {
                 // Reserve a stack value for the receiver.
                 b.beginBlock();
-                b.beginBindStackValue();
                 assert isAttributeLoad(func);
                 ExprTy.Attribute attrAccess = (ExprTy.Attribute) func;
-                attrAccess.value.accept(this);
-                receiver = b.endBindStackValue();
+                ExprTy.Call superCall = getOptimizableSuperCall(attrAccess);
+                if (superCall != null) {
+                    beginSourceSection(attrAccess, b);
+                    StackValue[] values = emitSuperLookup(superCall, attrAccess.attr, true);
+                    endSourceSection(b);
+                    directSuperCallable = values[0];
+                    receiver = values[1];
+                } else {
+                    b.beginBindStackValue();
+                    attrAccess.value.accept(this);
+                    receiver = b.endBindStackValue();
+                }
             }
 
             // @formatter:off
@@ -2411,7 +2531,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 // The receiver is needed for method lookup and for the first argument.
                 if (useVariadic) {
                     b.beginInstrumentCallable();
-                    emitGetMethod(func, receiver);
+                    if (directSuperCallable != null) {
+                        b.emitLoadStackValue(directSuperCallable);
+                    } else {
+                        emitGetMethod(func, receiver);
+                    }
                     b.endInstrumentCallable();
 
                     b.beginCollectToObjectArray();
@@ -2425,7 +2549,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     assert len(keywords) == 0;
 
                     b.beginInstrumentCallable();
-                    emitGetMethod(func, receiver);
+                    if (directSuperCallable != null) {
+                        b.emitLoadStackValue(directSuperCallable);
+                    } else {
+                        emitGetMethod(func, receiver);
+                    }
                     b.endInstrumentCallable();
                     if (numArgs == 1) {
                         b.beginInstrumentCall();
