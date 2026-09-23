@@ -167,6 +167,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -1511,6 +1512,21 @@ public final class PythonCextBuiltins {
         } catch (PException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
+    }
+
+    /**
+     * This must be called after native {@code _PyGC_InitState}. Creating the native wrappers for
+     * these singletons may recursively create GC-tracked native wrappers, which are immediately
+     * linked into generation 0 and therefore require initialized generation list heads.
+     */
+    @CApiBuiltin(ret = Void, args = {Pointer, Pointer}, call = Ignored)
+    static void GraalPyPrivate_InitCharacterSingletons(long bytesCharactersAddr, long unicodeCharactersAddr) {
+        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        assert cApiContext.getGCState() != NULLPTR;
+        long bytesCharacters = cApiContext.getOrCreateBytesCharacters();
+        long unicodeCharacters = cApiContext.getOrCreateUnicodeCharacters();
+        NativeMemory.writePtr(bytesCharactersAddr, bytesCharacters);
+        NativeMemory.writePtr(unicodeCharactersAddr, unicodeCharacters);
     }
 
     private record ClassPtrPair(PythonManagedClass clazz, long ptr, int typeLookupTableIdx) {

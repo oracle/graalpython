@@ -220,12 +220,15 @@ public final class PythonCextUnicodeBuiltins {
         return PGuards.isString(obj) || isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int}, call = Direct)
-    abstract static class PyUnicode_FromOrdinal extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PY_UCS4}, call = Ignored)
+    abstract static class GraalPyPrivate_Unicode_FromOrdinal extends CApiUnaryBuiltinNode {
         @Specialization
         static Object chr(int value,
-                        @Cached ChrNode chrNode) {
-            return chrNode.execute(null, value);
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            // assertions are guaranteed by the native caller
+            assert value >= 0;
+            assert value <= Character.MAX_CODE_POINT;
+            return fromCodePointNode.execute(value, TS_ENCODING, true);
         }
     }
 
@@ -1460,6 +1463,7 @@ public final class PythonCextUnicodeBuiltins {
             long taggedPointer = stringObject.getNativePointer();
             assert HandlePointerConverter.pointsToPyHandleSpace(taggedPointer);
             long rawPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+            long hash = CStructAccess.readLongField(rawPointer, CFields.GraalPyUnicodeObject__hash);
             long data = NativeMemory.malloc(dataSize);
 
             // unicode object may have been interned already
@@ -1470,6 +1474,10 @@ public final class PythonCextUnicodeBuiltins {
 
             assert !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
             GraalPyUnicodeObjectUtil.initializeGraalPyUnicodeObject(rawPointer, data, byteLength / charSize, byteLength, charSize, isAscii, interned, false);
+            if (hash != -1) {
+                // Preserve hashes precomputed for context-local immortal singletons.
+                writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, hash);
+            }
             writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
             return data;
         }

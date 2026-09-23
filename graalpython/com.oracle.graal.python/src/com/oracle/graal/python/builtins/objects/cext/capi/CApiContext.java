@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -96,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ReferenceQueueCoordinator;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -113,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -203,6 +207,11 @@ public final class CApiContext {
 
     /** corresponds to {@code unicodeobject.c: interned} */
     private final ConcurrentWeakSet<PString> pstringInterningCache = new ConcurrentWeakSet<>();
+    private static final int CHARACTER_SINGLETON_LENGTH = 256;
+    /** Context-local equivalents of CPython's immortal one-byte bytes singletons. */
+    private long bytesCharacters = NULLPTR;
+    /** Context-local equivalents of CPython's immortal Latin-1 Unicode singletons. */
+    private long unicodeCharacters = NULLPTR;
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
     public Object timezoneType;
@@ -386,6 +395,53 @@ public final class CApiContext {
         return pstringInterningCache;
     }
 
+    public long getOrCreateBytesCharacters() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (bytesCharacters != NULLPTR) {
+            return bytesCharacters;
+        }
+
+        assert context.getCApiState() == CApiState.INITIALIZING;
+        assert context.getcApiInitializationLock().isHeldByCurrentThread();
+
+        long ptrArray = NativeMemory.callocPtrArray(CHARACTER_SINGLETON_LENGTH);
+        for (int i = 0; i < CHARACTER_SINGLETON_LENGTH; i++) {
+            PBytes bytes = PFactory.createBytes(getContext().getLanguage(), new byte[]{(byte) i});
+            long pointer = FirstToNativeNode.executeUncached(bytes, IMMORTAL_REFCNT);
+            bytes.setNativePointer(pointer);
+            NativeMemory.writePtrArrayElement(ptrArray, i, pointer);
+        }
+        bytesCharacters = ptrArray;
+        return ptrArray;
+    }
+
+    public long getOrCreateUnicodeCharacters() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (unicodeCharacters != NULLPTR) {
+            return unicodeCharacters;
+        }
+
+        assert context.getCApiState() == CApiState.INITIALIZING;
+        assert context.getcApiInitializationLock().isHeldByCurrentThread();
+
+        long ptrArray = NativeMemory.callocPtrArray(CHARACTER_SINGLETON_LENGTH);
+        for (int i = 0; i < CHARACTER_SINGLETON_LENGTH; i++) {
+            TruffleString value = PythonUtils.internString(TruffleString.fromCodePointUncached(i, PythonUtils.TS_ENCODING));
+            PString string = PFactory.createString(getContext().getLanguage(), value);
+            PString interned = pstringInterningCache.intern(string, s -> s);
+            assert interned == string;
+            long pointer = FirstToNativeNode.executeUncached(string, IMMORTAL_REFCNT);
+            string.setNativePointer(pointer);
+            long rawPointer = HandlePointerConverter.pointerToStub(pointer);
+            CStructAccess.writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, PyObjectHashNode.executeUncached(string));
+            // Keep kind == 0 and data == NULL so Unicode data is materialized only on demand.
+            GraalPyUnicodeObjectUtil.setInterned(rawPointer, GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+            NativeMemory.writePtrArrayElement(ptrArray, i, pointer);
+        }
+        unicodeCharacters = ptrArray;
+        return ptrArray;
+    }
+
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     static int getSingletonNativeWrapperIdx(Object obj) {
         for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
@@ -449,6 +505,13 @@ public final class CApiContext {
                 CApiTransitions.releaseNativeWrapper(pointer);
             }
         }
+    }
+
+    private void freeSingletonArrays() {
+        free(bytesCharacters);
+        free(unicodeCharacters);
+        bytesCharacters = NULLPTR;
+        unicodeCharacters = NULLPTR;
     }
 
     /**
@@ -1299,11 +1362,12 @@ public final class CApiContext {
                 // before the generic native stub cleanup below frees the stubs.
                 context.clearNativeThreadStateSingletons();
                 // Now we can clear all native memory that was simply allocated from Java. This
-                // must be done after the the singleton wrappers were cleared because they might
+                // must be done after the singleton wrappers were cleared because they might
                 // also end up in the lookup table and may otherwise be double-freed.
                 CApiTransitions.freeNativeObjectStubs(handleContext);
                 CApiTransitions.freeNativeReplacementStructs(context, handleContext);
                 CApiTransitions.freeNativeStorages(handleContext);
+                freeSingletonArrays();
             }
             if (pyDateTimeCAPICapsule != null) {
                 PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
