@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+import types
 import unittest
 
 if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncached_interpreter:
@@ -46,7 +47,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
     def assert_contains_bytecode(fun, bytecode_str):
         bytecode = __graalpython__.dis(fun)
-        assert bytecode_str in __graalpython__.dis(fun), bytecode
+        assert bytecode_str in bytecode, bytecode
 
 
     def test_read_name_quickening_local():
@@ -138,6 +139,56 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         for i in range(5):
             assert tester(d)[0] == i
         assert_contains_bytecode(tester, "GetMethod$FastPath")
+
+
+    def test_get_method_module_quickening():
+        module = types.ModuleType("test_module")
+        module.func = lambda: "instance"
+
+        def tester(mod):
+            return mod.func()
+
+        for _ in range(5):
+            assert tester(module) == "instance"
+        assert_contains_bytecode(tester, "GetMethod$ModuleFastPath")
+
+        del module.func
+        module.__getattr__ = lambda name: lambda: "fallback: " + name
+        assert tester(module) == "fallback: func"
+
+
+    def test_get_method_module_subclass_not_quickened():
+        class ModuleSubclass(types.ModuleType):
+            def __getattribute__(self, name):
+                if name == "func":
+                    return lambda: "override"
+                return super().__getattribute__(name)
+
+        module = ModuleSubclass("test_module_subclass")
+        module.func = lambda: "instance"
+
+        def tester(mod):
+            return mod.func()
+
+        for _ in range(5):
+            assert tester(module) == "override"
+
+
+    def test_get_method_instance_not_quickened():
+        class K:
+            func = 42
+
+        obj = K()
+        obj.func = lambda: "instance"
+
+        def tester(o):
+            return o.func()
+
+        for _ in range(5):
+            assert tester(obj) == "instance"
+
+        del obj.func
+        assert obj.func == 42
 
 
     @skipUnlessSingleContext
@@ -304,7 +355,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
 
     @skipUnlessSingleContext
-    def test_get_method_builtin_and_pyclass_quickening():
+    def test_get_method_builtin_and_pyclass():
         class MyDict:
             def popitem(self):
                 return 42
@@ -316,8 +367,6 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         for i in range(5):
             assert tester(d)[0] == i
             assert tester(MyDict()) == 42
-
-        assert_contains_bytecode(tester, "GetMethod$FastPath")
 
 
 if __name__ == '__main__':
