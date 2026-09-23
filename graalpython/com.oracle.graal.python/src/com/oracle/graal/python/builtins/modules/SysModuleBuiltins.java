@@ -44,6 +44,8 @@ import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_SERIAL;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.getPythonOS;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
@@ -513,7 +515,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         StructSequence.initType(core, THREAD_INFO_DESC);
         StructSequence.initType(core, UNRAISABLEHOOK_ARGS_DESC);
 
-        addBuiltinConstant(T_ABIFLAGS, toTruffleStringUncached(PythonLanguage.GRAALPY_ABIFLAGS));
+        if (getPythonOS() != PLATFORM_WIN32) {
+            addBuiltinConstant(T_ABIFLAGS, toTruffleStringUncached(PythonLanguage.GRAALPY_ABIFLAGS));
+        }
         addBuiltinConstant("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? T_LITTLE : T_BIG);
         addBuiltinConstant("copyright", T_LICENSE);
         addBuiltinConstant(T_MODULES, PFactory.createDict(language));
@@ -2399,7 +2403,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getdlopenflags")
+    @Builtin(name = "getdlopenflags", os = PLATFORM_LINUX)
+    @Builtin(name = "getdlopenflags", os = PLATFORM_DARWIN)
     @GenerateNodeFactory
     abstract static class GetDlopenFlags extends PythonBuiltinNode {
         @Specialization
@@ -2408,7 +2413,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setdlopenflags", minNumOfPositionalArgs = 1, parameterNames = {"flags"}, numOfPositionalOnlyArgs = 1)
+    @Builtin(name = "setdlopenflags", minNumOfPositionalArgs = 1, parameterNames = {"flags"}, numOfPositionalOnlyArgs = 1, os = PLATFORM_LINUX)
+    @Builtin(name = "setdlopenflags", minNumOfPositionalArgs = 1, parameterNames = {"flags"}, numOfPositionalOnlyArgs = 1, os = PLATFORM_DARWIN)
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class SetDlopenFlags extends PythonUnaryClinicBuiltinNode {

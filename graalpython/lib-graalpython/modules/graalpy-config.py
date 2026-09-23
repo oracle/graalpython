@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2025 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -27,6 +27,7 @@ if not opts:
 
 getvar = sysconfig.get_config_var
 pyver = getvar('VERSION')
+abiflags = getattr(sys, 'abiflags', '')
 
 opt_flags = [flag for (flag, val) in opts]
 
@@ -44,18 +45,18 @@ for opt in opt_flags:
         flags = ['-I' + sysconfig.get_path('include'),
                  '-I' + sysconfig.get_path('platinclude')]
         if opt == '--cflags':
-            flags.extend(getvar('CFLAGS').split())
+            flags.extend((getvar('CFLAGS') or '').split())
         print(' '.join(flags))
 
     elif opt in ('--libs', '--ldflags'):
         libs = []
         if '--embed' in opt_flags:
-            libs.append('-lpython' + pyver + sys.abiflags)
+            libs.append('-lpython' + pyver + abiflags)
         else:
             libpython = getvar('LIBPYTHON')
             if libpython:
                 libs.append(libpython)
-        libs.extend(getvar('LIBS').split() + getvar('SYSLIBS').split())
+        libs.extend((getvar('LIBS') or '').split() + (getvar('SYSLIBS') or '').split())
 
         # add the prefix/lib/pythonX.Y/config dir, but only if there is no
         # shared library in prefix/lib/.
@@ -68,7 +69,7 @@ for opt in opt_flags:
         print(getvar('EXT_SUFFIX'))
 
     elif opt == '--abiflags':
-        print(sys.abiflags)
+        print(abiflags)
 
     elif opt == '--configdir':
         print(getvar('LIBPL'))

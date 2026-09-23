@@ -667,8 +667,19 @@ suite = {
             },
             "results": [
                 "pyconfig.h",
-                "<graalpy_sysconfigdata>.py",
             ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {},
+                },
+                "<others>": {
+                    "<others>": {
+                        "results": [
+                            "<graalpy_sysconfigdata>.py",
+                        ],
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.cext": {
@@ -1388,7 +1399,6 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/venvlauncher.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/venvwlauncher.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
-                            "./META-INF/resources/<os>/<arch>/Lib/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
                     },
                 },

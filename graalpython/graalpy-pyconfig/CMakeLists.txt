@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2024, Oracle and/or its affiliates.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -188,4 +188,6 @@ foreach(name IN LISTS GRAALPY_SYSCONFIG_STRING_NAMES)
 endforeach()
 
 configure_file("pyconfig_template.h" "pyconfig.h" @ONLY)
-configure_file("_sysconfigdata_template.py" "${GRAALPY_SYSCONFIGDATA_NAME}.py" @ONLY)
+if(NOT WIN32)
+    configure_file("_sysconfigdata_template.py" "${GRAALPY_SYSCONFIGDATA_NAME}.py" @ONLY)
+endif()
