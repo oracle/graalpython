@@ -194,7 +194,7 @@ public abstract class ToNativeTypeNode {
         if (clazz instanceof PythonBuiltinClass builtin) {
             weaklistoffset = builtin.getType().getWeaklistoffset();
         } else {
-            weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
+            weaklistoffset = lookupSize(clazz, PyTypeObject__tp_weaklistoffset, HiddenAttr.WEAKLISTOFFSET);
         }
         long asAsync = slots.has_as_async() ? allocatePyAsyncMethods(slots) : NULLPTR;
         long asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots) : NULLPTR;
