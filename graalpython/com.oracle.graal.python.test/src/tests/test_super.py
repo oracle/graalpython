@@ -97,3 +97,251 @@ def test_super_subclass_descr_get_invokes_subclass_type():
     assert type(bound) is MySuper
     assert MySuper.news == [()]
     assert MySuper.calls == [()]
+
+
+def test_super_lookup_mro_change_during_dict_key_equality():
+    calls = []
+
+    class Key(str):
+        def __hash__(self):
+            return hash("missing")
+
+        def __eq__(self, other):
+            calls.append(other)
+            Derived.__bases__ = (Replacement,)
+            return False
+
+    Base = type("Base", (), {Key("collision"): 42})
+
+    class Replacement:
+        missing = 42
+
+    class Derived(Base):
+        def read(self):
+            return super().missing
+
+    try:
+        Derived().read()
+    except AttributeError:
+        pass
+    else:
+        assert False
+    assert calls == ["missing"]
+    assert Derived().read() == 42
+
+
+def test_super_lookup_suffix_mro_change_during_dict_key_equality():
+    calls = []
+
+    class Key(str):
+        def __hash__(self):
+            return hash("value")
+
+        def __eq__(self, other):
+            calls.append(other)
+            Base.__bases__ = (Replacement,)
+            return False
+
+    class Original:
+        value = "original"
+
+    class Replacement:
+        value = "replacement"
+
+    Base = type("Base", (Original,), {Key("collision"): 42})
+
+    class Derived(Base):
+        def read(self):
+            return super().value
+
+    obj = Derived()
+    assert obj.read() == "original"
+    assert calls == ["value"]
+    assert obj.read() == "replacement"
+
+
+def test_super_lookup_shadowed_attribute_invalidation():
+    class A:
+        value = "A"
+
+    class B(A):
+        value = "B"
+
+    class C(B):
+        value = "C"
+
+        def read(self):
+            return super().value
+
+    obj = C()
+    for _ in range(10):
+        assert obj.value == "C"
+        assert obj.read() == "B"
+
+    C.value = "new C"
+    assert obj.read() == "B"
+    A.value = "new A"
+    assert obj.read() == "B"
+    B.value = "new B"
+    assert obj.read() == "new B"
+    del B.value
+    assert obj.read() == "new A"
+
+
+def test_super_lookup_missing_attribute_invalidation():
+    class A:
+        pass
+
+    class B(A):
+        pass
+
+    class C(B):
+        def read(self):
+            return super().value
+
+    obj = C()
+    for _ in range(10):
+        try:
+            obj.read()
+        except AttributeError:
+            pass
+        else:
+            assert False
+
+    C.value = "C"
+    try:
+        obj.read()
+    except AttributeError:
+        pass
+    else:
+        assert False
+    A.value = "A"
+    assert obj.read() == "A"
+    B.value = "B"
+    assert obj.read() == "B"
+    del B.value
+    assert obj.read() == "A"
+
+
+def test_super_lookup_different_start_types_invalidation():
+    class A:
+        value = "A"
+
+    class B(A):
+        value = "B"
+
+    class C(B):
+        value = "C"
+
+    obj = C()
+
+    def read(start):
+        return super(start, obj).value
+
+    for _ in range(10):
+        assert read(C) == "B"
+        assert read(B) == "A"
+
+    C.value = "new C"
+    assert read(C) == "B"
+    assert read(B) == "A"
+    B.value = "new B"
+    assert read(C) == "new B"
+    assert read(B) == "A"
+    A.value = "new A"
+    assert read(C) == "new B"
+    assert read(B) == "new A"
+    del B.value
+    assert read(C) == "new A"
+
+
+def test_super_lookup_shares_suffix_lookup():
+    class A:
+        value = "A"
+
+    class B(A):
+        value = "B"
+
+    class C(B):
+        value = "C"
+
+    obj = C()
+
+    def read():
+        return super(C, obj).value
+
+    for _ in range(10):
+        assert read() == "B"
+        assert B.value == "B"
+        assert C.value == "C"
+    del B.value
+    assert read() == "A"
+    assert B.value == "A"
+    assert C.value == "C"
+
+
+def test_super_lookup_receiver_mro_change():
+    class A:
+        value = "A"
+
+    class B:
+        value = "B"
+
+    class C(A):
+        def read(self):
+            return super().value
+
+    obj = C()
+    for _ in range(10):
+        assert obj.read() == "A"
+    C.__bases__ = (B,)
+    assert obj.read() == "B"
+    assert A.value == "A"
+
+
+def test_super_lookup_diamond_suffix():
+    class A:
+        value = "A"
+
+    class B(A):
+        pass
+
+    class C(A):
+        value = "C"
+
+    class D(B, C):
+        def read(self):
+            return super().value
+
+    obj = D()
+    for _ in range(10):
+        assert B.value == "A"
+        assert obj.read() == "C"
+    C.value = "new C"
+    assert obj.read() == "new C"
+    del C.value
+    assert obj.read() == "A"
+
+
+def test_super_lookup_reordered_suffix():
+    class A:
+        value = "A"
+
+    class B:
+        value = "B"
+
+    class C(A, B):
+        pass
+
+    class Meta(type):
+        def mro(cls):
+            return [cls, C, B, A, object]
+
+    class D(C, metaclass=Meta):
+        def read(self):
+            return super().value
+
+    obj = D()
+    for _ in range(10):
+        assert C.value == "A"
+        assert obj.read() == "B"

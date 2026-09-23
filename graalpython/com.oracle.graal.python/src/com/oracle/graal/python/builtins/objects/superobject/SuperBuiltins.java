@@ -70,13 +70,9 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStr
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
@@ -86,7 +82,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -125,7 +121,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -484,13 +479,10 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
         @Child private CallSlotDescrGet callGetSlotNode;
         @Child private GetTypeNode getType;
         @Child private GetObjectNode getObject = GetObjectNodeGen.create();
         @Child private ObjectBuiltins.GetAttributeNode objectGetattributeNode;
-        @Child private GetMroNode getMroNode;
-        @Child private IsSameTypeNode isSameTypeNode;
 
         private Object genericGetAttr(VirtualFrame frame, Object object, Object attr) {
             if (objectGetattributeNode == null) {
@@ -507,7 +499,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
                         @Cached CastToTruffleStringChecked1Node castToTruffleStringNode,
-                        @Cached InlinedIntValueProfile mroLenProfile,
+                        @Cached LookupAttributeInMRONode.Super lookupNode,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedConditionProfile getObjectIsStartObjectProfile,
                         @Cached IsForeignObjectNode isForeignObjectNode,
@@ -533,45 +525,32 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
 
             Object type = getType.executeCached(self);
-            PythonAbstractClass[] mro = getMro(startType);
-            /* No need to check the last one: it's gonna be skipped anyway. */
-            int i = 0;
-            int n = mroLenProfile.profile(inliningTarget, mro.length);
-            for (i = 0; i + 1 < n; i++) {
-                if (isSameType(type, mro[i])) {
-                    break;
-                }
-            }
-            i++; /* skip su->type (if any) */
-            if (i >= n) {
+            Object res = lookupNode.execute(type, startType, stringAttr);
+            if (res == LookupAttributeInMRONode.Super.NO_MRO_SUFFIX) {
                 return genericGetAttr(frame, self, stringAttr);
             }
 
-            for (; i < n; i++) {
-                PythonAbstractClass tmp = mro[i];
-                Object res = readFromDict.execute(tmp, stringAttr);
-                if (res != PNone.NO_VALUE) {
-                    TpSlots resSlots = getSlotsNode.execute(inliningTarget, res);
-                    if (hasDescrGetProfile.profile(inliningTarget, resSlots.tp_descr_get() != null)) {
-                        /*
-                         * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
-                         */
-                        // acts as a branch profile
-                        if (callGetSlotNode == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            callGetSlotNode = insert(CallSlotDescrGet.create());
-                        }
-                        Object object = getObject.executeCached(self);
-                        Object obj;
-                        if (getObjectIsStartObjectProfile.profile(inliningTarget, object == startType)) {
-                            obj = PNone.NO_VALUE;
-                        } else {
-                            obj = object;
-                        }
-                        res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, obj, startType);
+            if (res != PNone.NO_VALUE) {
+                TpSlots resSlots = getSlotsNode.execute(inliningTarget, res);
+                if (hasDescrGetProfile.profile(inliningTarget, resSlots.tp_descr_get() != null)) {
+                    /*
+                     * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
+                     */
+                    // acts as a branch profile
+                    if (callGetSlotNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        callGetSlotNode = insert(CallSlotDescrGet.create());
                     }
-                    return res;
+                    Object object = getObject.executeCached(self);
+                    Object obj;
+                    if (getObjectIsStartObjectProfile.profile(inliningTarget, object == startType)) {
+                        obj = PNone.NO_VALUE;
+                    } else {
+                        obj = object;
+                    }
+                    res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, obj, startType);
                 }
+                return res;
             }
 
             Object object = getObject.executeCached(self);
@@ -586,21 +565,6 @@ public final class SuperBuiltins extends PythonBuiltins {
             return genericGetAttr(frame, self, stringAttr);
         }
 
-        private boolean isSameType(Object execute, Object abstractPythonClass) {
-            if (isSameTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(IsSameTypeNodeGen.create());
-            }
-            return isSameTypeNode.executeCached(execute, abstractPythonClass);
-        }
-
-        private PythonAbstractClass[] getMro(Object clazz) {
-            if (getMroNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getMroNode = insert(GetMroNode.create());
-            }
-            return getMroNode.executeCached(clazz);
-        }
     }
 
     @Builtin(name = J___THISCLASS__, minNumOfPositionalArgs = 1, isGetter = true)

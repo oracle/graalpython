@@ -92,6 +92,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
         @NonIdempotent
         public Object getValue() {
+            assert value != null;
             return value.get();
         }
 
