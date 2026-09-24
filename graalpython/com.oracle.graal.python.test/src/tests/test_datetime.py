@@ -249,6 +249,21 @@ class DateTest(unittest.TestCase):
         with self.assertRaisesRegex(OverflowError, "timestamp out of range for platform time_t"):
             datetime.date.fromtimestamp(1e200)
 
+    def test_fromtimestamp_before_importing_time(self):
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import datetime\n"
+                "datetime.date.fromtimestamp(0)\n"
+                "datetime.datetime.fromtimestamp(0)\n",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
 
     def test_fromisocalendar(self):
         with self.assertRaisesRegex(ValueError, "Year is out of range: -1"):

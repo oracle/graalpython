@@ -198,9 +198,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             timeZone = TimeZone.getTimeZone(tzEnv);
         }
 
-        // save in the module state
-        ModuleState moduleState = timeModule.getModuleState(ModuleState.class);
-        moduleState.currentZoneId = timeZone.toZoneId();
+        context.setCurrentZoneId(timeZone.toZoneId());
 
         // update time module attributes
         TruffleString noDaylightSavingZone = toTruffleStringUncached(timeZone.getDisplayName(false, TimeZone.SHORT));
@@ -215,20 +213,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     public static double timeSeconds() {
         return System.currentTimeMillis() / 1000.0;
-    }
-
-    /**
-     * Return current time zone (that can be changed with time.tzset()). The only correct way to get
-     * it.
-     */
-    @TruffleBoundary
-    public static TimeZone getGlobalTimeZone(PythonContext context) {
-        PythonModule timeModule = context.lookupBuiltinModule(T_TIME);
-
-        ModuleState moduleState = timeModule.getModuleState(ModuleState.class);
-        ZoneId zoneId = moduleState.currentZoneId;
-
-        return TimeZone.getTimeZone(zoneId);
     }
 
     private static final int TM_YEAR = 0; /* year */
@@ -368,12 +352,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonLocalTimeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
+        static PTuple localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, Object seconds,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached ToLongTime toLongTime,
                         @Bind PythonLanguage language) {
-            ModuleState moduleState = module.getModuleState(ModuleState.class);
-            return PFactory.createStructSeq(language, STRUCT_TIME_DESC, getTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds)));
+            return PFactory.createStructSeq(language, STRUCT_TIME_DESC, getTimeStruct(context.getCurrentZoneId(), toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -982,19 +966,21 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
+        static TruffleString formatTime(@SuppressWarnings("unused") PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            ModuleState moduleState = module.getModuleState(ModuleState.class);
-            return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), getTimeZone(moduleState.currentZoneId), fromJavaStringNode);
+            ZoneId currentZoneId = context.getCurrentZoneId();
+            return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(currentZoneId, (long) timeSeconds()), getTimeZone(currentZoneId), fromJavaStringNode);
         }
 
         @Specialization(guards = "tupleCheckNode.execute(inliningTarget, time)", limit = "1")
-        static TruffleString formatTime(VirtualFrame frame, PythonModule module, TruffleString format, Object time,
+        static TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, Object time,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
@@ -1004,7 +990,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             int[] date = checkStructtime(frame, inliningTarget, getTupleStorage.execute(inliningTarget, time), getArray, asSizeNode, raiseNode);
-            return format(toJavaStringNode.execute(format), date, getTimeZone(module.getModuleState(ModuleState.class).currentZoneId), fromJavaStringNode);
+            return format(toJavaStringNode.execute(format), date, getTimeZone(context.getCurrentZoneId()), fromJavaStringNode);
         }
 
         @Specialization
@@ -1027,8 +1013,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @ExplodeLoop
         @Specialization(guards = "tupleCheckNode.execute(inliningTarget, tuple)", limit = "1")
-        static double mktime(VirtualFrame frame, PythonModule module, Object tuple,
+        static double mktime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, Object tuple,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -1044,8 +1031,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < ELEMENT_COUNT; i++) {
                 integers[i] = asSizeNode.executeExact(frame, inliningTarget, items[i]);
             }
-            ModuleState moduleState = module.getModuleState(ModuleState.class);
-            return op(moduleState.currentZoneId, integers);
+            return op(context.getCurrentZoneId(), integers);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object mktime(Object module, Object tuple,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
 
         @TruffleBoundary
@@ -1061,12 +1054,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class CTimeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public static TruffleString localtime(VirtualFrame frame, PythonModule module, Object seconds,
+        public static TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, Object seconds,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached ToLongTime toLongTime,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            ModuleState moduleState = module.getModuleState(ModuleState.class);
-            int[] tm = getIntLocalTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds));
+            int[] tm = getIntLocalTimeStruct(context.getCurrentZoneId(), toLongTime.execute(frame, inliningTarget, seconds));
             return format(tm, fromJavaStringNode);
         }
 
@@ -1090,10 +1083,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         };
 
         @Specialization
-        static TruffleString localtime(PythonModule module, @SuppressWarnings("unused") PNone time,
+        static TruffleString localtime(@SuppressWarnings("unused") PythonModule module, @SuppressWarnings("unused") PNone time,
+                        @Bind PythonContext context,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            ModuleState moduleState = module.getModuleState(ModuleState.class);
-            return format(getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
+            return format(getIntLocalTimeStruct(context.getCurrentZoneId(), (long) timeSeconds()), fromJavaStringNode);
         }
 
         @Specialization(guards = "tupleCheckNode.execute(inliningTarget, time)", limit = "1")
@@ -1216,7 +1209,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     private static final class ModuleState {
-        ZoneId currentZoneId;
         long timeSlept;
     }
 }

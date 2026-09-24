@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,11 @@ def test_sleep_sec():
     start = time.time()
     time.sleep(1)
     assert time.time() - start > 1
+
+
+def test_mktime_requires_tuple():
+    with unittest.TestCase().assertRaisesRegex(TypeError, "Tuple or struct_time argument required"):
+        time.mktime(sum)
 
 
 def test_monotonic():

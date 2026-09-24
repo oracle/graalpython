@@ -91,10 +91,10 @@ public final class WrapTpNew extends SlotWrapper {
                         @Cached PRaiseNode raiseNotSubytpe,
                         @Cached PRaiseNode raiseNotSafe) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
-                throw raiseNotType.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner.getName(), cls);
+                throw raiseNotType.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner, cls);
             }
             if (!isSubtypeNode.execute(cls, owner)) {
-                throw raiseNotSubytpe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, owner.getName(), cls, cls, owner.getName());
+                throw raiseNotSubytpe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, owner, cls, cls, owner);
             }
             /*
              * CPython comment: Check that the use doesn't do something silly and unsafe like
@@ -116,7 +116,7 @@ public final class WrapTpNew extends SlotWrapper {
                 if (staticBaseNew == null) {
                     throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, cls);
                 }
-                throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), cls, cls);
+                throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner, cls, cls);
             }
         }
 

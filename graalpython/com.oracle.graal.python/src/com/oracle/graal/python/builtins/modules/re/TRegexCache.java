@@ -125,11 +125,30 @@ public final class TRegexCache {
                 bufferLib.release(buffer);
             }
         }
+        validateFlags(node, binary, flags);
         this.pattern = patternStr;
         this.binary = binary;
         this.flags = getTRegexFlags(flags);
         this.localeSensitive = calculateLocaleSensitive();
         this.localeSensitiveRegexps = this.localeSensitive ? EconomicMap.create() : null;
+    }
+
+    private static void validateFlags(Node node, boolean binary, int flags) {
+        if (binary) {
+            if ((flags & FLAG_UNICODE) != 0) {
+                throw PRaiseNode.raiseStatic(node, ValueError, T_VALUE_ERROR_UNICODE_FLAG_BYTES_PATTERN);
+            }
+            if ((flags & FLAG_ASCII) != 0 && (flags & FLAG_LOCALE) != 0) {
+                throw PRaiseNode.raiseStatic(node, ValueError, T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE);
+            }
+        } else {
+            if ((flags & FLAG_LOCALE) != 0) {
+                throw PRaiseNode.raiseStatic(node, ValueError, T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN);
+            }
+            if ((flags & FLAG_ASCII) != 0 && (flags & FLAG_UNICODE) != 0) {
+                throw PRaiseNode.raiseStatic(node, ValueError, T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE);
+            }
+        }
     }
 
     public boolean isBinary() {

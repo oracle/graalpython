@@ -120,6 +120,7 @@ import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -580,7 +581,7 @@ public final class DateBuiltins extends PythonBuiltins {
                 throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
             }
 
-            TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(getContext(inliningTarget));
+            TimeZone timeZone = PythonContext.get(inliningTarget).getGlobalTimeZone();
             ZoneId zoneId = timeZone.toZoneId();
             LocalDate localDate = LocalDate.ofInstant(instant, zoneId);
             return DateNodes.SubclassNewNode.executeUncached(cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());

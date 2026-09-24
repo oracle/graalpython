@@ -1411,6 +1411,9 @@ class PatternTest(unittest.TestCase):
         self.assertEqual(re.compile('(?u)').flags, re.UNICODE)
         self.assertEqual(re.compile('(?x)').flags, re.VERBOSE | re.UNICODE)
 
+        with self.assertRaisesRegex(ValueError, "cannot use LOCALE flag with a str pattern"):
+            re.compile('A', 9999)
+
 
     def test_groups(self):
         # returns number of capturing groups in the pattern

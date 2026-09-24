@@ -112,6 +112,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     private static final int ITIMER_VIRTUAL = 1;
     private static final int ITIMER_PROF = 2;
     private static final TruffleString T_ITIMER_ERROR = tsLiteral("ItimerError");
+    private static final TruffleString T_SIGNAL_NUMBER_OUT_OF_RANGE = tsLiteral("signal number out of range");
 
     public static final String J_DEFAULT_INT_HANDLER = "default_int_handler";
     public static final TruffleString T_DEFAULT_INT_HANDLER = tsLiteral(J_DEFAULT_INT_HANDLER);
@@ -336,7 +337,11 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class GetSignalNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static Object getsignal(PythonModule mod, int signum) {
+        static Object getsignal(PythonModule mod, int signum,
+                        @Bind Node inliningTarget) {
+            if (!Signals.isValidSignal(signum)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.ValueError, T_SIGNAL_NUMBER_OUT_OF_RANGE);
+            }
             ModuleData data = mod.getModuleState(ModuleData.class);
             return handlerToPython(Signals.getCurrentSignalHandler(signum), signum, data);
         }
@@ -616,7 +621,11 @@ final class Signals {
     }
 
     static String signalNumberToName(int signum) {
-        return signum > SIGMAX ? "INVALID SIGNAL" : SIGNAL_NAMES[signum];
+        return isValidSignal(signum) ? SIGNAL_NAMES[signum] : "INVALID SIGNAL";
+    }
+
+    static boolean isValidSignal(int signum) {
+        return signum > 0 && signum <= SIGMAX && SIGNAL_NAMES[signum] != null;
     }
 
     @TruffleBoundary

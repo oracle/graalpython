@@ -18,6 +18,13 @@ class MyIndexable(object):
         return self.value
 
 class BuiltinTest(unittest.TestCase):
+    def test_build_class_checks_body_arguments(self):
+        def body(required):
+            pass
+
+        with self.assertRaises(TypeError):
+            __build_class__(body, "", "")
+
     def test_bin(self):
         self.assertEqual(bin(0), '0b0')
         self.assertEqual(bin(1), '0b1')

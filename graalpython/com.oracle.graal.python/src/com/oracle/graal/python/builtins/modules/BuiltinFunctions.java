@@ -222,6 +222,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
@@ -2265,6 +2266,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyMappingCheckNode pyMappingCheckNode,
                         @Cached CallNode callPrep,
                         @Cached CallNode callType,
+                        @Cached CreateArgumentsNode createArguments,
                         @Cached CallDispatchers.FunctionCachedInvokeNode invokeBody,
                         @Cached UpdateBasesNode update,
                         @Cached PyObjectSetItem setOrigBases,
@@ -2356,9 +2358,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (!pyMappingCheckNode.execute(inliningTarget, ns)) {
                 throw raiseNoMapping(init.isClass, init.meta, ns);
             }
-            Object[] bodyArguments = PArguments.create(0);
+            PFunction bodyFunction = (PFunction) function;
+            Object[] bodyArguments = createArguments.execute(inliningTarget, bodyFunction, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS,
+                            bodyFunction.getCode().getSignature(), null, null, bodyFunction.getDefaults(), bodyFunction.getKwDefaults(), false);
             PArguments.setSpecialArgument(bodyArguments, ns);
-            invokeBody.execute(frame, inliningTarget, (PFunction) function, bodyArguments);
+            invokeBody.execute(frame, inliningTarget, bodyFunction, bodyArguments);
             if (init.bases != basesArray) {
                 setOrigBases.execute(frame, inliningTarget, ns, SpecialAttributeNames.T___ORIG_BASES__, PFactory.createTuple(language, basesArray));
             }

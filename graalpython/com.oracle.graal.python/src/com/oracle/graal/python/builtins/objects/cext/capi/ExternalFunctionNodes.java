@@ -137,11 +137,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -151,6 +155,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -188,6 +193,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ExternalFunctionNodes {
@@ -860,8 +866,58 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    @GenerateInline(false)
+    abstract static class ValidateNewArgumentNode extends Node {
+        abstract void execute(Object owner, Object cls);
+
+        @Specialization
+        static void check(Object owner, Object cls,
+                        @Bind Node inliningTarget,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetCachedTpSlotsNode getSlotsCls,
+                        @Cached GetCachedTpSlotsNode getSlotsOwner,
+                        @Cached GetCachedTpSlotsNode getSlotsBase1,
+                        @Cached GetCachedTpSlotsNode getSlotsBase2,
+                        @Cached GetBaseClassNode getBase1,
+                        @Cached GetBaseClassNode getBase2,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached PRaiseNode raiseNotType,
+                        @Cached PRaiseNode raiseNotSubytpe,
+                        @Cached PRaiseNode raiseNotSafe) {
+            if (!isTypeNode.execute(inliningTarget, cls)) {
+                throw raiseNotType.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner, cls);
+            }
+            if (!isSubtypeNode.execute(cls, owner)) {
+                throw raiseNotSubytpe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, owner, cls, cls, owner);
+            }
+            Object staticBase = cls;
+            TpSlot staticBaseNew = getSlotsCls.execute(inliningTarget, staticBase).tp_new();
+            if (staticBaseNew instanceof TpSlotPythonSingle) {
+                staticBase = getBase1.execute(inliningTarget, staticBase);
+                staticBaseNew = getSlotsBase1.execute(inliningTarget, staticBase).tp_new();
+                while (loopProfile.profile(inliningTarget, staticBaseNew instanceof TpSlotPythonSingle)) {
+                    staticBase = getBase2.execute(inliningTarget, staticBase);
+                    staticBaseNew = getSlotsBase2.execute(inliningTarget, staticBase).tp_new();
+                }
+            }
+            TpSlot ownerNew = getSlotsOwner.execute(inliningTarget, owner).tp_new();
+            boolean sameNew = staticBaseNew == ownerNew || staticBaseNew instanceof TpSlotNative staticBaseNative && ownerNew instanceof TpSlotNative ownerNative && staticBaseNative.isSameCallable(
+                            ownerNative);
+            if (!sameNew) {
+                if (staticBaseNew == null) {
+                    throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, cls);
+                }
+                throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner, cls, cls);
+            }
+        }
+    }
+
     @CApiWrapperDescriptor(value = NEW)
     abstract static class MethNewRoot extends MethNewOrCallRoot {
+
+        @Child private ValidateNewArgumentNode validateNewArgumentNode;
+        private final BranchProfile noArgumentsProfile = BranchProfile.create();
 
         public MethNewRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
@@ -875,8 +931,19 @@ public abstract class ExternalFunctionNodes {
             PythonContext context = PythonContext.get(this);
             Object[] args = readVarargsNode.execute(frame);
 
-            // TODO checks
+            Object owner = readSelf(frame);
+            if (args.length == 0) {
+                noArgumentsProfile.enter();
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_NOT_ENOUGH_ARGUMENTS, owner);
+            }
             Object self = args[0];
+            if (self != owner) {
+                if (validateNewArgumentNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    validateNewArgumentNode = insert(ExternalFunctionNodesFactory.ValidateNewArgumentNodeGen.create());
+                }
+                validateNewArgumentNode.execute(owner, self);
+            }
 
             args = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             PTuple managedArgsTuple;

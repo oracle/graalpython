@@ -43,6 +43,10 @@ import unittest
 
 
 class SignalTests(unittest.TestCase):
+    def test_getsignal_rejects_invalid_number(self):
+        with self.assertRaisesRegex(ValueError, "signal number out of range"):
+            signal.getsignal(0)
+
     def test_args_validation(self):
         try:
             import _signal
