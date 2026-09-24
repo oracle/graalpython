@@ -307,6 +307,7 @@ MESO_BENCHMARKS_SMALL = {
 
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
+    'pygal-demo': ITER_10 + ['1000'],
     'c-cythonize-numpy': ITER_1 + [],
     'c-pydantic-schema-build': ITER_10 + ['100'],
     'c-pydantic-serialize-json': ITER_10 + ['1000'],
