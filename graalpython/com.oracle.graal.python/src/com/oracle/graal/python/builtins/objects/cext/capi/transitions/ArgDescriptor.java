@@ -80,6 +80,7 @@ enum ArgBehavior {
     Char8(NativeSimpleType.SINT8),
     UChar8(NativeSimpleType.SINT8),
     Char16(NativeSimpleType.SINT16),
+    UInt16(NativeSimpleType.SINT16),
     Int32(NativeSimpleType.SINT32),
     UInt32(NativeSimpleType.SINT32),
     Int64(NativeSimpleType.SINT64),
@@ -189,7 +190,9 @@ public enum ArgDescriptor {
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),
     INITTAB("struct _inittab*"),
+    UINT16_T(ArgBehavior.UInt16, "uint16_t"),
     INT32_T(ArgBehavior.Int32, "int32_t"),
+    INT32_T_PTR(ArgBehavior.Pointer, "int32_t*"),
     INT_LIST("int*"),
     INT8_T_PTR(ArgBehavior.Pointer, "int8_t*"),
     INT64_T(ArgBehavior.Int64, "int64_t"),
@@ -203,6 +206,7 @@ public enum ArgDescriptor {
     Py_buffer("Py_buffer"),
     PY_BUFFER_PTR(ArgBehavior.Pointer, "Py_buffer*"),
     CONST_PY_BUFFER_PTR(ArgBehavior.Pointer, "const Py_buffer*"),
+    CONST_PY_SLOT_PTR(ArgBehavior.Pointer, "const PySlot*"),
     PY_C_FUNCTION(ArgBehavior.Pointer, "PyCFunction"),
     PyByteArrayObject(ArgBehavior.PyObject, "PyByteArrayObject*"),
     PyCFunctionObject(ArgBehavior.PyObject, "PyCFunctionObject*"),
@@ -229,6 +233,9 @@ public enum ArgDescriptor {
     PY_GEN_OBJECT(ArgBehavior.PyObject, "PyGenObject*"),
     PyGetSetDef(ArgBehavior.Pointer, "PyGetSetDef*"),
     PY_GIL_STATE_STATE(ArgBehavior.Int32, "PyGILState_STATE"),
+    PY_ABI_INFO_PTR(ArgBehavior.Pointer, "PyABIInfo*"),
+    PY_INTERPRETER_GUARD_PTR(ArgBehavior.Pointer, "PyInterpreterGuard*"),
+    PY_INTERPRETER_VIEW_PTR(ArgBehavior.Pointer, "PyInterpreterView*"),
     PY_HASH_T_PTR(ArgBehavior.Pointer, "Py_hash_t*"),
     PY_IDENTIFIER("_Py_Identifier*"),
     PyInterpreterState(ArgBehavior.Pointer, "PyInterpreterState*"),
@@ -237,6 +244,9 @@ public enum ArgDescriptor {
     PyLongObject(ArgBehavior.PyObject, "PyLongObject*"),
     ConstPyLongObject(ArgBehavior.PyObject, "const PyLongObject*"),
     PyLongObjectTransfer(ArgBehavior.PyObject, "PyLongObject*", true, false),
+    PY_LONG_EXPORT_PTR(ArgBehavior.Pointer, "PyLongExport*"),
+    PY_LONG_WRITER_PTR(ArgBehavior.Pointer, "PyLongWriter*"),
+    CONST_PY_LONG_LAYOUT_PTR(ArgBehavior.Pointer, "const PyLongLayout*"),
     PyMemberDef(ArgBehavior.Pointer, "PyMemberDef*"),
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true, false),
@@ -262,6 +272,7 @@ public enum ArgDescriptor {
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
     PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
     PyThreadStatePtr(ArgBehavior.Pointer, "PyThreadState**"),
+    PY_THREAD_STATE_TOKEN_PTR(ArgBehavior.Pointer, "PyThreadStateToken*"),
     PY_REF_TRACER(ArgBehavior.Pointer, "PyRefTracer"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
@@ -269,6 +280,8 @@ public enum ArgDescriptor {
     PY_TRACEFUNC("Py_tracefunc"),
     PY_TSS_T_PTR("Py_tss_t*"),
     PY_TYPE_SPEC("PyType_Spec*"),
+    PY_SLOT_PTR(ArgBehavior.Pointer, "struct PySlot*"),
+    PY_TYPE_OBJECT_PTR_LIST(ArgBehavior.Pointer, "PyTypeObject**"),
     PY_UCS4(ArgBehavior.Int32, "Py_UCS4"),
     PY_UCS4_PTR("Py_UCS4*"),
     PY_UNICODE("Py_UNICODE"),
@@ -308,6 +321,8 @@ public enum ArgDescriptor {
     TIMEVAL_PTR("struct timeval*"),
     TM_PTR("struct tm*"),
     UINTPTR_T(ArgBehavior.UInt64, "uintptr_t"),
+    UINT32_T(ArgBehavior.UInt32, "uint32_t"),
+    UINT32_T_PTR(ArgBehavior.Pointer, "uint32_t*"),
     UINT64_T(ArgBehavior.UInt64, "uint64_t"),
     UINT64_T_PTR(ArgBehavior.Pointer, "uint64_t*"),
     UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "unsigned char*"),
@@ -317,7 +332,7 @@ public enum ArgDescriptor {
     VA_LIST(ArgBehavior.Pointer, "va_list"),
     VA_LIST_PTR(ArgBehavior.Pointer, "va_list*"),
     VARARGS("..."),
-    VOID_PTR_LIST("void**"),
+    VOID_PTR_LIST(ArgBehavior.Pointer, "void**"),
     WCHAR_T_PTR(ArgBehavior.Pointer, "wchar_t*"),
     WCHAR_T_CONST_PTR(ArgBehavior.Pointer, "wchar_t*const*"),
     WCHAR_T_PTR_LIST(ArgBehavior.Pointer, "wchar_t**"),
@@ -477,7 +492,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isI16() {
-        return behavior == ArgBehavior.Char16;
+        return behavior == ArgBehavior.Char16 || behavior == ArgBehavior.UInt16;
     }
 
     public boolean isFloat() {

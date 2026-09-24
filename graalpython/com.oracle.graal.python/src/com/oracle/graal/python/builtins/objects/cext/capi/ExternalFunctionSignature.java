@@ -168,7 +168,8 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     MODCREATE(false, PyObjectReturn, Pointer, Pointer),
     // typedef int (*Py_mod_exec)(PyObject *);
     MODEXEC(false, Int, Pointer),
-    // typedef PyObject *(*PyInit_mod)(void);
+    // typedef PyObject *(*PyModInitFunction)(void);
+    // typedef PySlot *(*PyModExportFunction)(void);
     MODINIT(false, Pointer),
     // typedef PThreadState** (*initialize_graal_capi)(void *, void *, void *, void *, void *);
     CAPIINIT(false, Pointer, Pointer, Pointer, Pointer, Pointer, Pointer),

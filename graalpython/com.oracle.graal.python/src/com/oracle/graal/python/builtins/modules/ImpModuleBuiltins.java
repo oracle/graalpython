@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_DISABLED;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_EXCLUDED;
@@ -50,6 +51,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ABI3T_EXT_SO;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ABI3T_MULTIARCH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
@@ -260,21 +263,17 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            long nativeModuleDef = extensionModule.getNativeModuleDef();
-            if (nativeModuleDef == NULLPTR) {
-                return 0;
-            }
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
-                return doExec(inliningTarget, context, extensionModule, nativeModuleDef);
+                return doExec(inliningTarget, context, extensionModule);
             } finally {
                 BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private static int doExec(Node node, PythonContext context, PythonModule extensionModule, long nativeModuleDef) {
+        private static int doExec(Node node, PythonContext context, PythonModule extensionModule) {
             /*
              * Check if module is already initialized. CPython does that by testing if 'md_state !=
              * NULL'. So, we do the same.
@@ -292,7 +291,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
              * ExecModuleNode will run the module definition's exec function which may run arbitrary
              * C code. So we need to setup an indirect call.
              */
-            return CExtNodes.execModule(node, context.getCApiContext(), extensionModule, nativeModuleDef);
+            return CExtNodes.execModule(node, context.getCApiContext(), extensionModule);
         }
 
         @Fallback
@@ -830,9 +829,16 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
-        Object run(
-                        @Bind PythonLanguage language) {
-            return PFactory.createList(language, new Object[]{PythonContext.get(this).getExtensionSuffix(), T_EXT_SO, T_EXT_PYD});
+        @TruffleBoundary
+        static Object run(
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context) {
+            if (context.getOption(PythonOptions.EnableAbi3t)) {
+                TruffleString multiarch = PythonLanguage.getPlatformInfo().multiarch();
+                TruffleString abi3tMultiarch = T_ABI3T_MULTIARCH.concatUncached(multiarch, TS_ENCODING, false).concatUncached(T_EXT_SO, TS_ENCODING, false);
+                return PFactory.createList(language, new Object[]{context.getExtensionSuffix(), abi3tMultiarch, T_ABI3T_EXT_SO, T_EXT_SO, T_EXT_PYD});
+            }
+            return PFactory.createList(language, new Object[]{context.getExtensionSuffix(), T_EXT_SO, T_EXT_PYD});
         }
     }
 
@@ -907,6 +913,30 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ImpModuleBuiltinsClinicProviders.OverrideFrozenModulesForTestsClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "_override_multi_interp_extensions_check", minNumOfPositionalArgs = 1, parameterNames = {"override"})
+    @ArgumentClinic(name = "override", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class OverrideMultiInterpExtensionsCheck extends PythonUnaryClinicBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static Object doInt(int override,
+                        @Bind Node node,
+                        @Bind PythonContext context) {
+            if (context.isMainInterpreter()) {
+                throw PRaiseNode.raiseStatic(node, RuntimeError, ErrorMessages.CANNOT_BE_USED_IN_MAIN_INTERP);
+            }
+            int old = context.getOverrideMultiInterpExtensionsCheck();
+            context.setOverrideMultiInterpExtensionsCheck(override);
+            return old;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.OverrideMultiInterpExtensionsCheckClinicProviderGen.INSTANCE;
         }
     }
 }

@@ -763,6 +763,27 @@ public final class PythonCextBuiltins {
         Ignored,
     }
 
+    public enum ABI {
+        GRAALPY(null),
+        ABI3T(GRAALPY);
+
+        private final ABI parent;
+
+        ABI(ABI parent) {
+            this.parent = parent;
+        }
+
+        /** Whether this profile includes implementations declared for {@code candidate}. */
+        public boolean inherits(ABI candidate) {
+            for (ABI current = this; current != null; current = current.parent) {
+                if (current == candidate) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.SOURCE)
     public @interface CApiBuiltins {
@@ -824,6 +845,9 @@ public final class PythonCextBuiltins {
          * Comment to explain, e.g., why a builtin is ignored.
          */
         String comment() default "";
+
+        /** Specifies to which ABIs this builtin belongs to. A builtin can belong to several ABIs */
+        ABI[] abi() default {ABI.GRAALPY};
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)

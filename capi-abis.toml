@@ -1,0 +1,19 @@
+# C API signature and export profiles. Paths are relative to the repository root.
+
+[profiles.GRAALPY]
+python_version = "3.13"
+source_ref = "v3.13.14"
+mode = "full"
+defines = []
+inventory = "graalpython/com.oracle.graal.python.cext/CAPIFunctions.txt"
+
+[profiles.ABI3T]
+parent = "GRAALPY"
+python_version = "3.15"
+source_ref = "v3.15.0rc1"
+mode = "stable"
+defines = ["Py_TARGET_ABI3T=0x030f0000"]
+inventory = "graalpython/com.oracle.graal.python.cext/CAPIFunctions-ABI3T.txt"
+export_manifest = "abi/abi3t-linux.txt"
+missing_symbols = "abi/abi3t-missing-linux.txt"
+disabled_features = ["MS_WINDOWS", "Py_REF_DEBUG", "USE_STACKCHECK"]

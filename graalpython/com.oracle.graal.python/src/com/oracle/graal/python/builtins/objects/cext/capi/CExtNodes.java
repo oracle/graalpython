@@ -51,32 +51,27 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_flags;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef_Slot__slot;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef_Slot__value;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_clear;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_doc;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_free;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_methods;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_size;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_traverse;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.mallocByteArray;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElements;
-import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.lang.ref.Reference;
@@ -84,8 +79,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.CFunctionDocUtils;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -93,10 +87,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -104,21 +98,16 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -135,18 +124,15 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -157,6 +143,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -957,11 +944,45 @@ public abstract class CExtNodes {
         }
     }
 
-    // according to definitions in 'moduleobject.h'
+    // according to definitions in 'moduleobject.h' (for Python 3.15: defined in 'slots.toml')
     private static final int SLOT_PY_MOD_CREATE = 1;
     private static final int SLOT_PY_MOD_EXEC = 2;
     private static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
     private static final int SLOT_PY_MOD_GIL = 4;
+
+    /*
+     * The following slot values are the "new" values required for abi3t.
+     * They are defined in the future Python version 3.15. Eventually, they will become the default and the above values will be legacy.
+     */
+    private static final int SLOT_ABI3T_PY_MOD_CREATE = 84;
+    private static final int SLOT_ABI3T_PY_MOD_EXEC = 85;
+    private static final int SLOT_ABI3T_PY_MOD_MULTIPLE_INTERPRETERS = 86;
+    private static final int SLOT_ABI3T_PY_MOD_GIL = 87;
+    private static final int SLOT_ABI3T_PY_MOD_NAME = 100;
+    private static final int SLOT_ABI3T_PY_MOD_DOC = 101;
+    private static final int SLOT_ABI3T_PY_MOD_STATE_SIZE = 102;
+    private static final int SLOT_ABI3T_PY_MOD_METHODS = 103;
+    private static final int SLOT_ABI3T_PY_MOD_STATE_TRAVERSE = 104;
+    private static final int SLOT_ABI3T_PY_MOD_STATE_CLEAR = 105;
+    private static final int SLOT_ABI3T_PY_MOD_STATE_FREE = 106;
+    private static final int SLOT_ABI3T_PY_MOD_ABI = 109;
+    private static final int SLOT_ABI3T_PY_MOD_TOKEN = 110;
+
+    private static final int PY_ABI_INFO_STABLE = 0x0001;
+    private static final int PY_ABI_INFO_GIL = 0x0002;
+    private static final int PY_ABI_INFO_FREETHREADED = 0x0004;
+    private static final int PY_ABI_INFO_INTERNAL = 0x0008;
+    private static final int ABI3T_VERSION_HEX = 0x030f0000;
+    private static final int MINIMUM_STABLE_ABI_VERSION_HEX = 0x03020000;
+
+    // for Py_mod_gil
+    private static final int Py_MOD_GIL_USED = 0;
+    private static final int Py_MOD_GIL_NOT_USED = 1;
+
+    // for Py_mod_multiple_interpreters
+    private static final int Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED = 0;
+    private static final int Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED = 1;
+    private static final int Py_MOD_PER_INTERPRETER_GIL_SUPPORTED = 2;
 
     private static final CApiTiming TIMING_MOD_CREATE = CApiTiming.create(true, "Py_mod_create");
     private static final CApiTiming TIMING_MOD_EXEC = CApiTiming.create(true, "Py_mod_exec");
@@ -985,219 +1006,351 @@ public abstract class CExtNodes {
      * </pre>
      */
     @TruffleBoundary
-    static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, long moduleDefPtr, Object library) {
+    static Object createModuleFromDefAndSpec(Node node, CApiContext capiContext, ModuleSpec moduleSpec, long moduleDefPtr) {
         /*
          * The name of the module is taken from the module spec and *NOT* from the module
          * definition.
          */
         TruffleString mName = moduleSpec.name;
-        Object mDoc;
-        long mSize;
-        // do not eagerly read the doc string; this turned out to be unnecessarily expensive
-        long docPtr = readPtrField(moduleDefPtr, PyModuleDef__m_doc);
-        if (docPtr == NULLPTR) {
-            mDoc = NO_VALUE;
-        } else {
-            mDoc = FromCharPointerNode.executeUncached(docPtr);
-        }
+        NativeModuleDefinition definition = new NativeModuleDefinition(moduleDefPtr, true);
+        definition.name = readPtrField(moduleDefPtr, PyModuleDef__m_name);
+        definition.doc = readPtrField(moduleDefPtr, PyModuleDef__m_doc);
+        definition.stateSize = readLongField(moduleDefPtr, PyModuleDef__m_size);
 
-        mSize = readLongField(moduleDefPtr, PyModuleDef__m_size);
-
-        if (mSize < 0) {
-            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
-        }
-
-        // parse slot definitions
-        long createFunction = NULLPTR;
-        boolean hasExecutionSlots = false;
         long slotDefinitions = readPtrField(moduleDefPtr, PyModuleDef__m_slots);
-        if (slotDefinitions != NULLPTR) {
-            loop: for (int i = 0;; i++) {
-                int slotId = readStructArrayIntField(slotDefinitions, i, PyModuleDef_Slot__slot);
-                switch (slotId) {
-                    case 0:
-                        break loop;
-                    case SLOT_PY_MOD_CREATE:
-                        if (createFunction != NULLPTR) {
-                            throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
-                        }
-                        createFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
-                        break;
-                    case SLOT_PY_MOD_EXEC:
-                        hasExecutionSlots = true;
-                        break;
-                    case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
-                        // ignored
-                        // (mq) TODO: handle multiple interpreter cases
-                        break;
-                    case SLOT_PY_MOD_GIL:
-                        // ignored
-                        break;
-                    default:
-                        throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
-                }
+        definition.methods = readPtrField(moduleDefPtr, PyModuleDef__m_methods);
+        definition.traverseFunction = readPtrField(moduleDefPtr, PyModuleDef__m_traverse);
+        definition.clearFunction = readPtrField(moduleDefPtr, PyModuleDef__m_clear);
+        definition.freeFunction = readPtrField(moduleDefPtr, PyModuleDef__m_free);
+        definition.token = moduleDefPtr;
+        return createModule(node, capiContext, moduleSpec,
+                        parseModuleSlots(node, PySlotIterator.initLegacy(node, mName, slotDefinitions, PySlotIterator.SlotKind.MODULE), definition, mName).getDefinition());
+    }
+
+    /**
+     * Equivalent of {@code moduleobject.c: PyModule_FromSlotsAndSpec}. Creates a Python module from slots definition.
+     *
+     * <pre>
+     * struct PySlot {
+     *     uint16_t sl_id;
+     *     uint16_t sl_flags;
+     *     _Py_ANONYMOUS union {
+     *         uint32_t sl_reserved; // must be 0
+     *     };
+     *     _Py_ANONYMOUS union {
+     *         void *sl_ptr;
+     *         _Py_funcptr_t sl_func;
+     *         Py_ssize_t sl_size;
+     *         int64_t sl_int64;
+     *         uint64_t sl_uint64;
+     *     };
+     * };
+     * </pre>
+     */
+    @TruffleBoundary
+    public static Object createModuleFromSlotsAndSpec(Node node, CApiContext capiContext, long slots, ModuleSpec moduleSpec) {
+        PythonContext context = capiContext.getContext();
+        ParsedModuleSlots parsed = parseModuleSlots(node, PySlotIterator.init(node, moduleSpec.name, slots, PySlotIterator.SlotKind.MODULE), null, moduleSpec.name);
+        if (!parsed.sawAbi) {
+            throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_DOES_NOT_DEFINE_ABI, moduleSpec.name);
+        }
+
+        if (parsed.definition.requiresGil) {
+            // TODO(fa): enable gil
+        }
+
+        // By default, multi-phase init modules are expected to work under multiple interpreters.
+        if (parsed.multipleInterpreters == Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED) {
+            if (!context.isMainInterpreter()) {
+                checkSubinterpIncompatibleExtensionAllowed(node, context, moduleSpec.name);
             }
+        } else if (parsed.multipleInterpreters != Py_MOD_PER_INTERPRETER_GIL_SUPPORTED && context.ownsGil() && !context.isMainInterpreter()) {
+            checkSubinterpIncompatibleExtensionAllowed(node, context, moduleSpec.name);
+        }
+
+        return createModule(node, capiContext, moduleSpec, parsed.getDefinition());
+    }
+
+    private static final class ParsedModuleSlots {
+        private final NativeModuleDefinition definition;
+        private long multipleInterpreters = Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED;
+        private boolean sawAbi;
+
+        private ParsedModuleSlots(NativeModuleDefinition definition) {
+            this.definition = definition;
+        }
+
+        private NativeModuleDefinition getDefinition() {
+            return definition;
+        }
+    }
+
+    private static final class NativeModuleDefinition {
+        private final long moduleDef;
+        private final boolean tokenIsDef;
+        private long createFunction;
+        private long execFunction;
+        private boolean hasExecSlots;
+        private long name;
+        private long stateSize;
+        private long doc;
+        private long methods;
+        private long traverseFunction;
+        private long clearFunction;
+        private long freeFunction;
+        private long token;
+        private boolean requiresGil = true;
+
+        private NativeModuleDefinition(long moduleDef, boolean tokenIsDef) {
+            this.moduleDef = moduleDef;
+            this.tokenIsDef = tokenIsDef;
+        }
+    }
+
+    private static ParsedModuleSlots parseModuleSlots(Node node, PySlotIterator iterator, NativeModuleDefinition originalDefinition, TruffleString moduleName) {
+        ParsedModuleSlots parsed = new ParsedModuleSlots(originalDefinition == null ? new NativeModuleDefinition(NULLPTR, false) : originalDefinition);
+        while (iterator.next()) {
+            PySlotIterator.Slot slot = iterator.current();
+            long value = slot.pointer();
+            switch (slot.id()) {
+                case SLOT_ABI3T_PY_MOD_CREATE:
+                    parsed.definition.createFunction = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_EXEC:
+                    if (originalDefinition == null) {
+                        if (parsed.definition.hasExecSlots) {
+                            throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_EXEC_SLOTS, moduleName);
+                        }
+                        parsed.definition.execFunction = value;
+                    }
+                    parsed.definition.hasExecSlots = true;
+                    break;
+                case SLOT_ABI3T_PY_MOD_MULTIPLE_INTERPRETERS:
+                    parsed.multipleInterpreters = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_GIL:
+                    parsed.definition.requiresGil = value != Py_MOD_GIL_NOT_USED;
+                    break;
+                case SLOT_ABI3T_PY_MOD_ABI:
+                    checkAbiInfo(node, value, moduleName);
+                    parsed.sawAbi = true;
+                    break;
+                case SLOT_ABI3T_PY_MOD_TOKEN:
+                    if (originalDefinition != null && originalDefinition.moduleDef != value) {
+                        throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_ARBITRARY_TOKEN_WITH_MODULE_DEF, moduleName);
+                    }
+                    parsed.definition.token = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_NAME:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.name, value, moduleName, "m_name");
+                    parsed.definition.name = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_DOC:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.doc, value, moduleName, "m_doc");
+                    parsed.definition.doc = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_STATE_SIZE:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.stateSize, slot.size(), moduleName, "m_size");
+                    parsed.definition.stateSize = slot.size();
+                    break;
+                case SLOT_ABI3T_PY_MOD_METHODS:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.methods, value, moduleName, "m_methods");
+                    parsed.definition.methods = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_STATE_TRAVERSE:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.traverseFunction, value, moduleName, "m_traverse");
+                    parsed.definition.traverseFunction = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_STATE_CLEAR:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.clearFunction, value, moduleName, "m_clear");
+                    parsed.definition.clearFunction = value;
+                    break;
+                case SLOT_ABI3T_PY_MOD_STATE_FREE:
+                    checkDefinitionField(node, originalDefinition, originalDefinition == null ? 0 : originalDefinition.freeFunction, value, moduleName, "m_free");
+                    parsed.definition.freeFunction = value;
+                    break;
+            }
+        }
+        parsed.sawAbi = iterator.sawSlot(SLOT_ABI3T_PY_MOD_ABI);
+        return parsed;
+    }
+
+    private static void checkDefinitionField(Node node, NativeModuleDefinition originalDefinition, long originalValue, long newValue, TruffleString moduleName, String field) {
+        if (originalDefinition != null && originalValue != newValue) {
+            throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_SLOT_CONFLICTS_WITH_MODULE_DEF, moduleName, field);
+        }
+    }
+
+    private static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, NativeModuleDefinition definition) {
+
+        if (definition.stateSize < 0) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, moduleSpec.name);
         }
 
         PythonContext context = capiContext.getContext();
         Object module;
-        if (createFunction != NULLPTR) {
-            PythonThreadState threadState = context.getThreadState(context.getLanguage());
-            NativeFunctionPointer modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNativeContext(), createFunction);
-            long result = ExternalFunctionInvoker.invokeMODCREATE(null, TIMING_MOD_CREATE, context.ensureNativeContext(),
-                            BoundaryCallData.getUncached(), threadState, modCreate,
-                            PythonToNativeInternalNode.executeUncached(moduleSpec.originalModuleSpec, false), moduleDefPtr);
-            TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
-                            ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
-            module = NativeToPythonInternalNode.executeUncached(result, true);
-
-            /*
-             * We are more strict than CPython and require this to be a PythonModule object. This
-             * means, if the custom 'create' function uses a native subtype of the module type, then
-             * we require it to call our new function.
-             */
-            if (!(module instanceof PythonModule)) {
-                if (mSize > 0) {
-                    throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
-                }
-                if (hasExecutionSlots) {
-                    throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
-                }
-                // otherwise CPython is just fine
-            } else {
-                ((PythonModule) module).setNativeModuleDef(moduleDefPtr);
-            }
+        if (definition.createFunction != NULLPTR) {
+            module = callCreateAndCheckResult(node, moduleSpec, context, definition);
         } else {
-            PythonModule pythonModule = PFactory.createPythonModule(mName);
-            pythonModule.setNativeModuleDef(moduleDefPtr);
-            module = pythonModule;
+            module = PFactory.createPythonModule(moduleSpec.name);
+        }
+        if (module instanceof PythonModule pythonModule) {
+            initializeNativeModule(pythonModule, definition);
         }
 
-        long methodDefinitions = readPtrField(moduleDefPtr, PyModuleDef__m_methods);
-        if (methodDefinitions != NULLPTR) {
-            for (int i = 0;; i++) {
-                PBuiltinFunction fun = createLegacyMethod(methodDefinitions, i, context.getLanguage());
-                if (fun == null) {
-                    break;
-                }
-                PBuiltinMethod method = PFactory.createBuiltinMethod(context.getLanguage(), module, fun);
-                WriteAttributeToPythonObjectNode.getUncached().execute(method, SpecialAttributeNames.T___MODULE__, mName);
-                WriteAttributeToObjectNode.getUncached().execute(module, fun.getName(), method);
-            }
+        if (definition.methods != NULLPTR) {
+            PythonCextMethodBuiltins.addMethodsToObject(context.getLanguage(), definition.methods, module, moduleSpec.name);
         }
 
+        Object mDoc;
+        if (definition.doc == NULLPTR) {
+            mDoc = NO_VALUE;
+        } else {
+            mDoc = FromCharPointerNode.executeUncached(definition.doc);
+        }
         WriteAttributeToObjectNode.getUncached().execute(module, SpecialAttributeNames.T___DOC__, mDoc);
-        capiContext.addLoadedExtensionLibrary(library);
+
         return module;
+
+    }
+
+    private static Object callCreateAndCheckResult(Node node, ModuleSpec moduleSpec, PythonContext context, NativeModuleDefinition definition) {
+        PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        NativeFunctionPointer modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNativeContext(), definition.createFunction);
+        long result = ExternalFunctionInvoker.invokeMODCREATE(null, TIMING_MOD_CREATE, context.ensureNativeContext(),
+                        BoundaryCallData.getUncached(), threadState, modCreate,
+                        PythonToNativeInternalNode.executeUncached(moduleSpec.originalModuleSpec, false), definition.moduleDef);
+        TransformExceptionFromNativeNode.getUncached().execute(null, threadState, moduleSpec.name, result == NULLPTR, true,
+                        ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
+        Object module = NativeToPythonInternalNode.executeUncached(result, true);
+
+        /*
+         * We are stricter than CPython and require this to be a PythonModule object. This
+         * means, if the custom 'create' function uses a native subtype of the module type, then
+         * we require it to call our new function.
+         */
+        if (!(module instanceof PythonModule)) {
+            if (definition.stateSize > 0 || definition.traverseFunction != NULLPTR || definition.clearFunction != NULLPTR || definition.freeFunction != NULLPTR) {
+                throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, moduleSpec.name);
+            }
+            if (definition.hasExecSlots) {
+                throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, moduleSpec.name);
+            }
+            if (!definition.tokenIsDef && definition.token != NULLPTR) {
+                throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_SPECIFIES_TOKEN_BUT_DIDNT_CREATE_INSTANCE, moduleSpec.name);
+            }
+            // otherwise CPython is just fine
+        }
+        return module;
+    }
+
+    public static int checkAbiInfo(Node node, long info, TruffleString moduleName) {
+        if (info == NULLPTR) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_NULL_ABI_INFO, moduleName);
+        }
+        int majorVersion = com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByte(info) & 0xff;
+        if (majorVersion == 0) {
+            return 0;
+        }
+        if (majorVersion > 1) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_ABI_INFO_VERSION_TOO_HIGH, moduleName);
+        }
+        int flags = com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShort(info + 2) & 0xffff;
+        long abiVersion = com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readInt(info + 8) & 0xffffffffL;
+        if ((flags & PY_ABI_INFO_INTERNAL) != 0) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_INTERNAL_ABI_UNSUPPORTED, moduleName);
+        }
+        if ((flags & PY_ABI_INFO_STABLE) == 0) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_NON_STABLE_ABI_UNSUPPORTED, moduleName);
+        }
+        long majorMinorMask = 0xffff0000L;
+        if (abiVersion != 0 && (abiVersion & majorMinorMask) > (ABI3T_VERSION_HEX & majorMinorMask)) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_FUTURE_STABLE_ABI, moduleName,
+                            (abiVersion >> 24) & 0xff, (abiVersion >> 16) & 0xff);
+        }
+        if (abiVersion != 0 && abiVersion < MINIMUM_STABLE_ABI_VERSION_HEX) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_INVALID_STABLE_ABI, moduleName,
+                            (abiVersion >> 24) & 0xff, (abiVersion >> 16) & 0xff);
+        }
+        int gilFlags = flags & (PY_ABI_INFO_GIL | PY_ABI_INFO_FREETHREADED);
+        if (gilFlags == PY_ABI_INFO_FREETHREADED) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ImportError, ErrorMessages.MODULE_ONLY_FREETHREADED, moduleName);
+        }
+        return 0;
+    }
+
+    private static void initializeNativeModule(PythonModule module, NativeModuleDefinition definition) {
+        // Equivalent to CPython's module_copy_members_from_deflike() plus token/exec setup.
+        module.setNativeModuleDef(definition.moduleDef);
+        module.setNativeModuleStateSize(definition.stateSize);
+        module.setNativeModuleTraverse(definition.traverseFunction);
+        module.setNativeModuleClear(definition.clearFunction);
+        module.setNativeModuleFree(definition.freeFunction);
+        module.setNativeModuleToken(definition.token);
+        module.setNativeModuleTokenIsDef(definition.tokenIsDef);
+        module.setNativeModuleExec(definition.moduleDef == NULLPTR ? definition.execFunction : NULLPTR);
+        module.setNativeModuleRequiresGil(definition.requiresGil);
+    }
+
+    // similar to 'import.c: _PyImport_CheckSubinterpIncompatibleExtensionAllowed'
+    private static void checkSubinterpIncompatibleExtensionAllowed(Node location, PythonContext context, TruffleString name) {
+        // similar to 'import.c: check_multi_interp_extensions'
+        if (context.getOverrideMultiInterpExtensionsCheck() > 0) {
+            assert !context.isMainInterpreter();
+            throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.ImportError,
+                            ErrorMessages.MODULE_S_DOES_NOT_SUPPORT_LOADING_IN_SUBINTERPRETERS, name);
+        }
     }
 
     /**
      * Equivalent of {@code PyModule_ExecDef}.
      */
     @TruffleBoundary
-    public static int execModule(Node node, CApiContext capiContext, PythonModule module, long moduleDef) {
+    public static int execModule(Node node, CApiContext capiContext, PythonModule module) {
         TruffleString mName = ModuleGetNameNode.executeUncached(module);
-        long mSize = readLongField(moduleDef, PyModuleDef__m_size);
+        long mSize = module.getNativeModuleStateSize();
 
         // allocate md_state if necessary
-        if (mSize >= 0) {
-            /*
-             * TODO(fa): We currently leak 'md_state' and need to use a shared finalizer or similar.
-             * We ignore that for now since the size will usually be very small and/or we could also
-             * use a Truffle buffer object.
-             */
+        if (mSize >= 0 && module.getNativeModuleState() == NULLPTR) {
+            // TODO(fa): We currently leak 'md_state' and need to use something like a NativeStorageReference.
             long mdState = calloc(mSize == 0 ? 1 : mSize); // ensure non-null value
             assert mdState != NULLPTR;
             module.setNativeModuleState(mdState);
         }
 
-        // parse slot definitions
+        long directExecFunction = module.getNativeModuleExec();
+        if (directExecFunction != NULLPTR) {
+            invokeModuleExec(node, capiContext, module, mName, directExecFunction);
+            return 0;
+        }
+
+        // Legacy definitions may contain multiple Py_mod_exec slots.
+        long moduleDef = module.getNativeModuleDef();
+        if (moduleDef == NULLPTR) {
+            return 0;
+        }
         long slotDefinitions = readPtrField(moduleDef, PyModuleDef__m_slots);
         if (slotDefinitions == NULLPTR) {
             return 0;
         }
-        loop: for (int i = 0;; i++) {
-            int slotId = readStructArrayIntField(slotDefinitions, i, PyModuleDef_Slot__slot);
-            switch (slotId) {
-                case 0:
-                    break loop;
-                case SLOT_PY_MOD_CREATE:
-                    // handled in CreateModuleNode
-                    break;
-                case SLOT_PY_MOD_EXEC:
-                    long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
-                    PythonContext context = capiContext.getContext();
-                    PythonThreadState threadState = context.getThreadState(context.getLanguage());
-                    NativeFunctionPointer boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNativeContext(), execFunction);
-                    int iResult = ExternalFunctionInvoker.invokeMODEXEC(null, TIMING_MOD_EXEC, context.ensureNativeContext(),
-                                    BoundaryCallData.getUncached(), threadState, boundFunction,
-                                    PythonToNativeInternalNode.executeUncached(module, false));
-                    /*
-                     * It's a bit counterintuitive that we use 'isPrimitiveValue = false' but the
-                     * function's return value is actually not a result but a status code. So, if
-                     * the status code is '!=0' we know that an error occurred and won't ignore this
-                     * if no error is set. This is then the same behaviour if we would have a
-                     * pointer return type and got 'NULL'.
-                     */
-                    TransformExceptionFromNativeNode.getUncached().execute(node, threadState, mName, iResult != 0, true,
-                                    ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
-                    break;
-                case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
-                    // ignored
-                    // (mq) TODO: handle multiple interpreter cases
-                    break;
-                case SLOT_PY_MOD_GIL:
-                    // ignored
-                    break;
-                default:
-                    throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
+        PySlotIterator iterator = PySlotIterator.initLegacy(node, mName, slotDefinitions, PySlotIterator.SlotKind.MODULE);
+        while (iterator.next()) {
+            if (iterator.current().id() == SLOT_ABI3T_PY_MOD_EXEC) {
+                invokeModuleExec(node, capiContext, module, mName, iterator.current().function());
             }
         }
 
         return 0;
     }
 
-    /**
-     * TODO(fa): overlaps with
-     * {@link com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins#GraalPyPrivate_Module_AddFunctions(long, long)}.
-     *
-     * <pre>
-     *     struct PyMethodDef {
-     *         const char * ml_name;
-     *         PyCFunction  ml_meth;
-     *         int          ml_flags;
-     *         const char * ml_doc;
-     *     };
-     * </pre>
-     */
-    @TruffleBoundary
-    static PBuiltinFunction createLegacyMethod(long methodDefPtr, int element, PythonLanguage language) {
-        long methodNamePtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_name);
-        if (methodNamePtr == NULLPTR) {
-            return null;
-        }
-        TruffleString methodName = FromCharPointerNode.executeUncached(methodNamePtr);
-        // note: 'ml_doc' may be NULL; in this case, we would store 'None'
-        Object methodDoc = PNone.NONE;
-        long methodDocPtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_doc);
-        if (methodDocPtr != NULLPTR) {
-            methodDoc = FromCharPointerNode.executeUncached(methodDocPtr);
-        }
-
-        int flags = readStructArrayIntField(methodDefPtr, element, PyMethodDef__ml_flags);
-        long mlMethObj = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_meth);
-        // CPy-style methods
-        // TODO(fa) support static and class methods
-        MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
-        PRootNode rootNode = MethodDescriptorWrapper.getOrCreateRootNode(language, sig, methodName, CExtContext.isMethStatic(flags));
-        NativeFunctionPointer fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
-        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
-        PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, rootNode);
-        HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
-
-        CFunctionDocUtils.writeDocAndTextSignature(function, methodName, methodDoc, flags);
-
-        return function;
+    private static void invokeModuleExec(Node node, CApiContext capiContext, PythonModule module, TruffleString moduleName, long execFunction) {
+        PythonContext context = capiContext.getContext();
+        PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        NativeFunctionPointer boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNativeContext(), execFunction);
+        int result = ExternalFunctionInvoker.invokeMODEXEC(null, TIMING_MOD_EXEC, context.ensureNativeContext(), BoundaryCallData.getUncached(), threadState, boundFunction,
+                        PythonToNativeInternalNode.executeUncached(module, false));
+        TransformExceptionFromNativeNode.getUncached().execute(node, threadState, moduleName, result != 0, true,
+                        ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
     }
 
     @GenerateInline

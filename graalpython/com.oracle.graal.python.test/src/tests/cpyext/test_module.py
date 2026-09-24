@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, compile_module_from_string, unhandled_error_compare
 
 
 ModuleType = type(sys)
@@ -71,6 +71,122 @@ module_with_broken_file.__file__ = 1
 
 
 class TestPyModule(CPyExtTestCase):
+
+    def test_add_functions_installs_each_method_definition(self):
+        module = compile_module_from_string(r'''
+            #include <Python.h>
+
+            // CPython and other don't have this function; so define it
+            #ifndef GRAALVM_PYTHON
+            #define GraalPyCFunction_GetMethodDef(OBJ) (((PyCFunctionObject*) (OBJ))->m_ml)
+            #endif
+
+            static PyObject *first(PyObject *module, PyObject *Py_UNUSED(ignored)) {
+                Py_RETURN_TRUE;
+            }
+
+            static PyObject *second(PyObject *module, PyObject *Py_UNUSED(ignored)) {
+                Py_RETURN_FALSE;
+            }
+
+            static PyMethodDef added_methods[] = {
+                {"first", first, METH_NOARGS,
+                    "first($module, /)\n"
+                    "--\n\n"
+                    "Return true."},
+                {"second", second, METH_NOARGS,
+                    "second($module, /)\n"
+                    "--\n\n"
+                    "Return false."},
+                {NULL, NULL, 0, NULL},
+            };
+
+            static PyObject *verify_method_def_pointers(PyObject *module, PyObject *Py_UNUSED(ignored)) {
+                PyObject *first_method = PyObject_GetAttrString(module, "first");
+                PyObject *second_method = PyObject_GetAttrString(module, "second");
+                if (first_method == NULL || second_method == NULL) {
+                    Py_XDECREF(first_method);
+                    Py_XDECREF(second_method);
+                    return NULL;
+                }
+                int matches = GraalPyCFunction_GetMethodDef(first_method) == &added_methods[0] &&
+                              GraalPyCFunction_GetMethodDef(second_method) == &added_methods[1];
+                Py_DECREF(first_method);
+                Py_DECREF(second_method);
+                return PyBool_FromLong(matches);
+            }
+
+            static PyMethodDef module_methods[] = {
+                {"verify_method_def_pointers", verify_method_def_pointers, METH_NOARGS, NULL},
+                {NULL, NULL, 0, NULL},
+            };
+
+            static PyModuleDef module_def = {
+                PyModuleDef_HEAD_INIT,
+                "add_functions",
+                NULL,
+                -1,
+                module_methods,
+            };
+
+            PyMODINIT_FUNC PyInit_add_functions(void) {
+                PyObject *module = PyModule_Create(&module_def);
+                if (module == NULL || PyModule_AddFunctions(module, added_methods) < 0) {
+                    Py_XDECREF(module);
+                    return NULL;
+                }
+                return module;
+            }
+        ''', "add_functions")
+        self.assertTrue(module.first())
+        self.assertFalse(module.second())
+        self.assertTrue(module.verify_method_def_pointers())
+        self.assertEqual(module.first.__name__, "first")
+        self.assertEqual(module.first.__module__, "add_functions")
+        self.assertEqual(module.first.__doc__, "Return true.")
+        self.assertEqual(module.first.__text_signature__, "($module, /)")
+        self.assertEqual(module.second.__doc__, "Return false.")
+        self.assertEqual(module.second.__text_signature__, "($module, /)")
+
+    def test_multiple_exec_slots(self):
+        module = compile_module_from_string(r'''
+            #include <Python.h>
+
+            static int first_exec(PyObject *module) {
+                int *state = PyModule_GetState(module);
+                *state = 1;
+                return 0;
+            }
+
+            static int second_exec(PyObject *module) {
+                int *state = PyModule_GetState(module);
+                *state = *state * 10 + 2;
+                return PyModule_AddIntConstant(module, "exec_order", *state);
+            }
+
+            static PyModuleDef_Slot slots[] = {
+                {Py_mod_exec, first_exec},
+                {Py_mod_exec, second_exec},
+                {0, NULL}
+            };
+
+            static PyModuleDef module_def = {
+                PyModuleDef_HEAD_INIT,
+                "multiple_exec_slots",
+                NULL,
+                sizeof(int),
+                NULL,
+                slots,
+                NULL,
+                NULL,
+                NULL
+            };
+
+            PyMODINIT_FUNC PyInit_multiple_exec_slots(void) {
+                return PyModuleDef_Init(&module_def);
+            }
+        ''', "multiple_exec_slots")
+        self.assertEqual(module.exec_order, 12)
 
     test_PyModule_Check = CPyExtFunction(
         lambda args: isinstance(args[0], ModuleType),

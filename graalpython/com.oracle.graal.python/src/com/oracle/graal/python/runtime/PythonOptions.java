@@ -385,6 +385,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable Python abi3t compatibility") //
+    public static final OptionKey<Boolean> EnableAbi3t = new OptionKey<>(false);
+
     @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
     public static final OptionKey<Boolean> TraceNativeMemory = new OptionKey<>(false);
 

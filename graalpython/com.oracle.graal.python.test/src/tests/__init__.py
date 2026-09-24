@@ -190,10 +190,20 @@ def install_venv(venv_path: Path, use_current_python=False) -> bool:
 
 
 def compile_module_from_string(c_source: str, name: str):
+    install_dir = compile_module_from_string_no_import(c_source, name)
+    sys.path.insert(0, install_dir)
+    try:
+        cmodule = __import__(name)
+    finally:
+        sys.path.pop(0)
+    return cmodule
+
+
+def compile_module_from_string_no_import(c_source: str, name: str):
     source_file = DIR / f'{name}.c'
     with open(source_file, "wb", buffering=0) as f:
         f.write(bytes(c_source, 'utf-8'))
-    return compile_module_from_file(name)
+    return ccompile(None, name)
 
 
 def compile_module_from_file(module_name: str, sibling_to=None):

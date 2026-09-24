@@ -90,6 +90,11 @@ public class CStructAccess {
         NativeMemory.writeByte(getFieldPtr(structBasePtr, field), value);
     }
 
+    public static int readShortField(long structBasePtr, CFields field) {
+        assert field.type.isI16();
+        return NativeMemory.readShort(getFieldPtr(structBasePtr, field)) & 0xffff;
+    }
+
     public static int readIntField(long structBasePtr, CFields field) {
         assert field.type.isI32();
         return NativeMemory.readInt(getFieldPtr(structBasePtr, field));
@@ -98,6 +103,10 @@ public class CStructAccess {
     public static void writeIntField(long structBasePtr, CFields field, int value) {
         assert field.type.isI32();
         NativeMemory.writeInt(getFieldPtr(structBasePtr, field), value);
+    }
+
+    public static int readStructArrayShortField(long arrayPtr, long index, CFields field) {
+        return readShortField(getArrayElementPtr(arrayPtr, index, field.struct), field);
     }
 
     public static int readStructArrayIntField(long arrayPtr, long index, CFields field) {
@@ -154,7 +163,7 @@ public class CStructAccess {
         writePtrField(getArrayElementPtr(arrayPtr, index, field.struct), field, value);
     }
 
-    private static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
+    public static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
         return arrayPtr + index * struct.size();
     }
 

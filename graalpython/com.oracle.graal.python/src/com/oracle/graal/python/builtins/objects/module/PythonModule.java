@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SPEC__;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,32 +50,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonModule extends PythonObject {
 
-    /**
-     * Stores the native {@code PyModuleDef *} structure if this module was created via the
-     * multiphase extension module initialization mechanism.
-     */
-    private long nativeModuleDef;
-    private long nativeModuleState;
-
-    /**
-     * Replicates the native references of this module's native state in Java.
-     * <p>
-     * Since a module can have a native module state where it is valid to store native references to
-     * other objects, we need this field to replicate those references in Java if we make the handle
-     * table reference weak in order to break possible reference cycles. This field will ever only
-     * be set if the module's native definition provides a traverse function (see
-     * {@code moduleobject.c: module_traverse}). The condition for this is:
-     *
-     * <pre>
-     * {@code
-     * if (m -> md_def && m -> md_def -> m_traverse && (m -> md_def -> m_size <= 0 || m -> md_state != NULL)) {
-     *     // ...
-     * }
-     * }
-     * </pre>
-     * </p>
-     */
-    private Object[] replicatedNativeReferences;
+    private NativeModuleData nativeModuleData;
 
     private PythonBuiltins builtins;
     private Object moduleState;
@@ -139,31 +115,102 @@ public final class PythonModule extends PythonObject {
         return "<module '" + (PGuards.isNoValue(attribute) ? "?" : attribute) + "'>";
     }
 
+    private NativeModuleData ensureNativeModuleData() {
+        if (nativeModuleData == null) {
+            nativeModuleData = new NativeModuleData();
+        }
+        return nativeModuleData;
+    }
+
     public long getNativeModuleDef() {
-        return nativeModuleDef;
+        return nativeModuleData != null ? nativeModuleData.def : NULLPTR;
     }
 
     public void setNativeModuleDef(long nativeModuleDef) {
-        this.nativeModuleDef = nativeModuleDef;
+        ensureNativeModuleData().def = nativeModuleDef;
     }
 
     public long getNativeModuleState() {
-        return nativeModuleState;
+        return nativeModuleData != null ? nativeModuleData.state : NULLPTR;
     }
 
     public void setNativeModuleState(long nativeModuleState) {
-        this.nativeModuleState = nativeModuleState;
+        ensureNativeModuleData().state = nativeModuleState;
+    }
+
+    public long getNativeModuleStateSize() {
+        return nativeModuleData != null ? nativeModuleData.stateSize : 0;
+    }
+
+    public void setNativeModuleStateSize(long nativeModuleStateSize) {
+        ensureNativeModuleData().stateSize = nativeModuleStateSize;
+    }
+
+    public long getNativeModuleTraverse() {
+        return nativeModuleData != null ? nativeModuleData.stateTraverse : NULLPTR;
+    }
+
+    public void setNativeModuleTraverse(long nativeModuleTraverse) {
+        ensureNativeModuleData().stateTraverse = nativeModuleTraverse;
+    }
+
+    public long getNativeModuleClear() {
+        return nativeModuleData != null ? nativeModuleData.stateClear : NULLPTR;
+    }
+
+    public void setNativeModuleClear(long nativeModuleClear) {
+        ensureNativeModuleData().stateClear = nativeModuleClear;
+    }
+
+    public long getNativeModuleFree() {
+        return nativeModuleData != null ? nativeModuleData.stateFree : NULLPTR;
+    }
+
+    public void setNativeModuleFree(long nativeModuleFree) {
+        ensureNativeModuleData().stateFree = nativeModuleFree;
+    }
+
+    public long getNativeModuleExec() {
+        return nativeModuleData != null ? nativeModuleData.exec : NULLPTR;
+    }
+
+    public void setNativeModuleExec(long nativeModuleExec) {
+        ensureNativeModuleData().exec = nativeModuleExec;
+    }
+
+    public long getNativeModuleToken() {
+        return nativeModuleData != null ? nativeModuleData.token : NULLPTR;
+    }
+
+    public void setNativeModuleToken(long nativeModuleToken) {
+        ensureNativeModuleData().token = nativeModuleToken;
+    }
+
+    public boolean isNativeModuleTokenIsDef() {
+        return nativeModuleData != null && nativeModuleData.tokenIsDef;
+    }
+
+    public void setNativeModuleTokenIsDef(boolean nativeModuleTokenIsDef) {
+        ensureNativeModuleData().tokenIsDef = nativeModuleTokenIsDef;
+    }
+
+    public boolean isNativeModuleRequiresGil() {
+        return nativeModuleData != null && nativeModuleData.requiresGil;
+    }
+
+    public void setNativeModuleRequiresGil(boolean nativeModuleRequiresGil) {
+        ensureNativeModuleData().requiresGil = nativeModuleRequiresGil;
     }
 
     /**
-     * For a description, see {@link #replicatedNativeReferences}.
+     * For a description, see {@link NativeModuleData#replicatedNativeReferences}.
      */
     public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
-        this.replicatedNativeReferences = replicatedNativeReferences;
+        ensureNativeModuleData().replicatedNativeReferences = replicatedNativeReferences;
     }
 
     public Object[] getReplicatedNativeReferences() {
-        return this.replicatedNativeReferences;
+        return nativeModuleData != null ? nativeModuleData.replicatedNativeReferences : null;
     }
 
     public PDict getDict() {

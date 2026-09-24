@@ -139,6 +139,38 @@ PyAPI_FUNC(PyObject *) PyModule_FromDefAndSpec2(PyModuleDef *def,
 
 #endif /* New in 3.5 */
 
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
+typedef struct PyABIInfo {
+    uint8_t abiinfo_major_version;
+    uint8_t abiinfo_minor_version;
+    uint16_t flags;
+    uint32_t build_version;
+    uint32_t abi_version;
+} PyABIInfo;
+
+#define PyABIInfo_STABLE        0x0001
+#define PyABIInfo_GIL           0x0002
+#define PyABIInfo_FREETHREADED  0x0004
+#define PyABIInfo_INTERNAL      0x0008
+#define PyABIInfo_FREETHREADING_AGNOSTIC (PyABIInfo_GIL | PyABIInfo_FREETHREADED)
+
+PyAPI_FUNC(int) PyABIInfo_Check(PyABIInfo *info, const char *module_name);
+
+#if defined(Py_TARGET_ABI3T)
+#  define PyABIInfo_DEFAULT_ABI_VERSION Py_TARGET_ABI3T
+#  define PyABIInfo_DEFAULT_FLAGS (PyABIInfo_STABLE | PyABIInfo_FREETHREADING_AGNOSTIC)
+#elif defined(Py_LIMITED_API)
+#  define PyABIInfo_DEFAULT_ABI_VERSION Py_LIMITED_API
+#  define PyABIInfo_DEFAULT_FLAGS (PyABIInfo_STABLE | PyABIInfo_GIL)
+#else
+#  define PyABIInfo_DEFAULT_ABI_VERSION PY_VERSION_HEX
+#  define PyABIInfo_DEFAULT_FLAGS PyABIInfo_GIL
+#endif
+
+#define PyABIInfo_VAR(NAME) \
+    static PyABIInfo NAME = {1, 0, PyABIInfo_DEFAULT_FLAGS, PY_VERSION_HEX, PyABIInfo_DEFAULT_ABI_VERSION};
+#endif /* Py_BUILD_CORE || Py_TARGET_ABI3T */
+
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_MODSUPPORT_H
 #  include "cpython/modsupport.h"

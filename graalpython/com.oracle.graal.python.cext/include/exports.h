@@ -14,6 +14,8 @@
                     inside the Python core, they are private to the core.
                     If in an extension module, it may be declared with
                     external linkage depending on the platform.
+  PyMODEXPORT_FUNC: Like PyMODINIT_FUNC, but for a slots array. This is only
+                    available when experimental ABI3T support is enabled.
 
   As a number of platforms support/require "__declspec(dllimport/dllexport)",
   we support a HAVE_DECLSPEC_DLL macro to save duplication.
@@ -108,6 +110,13 @@
 #               define PyMODINIT_FUNC Py_EXPORTED_SYMBOL PyObject*
 #       endif /* __cplusplus */
 #endif
+#if defined(Py_TARGET_ABI3T) && !defined(PyMODEXPORT_FUNC)
+#       if defined(__cplusplus)
+#               define PyMODEXPORT_FUNC extern "C" Py_EXPORTED_SYMBOL PySlot*
+#       else
+#               define PyMODEXPORT_FUNC Py_EXPORTED_SYMBOL PySlot*
+#       endif
+#endif /* Py_TARGET_ABI3T && !PyMODEXPORT_FUNC */
 
 
 #endif /* Py_EXPORTS_H */

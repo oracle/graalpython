@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.drainReferenceQueueNow;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
@@ -49,9 +50,11 @@ import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMOR
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -64,8 +67,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,7 +97,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ReferenceQueueCoordinator;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
@@ -104,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -122,6 +124,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
@@ -158,9 +161,11 @@ import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 import sun.misc.Unsafe;
 
-public final class CApiContext extends CExtContext {
+public final class CApiContext {
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
     private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
+    private static final TruffleString T_PY_MOD_EXPORT = tsLiteral("PyModExport_");
+    private static final TruffleString T_PY_MOD_EXPORT_U = tsLiteral("PyModExportU_");
     private static final TruffleString T_GRAALPY_TEST_CAPI = tsLiteral("_testcapi");
     private static final TruffleString T_GRAALPY_TEST_CAPI_NAME = tsLiteral("__graalpython__._testcapi");
 
@@ -174,9 +179,18 @@ public final class CApiContext extends CExtContext {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
+    private static final String COULD_NOT_LOAD_MODULE_FORMAT = """
+                    could not load module %s (real path: %s) from virtual file system.
+
+                    !!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!
+                    See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting""";
 
     /** Native pointers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final long[] singletonNativePtrs;
+    private final PythonContext context;
+    /** The library object representing 'libpython.*.so' or similar. */
+    private final NativeLibrary library;
+    private final String libraryName;
 
     /**
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
@@ -209,6 +223,42 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isSpecialSingleton(Object delegate) {
         return getSingletonNativeWrapperIdx(delegate) != -1;
+    }
+
+    @TruffleBoundary
+    public static TruffleString getBaseName(TruffleString name) {
+        int len = TruffleString.CodePointLengthNode.getUncached().execute(name, TS_ENCODING);
+        if (len == 1) {
+            return name.equalsUncached(T_DOT, TS_ENCODING) ? T_EMPTY_STRING : name;
+        }
+        int idx = name.lastIndexOfStringUncached(T_DOT, len, 0, TS_ENCODING);
+        if (idx < 0) {
+            return name;
+        }
+        if (idx == len - 1) {
+            return T_EMPTY_STRING;
+        }
+        return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
+    }
+
+    @TruffleBoundary
+    public static PException wrapJavaException(Throwable e, Node raisingNode) {
+        TruffleString message = toTruffleStringUncached(e.getMessage());
+        PBaseException excObject = PFactory.createBaseException(PythonLanguage.get(null), SystemError, message != null ? message : toTruffleStringUncached(e.toString()),
+                        PythonUtils.EMPTY_OBJECT_ARRAY);
+        return ExceptionUtils.wrapJavaException(e, raisingNode, excObject);
+    }
+
+    public PythonContext getContext() {
+        return context;
+    }
+
+    public NativeLibrary getLibrary() {
+        return library;
+    }
+
+    public String getLibraryName() {
+        return libraryName;
     }
 
     private record ClosureInfo(Object delegate, Object executable, long pointer) {
@@ -270,12 +320,17 @@ public final class CApiContext extends CExtContext {
 
         @TruffleBoundary
         public TruffleString getInitFunctionName() {
-            /*
-             * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
-             * is queried
-             */
+            // 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii' is queried
             TruffleString s = getEncodedName();
             return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
+        }
+
+        public TruffleString getModExecFunctionName() {
+            CompilerAsserts.neverPartOfCompilation();
+            assert PythonContext.get(null).getOption(PythonOptions.EnableAbi3t);
+            // 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii' is queried
+            TruffleString s = getEncodedName();
+            return StringUtils.cat((ascii ? T_PY_MOD_EXPORT : T_PY_MOD_EXPORT_U), s);
         }
     }
 
@@ -293,25 +348,9 @@ public final class CApiContext extends CExtContext {
      */
     private final HashMap<PyMethodDefHelper, Long> methodDefinitions = new HashMap<>(4);
 
-    /**
-     * This list holds a strong reference to all loaded extension libraries to keep the library
-     * objects alive. This is necessary because native library handles may {@code dlclose} the
-     * library (and thus {@code munmap} all code) if the library object is no longer reachable.
-     * However, it can happen
-     * that we still store raw function pointers (as Java {@code long} values) in a native object
-     * that is referenced by a
-     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference}.
-     * For example, the {code tp_dealloc} functions may be executed a long time after all managed
-     * objects of the extension died and the native library has been {@code dlclosed}'d.
-     *
-     * Since we have no control over the timing when certain garbage will be collected, we need to
-     * ensure that the code is still mapped.
-     */
-    private final List<Object> loadedExtensions = new LinkedList<>();
-
     private final NativeLibraryLocator nativeLibraryLocator;
 
-    public final BackgroundGCTask gcTask;
+    private final BackgroundGCTask gcTask;
     private Thread backgroundGCTaskThread;
     private final ReferenceQueueWatcherTask referenceQueueWatcherTask;
 
@@ -320,7 +359,10 @@ public final class CApiContext extends CExtContext {
     }
 
     public CApiContext(PythonContext context, NativeLibrary library, NativeLibraryLocator locator) {
-        super(context, library, locator.getCapiLibrary());
+        this.context = context;
+        this.library = library;
+        this.libraryName = locator.getCapiLibrary();
+
         this.nativeCAPISymbols = new NativeFunctionPointer[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 
@@ -330,11 +372,6 @@ public final class CApiContext extends CExtContext {
 
         this.gcTask = new BackgroundGCTask(context);
         this.referenceQueueWatcherTask = new ReferenceQueueWatcherTask(context);
-    }
-
-    @TruffleBoundary
-    void addLoadedExtensionLibrary(Object nativeLibrary) {
-        loadedExtensions.add(nativeLibrary);
     }
 
     @TruffleBoundary
@@ -1094,20 +1131,6 @@ public final class CApiContext extends CExtContext {
                     "termios",
                     "pyexpat");
 
-    private static String dlopenFlagsToString(int flags) {
-        String str = "RTLD_NOW";
-        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
-            str = "RTLD_LAZY";
-        }
-        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
-            str += "|RTLD_GLOBAL";
-        }
-        if ((flags & PosixConstants.RTLD_LOCAL.value) != 0) {
-            str += "|RTLD_LOCAL";
-        }
-        return str;
-    }
-
     /**
      * This method loads a C extension module (C API) and will initialize the corresponding native
      * contexts if necessary.
@@ -1154,30 +1177,27 @@ public final class CApiContext extends CExtContext {
             dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
         }
 
+        String format = String.format(COULD_NOT_LOAD_MODULE_FORMAT, spec.path, realPath);
         try {
             library = context.ensureNativeContext().loadLibrary(loadPath, dlopenFlags);
         } catch (PException e) {
             throw e;
         } catch (NativeLibraryLoadException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
-                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
-                                "See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting", spec.path, realPath));
+                getLogger(CApiContext.class).severe(format);
             }
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.CANNOT_LOAD, spec.path, e.getMessage());
         } catch (AbstractTruffleException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
                 // file does not exist and it is from VirtualFileSystem
                 // => we probably failed to extract it due to unconventional libs location
-                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
-                                "See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting", spec.path, realPath));
+                getLogger(CApiContext.class).severe(format);
 
             }
 
-            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
+            throw new ImportException(CApiContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
         }
-        return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec);
+        return cApiContext.loadCApiModule(location, library, spec);
     }
 
     /**
@@ -1321,12 +1341,22 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    @TruffleBoundary
-    public Object initCApiModule(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
-        PythonContext context = getContext();
-        CApiContext cApiContext = context.getCApiContext();
+    public Object loadCApiModule(Node node, NativeLibrary sharedLibrary, ModuleSpec spec) throws ImportException {
+        CompilerAsserts.neverPartOfCompilation();
+        if (context.getOption(PythonOptions.EnableAbi3t)) {
+            TruffleString modExportFuncName = spec.getModExecFunctionName();
+            long modExportFunc = sharedLibrary.lookupOptionalSymbol(modExportFuncName.toJavaStringUncached());
+            if (modExportFunc != NULLPTR) {
+                return loadCApiModuleFromPyModExport(node, modExportFunc, spec);
+            }
+        }
+        return loadCApiModuleFromPyInit(node, sharedLibrary, spec.getInitFunctionName(), spec);
+    }
+
+    private Object loadCApiModuleFromPyInit(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
+        CompilerAsserts.neverPartOfCompilation();
         long pyinitFunc = sharedLibrary.lookupOptionalSymbol(initFuncName.toJavaStringUncached());
-        if (pyinitFunc == 0L) {
+        if (pyinitFunc == NULLPTR) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
         NativeContext nativeContext = context.ensureNativeContext();
@@ -1334,7 +1364,7 @@ public final class CApiContext extends CExtContext {
                         ExternalFunctionSignature.MODINIT.bind(nativeContext, pyinitFunc));
 
         Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonInternalNode.executeUncached(nativeResult, false));
-        if (!(result instanceof PythonModule)) {
+        if (!(result instanceof PythonModule module)) {
             // Multi-phase extension module initialization
 
             /*
@@ -1349,13 +1379,10 @@ public final class CApiContext extends CExtContext {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CExtNodes.createModule(node, cApiContext, spec, nativeResult, sharedLibrary);
+            return CExtNodes.createModuleFromDefAndSpec(node, this, spec, nativeResult);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
-            PythonModule module = (PythonModule) result;
             module.setAttribute(T___FILE__, spec.path);
-            addLoadedExtensionLibrary(sharedLibrary);
-
             // add to 'sys.modules'
             PDict sysModules = context.getSysModules();
             sysModules.setItem(spec.name, result);
@@ -1372,6 +1399,24 @@ public final class CApiContext extends CExtContext {
             extensions.put(Pair.create(spec.path, spec.name), module);
             return result;
         }
+    }
+
+    // import.c: import_run_modexport
+    private Object loadCApiModuleFromPyModExport(Node node, long modExportFunc, ModuleSpec spec) {
+        CompilerAsserts.neverPartOfCompilation();
+        NativeContext nativeContext = context.ensureNativeContext();
+        PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        // return value is of type 'PySlot *'
+        long slots = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nativeContext, BoundaryCallData.getUncached(), threadState,
+                        ExternalFunctionSignature.MODINIT.bind(nativeContext, modExportFunc));
+        TransformExceptionFromNativeNode.getUncached().execute(node, threadState, spec.name, slots == NULLPTR, true,
+                        ErrorMessages.MODULE_EXPORT_HOOK_FAILED, ErrorMessages.MODULE_EXPORT_HOOK_RAISED_EXCEPTION);
+        Object module = CExtNodes.createModuleFromSlotsAndSpec(node, context.getCApiContext(), slots, spec);
+        if (module instanceof PythonModule pythonModule && pythonModule.getNativeModuleToken() == NULLPTR) {
+            // import_run_modexport uses the static top-level slots array as the default token.
+            pythonModule.setNativeModuleToken(slots);
+        }
+        return module;
     }
 
     @TruffleBoundary

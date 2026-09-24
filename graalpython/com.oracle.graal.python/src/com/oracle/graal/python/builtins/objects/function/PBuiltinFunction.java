@@ -38,7 +38,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -156,11 +156,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public boolean isStatic() {
-        return (flags & CExtContext.METH_STATIC) != 0;
+        return (flags & PyMethodFlags.METH_STATIC) != 0;
     }
 
     public boolean needsDeclaringType() {
-        return (flags & CExtContext.METH_METHOD) != 0;
+        return (flags & PyMethodFlags.METH_METHOD) != 0;
     }
 
     @TruffleBoundary
@@ -170,23 +170,23 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
         int flags = 0;
         if (builtin.isClassmethod()) {
-            flags |= CExtContext.METH_CLASS;
+            flags |= PyMethodFlags.METH_CLASS;
         }
         if (builtin.isStaticmethod()) {
-            flags |= CExtContext.METH_STATIC;
+            flags |= PyMethodFlags.METH_STATIC;
         }
         if (!signature.takesKeywordArgs() && !signature.takesVarArgs() && PythonBuiltins.numDefaults(builtin) == 0) {
             int params = signature.getParameterIds().length;
             if (params == 1) {
                 // only 'self'
-                return flags | CExtContext.METH_NOARGS;
+                return flags | PyMethodFlags.METH_NOARGS;
             } else if (params == 2) {
-                return flags | CExtContext.METH_O;
+                return flags | PyMethodFlags.METH_O;
             }
         }
-        flags |= CExtContext.METH_VARARGS;
+        flags |= PyMethodFlags.METH_VARARGS;
         if (signature.takesKeywordArgs()) {
-            flags |= CExtContext.METH_KEYWORDS;
+            flags |= PyMethodFlags.METH_KEYWORDS;
         }
         return flags;
     }

@@ -72,6 +72,15 @@ struct timeval;
 
 // Include Python header files
 #include "pyport.h"
+
+#if (defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)) && defined(_MSC_VER)
+// Ignore MSC warning C4201: "nonstandard extension used: nameless
+// struct/union".  (Only generated for C standard versions less than C11, which
+// we don't *officially* support.)
+__pragma(warning(push))
+__pragma(warning(disable: 4201))
+#endif
+
 #include "pymacro.h"
 #include "pymath.h"
 #include "pymem.h"
@@ -82,6 +91,9 @@ struct timeval;
 #include "lock.h"
 #include "object.h"
 #include "objimpl.h"
+#if defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)
+#  include "slots.h"
+#endif
 #include "typeslots.h"
 #include "pyhash.h"
 #include "cpython/pydebug.h"
@@ -142,6 +154,10 @@ struct timeval;
 #include "fileutils.h"
 #include "cpython/pyfpe.h"
 #include "cpython/tracemalloc.h"
+
+#if (defined(Py_BUILD_CORE) || defined(Py_TARGET_ABI3T)) && defined(_MSC_VER)
+__pragma(warning(pop))  // warning(disable: 4201)
+#endif
 
 // helper macro for quick printf debugging
 #define __PD {printf("%i \t%s\n", __LINE__, __func__); }

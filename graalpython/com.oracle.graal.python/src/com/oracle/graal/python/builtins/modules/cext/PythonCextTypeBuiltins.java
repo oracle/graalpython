@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags;
 import com.oracle.graal.python.builtins.objects.cext.capi.WrapperDescriptorRootNodesGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -90,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadObjectNode;
@@ -311,14 +311,14 @@ public final class PythonCextTypeBuiltins {
             WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
             CFunctionDocUtils.writeDocAndTextSignature(func, name, doc, flags);
         }
-        if (CExtContext.isMethClass(flags)) {
-            if (CExtContext.isMethStatic(flags)) {
+        if (PyMethodFlags.isMethClass(flags)) {
+            if (PyMethodFlags.isMethStatic(flags)) {
                 assert func == null;
                 throw PRaiseNode.raiseStatic(EncapsulatingNodeReference.getCurrent().get(), PythonBuiltinClassType.ValueError, ErrorMessages.METHOD_CANNOT_BE_BOTH_CLASS_AND_STATIC);
             }
             assert func != null;
             return PFactory.createBuiltinClassmethodFromCallableObj(language, func);
-        } else if (CExtContext.isMethStatic(flags)) {
+        } else if (PyMethodFlags.isMethStatic(flags)) {
             return PFactory.createStaticmethodFromCallableObj(language, func);
         }
         HiddenAttr.WriteLongNode.executeUncached(func, METHOD_DEF_PTR, methodDefPtr);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,43 +38,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.builtin.objects.cext;
 
-import static org.junit.Assert.assertEquals;
+package com.oracle.graal.python.builtins.objects.module;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.strings.TruffleString;
+final class NativeModuleData {
+    /**
+     * Stores the native {@code PyModuleDef *} structure if this module was created via the
+     * multiphase extension module initialization mechanism. Will be non-null only for legacy definitions.
+     */
+    long def = NULLPTR;
+    /** {@code void *md_state} */
+    long state = NULLPTR;
 
-public class CExtContextTest {
+    /** {@code Py_ssize_t md_state_size} */
+    long stateSize;
 
-    @Before
-    public void setUp() {
-        PythonTests.enterContext();
-    }
+    /** {@code traverseproc md_state_traverse} */
+    long stateTraverse = NULLPTR;
+    /** {@code inquiry md_state_clear} */
+    long stateClear = NULLPTR;
+    /** {@code freefunc md_state_free} */
+    long stateFree = NULLPTR;
 
-    @After
-    public void tearDown() {
-        PythonTests.closeContext();
-    }
+    /** {@code _Py_modexecfunc md_exec} */
+    long exec = NULLPTR;      // direct PySlot[] modules
+    /** {@code void *md_token} */
+    long token = NULLPTR;
+    /** {@code bool md_token_is_def} */
+    boolean tokenIsDef;
+    /** {@code bool md_requires_gil} */
+    boolean requiresGil;
 
-    static TruffleString ts(String s) {
-        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
-    }
-
-    @Test
-    public void testGetBaseName() {
-        assertEquals(ts(""), CApiContext.getBaseName(ts("")));
-        assertEquals(ts("a"), CApiContext.getBaseName(ts("a")));
-        assertEquals(ts("aa"), CApiContext.getBaseName(ts("aa")));
-        assertEquals(ts("aa"), CApiContext.getBaseName(ts("a.aa")));
-        assertEquals(ts("bb"), CApiContext.getBaseName(ts("a.aa.bb")));
-        assertEquals(ts(""), CApiContext.getBaseName(ts("a.aa.bb.")));
-        assertEquals(ts("b"), CApiContext.getBaseName(ts("a.b")));
-        assertEquals(ts(""), CApiContext.getBaseName(ts("a.b.")));
-    }
+    /**
+     * Replicates the native references of this module's native state in Java.
+     * <p>
+     * Since a module can have a native module state where it is valid to store native references to
+     * other objects, we need this field to replicate those references in Java if we make the handle
+     * table reference weak in order to break possible reference cycles. This field will ever only
+     * be set if the module's native definition provides a traverse function (see
+     * {@code moduleobject.c: module_traverse}). The condition for this is:
+     *
+     * <pre>
+     * {@code
+     * if (m -> md_def && m -> md_def -> m_traverse && (m -> md_def -> m_size <= 0 || m -> md_state != NULL)) {
+     *     // ...
+     * }
+     * }
+     * </pre>
+     * </p>
+     */
+    Object[] replicatedNativeReferences;
 }

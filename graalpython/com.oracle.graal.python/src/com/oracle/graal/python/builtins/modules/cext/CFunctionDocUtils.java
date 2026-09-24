@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_COEXIST;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_NOARGS;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_O;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_STATIC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags.METH_CLASS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags.METH_COEXIST;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags.METH_NOARGS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags.METH_O;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags.METH_STATIC;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;

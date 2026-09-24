@@ -260,6 +260,7 @@ graalpython/com.oracle.graal.python.cext/include/pytypedefs.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/rangeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/setobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sliceobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/slots.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sysmodule.h,python.copyright
