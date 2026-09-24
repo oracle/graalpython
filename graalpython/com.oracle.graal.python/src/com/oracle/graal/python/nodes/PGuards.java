@@ -309,6 +309,10 @@ public abstract class PGuards {
         return obj.getPythonClass() == PythonBuiltinClassType.PInt;
     }
 
+    public static boolean isBuiltinPFloat(PFloat obj) {
+        return obj.getPythonClass() == PythonBuiltinClassType.PFloat;
+    }
+
     public static boolean isPString(Object obj) {
         return obj instanceof PString;
     }
