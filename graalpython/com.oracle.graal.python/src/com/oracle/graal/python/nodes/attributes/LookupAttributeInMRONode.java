@@ -72,6 +72,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
@@ -139,6 +140,127 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     private final boolean skipNonStaticBases;
+
+    /**
+     * The suffix lookup used by super. Its result depends on the starting type as well as the
+     * receiver MRO. Reuse the ordinary lookup cache of the next class only when its MRO is exactly
+     * the suffix being searched, and separately guard the receiver's MRO against changes.
+     */
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class Super extends PNodeWithContext {
+        /** Distinguish an empty suffix from a searched suffix with a missing attribute. */
+        public static final Object NO_MRO_SUFFIX = new Object();
+
+        public final Object execute(Object type, Object objectType, TruffleString key) {
+            try {
+                return executeInternal(type, objectType, key);
+            } catch (MROChangedException e) {
+                // This exception can occur only during specialization
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return e.result;
+            }
+        }
+
+        protected abstract Object executeInternal(Object type, Object objectType, TruffleString key) throws MROChangedException;
+
+        @Specialization(guards = {"isSingleContext()", "type == cachedType", "objectType == cachedObjectType", "key == cachedKey",
+                        "cachedResult != null", "result != null"}, assumptions = {"cachedResult.mroStable", "cachedResult.attributeStable"}, limit = "3")
+        static Object cached(Object type, Object objectType, TruffleString key,
+                        @Bind Node inliningTarget,
+                        @Cached(value = "type", weak = true) Object cachedType,
+                        @Cached(value = "objectType", weak = true) Object cachedObjectType,
+                        @Cached("key") TruffleString cachedKey,
+                        @Cached("createCache(inliningTarget, cachedType, cachedObjectType, cachedKey)") SuperLookupResult cachedResult,
+                        @Bind("getCachedValue(cachedResult)") Object result) {
+            return result;
+        }
+
+        @NonIdempotent
+        static Object getCachedValue(SuperLookupResult result) {
+            return result == null || result.attribute.getAssumption() == null ? null : result.attribute.getValue();
+        }
+
+        @Specialization(replaces = "cached")
+        static Object generic(Object type, Object objectType, TruffleString key,
+                        @Bind Node inliningTarget,
+                        @Cached GetMroStorageNode getMroNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttrNode) {
+            PythonAbstractClass[] mro = getMroNode.execute(inliningTarget, objectType).getInternalClassArray();
+            int i = 0;
+            while (i < mro.length && !isSameTypeNode.execute(inliningTarget, type, mro[i])) {
+                i++;
+            }
+            if (i + 1 >= mro.length) {
+                return NO_MRO_SUFFIX;
+            }
+            for (i++; i < mro.length; i++) {
+                Object value = readAttrNode.execute(mro[i], key);
+                if (value != PNone.NO_VALUE) {
+                    return value;
+                }
+            }
+            return PNone.NO_VALUE;
+        }
+
+        static final class SuperLookupResult {
+            final Assumption mroStable;
+            final Assumption attributeStable;
+            final MroSequenceStorage.FinalAttributeAssumptionPair attribute;
+
+            SuperLookupResult(Assumption mroStable, MroSequenceStorage.FinalAttributeAssumptionPair attribute) {
+                this.mroStable = mroStable;
+                this.attributeStable = attribute.getAssumption();
+                this.attribute = attribute;
+            }
+        }
+
+        static SuperLookupResult createCache(Node node, Object type, Object objectType, TruffleString key) throws MROChangedException {
+            CompilerAsserts.neverPartOfCompilation();
+            MroSequenceStorage mro = GetMroStorageNode.executeUncached(objectType);
+            PythonAbstractClass[] classes = mro.getInternalClassArray();
+            int i = 0;
+            while (i < classes.length && !IsSameTypeNode.executeUncached(type, classes[i])) {
+                i++;
+            }
+            int start = i + 1;
+            if (start >= classes.length) {
+                return null;
+            }
+            MroSequenceStorage suffix = GetMroStorageNode.executeUncached(classes[start]);
+            if (suffix.length() != classes.length - start) {
+                return null;
+            }
+            for (i = 0; i < suffix.length(); i++) {
+                if (!IsSameTypeNode.executeUncached(classes[start + i], suffix.getPythonClassItemNormalized(i))) {
+                    return null;
+                }
+            }
+            // The attribute assumption belongs to the suffix class. Changing the receiver's
+            // __bases__ can select a different suffix without invalidating that assumption, so
+            // we must also guard the receiver's MRO.
+            Assumption mroStable = mro.getLookupStableAssumption();
+            if (!mroStable.isValid()) {
+                return null;
+            }
+            try {
+                MroSequenceStorage.FinalAttributeAssumptionPair attribute = findAttrAndAssumptionInMRO(node, classes[start], key, false, false);
+                if (attribute.getAssumption() == null) {
+                    return null;
+                }
+                if (!mroStable.isValid()) {
+                    // Key comparisons may change only the receiver MRO. Return the computed
+                    // result without caching it or repeating the side effects in generic lookup.
+                    throw new MROChangedException(attribute.getValue());
+                }
+                return new SuperLookupResult(mroStable, attribute);
+            } catch (MROGenericDictException ignore) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+    }
+
     final TruffleString key;
 
     public LookupAttributeInMRONode(TruffleString key, boolean skipNonStaticBases) {
