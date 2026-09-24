@@ -2739,8 +2739,9 @@ def update_import(name, suite_py: Path, args):
             break
     if not dep_dir:
         mx.warn("could not find suite %s to update" % name)
-        return
+        return False
     vc = cast(mx.VC, mx.VC.get_vc(dep_dir))
+    old_tip = str(vc.tip(dep_dir)).strip()
     repo_name = os.path.basename(dep_dir)
     if repo_name == "graal" and args.graal_rev:
         rev = args.graal_rev
@@ -2762,7 +2763,7 @@ def update_import(name, suite_py: Path, args):
         end = dep_match.end(1)
         assert end - start == len(tip)
         mx.update_file(suite_py.resolve().as_posix(), "".join([contents[:start], tip, contents[end:]]), showDiff=True)
-    return tip
+    return tip != old_tip
 
 
 def _import_update_branch_name():
@@ -2891,10 +2892,23 @@ def update_import_cmd(args):
     for suite in d["suite"].get("imports", {}).get("suites", []):
         imports_to_update.add(suite["name"])
 
-    revisions = {}
+    changed = False
     # now update all imports
     for name in imports_to_update:
-        revisions[name] = update_import(name, suite_py, args)
+        changed = update_import(name, suite_py, args) or changed
+
+    if changed:
+        # bump the bytecode version, because truffle may have changed
+        source = repo / "graalpython/com.oracle.graal.python/src/com/oracle/graal/python/compiler/bytecode_dsl/BytecodeDSLCompiler.java"
+        with open(source) as f:
+            contents = f.read()
+        matches = list(re.compile(r"(public static final int BYTECODE_VERSION = )(\d+)(;)").finditer(contents))
+        if len(matches) != 1:
+            mx.abort(f"expected exactly one bytecode version in {source}, found {len(matches)}")
+        match = matches[0]
+        version = int(match.group(2))
+        updated = contents[:match.start(2)] + str(version + 1) + contents[match.end(2):]
+        mx.update_file(source.resolve().as_posix(), updated, showDiff=True)
 
     shutil.copy(truffle_repo / "common.json", repo / "ci" / "graal" / "common.json")
     shutil.copytree(truffle_repo / "ci", repo / "ci" / "graal" / "ci", dirs_exist_ok=True)
