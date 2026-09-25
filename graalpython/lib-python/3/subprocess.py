@@ -1881,9 +1881,9 @@ class Popen:
                     # best, oh don't you know, it we do.
                     args = [arg.replace(" && ", " ^&^& ") for arg in args]
                     if len(args) == 1:
-                        args = [comspec, "/u", "/c", *args]
+                        args = [comspec, "/c", *args]
                     else:
-                        args = [comspec, "/u", "/c", list2cmdline(args)]
+                        args = [comspec, "/c", list2cmdline(args)]
                 else:
                     for idx, arg in enumerate(args):
                         # Adapted per the quoting rules from

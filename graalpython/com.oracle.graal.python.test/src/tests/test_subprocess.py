@@ -2,6 +2,7 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import locale
 import os
 import shlex
 import tempfile
@@ -76,6 +77,21 @@ class TestSubprocess(unittest.TestCase):
         output = subprocess.check_output(
                 [sys.executable, "-c", "print('BDFL')"])
         self.assertIn(b'BDFL', output)
+
+    @unittest.skipUnless(sys.platform == 'win32', "Windows batch file specific")
+    def test_batch_file_text_output_encoding(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            batch_file = os.path.join(tmp_dir, "echo.bat")
+            with open(batch_file, "w", encoding="ascii", newline="") as f:
+                f.write("@echo off\r\n")
+                f.write("echo expected\r\n")
+
+            output = subprocess.check_output(
+                    batch_file,
+                    text=True,
+                    encoding=locale.getpreferredencoding(False))
+
+        self.assertEqual("expected\n", output)
 
     @unittest.skipIf(sys.platform == 'win32', "POSIX argv bytes specific")
     def test_surrogateescape_non_utf8_argv(self):
