@@ -44,6 +44,7 @@ import unittest
 if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncached_interpreter:
 
     skipUnlessSingleContext = unittest.skipUnless(__graalpython__.is_single_context, "requires single-context mode")
+    skipUnlessMultiContext = unittest.skipIf(__graalpython__.is_single_context, "requires multi-context mode")
 
     def assert_contains_bytecode(fun, bytecode_str):
         bytecode = __graalpython__.dis(fun)
@@ -113,6 +114,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester_i, "GetAttribute$Module$int")
 
 
+    @skipUnlessSingleContext
     def test_get_attr_quickening_type():
         class K:
             MY_ATTR = 'forty-two'
@@ -123,6 +125,19 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         for i in range(5):
             assert tester(K) == 'forty-two'
         assert_contains_bytecode(tester, "GetAttribute$Type")
+
+
+    @skipUnlessMultiContext
+    def test_get_attr_quickening_builtin_type_multi_context():
+        import _blake2
+
+        def tester(o):
+            return o.MAX_DIGEST_SIZE
+
+        expected = _blake2.blake2b.MAX_DIGEST_SIZE
+        for _ in range(5):
+            assert tester(_blake2.blake2b) == expected
+        assert_contains_bytecode(tester, "GetAttribute$BuiltinTypeMultiContext")
 
 
     @skipUnlessSingleContext
