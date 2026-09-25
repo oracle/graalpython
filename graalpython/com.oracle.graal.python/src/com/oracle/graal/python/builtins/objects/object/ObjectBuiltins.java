@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrDeleteNode;
@@ -90,8 +91,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
-import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -99,7 +98,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.AddKeysToHashMap;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.CollectKeysNode;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBui
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRepr.CallSlotReprNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -126,9 +127,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -146,7 +145,6 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -870,28 +868,22 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object dir(VirtualFrame frame, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Cached SetBuiltins.UpdateSingleNode updateSetNode,
+                        @Cached AddKeysToHashMap addKeys,
+                        @Cached CollectKeysNode collectKeys,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ConstructListNode constructListNode,
+                        @Cached PyDictCheckNode dictCheck,
                         @Bind PythonLanguage language) {
-            PSet names = PFactory.createSet(language);
+            EconomicMapStorage map = EconomicMapStorage.create();
+            PDict names = PFactory.createDict(language, map);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
-            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
-                updateSetNode.execute(frame, names, ns);
+            if (dictCheck.execute(inliningTarget, ns)) {
+                addKeys.execute(frame, inliningTarget, ns, names, map);
             }
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);
             if (klass != PNone.NO_VALUE) {
-                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
-                try {
-                    TypeBuiltins.DirNode.dir(names, klass);
-                } finally {
-                    BoundaryCallContext.exit(frame, boundaryCallData, state);
-                }
+                collectKeys.execute(frame, inliningTarget, klass, names, map);
             }
-            return constructListNode.execute(frame, names);
+            return PFactory.createList(language, map.getKeys(inliningTarget));
         }
     }
 

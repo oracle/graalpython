@@ -1978,3 +1978,32 @@ def test_removing_attr_from_economic_map():
     del o.foo
 
     assert "foo" not in o.__dict__
+
+
+def test_bulk_update_after_deletions():
+    d = {i: i for i in range(128)}
+    for i in range(0, 128, 2):
+        del d[i]
+    incoming = {i: -i for i in range(64, 256)}
+    expected_order = list(d) + [i for i in incoming if i not in d]
+    d.update(incoming)
+    assert list(d) == expected_order
+    assert all(d[i] == (-i if i >= 64 else i) for i in d)
+    snapshot = list(d.items())
+    d.update(d)
+    d.update({})
+    d.update(incoming)
+    assert list(d.items()) == snapshot
+
+
+def test_bulk_value_update_preserves_iterators():
+    d = {i: i for i in range(128)}
+    del d[0]
+    expected = list(d)
+    it = iter(d)
+    reverse = reversed(d)
+    assert next(it) == expected[0]
+    assert next(reverse) == expected[-1]
+    d.update({k: -v for k, v in d.items()})
+    assert list(it) == expected[1:]
+    assert list(reverse) == expected[-2::-1]

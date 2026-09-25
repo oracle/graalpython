@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
@@ -77,7 +78,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -95,14 +95,16 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
@@ -130,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttr
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -144,7 +147,6 @@ import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -163,6 +165,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -180,11 +183,14 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObject.GetKeyArrayNode;
+import com.oracle.truffle.api.object.DynamicObject.GetNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
@@ -1243,103 +1249,104 @@ public final class TypeBuiltins extends PythonBuiltins {
         static PList dir(VirtualFrame frame, Object klass,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Bind PythonContext context,
-                        @Cached ConstructListNode constructListNode,
-                        @Cached InlinedBranchProfile slowPathBranch,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            Object[] fastNames = dirFast(language, context, klass);
-            if (fastNames != null) {
-                return PFactory.createList(language, fastNames);
-            }
-
-            slowPathBranch.enter(inliningTarget);
-            PSet names = PFactory.createSet(language);
-            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
-            try {
-                dir(names, klass);
-            } finally {
-                BoundaryCallContext.exit(frame, boundaryCallData, state);
-            }
-            return constructListNode.execute(frame, names);
-        }
-
-        @TruffleBoundary
-        private static Object[] dirFast(PythonLanguage language, PythonContext context, Object klass) {
-            if (!isFastPathEligible(context, klass)) {
-                return null;
-            }
-            LinkedHashSet<TruffleString> names = new LinkedHashSet<>();
-            collectDynamicObjectStorageKeys(names, context, klass);
-            return names.toArray();
-        }
-
-        private static boolean isFastPathEligible(PythonContext context, Object klass) {
-            PythonManagedClass managedClass = asManagedClass(context, klass);
-            if (managedClass == null || PGuards.hasMaterializedDict(managedClass.getShape())) {
-                return false;
-            }
-            for (PythonAbstractClass base : managedClass.getBaseClasses()) {
-                if (!isFastPathEligible(context, base)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private static PythonManagedClass asManagedClass(PythonContext context, Object klass) {
-            if (GetClassNode.executeUncached(klass) != PythonBuiltinClassType.PythonClass) {
-                return null;
-            }
-            if (klass instanceof PythonManagedClass pythonManagedClass) {
-                return pythonManagedClass;
-            } else if (klass instanceof PythonBuiltinClassType builtinClassType) {
-                return context.lookupType(builtinClassType);
-            }
-            return null;
-        }
-
-        private static void collectDynamicObjectStorageKeys(LinkedHashSet<TruffleString> names, PythonContext context, Object klass) {
-            PythonManagedClass managedClass = asManagedClass(context, klass);
-            assert managedClass != null && !PGuards.hasMaterializedDict(managedClass.getShape());
-            DynamicObject.GetNode getNode = DynamicObject.GetNode.getUncached();
-            for (Object key : DynamicObject.GetKeyArrayNode.getUncached().execute(managedClass)) {
-                if (key instanceof TruffleString stringKey && getNode.execute(managedClass, stringKey, NO_VALUE) != NO_VALUE) {
-                    names.add(stringKey);
-                }
-            }
-
-            for (PythonAbstractClass base : managedClass.getBaseClasses()) {
-                collectDynamicObjectStorageKeys(names, context, base);
-            }
-        }
-
-        @TruffleBoundary
-        public static void dir(PSet names, Object klass) {
-            Object ns = PyObjectLookupAttr.executeUncached(klass, T___DICT__);
-            UpdateSingleNode updateSingleNode = UpdateSingleNode.getUncached();
-            if (ns != NO_VALUE) {
-                updateSingleNode.execute(null, names, ns);
-            }
-            Object basesAttr = PyObjectLookupAttr.executeUncached(klass, T___BASES__);
-            if (basesAttr instanceof PTuple || PyTupleCheckNode.executeUncached(basesAttr)) {
-                PTuple basesTuple = basesAttr instanceof PTuple ? (PTuple) basesAttr : ConstructTupleNode.getUncached().execute(null, basesAttr);
-                Object[] bases = ToArrayNode.executeUncached(basesTuple.getSequenceStorage());
-                for (Object cls : bases) {
-                    // Note that since we are only interested in the keys, the order
-                    // we merge classes is unimportant
-                    dir(names, cls);
-                }
-            }
-        }
-
-        @NeverDefault
-        protected GetFixedAttributeNode createGetAttrNode() {
-            return GetFixedAttributeNode.create(T___BASES__);
+                        @Cached CollectKeysNode collectKeys) {
+            EconomicMapStorage map = EconomicMapStorage.create();
+            PDict dict = PFactory.createDict(language, map);
+            collectKeys.execute(frame, inliningTarget, klass, dict, map);
+            return PFactory.createList(language, map.getKeys(inliningTarget));
         }
 
         @NeverDefault
         public static DirNode create() {
             return TypeBuiltinsFactory.DirNodeFactory.create();
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CollectKeysNode extends Node {
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, Object klass, PDict dict, ObjectHashMap map);
+
+        @Specialization
+        static void collect(VirtualFrame frame, Node inliningTarget, Object klass, PDict dict, ObjectHashMap map,
+                        @Cached PyObjectLookupAttr lookupDict,
+                        @Cached PyObjectLookupAttr lookupBases,
+                        @Cached AddKeysToHashMap addKeysToHashMap,
+                        @Cached PyTupleCheckNode pyTupleCheckNode,
+                        @Cached ConstructTupleNode constructTupleNode,
+                        @Cached ToArrayNode tupleToArrayNode) {
+            ArrayBuilder<Object> worklist = new ArrayBuilder<>();
+            worklist.add(klass);
+
+            while (!worklist.isEmpty()) {
+                Object currentType = worklist.pop();
+                Object ns = lookupDict.execute(frame, inliningTarget, currentType, T___DICT__);
+                addKeysToHashMap.execute(frame, inliningTarget, ns, dict, map);
+                Object basesAttr = lookupBases.execute(frame, inliningTarget, currentType, T___BASES__);
+                if (pyTupleCheckNode.execute(inliningTarget, basesAttr)) {
+                    PTuple basesTuple = constructTupleNode.execute(frame, basesAttr);
+                    Object[] bases = tupleToArrayNode.execute(inliningTarget, basesTuple.getSequenceStorage());
+                    // Push in reverse so the leftmost base is processed first. Later bases remain
+                    // pending and need not be added again if they are also bases of an earlier base.
+                    for (int i = bases.length - 1; i >= 0; i--) {
+                        Object base = bases[i];
+                        if (!worklist.containsIdentical(base)) {
+                            worklist.add(base);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class AddKeysToHashMap extends Node {
+        public final void execute(VirtualFrame frame, Node inliningTarget, Object ns, PDict dict, ObjectHashMap map) {
+            assert dict.getDictStorage() == map;
+            if (ns == NO_VALUE) {
+                return;
+            }
+            Object mapping = ns;
+            if (ns instanceof PMappingproxy proxy && proxy.getMapping() instanceof PDict source && PGuards.isBuiltinDict(source)) {
+                mapping = source;
+            }
+            if (mapping instanceof PDict source && source.getDictStorage() instanceof DynamicObjectStorage storage) {
+                ns = storage;
+            }
+            executeImpl(frame, inliningTarget, ns, dict, map);
+        }
+
+        public abstract void executeImpl(VirtualFrame frame, Node inliningTarget, Object ns, PDict dict, ObjectHashMap map);
+
+        @Specialization
+        static void doDynamicObjectStorage(VirtualFrame frame, Node inliningTarget, DynamicObjectStorage storage, @SuppressWarnings("unused") PDict dict, ObjectHashMap map,
+                        @Cached GetKeyArrayNode keyDomKeyArrayNode,
+                        @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Cached InlinedConditionProfile mayHaveNoValueProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached ObjectHashMap.PutNode putNode) {
+            boolean mayHaveNoValue = mayHaveNoValueProfile.profile(inliningTarget, !(storage.getStore() instanceof PythonManagedClass) ||
+                            (storage.getStore().getShape().getFlags() & HAS_NO_VALUE_PROPERTIES) != 0);
+            Object[] keys = keyDomKeyArrayNode.execute(storage.getStore());
+            loopProfile.profileCounted(inliningTarget, keys.length);
+            map.ensureCapacity((long) map.size() + keys.length);
+            // The DOM access is almost always going to be polymorphic,
+            // so save the cache invalidation dance and cached node footprint
+            GetNode getNode = GetNode.getUncached();
+            for (int i = 0; loopProfile.inject(inliningTarget, i < keys.length); i++) {
+                Object key = keys[i];
+                if (key instanceof TruffleString strKey && (!mayHaveNoValue || getNode.execute(storage.getStore(), strKey, NO_VALUE) != NO_VALUE)) {
+                    putNode.put(frame, inliningTarget, map, strKey, PyObjectHashNode.hash(strKey, hashCodeNode), PNone.NONE);
+                }
+            }
+            LoopNode.reportLoopCount(inliningTarget, keys.length);
+        }
+
+        @Fallback
+        static void doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Node inliningTarget, Object ns, PDict dict, @SuppressWarnings("unused") ObjectHashMap map,
+                        @Cached UpdateSingleNode updateSingleNode) {
+            updateSingleNode.execute(frame, dict, ns);
         }
     }
 

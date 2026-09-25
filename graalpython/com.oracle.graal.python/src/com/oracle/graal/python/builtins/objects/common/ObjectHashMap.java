@@ -45,6 +45,8 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.RemoveNodeGen;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1007,14 +1009,52 @@ public class ObjectHashMap extends HashingStorage {
     }
 
     /**
-     * Called when we need space for new entry. It determines the new size from the number of slots
-     * occupied by real values (i.e., does not count dummy entries), so the new size may be actually
-     * smaller than the old size if there were many dummy entries. The rehashing also removes the
-     * dummy entries.
+     * Called when we need space for new entry, it also inserts that entry.
+     */
+    private void rehashAndPut(Object newKey, long newKeyHash, Object newValue) {
+        rehash(size + 1, newKey, newKeyHash, newValue);
+    }
+
+    /**
+     * Reserve for a bulk insertion whose keys may overlap existing keys. Like the constructor, cap
+     * speculative allocation so an overestimate does not cause an unnecessarily early memory error.
+     * Larger maps and maps with deleted entries continue to grow on demand. Accept a long so callers
+     * can add the current and incoming sizes without integer overflow.
+     */
+    public void ensureCapacity(long newCapacity) {
+        assert newCapacity >= size;
+        if (newCapacity == size) {
+            return;
+        }
+        // Rehashing compacts deleted entries. A duplicate-only update must not move entries
+        // underneath live iterators, so leave maps with holes to grow on actual insertion.
+        if (usedHashes != size) {
+            return;
+        }
+        int limit = getUsableSize(MAX_PREALLOCATED_INDICES_SIZE);
+        if (size >= limit) {
+            return;
+        }
+        int capacity = (int) Math.min(newCapacity, limit);
+        int additionalEntries = capacity - size;
+        int entryCapacity = getEntryCapacity();
+        int bucketsCount = getBucketsCount(metadata, entryCapacity, getIndexByteSize(entryCapacity));
+        if (additionalEntries <= entryCapacity - usedHashes && additionalEntries <= getUsableSize(bucketsCount) - usedIndices) {
+            return;
+        }
+        rehash(Math.max(capacity, entryCapacity), null, -1, null);
+    }
+
+    /**
+     * Called when we need space for new entry/entries. It determines the new size from the number of
+     * slots occupied by real values (i.e., does not count dummy entries), so the new size may be
+     * actually smaller than the old size if there were many dummy entries. The rehashing also removes
+     * the dummy entries. If the {@code newKey} argument is non-{@code null}, it also inserts given
+     * key/value with given hash.
      */
     @TruffleBoundary
-    private void rehashAndPut(Object newKey, long newKeyHash, Object newValue) {
-        int newSize = size + 1;
+    private void rehash(int newSize, Object newKey, long newKeyHash, Object newValue) {
+        assert newSize > size;
         int indicesCapacity = getMinBucketsCount(newSize);
         byte[] oldMetadata = metadata;
         Object[] oldKeysAndValues = keysAndValues;
@@ -1038,7 +1078,9 @@ public class ObjectHashMap extends HashingStorage {
         }
         assert size == oldSize : String.format("size=%d, oldSize=%d, oldUsedSize=%d, usedHashes=%d, usedIndices=%d",
                         size, oldSize, oldUsedSize, usedHashes, usedIndices);
-        insertNewKey(localMetadata, indicesLen, indicesOffset, indexByteSize, physicalCollisionMask, newKey, newKeyHash, newValue);
+        if (newKey != null) {
+            insertNewKey(localMetadata, indicesLen, indicesOffset, indexByteSize, physicalCollisionMask, newKey, newKeyHash, newValue);
+        }
     }
 
     private static int getRequestedEntryCapacity(int requestedCapacity, int bucketsCount) {
@@ -1134,6 +1176,20 @@ public class ObjectHashMap extends HashingStorage {
 
     public Object getKey(int index) {
         return getKey(index, keysAndValues);
+    }
+
+    public ObjectSequenceStorage getKeys(Node inliningTarget) {
+        int index = 0;
+        ArrayBuilder<Object> keys = new ArrayBuilder<>(size);
+        while (index < usedHashes) {
+            Object val = getValue(index);
+            if (val != null) {
+                keys.add(getKey(index));
+            }
+            index++;
+        }
+        LoopNode.reportLoopCount(inliningTarget, index);
+        return keys.toObjectSequenceStorage();
     }
 
     public Object getValue(int index) {
