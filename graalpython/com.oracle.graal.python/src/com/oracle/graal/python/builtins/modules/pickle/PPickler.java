@@ -118,6 +118,9 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.NumericSupport;
@@ -686,6 +689,10 @@ public class PPickler extends PythonBuiltinObject {
         private static final int SEEN_FUNCTION = 1 << 21;
         private static final int SEEN_TYPE = 1 << 22;
         private static final int SEEN_OBJECT = 1 << 23;
+        private static final int SEEN_INT_STORAGE = 1 << 24;
+        private static final int SEEN_LONG_STORAGE = 1 << 25;
+        private static final int SEEN_DOUBLE_STORAGE = 1 << 26;
+        private static final int SEEN_GENERIC_STORAGE = 1 << 27;
 
         @CompilationFinal private int seenTypes;
 
@@ -1661,9 +1668,25 @@ public class PPickler extends PythonBuiltinObject {
 
         private void batchListExact(VirtualFrame frame, PPickler pickler, PList obj) {
             final SequenceStorage storage = obj.getSequenceStorage();
+            if (pickler.persFunc == null) {
+                if (storage instanceof IntSequenceStorage intStorage) {
+                    profileSeen(SEEN_INT_STORAGE);
+                    batchIntList(frame, pickler, intStorage);
+                    return;
+                } else if (storage instanceof LongSequenceStorage longStorage) {
+                    profileSeen(SEEN_LONG_STORAGE);
+                    batchLongList(frame, pickler, longStorage);
+                    return;
+                } else if (storage instanceof DoubleSequenceStorage doubleStorage) {
+                    profileSeen(SEEN_DOUBLE_STORAGE);
+                    batchDoubleList(frame, pickler, doubleStorage);
+                    return;
+                }
+            }
+            profileSeen(SEEN_GENERIC_STORAGE);
             Object item;
             if (storage.length() == 1) {
-                item = getItem(frame, storage, 0);
+                item = getItem(storage, 0);
                 save(frame, pickler, item, 0);
                 write(pickler, PickleUtils.OPCODE_APPEND);
                 return;
@@ -1676,7 +1699,7 @@ public class PPickler extends PythonBuiltinObject {
                 thisBatch = 0;
                 write(pickler, PickleUtils.OPCODE_MARK);
                 while (total < storage.length()) {
-                    item = getItem(frame, storage, total);
+                    item = getItem(storage, total);
                     save(frame, pickler, item, 0);
                     total++;
                     if (++thisBatch == PickleUtils.BATCHSIZE) {
@@ -1685,6 +1708,69 @@ public class PPickler extends PythonBuiltinObject {
                 }
                 write(pickler, PickleUtils.OPCODE_APPENDS);
             } while (total < storage.length());
+        }
+
+        private void batchIntList(VirtualFrame frame, PPickler pickler, IntSequenceStorage storage) {
+            int proto = pickler.getProto();
+            if (storage.length() == 1) {
+                opcodeBoundary(frame, pickler);
+                saveLong(pickler, proto, storage.getIntItemNormalized(0));
+                write(pickler, PickleUtils.OPCODE_APPEND);
+                return;
+            }
+
+            int length = storage.length();
+            for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
+                int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
+                write(pickler, PickleUtils.OPCODE_MARK);
+                for (int i = batchStart; i < batchEnd; i++) {
+                    opcodeBoundary(frame, pickler);
+                    saveLong(pickler, proto, storage.getIntItemNormalized(i));
+                }
+                write(pickler, PickleUtils.OPCODE_APPENDS);
+            }
+        }
+
+        private void batchLongList(VirtualFrame frame, PPickler pickler, LongSequenceStorage storage) {
+            int proto = pickler.getProto();
+            if (storage.length() == 1) {
+                opcodeBoundary(frame, pickler);
+                saveLong(frame, pickler, proto, storage.getLongItemNormalized(0));
+                write(pickler, PickleUtils.OPCODE_APPEND);
+                return;
+            }
+
+            int length = storage.length();
+            for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
+                int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
+                write(pickler, PickleUtils.OPCODE_MARK);
+                for (int i = batchStart; i < batchEnd; i++) {
+                    opcodeBoundary(frame, pickler);
+                    saveLong(frame, pickler, proto, storage.getLongItemNormalized(i));
+                }
+                write(pickler, PickleUtils.OPCODE_APPENDS);
+            }
+        }
+
+        private void batchDoubleList(VirtualFrame frame, PPickler pickler, DoubleSequenceStorage storage) {
+            int proto = pickler.getProto();
+            if (storage.length() == 1) {
+                opcodeBoundary(frame, pickler);
+                saveFloat(pickler, proto, storage.getDoubleItemNormalized(0));
+                write(pickler, PickleUtils.OPCODE_APPEND);
+                return;
+            }
+
+            int length = storage.length();
+            for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
+                int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
+                write(pickler, PickleUtils.OPCODE_MARK);
+                for (int i = batchStart; i < batchEnd; i++) {
+                    opcodeBoundary(frame, pickler);
+                    saveFloat(pickler, proto, storage.getDoubleItemNormalized(i));
+                }
+                write(pickler, PickleUtils.OPCODE_APPENDS);
+            }
         }
 
         private void batchList(VirtualFrame frame, PPickler pickler, int proto, Object iterator) {
@@ -1734,9 +1820,49 @@ public class PPickler extends PythonBuiltinObject {
                 }
             } else {
                 assert storage.length() == len;
-                for (int i = 0; i < len; i++) {
-                    save(frame, pickler, getItem(frame, storage, i), 0);
+                if (pickler.persFunc == null) {
+                    if (storage instanceof IntSequenceStorage intStorage) {
+                        profileSeen(SEEN_INT_STORAGE);
+                        storeIntTupleElements(frame, pickler, intStorage);
+                        return;
+                    } else if (storage instanceof LongSequenceStorage longStorage) {
+                        profileSeen(SEEN_LONG_STORAGE);
+                        storeLongTupleElements(frame, pickler, longStorage);
+                        return;
+                    } else if (storage instanceof DoubleSequenceStorage doubleStorage) {
+                        profileSeen(SEEN_DOUBLE_STORAGE);
+                        storeDoubleTupleElements(frame, pickler, doubleStorage);
+                        return;
+                    }
                 }
+                profileSeen(SEEN_GENERIC_STORAGE);
+                for (int i = 0; i < len; i++) {
+                    save(frame, pickler, getItem(storage, i), 0);
+                }
+            }
+        }
+
+        private void storeIntTupleElements(VirtualFrame frame, PPickler pickler, IntSequenceStorage storage) {
+            int proto = pickler.getProto();
+            for (int i = 0; i < storage.length(); i++) {
+                opcodeBoundary(frame, pickler);
+                saveLong(pickler, proto, storage.getIntItemNormalized(i));
+            }
+        }
+
+        private void storeLongTupleElements(VirtualFrame frame, PPickler pickler, LongSequenceStorage storage) {
+            int proto = pickler.getProto();
+            for (int i = 0; i < storage.length(); i++) {
+                opcodeBoundary(frame, pickler);
+                saveLong(frame, pickler, proto, storage.getLongItemNormalized(i));
+            }
+        }
+
+        private void storeDoubleTupleElements(VirtualFrame frame, PPickler pickler, DoubleSequenceStorage storage) {
+            int proto = pickler.getProto();
+            for (int i = 0; i < storage.length(); i++) {
+                opcodeBoundary(frame, pickler);
+                saveFloat(pickler, proto, storage.getDoubleItemNormalized(i));
             }
         }
 

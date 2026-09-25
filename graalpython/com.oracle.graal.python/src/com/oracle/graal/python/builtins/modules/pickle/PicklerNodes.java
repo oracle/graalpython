@@ -135,7 +135,7 @@ public final class PicklerNodes {
         @Child private HashingStorageSetItem setHashingStorageItemNode;
         @Child private PyObjectSetItem pyObjectSetItemNode;
         @Child private CachedHashingStorageGetItem getHashingStorageItemNode;
-        @Child private SequenceStorageNodes.GetItemNode getSeqStorageItemNode;
+        @Child private SequenceStorageNodes.GetItemScalarNode getSeqStorageItemNode;
         @Child private PyNumberAsSizeNode asSizeNode;
         @Child private CastToTruffleStringNode castToTruffleStringNode;
         @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode;
@@ -556,12 +556,12 @@ public final class PicklerNodes {
             return getNextNode.executeCached(frame, iterator);
         }
 
-        public Object getItem(VirtualFrame frame, SequenceStorage storage, int i) {
+        public Object getItem(SequenceStorage storage, int i) {
             if (getSeqStorageItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSeqStorageItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+                getSeqStorageItemNode = insert(SequenceStorageNodes.GetItemScalarNode.create());
             }
-            return getSeqStorageItemNode.execute(frame, storage, i);
+            return getSeqStorageItemNode.executeCached(storage, i);
         }
 
         public Object getItem(VirtualFrame frame, Object obj, Object slice) {
