@@ -1000,7 +1000,9 @@ def PeekNamedPipe(handle, size=0):
             ctypes.byref(bytes_left),
         )
     )
-    return (buffer.raw[: bytes_read.value] if buffer is not None else b""), total_available.value, bytes_left.value
+    if buffer is None:
+        return total_available.value, bytes_left.value
+    return buffer.raw[: bytes_read.value], total_available.value, bytes_left.value
 
 
 def SetNamedPipeHandleState(named_pipe, mode, max_collection_count, collect_data_timeout):
