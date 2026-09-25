@@ -124,6 +124,7 @@ import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -661,6 +662,33 @@ public class PPickler extends PythonBuiltinObject {
     public abstract static class SaveNode extends BasePickleWriteNode {
         private static final int MAX_RECURSION_DEPTH = 3;
 
+        private static final int SEEN_NONE = 1 << 0;
+        private static final int SEEN_BOOLEAN = 1 << 1;
+        private static final int SEEN_INTEGER = 1 << 2;
+        private static final int SEEN_LONG = 1 << 3;
+        private static final int SEEN_PINT = 1 << 4;
+        private static final int SEEN_DOUBLE = 1 << 5;
+        private static final int SEEN_PFLOAT = 1 << 6;
+        private static final int SEEN_BUILTIN_CLASS_TYPE = 1 << 7;
+        private static final int SEEN_BYTES = 1 << 8;
+        private static final int SEEN_TRUFFLE_STRING = 1 << 9;
+        private static final int SEEN_PSTRING = 1 << 10;
+        private static final int SEEN_DICT = 1 << 11;
+        private static final int SEEN_SET = 1 << 12;
+        private static final int SEEN_FROZENSET = 1 << 13;
+        private static final int SEEN_LIST = 1 << 14;
+        private static final int SEEN_TUPLE = 1 << 15;
+        private static final int SEEN_NATIVE_TUPLE = 1 << 16;
+        private static final int SEEN_BYTE_ARRAY = 1 << 17;
+        private static final int SEEN_PICKLE_BUFFER = 1 << 18;
+        private static final int SEEN_MANAGED_CLASS = 1 << 19;
+        private static final int SEEN_NATIVE_CLASS = 1 << 20;
+        private static final int SEEN_FUNCTION = 1 << 21;
+        private static final int SEEN_TYPE = 1 << 22;
+        private static final int SEEN_OBJECT = 1 << 23;
+
+        @CompilationFinal private int seenTypes;
+
         private final int depth;
         @Child private SaveNode recursiveSaveNode;
         @Child private BoundaryCallData boundaryCallData;
@@ -678,6 +706,13 @@ public class PPickler extends PythonBuiltinObject {
 
         protected SaveNode(int depth) {
             this.depth = depth;
+        }
+
+        private void profileSeen(int seen) {
+            if ((seenTypes & seen) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenTypes |= seen;
+            }
         }
 
         private BoundaryCallData getBoundaryCallData() {
@@ -2021,30 +2056,38 @@ public class PPickler extends PythonBuiltinObject {
 
             // Atom types; these aren't memoized, so don't check the memo.
             if (obj == PNone.NONE) {
+                profileSeen(SEEN_NONE);
                 saveNone(pickler);
                 return;
             } else if (obj instanceof Boolean value) {
+                profileSeen(SEEN_BOOLEAN);
                 saveBool(pickler, proto, value);
                 return;
             } else if (obj instanceof Integer value) {
+                profileSeen(SEEN_INTEGER);
                 saveLong(pickler, proto, value);
                 return;
             } else if (obj instanceof Long value) {
+                profileSeen(SEEN_LONG);
                 saveLong(frame, pickler, proto, value);
                 return;
             } else if (obj instanceof PInt value && PGuards.isBuiltinPInt(value)) {
+                profileSeen(SEEN_PINT);
                 saveLong(frame, pickler, proto, value);
                 return;
             } else if (obj instanceof Double value) {
+                profileSeen(SEEN_DOUBLE);
                 saveFloat(pickler, proto, value);
                 return;
             } else if (obj instanceof PFloat value && PGuards.isBuiltinPFloat(value)) {
+                profileSeen(SEEN_PFLOAT);
                 saveFloat(pickler, proto, value.getValue());
                 return;
             }
 
             // to avoid misses in memo for the class:
             if (obj instanceof PythonBuiltinClassType classType) {
+                profileSeen(SEEN_BUILTIN_CLASS_TYPE);
                 obj = PythonContext.get(this).getCore().lookupType(classType);
             }
 
@@ -2059,36 +2102,47 @@ public class PPickler extends PythonBuiltinObject {
             PythonContext ctx = PythonContext.get(this);
 
             if (obj instanceof PBytes bytes && PGuards.isBuiltinBytes(bytes)) {
+                profileSeen(SEEN_BYTES);
                 saveBytes(frame, ctx, pickler, proto, fastMode, bytes);
                 return;
             } else if (obj instanceof TruffleString string) {
+                profileSeen(SEEN_TRUFFLE_STRING);
                 saveUnicode(frame, pickler, proto, fastMode, string);
                 return;
             } else if (obj instanceof PString string && PGuards.isBuiltinPString(string)) {
+                profileSeen(SEEN_PSTRING);
                 saveUnicode(frame, pickler, proto, fastMode, string);
                 return;
             } else if (obj instanceof PDict dict && PGuards.isBuiltinDict(dict)) {
+                profileSeen(SEEN_DICT);
                 saveDict(frame, inliningTarget, callMethod, pickler, proto, fastMode, dict);
                 return;
             } else if (obj instanceof PSet set && PGuards.isBuiltinSet(set)) {
+                profileSeen(SEEN_SET);
                 saveSet(frame, ctx, pickler, proto, fastMode, set);
                 return;
             } else if (obj instanceof PFrozenSet frozenSet && PGuards.isBuiltinFrozenSet(frozenSet)) {
+                profileSeen(SEEN_FROZENSET);
                 saveFrozenset(frame, ctx, pickler, proto, fastMode, frozenSet);
                 return;
             } else if (obj instanceof PList list && PGuards.isBuiltinList(list)) {
+                profileSeen(SEEN_LIST);
                 saveList(frame, pickler, proto, fastMode, list);
                 return;
             } else if (obj instanceof PTuple tuple && PGuards.isBuiltinTuple(tuple)) {
+                profileSeen(SEEN_TUPLE);
                 saveTuple(frame, pickler, proto, fastMode, tuple);
                 return;
             } else if (PGuards.isNativeObject(obj) && isBuiltinClass(getClass(obj), PythonBuiltinClassType.PTuple)) {
+                profileSeen(SEEN_NATIVE_TUPLE);
                 saveNativeTuple(frame, pickler, proto, fastMode, obj);
                 return;
             } else if (obj instanceof PByteArray byteArray && PGuards.isBuiltinByteArray(byteArray)) {
+                profileSeen(SEEN_BYTE_ARRAY);
                 saveBytearray(frame, inliningTarget, ctx, pickler, proto, fastMode, byteArray);
                 return;
             } else if (obj instanceof PPickleBuffer buffer) {
+                profileSeen(SEEN_PICKLE_BUFFER);
                 savePickleBuffer(frame, pickler, proto, fastMode, buffer);
                 return;
             }
@@ -2104,15 +2158,20 @@ public class PPickler extends PythonBuiltinObject {
             }
 
             if (obj instanceof PythonManagedClass clazz && clazz.getPythonClass() == PythonBuiltinClassType.PythonClass) {
+                profileSeen(SEEN_MANAGED_CLASS);
                 saveType(frame, ctx, pickler, proto, fastMode, clazz);
                 return;
             } else if (obj instanceof PythonNativeClass && isBuiltinClass(getClass(obj), PythonBuiltinClassType.PythonClass)) {
+                profileSeen(SEEN_NATIVE_CLASS);
                 saveGlobal(frame, ctx, pickler, proto, fastMode, obj, null);
                 return;
             } else if (obj instanceof PFunction) {
+                profileSeen(SEEN_FUNCTION);
                 saveGlobal(frame, ctx, pickler, proto, fastMode, obj, null);
                 return;
             }
+
+            profileSeen(SEEN_OBJECT);
 
             // Get a reduction callable, and call it. This may come from self.dispatch_table,
             // copyreg.dispatch_table, the object's __reduce_ex__ method, or the object's __reduce__
@@ -2134,6 +2193,7 @@ public class PPickler extends PythonBuiltinObject {
             if (reduceFunc != null) {
                 reduceValue = callNode.execute(frame, reduceFunc, obj);
             } else if (isSubType(type, PythonBuiltinClassType.PythonClass)) {
+                profileSeen(SEEN_TYPE);
                 saveGlobal(frame, ctx, pickler, proto, fastMode, obj, null);
                 return;
             } else {
