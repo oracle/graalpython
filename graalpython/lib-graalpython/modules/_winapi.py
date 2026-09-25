@@ -926,8 +926,9 @@ def ReadFile(handle, size, overlapped=False):
             ov.pending = True
             return ov, code
         if code == ERROR_MORE_DATA:
-            ov._completed_result = (transferred.value, code)
-            ov._last_result = ov._completed_result
+            # lpNumberOfBytesRead may be zero for an overlapped partial read,
+            # even though data was consumed. GetOverlappedResult supplies the
+            # actual byte count from the OVERLAPPED structure.
             return ov, code
         raise _winerror(code)
 

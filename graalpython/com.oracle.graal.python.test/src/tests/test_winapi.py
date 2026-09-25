@@ -69,3 +69,54 @@ class WinapiPipeTests(unittest.TestCase):
         self.assertEqual(peek(handle), (220, 200))
         self.assertEqual(peek(handle, 0), (220, 200))
         self.assertEqual(peek(handle, 10), (b"a" * 10, 220, 190))
+
+    def check_partial_read(self, pending):
+        api = self.api
+        handle = self.reader.fileno()
+        payload = bytes(range(200))
+        if not pending:
+            self.writer.send_bytes(payload)
+        ov, err = api.ReadFile(handle, 128, overlapped=True)
+        try:
+            if pending:
+                self.assertEqual(err, api.ERROR_IO_PENDING)
+                self.writer.send_bytes(payload)
+                self.assertEqual(api.WaitForSingleObject(ov.event, 5000), api.WAIT_OBJECT_0)
+            else:
+                self.assertEqual(err, api.ERROR_MORE_DATA)
+            self.assertEqual(ov.GetOverlappedResult(False), (128, api.ERROR_MORE_DATA))
+            self.assertEqual(ov.getbuffer(), payload[:128])
+            self.assertEqual(api.PeekNamedPipe(handle), (72, 72))
+            tail, err = api.ReadFile(handle, 72, overlapped=True)
+            self.assertEqual(tail.GetOverlappedResult(True), (72, 0))
+            self.assertEqual(tail.getbuffer(), payload[128:])
+        finally:
+            ov.cancel()
+            ov.GetOverlappedResult(True)
+
+    def test_immediate_partial_read(self):
+        self.check_partial_read(pending=False)
+
+    def test_pending_partial_read(self):
+        self.check_partial_read(pending=True)
+
+    def test_message_boundaries(self):
+        # Queue multiple messages so total available differs from the bytes
+        # remaining in the first message after the initial 128-byte read.
+        messages = [bytes(range(256)) * 2, b"next message", b"", b"last"]
+        for _ in range(10):
+            self.assertFalse(self.reader.poll(0))
+            for message in messages:
+                self.writer.send_bytes(message)
+            for message in messages:
+                self.assertTrue(self.reader.poll(0))
+                self.assertEqual(self.reader.recv_bytes(len(message)), message)
+            self.assertFalse(self.reader.poll(0))
+
+    def test_pickled_messages(self):
+        for _ in range(10):
+            messages = [list(range(200)), {"payload": "x" * 512}]
+            for message in messages:
+                self.writer.send(message)
+            for message in messages:
+                self.assertEqual(self.reader.recv(), message)
