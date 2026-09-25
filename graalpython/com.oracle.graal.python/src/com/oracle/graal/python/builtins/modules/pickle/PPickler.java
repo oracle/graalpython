@@ -130,6 +130,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TranscodingErrorHandler;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -767,6 +769,10 @@ public class PPickler extends PythonBuiltinObject {
 
         public abstract void execute(VirtualFrame frame, PPickler pickler, Object obj, int persSave);
 
+        private static boolean isBin(int proto) {
+            return proto > 0;
+        }
+
         // collections
         private void saveHashingStorageBatched(VirtualFrame frame, PPickler pickler, HashingStorage storage,
                         byte opcodeBatch, TruffleString name, boolean saveValues) {
@@ -919,7 +925,7 @@ public class PPickler extends PythonBuiltinObject {
 
         // save methods
 
-        private boolean savePers(VirtualFrame frame, PPickler pickler, Object obj) {
+        private boolean savePers(VirtualFrame frame, PPickler pickler, int proto, Object obj) {
             Object pid;
             if (pickler.persFuncSelf == null) {
                 pid = getCallNode().execute(frame, pickler.persFunc, obj);
@@ -927,7 +933,7 @@ public class PPickler extends PythonBuiltinObject {
                 pid = getCallNode().execute(frame, pickler.persFunc, pickler.persFuncSelf, obj);
             }
             if (pid != PNone.NONE) {
-                if (pickler.isBin()) {
+                if (isBin(proto)) {
                     save(frame, pickler, pid, 1);
                     write(pickler, PickleUtils.OPCODE_BINPERSID);
                 } else {
@@ -946,8 +952,8 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         // memo methods
-        private void memoGet(PPickler pickler, int value) {
-            if (pickler.isBin()) {
+        private void memoGet(PPickler pickler, int proto, int value) {
+            if (isBin(proto)) {
                 if (value < 256) {
                     writeByteOp(pickler, PickleUtils.OPCODE_BINGET, value);
                 } else if (Long.compareUnsigned(value, 0xffffffffL) <= 0) {
@@ -962,18 +968,18 @@ public class PPickler extends PythonBuiltinObject {
 
         }
 
-        private void memoPut(PPickler pickler, Object obj) {
-            if (pickler.isFast()) {
+        private void memoPut(PPickler pickler, int proto, boolean fastMode, Object obj) {
+            if (fastMode) {
                 return;
             }
 
             int idx = pickler.memo.size();
             pickler.memo.set(obj, idx);
 
-            if (pickler.proto >= 4) {
+            if (proto >= 4) {
                 write(pickler, PickleUtils.OPCODE_MEMOIZE);
             } else {
-                if (!pickler.isBin()) {
+                if (!isBin(proto)) {
                     writeLongAsString(pickler, PickleUtils.OPCODE_PUT, idx);
                 } else {
                     if (idx < 256) {
@@ -989,9 +995,9 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         // save methods
-        private void handleReduce(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, Object obj, Object reduceValue) {
+        private void handleReduce(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, Object obj, Object reduceValue) {
             if (PGuards.isString(reduceValue)) {
-                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, reduceValue);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, reduceValue);
                 return;
             }
 
@@ -999,10 +1005,10 @@ public class PPickler extends PythonBuiltinObject {
                 throw raise(PicklingError, ErrorMessages.S_MUST_RETURN_S_OR_S, T___REDUCE__, "string", "tuple");
             }
 
-            saveReduce(frame, ctx, pickler, reduceValue, obj);
+            saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, obj);
         }
 
-        private void saveReduce(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object arguments, Object obj) {
+        private void saveReduce(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, Object arguments, Object obj) {
             // We're saving obj, and args is the 2-thru-5 tuple returned by the appropriate
             // __reduce__ method for obj.
 
@@ -1053,7 +1059,7 @@ public class PPickler extends PythonBuiltinObject {
                 throw raise(PicklingError, ErrorMessages.S_ELEM_REDUCE_MUST_BE_S_NOT_P, "sixth", "a function", stateSetter);
             }
 
-            if (pickler.proto >= 2) {
+            if (proto >= 2) {
                 Object name = lookupAttribute(frame, callable, T___NAME__);
                 if (name != PNone.NO_VALUE) {
                     final TruffleString stringName = asString(name);
@@ -1092,7 +1098,7 @@ public class PPickler extends PythonBuiltinObject {
                     throw raise(PicklingError, ErrorMessages.S_ITEM_FROM_S_MUST_BE_S_NOT_P, "third", "NEWOBJ_EX", "a dict", kwargs);
                 }
 
-                if (pickler.proto >= 4) {
+                if (proto >= 4) {
                     save(frame, pickler, cls, 0);
                     save(frame, pickler, args, 0);
                     save(frame, pickler, kwargs, 0);
@@ -1190,18 +1196,18 @@ public class PPickler extends PythonBuiltinObject {
                 int memoIndex = pickler.memo.get(obj);
                 if (memoIndex != -1) {
                     write(pickler, PickleUtils.OPCODE_POP);
-                    memoGet(pickler, memoIndex);
+                    memoGet(pickler, proto, memoIndex);
                 } else {
-                    memoPut(pickler, obj);
+                    memoPut(pickler, proto, fastMode, obj);
                 }
             }
 
             if (listitems != null) {
-                batchList(frame, pickler, listitems);
+                batchList(frame, pickler, proto, listitems);
             }
 
             if (dictitems != null) {
-                batchDict(frame, pickler, dictitems);
+                batchDict(frame, pickler, proto, dictitems);
             }
 
             if (state != null) {
@@ -1230,8 +1236,8 @@ public class PPickler extends PythonBuiltinObject {
             write(pickler, PickleUtils.OPCODE_NONE);
         }
 
-        private void saveBool(PPickler pickler, boolean value) {
-            if (pickler.proto >= 2) {
+        private void saveBool(PPickler pickler, int proto, boolean value) {
+            if (proto >= 2) {
                 write(pickler, value ? PickleUtils.OPCODE_NEWTRUE : PickleUtils.OPCODE_NEWFALSE);
             } else {
                 // These aren't opcodes -- they're ways to pickle bools before protocol 2 so that
@@ -1242,8 +1248,8 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveLong(PPickler pickler, int value) {
-            if (pickler.isBin()) {
+        private void saveLong(PPickler pickler, int proto, int value) {
+            if (isBin(proto)) {
                 if (value >= 0 && value < (1 << 8)) {
                     writeByteOp(pickler, PickleUtils.OPCODE_BININT1, value);
                 } else if (value >= 0 && value < (1 << 16)) {
@@ -1256,25 +1262,25 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveLong(VirtualFrame frame, PPickler pickler, long value) {
+        private void saveLong(VirtualFrame frame, PPickler pickler, int proto, long value) {
             int intValue = (int) value;
             if (intValue == value) {
-                saveLong(pickler, intValue);
+                saveLong(pickler, proto, intValue);
             } else {
-                saveLongLarge(frame, pickler, value);
+                saveLongLarge(frame, pickler, proto, value);
             }
         }
 
-        private void saveLong(VirtualFrame frame, PPickler pickler, PInt value) {
+        private void saveLong(VirtualFrame frame, PPickler pickler, int proto, PInt value) {
             try {
-                saveLong(frame, pickler, value.longValueExact());
+                saveLong(frame, pickler, proto, value.longValueExact());
             } catch (OverflowException e) {
-                saveLongLarge(frame, pickler, value);
+                saveLongLarge(frame, pickler, proto, value);
             }
         }
 
-        private void saveLongLarge(VirtualFrame frame, PPickler pickler, Object obj) {
-            if (pickler.proto >= 2) {
+        private void saveLongLarge(VirtualFrame frame, PPickler pickler, int proto, Object obj) {
+            if (proto >= 2) {
                 // Linear-time pickling.
                 final int sign = getSign(obj);
                 assert sign != 0; // Zero was handled by the int code above
@@ -1315,8 +1321,8 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveFloat(PPickler pickler, double value) {
-            if (pickler.isBin()) {
+        private void saveFloat(PPickler pickler, int proto, double value) {
+            if (isBin(proto)) {
                 write(pickler, PickleUtils.OPCODE_BINFLOAT);
                 ensureBufferSpace(pickler, 8);
                 NumericSupport.bigEndian().putDouble(pickler.outputBuffer, pickler.outputLen, value);
@@ -1329,11 +1335,11 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveBytes(VirtualFrame frame, PythonContext ctx, PPickler pickler, PBytes obj) {
+        private void saveBytes(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PBytes obj) {
             Object buffer = getBufferAcquireLibrary().acquireReadonly(obj);
             PythonBufferAccessLibrary bufferLib = getBufferLibrary();
             try {
-                if (pickler.proto < 3) {
+                if (proto < 3) {
                     // Older pickle protocols do not have an opcode for pickling bytes objects.
                     // Therefore, we need to fake the copy protocol (i.e., the __reduce__ method) to
                     // permit bytes object unpickling. Here we use a hack to be compatible with
@@ -1354,17 +1360,17 @@ public class PPickler extends PythonBuiltinObject {
                         reduceValue = createTuple(st.codecsEncode, createTuple(unicodeStr, LATIN1));
                     }
                     // save_reduce() will memoize the object automatically.
-                    saveReduce(frame, ctx, pickler, reduceValue, obj);
+                    saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, obj);
                 } else {
-                    saveBytesData(frame, pickler, obj, buffer, bufferLib);
+                    saveBytesData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } finally {
                 bufferLib.release(buffer);
             }
         }
 
-        private void saveBytesData(VirtualFrame frame, PPickler pickler, Object obj, Object buffer, PythonBufferAccessLibrary bufferLib) {
-            assert pickler.proto >= 3;
+        private void saveBytesData(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj, Object buffer, PythonBufferAccessLibrary bufferLib) {
+            assert proto >= 3;
             int size = bufferLib.getBufferLength(buffer);
             boolean wasFraming = pickler.framing;
             boolean bypassBuffer = bypassBuffer(pickler, size);
@@ -1386,10 +1392,10 @@ public class PPickler extends PythonBuiltinObject {
             if (bypassBuffer && wasFraming) {
                 pickler.framing = true;
             }
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
         }
 
-        private void writeUnicodeBinary(VirtualFrame frame, PPickler pickler, TruffleString string) {
+        private void writeUnicodeBinary(VirtualFrame frame, PPickler pickler, int proto, TruffleString string) {
             TruffleString utf8 = ensureTsSwitchEncodingNode().execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             int size = utf8.byteLength(TruffleString.Encoding.UTF_8);
             boolean wasFraming = pickler.framing;
@@ -1403,7 +1409,7 @@ public class PPickler extends PythonBuiltinObject {
                 getCallNode().execute(frame, pickler.write, PFactory.createBytes(PythonLanguage.get(this), data, size));
                 pickler.clearBuffer();
             } else {
-                if (size <= 0xff && pickler.proto >= 4) {
+                if (size <= 0xff && proto >= 4) {
                     writeByteOp(pickler, PickleUtils.OPCODE_SHORT_BINUNICODE, size);
                 } else {
                     writeIntOp(pickler, PickleUtils.OPCODE_BINUNICODE, size);
@@ -1416,23 +1422,23 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveUnicode(VirtualFrame frame, PPickler pickler, TruffleString obj) {
-            saveUnicode(frame, pickler, obj, obj);
+        private void saveUnicode(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, TruffleString obj) {
+            saveUnicode(frame, pickler, proto, fastMode, obj, obj);
         }
 
-        private void saveUnicode(VirtualFrame frame, PPickler pickler, PString obj) {
-            saveUnicode(frame, pickler, obj, asStringStrict(obj));
+        private void saveUnicode(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, PString obj) {
+            saveUnicode(frame, pickler, proto, fastMode, obj, asStringStrict(obj));
         }
 
-        private void saveUnicode(VirtualFrame frame, PPickler pickler, Object obj, TruffleString string) {
-            if (pickler.isBin()) {
-                writeUnicodeBinary(frame, pickler, string);
+        private void saveUnicode(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj, TruffleString string) {
+            if (isBin(proto)) {
+                writeUnicodeBinary(frame, pickler, proto, string);
             } else {
                 write(pickler, PickleUtils.OPCODE_UNICODE);
                 writeRawUnicodeEscape(pickler, string);
                 writeASCII(pickler, T_NEWLINE);
             }
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
         }
 
         private void writeRawUnicodeEscape(PPickler pickler, TruffleString string) {
@@ -1486,9 +1492,9 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void batchDict(VirtualFrame frame, PPickler pickler, Object iterator) {
+        private void batchDict(VirtualFrame frame, PPickler pickler, int proto, Object iterator) {
             assert iterator != null;
-            if (pickler.proto == 0) {
+            if (proto == 0) {
                 // SETITEMS isn't available; do one at a time.
                 saveDictIterator(frame, pickler, iterator);
             } else {
@@ -1497,30 +1503,30 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveDict(VirtualFrame frame, Node inliningTarget, PyObjectCallMethodObjArgs callMethod, PPickler pickler, PDict obj) {
-            if (pickler.isFast()) {
+        private void saveDict(VirtualFrame frame, Node inliningTarget, PyObjectCallMethodObjArgs callMethod, PPickler pickler, int proto, boolean fastMode, PDict obj) {
+            if (fastMode) {
                 fastSaveEnter(pickler, obj);
             }
 
             // Create an empty dict.
-            if (pickler.isBin()) {
+            if (isBin(proto)) {
                 write(pickler, PickleUtils.OPCODE_EMPTY_DICT);
             } else {
                 write(pickler, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_DICT);
             }
 
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
 
             if (getHashingStorageLength(obj.getDictStorage()) > 0) {
-                if (pickler.proto > 0) {
+                if (proto > 0) {
                     batchDictExact(frame, pickler, obj);
                 } else {
                     final Object items = callMethod.execute(frame, inliningTarget, obj, T_ITEMS);
-                    batchDict(frame, pickler, getIter(frame, items));
+                    batchDict(frame, pickler, proto, getIter(frame, items));
                 }
             }
 
-            if (pickler.isFast()) {
+            if (fastMode) {
                 fastSaveLeave(pickler, obj);
             }
         }
@@ -1529,17 +1535,17 @@ public class PPickler extends PythonBuiltinObject {
             saveSetHashingStorageBatched(frame, pickler, set.getDictStorage());
         }
 
-        private void saveSet(VirtualFrame frame, PythonContext ctx, PPickler pickler, PSet obj) {
+        private void saveSet(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PSet obj) {
             Object reduceValue;
-            if (pickler.proto < 4) {
+            if (proto < 4) {
                 Object items = createList(frame, obj);
                 reduceValue = createTuple(ctx.getCore().lookupType(PythonBuiltinClassType.PSet), createTuple(items));
-                saveReduce(frame, ctx, pickler, reduceValue, obj);
+                saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, obj);
                 return;
             }
 
             write(pickler, PickleUtils.OPCODE_EMPTY_SET);
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
 
             final int setSize = length(frame, obj);
             if (setSize == 0) {
@@ -1551,15 +1557,15 @@ public class PPickler extends PythonBuiltinObject {
             batchSetExact(frame, pickler, obj);
         }
 
-        private void saveFrozenset(VirtualFrame frame, PythonContext ctx, PPickler pickler, PFrozenSet obj) {
-            if (pickler.isFast()) {
+        private void saveFrozenset(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PFrozenSet obj) {
+            if (fastMode) {
                 fastSaveEnter(pickler, obj);
             }
 
-            if (pickler.proto < 4) {
+            if (proto < 4) {
                 Object items = createList(frame, obj);
                 Object reduceValue = createTuple(ctx.getCore().lookupType(PythonBuiltinClassType.PFrozenSet), createTuple(items));
-                saveReduce(frame, ctx, pickler, reduceValue, obj);
+                saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, obj);
                 return;
             }
 
@@ -1572,12 +1578,12 @@ public class PPickler extends PythonBuiltinObject {
             int memoIndex = pickler.memo.get(obj);
             if (memoIndex != -1) {
                 write(pickler, PickleUtils.OPCODE_POP_MARK);
-                memoGet(pickler, memoIndex);
+                memoGet(pickler, proto, memoIndex);
                 return;
             }
 
             write(pickler, PickleUtils.OPCODE_FROZENSET);
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
         }
 
         private void batchListExact(VirtualFrame frame, PPickler pickler, PList obj) {
@@ -1608,9 +1614,9 @@ public class PPickler extends PythonBuiltinObject {
             } while (total < storage.length());
         }
 
-        private void batchList(VirtualFrame frame, PPickler pickler, Object iterator) {
+        private void batchList(VirtualFrame frame, PPickler pickler, int proto, Object iterator) {
             assert iterator != null;
-            if (pickler.proto == 0) {
+            if (proto == 0) {
                 // APPENDS isn't available; do one at a time.
                 saveListIterator(frame, pickler, iterator);
             } else {
@@ -1619,30 +1625,30 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveList(VirtualFrame frame, PPickler pickler, PList obj) {
-            if (pickler.isFast()) {
+        private void saveList(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, PList obj) {
+            if (fastMode) {
                 fastSaveEnter(pickler, obj);
             }
 
             // Create an empty list.
-            if (pickler.isBin()) {
+            if (isBin(proto)) {
                 write(pickler, PickleUtils.OPCODE_EMPTY_LIST);
             } else {
                 write(pickler, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_LIST);
             }
 
             int len = obj.getSequenceStorage().length();
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
 
             if (len != 0) {
-                if (pickler.proto > 0) {
+                if (proto > 0) {
                     batchListExact(frame, pickler, obj);
                 } else {
-                    batchList(frame, pickler, getIter(frame, obj));
+                    batchList(frame, pickler, proto, getIter(frame, obj));
                 }
             }
 
-            if (pickler.isFast()) {
+            if (fastMode) {
                 fastSaveLeave(pickler, obj);
             }
         }
@@ -1661,19 +1667,19 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveTuple(VirtualFrame frame, PPickler pickler, PTuple obj) {
+        private void saveTuple(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, PTuple obj) {
             SequenceStorage storage = obj.getSequenceStorage();
-            saveTuple(frame, pickler, obj, storage, storage.length());
+            saveTuple(frame, pickler, proto, fastMode, obj, storage, storage.length());
         }
 
-        private void saveNativeTuple(VirtualFrame frame, PPickler pickler, Object obj) {
-            saveTuple(frame, pickler, obj, null, length(frame, obj));
+        private void saveNativeTuple(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj) {
+            saveTuple(frame, pickler, proto, fastMode, obj, null, length(frame, obj));
         }
 
-        private void saveTuple(VirtualFrame frame, PPickler pickler, Object obj, SequenceStorage storage, int len) {
+        private void saveTuple(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj, SequenceStorage storage, int len) {
 
             if (len == 0) {
-                if (pickler.proto != 0) {
+                if (proto != 0) {
                     write(pickler, PickleUtils.OPCODE_EMPTY_TUPLE);
                 } else {
                     write(pickler, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_TUPLE);
@@ -1684,7 +1690,7 @@ public class PPickler extends PythonBuiltinObject {
             // The tuple isn't in the memo now. If it shows up there after saving the tuple
             // elements, the tuple must be recursive, in which case we'll pop everything we put on
             // the stack, and fetch its value from the memo.
-            if (len <= 3 && pickler.proto >= 2) {
+            if (len <= 3 && proto >= 2) {
                 // Use TUPLE{1,2,3} opcodes.
                 storeTupleElements(frame, pickler, obj, storage, len);
 
@@ -1695,14 +1701,14 @@ public class PPickler extends PythonBuiltinObject {
                         write(pickler, PickleUtils.OPCODE_POP);
                     }
                     // fetch from memo
-                    memoGet(pickler, memoIndex);
+                    memoGet(pickler, proto, memoIndex);
                     return;
                 } else {
                     // Not recursive.
                     write(pickler, TUPLE_LEN_2_OPCODE[len]);
                 }
 
-                memoPut(pickler, obj);
+                memoPut(pickler, proto, fastMode, obj);
                 return;
             }
 
@@ -1713,7 +1719,7 @@ public class PPickler extends PythonBuiltinObject {
             int memoIndex = pickler.memo.get(obj);
             if (memoIndex != -1) {
                 // pop the stack stuff we pushed
-                if (pickler.isBin()) {
+                if (isBin(proto)) {
                     write(pickler, PickleUtils.OPCODE_POP_MARK);
                 } else {
                     // Note that we pop one more than len, to remove the MARK too.
@@ -1722,18 +1728,18 @@ public class PPickler extends PythonBuiltinObject {
                     }
                 }
                 // fetch from memo
-                memoGet(pickler, memoIndex);
+                memoGet(pickler, proto, memoIndex);
                 return;
             } else {
                 // Not recursive.
                 write(pickler, PickleUtils.OPCODE_TUPLE);
             }
 
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
         }
 
-        private void saveBytearrayData(VirtualFrame frame, PPickler pickler, Object obj, Object buffer, PythonBufferAccessLibrary bufferLib) {
-            assert pickler.proto >= 5;
+        private void saveBytearrayData(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj, Object buffer, PythonBufferAccessLibrary bufferLib) {
+            assert proto >= 5;
 
             int size = bufferLib.getBufferLength(buffer);
             boolean wasFraming = pickler.framing;
@@ -1755,14 +1761,14 @@ public class PPickler extends PythonBuiltinObject {
             if (bypassBuffer && wasFraming) {
                 pickler.framing = true;
             }
-            memoPut(pickler, obj);
+            memoPut(pickler, proto, fastMode, obj);
         }
 
-        private void saveBytearray(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PPickler pickler, PByteArray obj) {
+        private void saveBytearray(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PByteArray obj) {
             Object buffer = getBufferAcquireLibrary().acquireReadonly(obj);
             PythonBufferAccessLibrary bufferLib = getBufferLibrary();
             try {
-                if (pickler.proto < 5) {
+                if (proto < 5) {
                     // Older pickle protocols do not have an opcode for pickling bytearrays.
                     Object reduceValue;
 
@@ -1775,17 +1781,17 @@ public class PPickler extends PythonBuiltinObject {
                     }
 
                     // save_reduce() will memoize the object automatically.
-                    saveReduce(frame, ctx, pickler, reduceValue, obj);
+                    saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, obj);
                 } else {
-                    saveBytearrayData(frame, pickler, obj, buffer, bufferLib);
+                    saveBytearrayData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } finally {
                 bufferLib.release(buffer);
             }
         }
 
-        private void savePickleBuffer(VirtualFrame frame, PPickler pickler, PPickleBuffer obj) {
-            if (pickler.proto < 5) {
+        private void savePickleBuffer(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, PPickleBuffer obj) {
+            if (proto < 5) {
                 throw raise(PicklingError, ErrorMessages.PICKLEBUFF_CANNOT_PICKLE_WITH_PROTO5);
             }
 
@@ -1802,9 +1808,9 @@ public class PPickler extends PythonBuiltinObject {
             if (inBand) {
                 // Write data in-band
                 if (readOnly) {
-                    saveBytesData(frame, pickler, obj, buffer, bufferLib);
+                    saveBytesData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 } else {
-                    saveBytearrayData(frame, pickler, obj, buffer, bufferLib);
+                    saveBytearrayData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } else {
                 // Write data out-of-band
@@ -1815,24 +1821,24 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveSingletonType(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj, Object singleton) {
+        private void saveSingletonType(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, Object obj, Object singleton) {
             Object reduceValue = createTuple(ctx.getCore().lookupType(PythonBuiltinClassType.PythonClass), createTuple(singleton));
-            saveReduce(frame, ctx, pickler, reduceValue, obj);
+            saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, obj);
         }
 
-        private void saveType(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, PythonManagedClass obj) {
+        private void saveType(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PythonManagedClass obj) {
             if (obj instanceof PythonBuiltinClass cls && cls.getType() == PythonBuiltinClassType.PNone) {
-                saveSingletonType(frame, ctx, pickler, obj, PNone.NONE);
+                saveSingletonType(frame, ctx, pickler, proto, fastMode, obj, PNone.NONE);
             } else if (obj instanceof PythonBuiltinClass cls && cls.getType() == PythonBuiltinClassType.PEllipsis) {
-                saveSingletonType(frame, ctx, pickler, obj, PEllipsis.INSTANCE);
+                saveSingletonType(frame, ctx, pickler, proto, fastMode, obj, PEllipsis.INSTANCE);
             } else if (obj instanceof PythonBuiltinClass cls && cls.getType() == PythonBuiltinClassType.PNotImplemented) {
-                saveSingletonType(frame, ctx, pickler, obj, PNotImplemented.NOT_IMPLEMENTED);
+                saveSingletonType(frame, ctx, pickler, proto, fastMode, obj, PNotImplemented.NOT_IMPLEMENTED);
             } else {
-                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, null);
             }
         }
 
-        private void saveGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, Object obj, Object name) {
+        private void saveGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, Object obj, Object name) {
             PickleState st = getGlobalState(ctx.getCore());
             Object gName;
             if (name != null) {
@@ -1865,7 +1871,7 @@ public class PPickler extends PythonBuiltinObject {
             }
 
             boolean genGlobal;
-            if (pickler.proto >= 2) {
+            if (proto >= 2) {
                 genGlobal = false;
                 // See whether this is in the extension registry, and if so generate an EXT opcode.
 
@@ -1908,20 +1914,20 @@ public class PPickler extends PythonBuiltinObject {
                     globalName = lastname;
                 }
 
-                if (pickler.proto >= 4) {
+                if (proto >= 4) {
                     save(frame, pickler, moduleName, 0);
                     save(frame, pickler, globalName, 0);
                     write(pickler, PickleUtils.OPCODE_STACK_GLOBAL);
                 } else if (parent != module) {
                     Object reduceValue = createTuple(st.getattr, createTuple(parent, lastname));
-                    saveReduce(frame, ctx, pickler, reduceValue, null);
+                    saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, null);
                 } else {
                     // Generate a normal global opcode if we are using a pickle protocol < 4, or if
                     // the object is not registered in the extension registry
                     write(pickler, PickleUtils.OPCODE_GLOBAL);
                     // For protocol < 3 and if the user didn't request against doing so, we convert
                     // module names to the old 2.x module names.
-                    if (pickler.proto < 3 && pickler.fixImports) {
+                    if (proto < 3 && pickler.fixImports) {
                         final Pair<TruffleString, TruffleString> to2Mapping = get3to2Mapping(frame, ctx.getCore(), moduleName, globalName);
                         moduleName = to2Mapping.getLeft();
                         globalName = to2Mapping.getRight();
@@ -1931,10 +1937,10 @@ public class PPickler extends PythonBuiltinObject {
                     // module name and the global name using UTF-8. We do so only when we are using
                     // the pickle protocol newer than version 3. This is to ensure compatibility
                     // with older Unpickler running on Python 2.x.
-                    if (pickler.proto >= 3) {
+                    if (proto >= 3) {
                         if (ensureTsGetCodeRangeNode().execute(moduleName, TS_ENCODING) == TruffleString.CodeRange.BROKEN || ensureTsGetCodeRangeNode().execute(globalName,
                                         TS_ENCODING) == TruffleString.CodeRange.BROKEN) {
-                            throw raise(PicklingError, ErrorMessages.CANT_PICKLE_MODULE_S_USING_PROTO_D, moduleName, pickler.proto);
+                            throw raise(PicklingError, ErrorMessages.CANT_PICKLE_MODULE_S_USING_PROTO_D, moduleName, proto);
                         }
                         writeUtf8(pickler, moduleName);
                         write(pickler, (byte) '\n');
@@ -1942,7 +1948,7 @@ public class PPickler extends PythonBuiltinObject {
                     } else {
                         if (ensureTsGetCodeRangeNode().execute(moduleName, TS_ENCODING) != TruffleString.CodeRange.ASCII || ensureTsGetCodeRangeNode().execute(globalName,
                                         TS_ENCODING) != TruffleString.CodeRange.ASCII) {
-                            throw raise(PicklingError, ErrorMessages.CANT_PICKLE_MODULE_S_USING_PROTO_D, moduleName, pickler.proto);
+                            throw raise(PicklingError, ErrorMessages.CANT_PICKLE_MODULE_S_USING_PROTO_D, moduleName, proto);
                         }
                         writeASCII(pickler, moduleName);
                         write(pickler, (byte) '\n');
@@ -1951,7 +1957,7 @@ public class PPickler extends PythonBuiltinObject {
                     write(pickler, (byte) '\n');
                 }
                 // Memoize the object
-                memoPut(pickler, obj);
+                memoPut(pickler, proto, fastMode, obj);
             }
         }
 
@@ -1960,14 +1966,18 @@ public class PPickler extends PythonBuiltinObject {
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CallNode callNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached InlinedIntValueProfile protoProfile,
+                        @Cached InlinedConditionProfile fastModeProfile) {
             Object obj = objArg;
+            int proto = protoProfile.profile(inliningTarget, pickler.getProto());
+            boolean fastMode = fastModeProfile.profile(inliningTarget, pickler.isFast());
             opcodeBoundary(frame, pickler);
 
             // The extra pers_save argument is necessary to avoid calling save_pers()
             // on its returned object.
             if (persSave == 0 && pickler.persFunc != null) {
-                if (savePers(frame, pickler, obj)) {
+                if (savePers(frame, pickler, proto, obj)) {
                     return;
                 }
             }
@@ -1977,22 +1987,22 @@ public class PPickler extends PythonBuiltinObject {
                 saveNone(pickler);
                 return;
             } else if (obj instanceof Boolean value) {
-                saveBool(pickler, value);
+                saveBool(pickler, proto, value);
                 return;
             } else if (obj instanceof Integer value) {
-                saveLong(pickler, value);
+                saveLong(pickler, proto, value);
                 return;
             } else if (obj instanceof Long value) {
-                saveLong(frame, pickler, value);
+                saveLong(frame, pickler, proto, value);
                 return;
             } else if (obj instanceof PInt value && PGuards.isBuiltinPInt(value)) {
-                saveLong(frame, pickler, value);
+                saveLong(frame, pickler, proto, value);
                 return;
             } else if (obj instanceof Double value) {
-                saveFloat(pickler, value);
+                saveFloat(pickler, proto, value);
                 return;
             } else if (obj instanceof PFloat value && PGuards.isBuiltinPFloat(value)) {
-                saveFloat(pickler, value.getValue());
+                saveFloat(pickler, proto, value.getValue());
                 return;
             }
 
@@ -2005,44 +2015,44 @@ public class PPickler extends PythonBuiltinObject {
             // instead of pickling the object once again.
             int memoIndex = pickler.memo.get(obj);
             if (memoIndex != -1) {
-                memoGet(pickler, memoIndex);
+                memoGet(pickler, proto, memoIndex);
                 return;
             }
 
             PythonContext ctx = PythonContext.get(this);
 
             if (obj instanceof PBytes bytes && PGuards.isBuiltinBytes(bytes)) {
-                saveBytes(frame, ctx, pickler, bytes);
+                saveBytes(frame, ctx, pickler, proto, fastMode, bytes);
                 return;
             } else if (obj instanceof TruffleString string) {
-                saveUnicode(frame, pickler, string);
+                saveUnicode(frame, pickler, proto, fastMode, string);
                 return;
             } else if (obj instanceof PString string && PGuards.isBuiltinPString(string)) {
-                saveUnicode(frame, pickler, string);
+                saveUnicode(frame, pickler, proto, fastMode, string);
                 return;
             } else if (obj instanceof PDict dict && PGuards.isBuiltinDict(dict)) {
-                saveDict(frame, inliningTarget, callMethod, pickler, dict);
+                saveDict(frame, inliningTarget, callMethod, pickler, proto, fastMode, dict);
                 return;
             } else if (obj instanceof PSet set && PGuards.isBuiltinSet(set)) {
-                saveSet(frame, ctx, pickler, set);
+                saveSet(frame, ctx, pickler, proto, fastMode, set);
                 return;
             } else if (obj instanceof PFrozenSet frozenSet && PGuards.isBuiltinFrozenSet(frozenSet)) {
-                saveFrozenset(frame, ctx, pickler, frozenSet);
+                saveFrozenset(frame, ctx, pickler, proto, fastMode, frozenSet);
                 return;
             } else if (obj instanceof PList list && PGuards.isBuiltinList(list)) {
-                saveList(frame, pickler, list);
+                saveList(frame, pickler, proto, fastMode, list);
                 return;
             } else if (obj instanceof PTuple tuple && PGuards.isBuiltinTuple(tuple)) {
-                saveTuple(frame, pickler, tuple);
+                saveTuple(frame, pickler, proto, fastMode, tuple);
                 return;
             } else if (PGuards.isNativeObject(obj) && isBuiltinClass(getClass(obj), PythonBuiltinClassType.PTuple)) {
-                saveNativeTuple(frame, pickler, obj);
+                saveNativeTuple(frame, pickler, proto, fastMode, obj);
                 return;
             } else if (obj instanceof PByteArray byteArray && PGuards.isBuiltinByteArray(byteArray)) {
-                saveBytearray(frame, inliningTarget, ctx, pickler, byteArray);
+                saveBytearray(frame, inliningTarget, ctx, pickler, proto, fastMode, byteArray);
                 return;
             } else if (obj instanceof PPickleBuffer buffer) {
-                savePickleBuffer(frame, pickler, buffer);
+                savePickleBuffer(frame, pickler, proto, fastMode, buffer);
                 return;
             }
 
@@ -2051,19 +2061,19 @@ public class PPickler extends PythonBuiltinObject {
             if (pickler.reducerOverride != null) {
                 Object reduceValue = callNode.execute(frame, pickler.reducerOverride, obj);
                 if (reduceValue != PNotImplemented.NOT_IMPLEMENTED) {
-                    handleReduce(frame, boundaryCallData, ctx, pickler, obj, reduceValue);
+                    handleReduce(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, reduceValue);
                     return;
                 }
             }
 
             if (obj instanceof PythonManagedClass clazz && clazz.getPythonClass() == PythonBuiltinClassType.PythonClass) {
-                saveType(frame, boundaryCallData, ctx, pickler, clazz);
+                saveType(frame, boundaryCallData, ctx, pickler, proto, fastMode, clazz);
                 return;
             } else if (obj instanceof PythonNativeClass && isBuiltinClass(getClass(obj), PythonBuiltinClassType.PythonClass)) {
-                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, null);
                 return;
             } else if (obj instanceof PFunction) {
-                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, null);
                 return;
             }
 
@@ -2087,7 +2097,7 @@ public class PPickler extends PythonBuiltinObject {
             if (reduceFunc != null) {
                 reduceValue = callNode.execute(frame, reduceFunc, obj);
             } else if (isSubType(type, PythonBuiltinClassType.PythonClass)) {
-                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, null);
                 return;
             } else {
                 // XXX: If the __reduce__ method is defined, __reduce_ex__ is automatically defined
@@ -2099,7 +2109,7 @@ public class PPickler extends PythonBuiltinObject {
                 // Check for a __reduce_ex__ method.
                 reduceFunc = lookupAttribute(frame, obj, T___REDUCE_EX__);
                 if (reduceFunc != PNone.NO_VALUE) {
-                    reduceValue = callNode.execute(frame, reduceFunc, pickler.proto);
+                    reduceValue = callNode.execute(frame, reduceFunc, proto);
                 } else {
                     // Check for a __reduce__ method.
                     reduceFunc = lookupAttribute(frame, obj, T___REDUCE__);
@@ -2111,7 +2121,7 @@ public class PPickler extends PythonBuiltinObject {
                 }
             }
 
-            handleReduce(frame, boundaryCallData, ctx, pickler, obj, reduceValue);
+            handleReduce(frame, boundaryCallData, ctx, pickler, proto, fastMode, obj, reduceValue);
         }
     }
 
