@@ -163,7 +163,7 @@ public class PPickler extends PythonBuiltinObject {
     private int fastNesting;
     // Indicate whether Pickler should fix the name of globals for Python 2.x.
     private boolean fixImports;
-    private final Map<Object, Object> fastMemo = createFastMemoTable();
+    private Map<Object, Object> fastMemo;
     // Callback for out-of-band buffers, or NULL
     private Object bufferCallback;
 
@@ -262,17 +262,27 @@ public class PPickler extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    private void ensureFastMemo() {
+        if (fastMemo == null) {
+            fastMemo = createFastMemoTable();
+        }
+    }
+
+    @TruffleBoundary
     private boolean fastMemoContains(Object object) {
+        ensureFastMemo();
         return this.fastMemo.containsKey(object);
     }
 
     @TruffleBoundary
     private void fastMemoPut(Object object) {
+        ensureFastMemo();
         this.fastMemo.put(object, true);
     }
 
     @TruffleBoundary
     private void fastMemoRemove(Object object) {
+        ensureFastMemo();
         this.fastMemo.remove(object);
     }
 
