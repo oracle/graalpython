@@ -2135,6 +2135,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         static Object loadCacheableTypeAttr(PythonManagedClass object, TruffleString key, boolean allowMutableValueClass) {
             assert object.checkDictFlags();
+            // Dunder attributes may be descriptors on the metaclass, which take precedence over the type dictionary.
+            if (canBeSpecialMethod(key)) {
+                return PNone.NO_VALUE;
+            }
             Object value = DynamicObject.GetNode.getUncached().execute(object, key, PNone.NO_VALUE);
             if (value == PNone.NO_VALUE) {
                 return PNone.NO_VALUE;
