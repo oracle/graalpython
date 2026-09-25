@@ -113,6 +113,36 @@ class WinapiPipeTests(unittest.TestCase):
                 self.assertEqual(self.reader.recv_bytes(len(message)), message)
             self.assertFalse(self.reader.poll(0))
 
+    def check_connect_named_pipe(self, client_first):
+        import os
+        import time
+        from multiprocessing.connection import PipeClient, PipeListener
+
+        address = rf"\\.\pipe\graalpy-connect-{os.getpid()}-{time.time_ns()}"
+        listener = PipeListener(address)
+        self.addCleanup(listener.close)
+        if client_first:
+            client = PipeClient(address)
+            self.addCleanup(client.close)
+        ov = self.api.ConnectNamedPipe(listener._handle_queue[0], overlapped=True)
+        try:
+            if not client_first:
+                client = PipeClient(address)
+                self.addCleanup(client.close)
+            # PipeListener.accept waits on this event even when the client
+            # connected before ConnectNamedPipe (ERROR_PIPE_CONNECTED).
+            self.assertEqual(self.api.WaitForSingleObject(ov.event, 5000), self.api.WAIT_OBJECT_0)
+            self.assertEqual(ov.GetOverlappedResult(True), (0, 0))
+        finally:
+            ov.cancel()
+            ov.GetOverlappedResult(True)
+
+    def test_connect_named_pipe_client_first(self):
+        self.check_connect_named_pipe(client_first=True)
+
+    def test_connect_named_pipe_pending(self):
+        self.check_connect_named_pipe(client_first=False)
+
     def test_pickled_messages(self):
         for _ in range(10):
             messages = [list(range(200)), {"payload": "x" * 512}]
