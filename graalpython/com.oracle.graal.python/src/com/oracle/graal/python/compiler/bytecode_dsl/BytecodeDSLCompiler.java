@@ -67,7 +67,11 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.truffle.api.source.Source;
 
 public class BytecodeDSLCompiler {
-    public static final int BYTECODE_VERSION = 33;
+    /*
+     * Bump this with every Truffle import change because serialized GraalPy bytecode effectively
+     * depends on Truffle bytecode internals.
+     */
+    public static final int BYTECODE_VERSION = 34;
 
     public static final record BytecodeDSLCompilerResult(PBytecodeDSLRootNode rootNode, BytecodeDSLCodeUnit codeUnit) {
     }
