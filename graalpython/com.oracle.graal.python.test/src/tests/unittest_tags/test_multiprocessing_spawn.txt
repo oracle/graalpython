@@ -3,11 +3,11 @@ test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_abort_a
 test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_action @ darwin-arm64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_barrier @ darwin-arm64
 test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_barrier_10 @ darwin-arm64,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_default_timeout @ darwin-arm64,win32-AMD64
-test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_reset @ darwin-arm64
+test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_default_timeout @ darwin-arm64,win32-AMD64,win32-AMD64-github
+test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_reset @ darwin-arm64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_single_thread @ darwin-arm64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_timeout @ darwin-arm64
-test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_wait_return @ darwin-arm64,win32-AMD64
+test.test_multiprocessing_spawn.test_manager.WithManagerTestBarrier.test_wait_return @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_manager.WithManagerTestCondition.test_notify @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_manager.WithManagerTestCondition.test_notify_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_manager.WithManagerTestCondition.test_notify_n @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -63,7 +63,7 @@ test.test_multiprocessing_spawn.test_misc.MiscTestCase.test__all__ @ darwin-arm6
 test.test_multiprocessing_spawn.test_misc.MiscTestCase.test_large_pool @ darwin-arm64,linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.MiscTestCase.test_spawn_sys_executable_none_allows_import @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_misc.OtherTest.test_answer_challenge_auth_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_misc.OtherTest.test_deliver_challenge_auth_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_misc.OtherTest.test_deliver_challenge_auth_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_misc.SemLockTests.test_semlock_subclass @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestCloseFds.test_closefd @ win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_misc.TestForkAwareThreadLock.test_lock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -109,7 +109,7 @@ test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_queue @ darw
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_rlock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_semaphore @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_value @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestTimeouts.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_misc.TestTimeouts.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_neg_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_slow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -124,7 +124,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestArray.test_rawar
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestAtExit.test_atexit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_abort @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_abort_and_reset @ darwin-arm64,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_action @ darwin-arm64,win32-AMD64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_action @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_barrier @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_barrier_10 @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_default_timeout @ darwin-arm64,win32-AMD64,win32-AMD64-github
@@ -161,7 +161,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestLogging.test_ena
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestLogging.test_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestLogging.test_level @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestManagerRestart.test_rapid_restart @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoll.test_boundaries @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoll.test_boundaries @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoll.test_dont_merge @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoll.test_empty_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoll.test_strings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -191,7 +191,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_traceb
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_wrapped_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerErrors.test_async_error_callback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerErrors.test_unpickleable_result @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerLifetime.test_pool_maxtasksperchild_invalid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerLifetime.test_pool_maxtasksperchild_invalid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerLifetime.test_pool_worker_lifetime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerLifetime.test_pool_worker_lifetime_early_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPoolWorkerLifetime.test_worker_finalization_via_atexit_handler_of_multiprocessing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -229,7 +229,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestSemaphore.test_s
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestSemaphore.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestSpawnedSysPath.test_child_sys_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestSubclassingProcess.test_stderr_flush @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestSubclassingProcess.test_subclassing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestSubclassingProcess.test_subclassing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_abort @ darwin-arm64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_abort_and_reset @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_action @ darwin-arm64,win32-AMD64,win32-AMD64-github
@@ -241,7 +241,7 @@ test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_single_
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_thousand @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_timeout @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestBarrier.test_wait_return @ darwin-arm64,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_threads.WithThreadsTestCondition.test_notify @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_threads.WithThreadsTestCondition.test_notify @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestCondition.test_notify_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestCondition.test_notify_n @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestCondition.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -250,7 +250,7 @@ test.test_multiprocessing_spawn.test_threads.WithThreadsTestConnection.test_cont
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestConnection.test_duplex_false @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestConnection.test_spawn_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestEvent.test_event @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_threads.WithThreadsTestEvent.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_threads.WithThreadsTestEvent.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestListenerClient.test_issue14725 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestListenerClient.test_issue16955 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestListenerClient.test_listener_client @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -290,7 +290,7 @@ test.test_multiprocessing_spawn.test_threads.WithThreadsTestProcess.test_process
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestProcess.test_recursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_closed_queue_empty_exceptions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_closed_queue_put_get_exceptions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_fork @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_fork @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_get @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_no_import_lock_contention @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestQueue.test_put @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
