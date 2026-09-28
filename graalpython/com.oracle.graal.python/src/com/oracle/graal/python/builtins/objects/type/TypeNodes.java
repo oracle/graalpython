@@ -2285,6 +2285,7 @@ public abstract class TypeNodes {
             }
             if (ctx.addWeak) {
                 weakListOffset = slotOffset;
+                slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
 
             SetDictOffsetNode.executeUncached(pythonClass, dictOffset);

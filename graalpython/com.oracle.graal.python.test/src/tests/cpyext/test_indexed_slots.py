@@ -37,6 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import gc
+import weakref
+from ctypes import c_void_p, sizeof
+
 from . import CPyExtTestCase, CPyExtHeapType, CPyExtType
 
 
@@ -119,6 +123,48 @@ class TestIndexedSlots(CPyExtTestCase):
             (ManagedSubclass.__basicsize__, ManagedSubclass.__weakrefoffset__),
             ManagedSubclass.get_native_layout(),
         )
+
+    def test_weaklistoffset_added_to_native_subclass(self):
+        NativeLayoutReader = CPyExtType(
+            'NativeLayoutReader',
+            '''
+            static PyObject* get_native_layout(PyObject* unused, PyObject* cls) {
+                PyTypeObject* type = (PyTypeObject*)cls;
+                return Py_BuildValue("(nn)", type->tp_basicsize, type->tp_weaklistoffset);
+            }
+            ''',
+            tp_methods='{"get_native_layout", (PyCFunction)get_native_layout, METH_O | METH_CLASS, ""}',
+        )
+        self.assertEqual(NativeLayoutReader.__weakrefoffset__, 0)
+
+        class NativeSubclass(NativeLayoutReader):
+            pass
+
+        class ManagedSubclass(c_void_p):
+            pass
+
+        class SlottedSubclass(ManagedSubclass):
+            __slots__ = ('extra',)
+
+        for cls in (NativeSubclass, c_void_p, ManagedSubclass, SlottedSubclass):
+            with self.subTest(cls=cls):
+                weakrefoffset = cls.__weakrefoffset__
+                self.assertNotEqual(weakrefoffset, 0)
+                self.assertEqual((cls.__basicsize__, weakrefoffset), NativeLayoutReader.get_native_layout(cls))
+                if weakrefoffset > 0:
+                    self.assertLessEqual(weakrefoffset + sizeof(c_void_p), cls.__basicsize__)
+
+        if NativeSubclass.__weakrefoffset__ > 0:
+            self.assertEqual(NativeSubclass.__weakrefoffset__, NativeLayoutReader.__basicsize__)
+            self.assertEqual(NativeSubclass.__basicsize__, NativeLayoutReader.__basicsize__ + sizeof(c_void_p))
+
+        obj = SlottedSubclass()
+        obj.extra = obj
+        ref = weakref.ref(obj)
+        self.assertIs(ref(), obj)
+        del obj
+        gc.collect()
+        self.assertIsNone(ref())
 
     def test_slots_in_base_and_subclass(self):
         N1 = CPyExtHeapType('Nd1', bases=(BaseWithSlots,), cmembers=cmembers(4))
