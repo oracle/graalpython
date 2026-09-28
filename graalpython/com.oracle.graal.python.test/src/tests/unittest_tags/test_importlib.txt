@@ -33,7 +33,7 @@ test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_load_module_AP
 test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_module_reuse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_unloadable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_bad_modules @ linux-x86_64-github
+test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_bad_modules @ linux-aarch64-github,linux-x86_64-github
 test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_functionality @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_load_short_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_load_submodule @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -54,7 +54,7 @@ test.test_importlib.extension.test_loader.Source_LoaderTests.test_load_module_AP
 test.test_importlib.extension.test_loader.Source_LoaderTests.test_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Source_LoaderTests.test_module_reuse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Source_LoaderTests.test_unloadable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_bad_modules @ linux-x86_64-github
+test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_bad_modules @ linux-aarch64-github,linux-x86_64-github
 test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_functionality @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_load_short_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_load_submodule @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
