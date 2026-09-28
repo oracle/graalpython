@@ -382,6 +382,9 @@ def _init_non_posix(vars):
 
     # Add EXT_SUFFIX, SOABI, and Py_GIL_DISABLED
     vars.update(_sysconfig.config_vars())
+    # Windows does not load _sysconfigdata; retain the hash algorithm value
+    # required by sys.hash_info compatibility checks.
+    vars.setdefault('Py_HASH_ALGORITHM', 0)
 
     vars['LIBDIR'] = _safe_realpath(os.path.join(get_config_var('installed_base'), 'libs'))
     # GraalPy change: expose the stable public DLL name. sys.dllhandle refers to
