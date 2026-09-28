@@ -1176,6 +1176,12 @@ handle_weakrefs(PyGC_Head *unreachable, PyGC_Head *old)
         op = FROM_GC(gc);
         next = GC_NEXT(gc);
 
+        // GraalPy change: managed objects store weakrefs on the Java side and
+        // tagged native stubs have no weakref preheader to inspect here.
+        if (is_managed(op)) {
+            continue;
+        }
+
         if (PyWeakref_Check(op)) {
             /* A weakref inside the unreachable set must be cleared.  If we
              * allow its callback to execute inside delete_garbage(), it

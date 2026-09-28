@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.weakref.PProxyType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
@@ -67,12 +68,26 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins.ReferenceTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextWeakrefBuiltins {
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class GraalPyPrivate_GetManagedWeakRefs extends PythonCextBuiltins.CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PythonAbstractObject object,
+                        @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readWeaklistNode) {
+            Object ref = readWeaklistNode.execute(inliningTarget, object, HiddenAttr.WEAKLIST, null);
+            return ref == null ? PNone.NONE : ref;
+        }
+    }
 
     @CApiBuiltin(ret = Void, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = false)
     public static void PyObject_ClearWeakRefs(long pyObject) {

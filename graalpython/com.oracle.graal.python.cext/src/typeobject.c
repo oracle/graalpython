@@ -3442,6 +3442,11 @@ subtype_getweakref(PyObject *obj, void *context)
                         "This object has no __weakref__");
         return NULL;
     }
+    // GraalPy change: tagged stubs have no managed-weakref preheader. Their
+    // weakrefs belong to the managed object, not to the native representation.
+    if (points_to_py_handle_space(obj)) {
+        return GraalPyPrivate_GetManagedWeakRefs(obj);
+    }
     _PyObject_ASSERT((PyObject *)type,
                      type->tp_weaklistoffset > 0 ||
                      type->tp_weaklistoffset == MANAGED_WEAKREF_OFFSET);

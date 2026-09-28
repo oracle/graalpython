@@ -153,10 +153,12 @@ class TestIndexedSlots(CPyExtTestCase):
                 self.assertEqual((cls.__basicsize__, weakrefoffset), NativeLayoutReader.get_native_layout(cls))
                 if weakrefoffset > 0:
                     self.assertLessEqual(weakrefoffset + sizeof(c_void_p), cls.__basicsize__)
+                else:
+                    self.assertEqual(weakrefoffset, -4 * sizeof(c_void_p))
+                    self.assertTrue(cls.__flags__ & (1 << 3))  # Py_TPFLAGS_MANAGED_WEAKREF
 
-        if NativeSubclass.__weakrefoffset__ > 0:
-            self.assertEqual(NativeSubclass.__weakrefoffset__, NativeLayoutReader.__basicsize__)
-            self.assertEqual(NativeSubclass.__basicsize__, NativeLayoutReader.__basicsize__ + sizeof(c_void_p))
+        self.assertEqual(NativeSubclass.__weakrefoffset__, -4 * sizeof(c_void_p))
+        self.assertEqual(NativeSubclass.__basicsize__, NativeLayoutReader.__basicsize__)
 
         obj = SlottedSubclass()
         obj.extra = obj
