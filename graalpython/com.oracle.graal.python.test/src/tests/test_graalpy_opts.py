@@ -63,7 +63,10 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
         for _ in range(5):
             assert tester() == 3
-        assert_contains_bytecode(tester, "ReadGlobal$ReadBuiltinFastPath")
+        if __graalpython__.is_single_context:
+            assert_contains_bytecode(tester, "ReadGlobal$ReadBuiltinFastPath")
+        else:
+            assert_contains_bytecode(tester, "ReadGlobal$ReadBuiltinFromStorage")
 
 
     def test_read_global_quickening_global():
@@ -72,7 +75,10 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
 
         for _ in range(5):
             assert tester() is sys
-        assert_contains_bytecode(tester, "ReadGlobal$ReadGlobalFastPath")
+        if __graalpython__.is_single_context:
+            assert_contains_bytecode(tester, "ReadGlobal$ReadGlobalFastPath")
+        else:
+            assert_contains_bytecode(tester, "ReadGlobal$ReadGlobalFromStorage")
 
 
     def test_get_attr_quickening_module():
