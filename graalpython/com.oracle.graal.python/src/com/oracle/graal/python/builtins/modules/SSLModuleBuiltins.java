@@ -433,9 +433,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            return decode(inliningTarget, constructAndRaiseNode, toTruffleFile(frame, inliningTarget, asPath, path, toJavaStringNode, eqNode, constructAndRaiseNode));
+            return decode(inliningTarget, constructAndRaiseNode, toTruffleFile(frame, inliningTarget, asPath, path, toJavaStringNode, constructAndRaiseNode));
         }
 
         // No BoundaryCallContext: constructs and raises only builtin errors
@@ -459,7 +458,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         }
 
         private TruffleFile toTruffleFile(VirtualFrame frame, Node inliningTarget, PyUnicodeFSDecoderNode asPath, Object fileObject, TruffleString.ToJavaStringNode toJavaStringNode,
-                        TruffleString.EqualNode eqNode, PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws PException {
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws PException {
             TruffleFile file;
             try {
                 file = getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(asPath.execute(frame, fileObject)));
@@ -468,7 +467,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
                 }
                 return file;
             } catch (Exception e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e);
             }
         }
     }
