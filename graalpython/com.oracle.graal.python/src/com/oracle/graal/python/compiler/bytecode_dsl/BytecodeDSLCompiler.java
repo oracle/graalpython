@@ -71,7 +71,7 @@ public class BytecodeDSLCompiler {
      * Bump this with every Truffle import change because serialized GraalPy bytecode effectively
      * depends on Truffle bytecode internals.
      */
-    public static final int BYTECODE_VERSION = 34;
+    public static final int BYTECODE_VERSION = 35;
 
     public static final record BytecodeDSLCompilerResult(PBytecodeDSLRootNode rootNode, BytecodeDSLCodeUnit codeUnit) {
     }
