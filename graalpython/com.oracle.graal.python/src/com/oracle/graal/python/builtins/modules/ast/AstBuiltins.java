@@ -101,6 +101,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.AST)
@@ -159,6 +160,7 @@ public final class AstBuiltins extends PythonBuiltins {
                 setAttrNode.execute(frame, inliningTarget, self, field, args[i]);
                 discardNode.execute(frame, remainingFields, field);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             Object selfType = getClassNode.execute(inliningTarget, self);
             for (PKeyword kwArg : kwArgs) {
                 if (containsNode.execute(frame, inliningTarget, fieldsObj, kwArg.getName())) {
@@ -173,6 +175,7 @@ public final class AstBuiltins extends PythonBuiltins {
                 }
                 setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
             }
+            LoopNode.reportLoopCount(inliningTarget, kwArgs.length);
             if (storageLenNode.execute(inliningTarget, remainingFields.getDictStorage()) > 0) {
                 Object fieldTypesObj = lookupAttrNode.execute(frame, inliningTarget, selfType, T__FIELD_TYPES);
                 if (!(fieldTypesObj instanceof PDict fieldTypes)) {
@@ -195,6 +198,7 @@ public final class AstBuiltins extends PythonBuiltins {
                         }
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, numFields);
             }
             return PNone.NONE;
         }
@@ -253,6 +257,7 @@ public final class AstBuiltins extends PythonBuiltins {
                 }
                 numPositionalArgs++;
             }
+            LoopNode.reportLoopCount(inliningTarget, numFields);
             PNone[] positionalArgs = new PNone[numPositionalArgs];
             Arrays.fill(positionalArgs, PNone.NONE);
             return PFactory.createTuple(language, new Object[]{clazz, PFactory.createTuple(language, positionalArgs), dict});

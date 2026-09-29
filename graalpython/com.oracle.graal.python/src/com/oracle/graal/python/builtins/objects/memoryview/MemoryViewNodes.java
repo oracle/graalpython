@@ -90,6 +90,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -130,7 +131,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization
-        static int compute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
+        static int compute(Node inliningTarget, int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
             if (ndim == 0) {
                 return PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN | PMemoryView.FLAG_SCALAR;
             } else if (suboffsets != null) {
@@ -146,6 +147,7 @@ public class MemoryViewNodes {
                     }
                     expectedStride *= dim;
                 }
+                LoopNode.reportLoopCount(inliningTarget, Math.max(0, ndim));
                 expectedStride = itemsize;
                 for (int i = 0; i < ndim; i++) {
                     int dim = shape[i];
@@ -155,6 +157,7 @@ public class MemoryViewNodes {
                     }
                     expectedStride *= dim;
                 }
+                LoopNode.reportLoopCount(inliningTarget, Math.max(0, ndim));
                 return flags;
             }
         }

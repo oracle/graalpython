@@ -150,6 +150,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -779,8 +780,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             } else {
                 Object[] searchPaths = getSearchPaths(context);
-                for (Object func : searchPaths) {
-                    Object obj = callNode.executeObject(frame, func, normalizedEncoding);
+                int i = 0;
+                for (; i < searchPaths.length; i++) {
+                    Object obj = callNode.executeObject(frame, searchPaths[i], normalizedEncoding);
                     if (obj != PNone.NONE) {
                         if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, obj, 4, typeCheck, sizeNode))) {
                             throw raiseNode.raise(inliningTarget, TypeError, CODEC_SEARCH_MUST_RETURN_4);
@@ -789,6 +791,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         break;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             if (result != null) {
                 putSearchPath(context, normalizedEncoding, result);

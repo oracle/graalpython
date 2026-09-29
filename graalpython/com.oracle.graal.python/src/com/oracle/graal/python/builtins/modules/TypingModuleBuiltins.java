@@ -83,6 +83,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -254,12 +255,14 @@ public class TypingModuleBuiltins extends PythonBuiltins {
                         @Cached UnpackNode unpackNode) {
             Object[] elements = toArrayNode.execute(inliningTarget, params.getSequenceStorage());
             boolean found = false;
-            for (Object element : elements) {
-                if (element instanceof PTypeVarTuple) {
+            int index = 0;
+            for (; index < elements.length; index++) {
+                if (elements[index] instanceof PTypeVarTuple) {
                     found = true;
                     break;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, index);
             if (!found) {
                 return params;
             }
@@ -271,6 +274,7 @@ public class TypingModuleBuiltins extends PythonBuiltins {
                     unpacked[i] = elements[i];
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, unpacked.length);
             return PFactory.createTuple(language, unpacked);
         }
     }

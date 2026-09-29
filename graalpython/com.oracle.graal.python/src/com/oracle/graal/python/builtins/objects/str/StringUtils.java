@@ -182,6 +182,7 @@ public final class StringUtils {
             j++;
         }
 
+        LoopNode.reportLoopCount(substringNode, len - j + i);
         return substringNode.execute(str, i, j - i, TS_ENCODING, false);
     }
 
@@ -215,6 +216,7 @@ public final class StringUtils {
             j++;
         }
 
+        LoopNode.reportLoopCount(substringNode, len - j + i);
         return substringNode.execute(str, i, j - i, TS_ENCODING, false);
     }
 

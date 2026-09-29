@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -118,6 +118,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1058,6 +1059,7 @@ public final class RangeBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (eqNode.executeEq(frame, inliningTarget, elem, item)) {
+                    LoopNode.reportLoopCount(inliningTarget, idx);
                     return idx;
                 }
                 if (idx == SysModuleBuiltins.MAXSIZE) {
@@ -1065,6 +1067,7 @@ public final class RangeBuiltins extends PythonBuiltins {
                 }
                 idx++;
             }
+            LoopNode.reportLoopCount(inliningTarget, idx);
             throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
     }

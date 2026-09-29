@@ -189,6 +189,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -489,6 +490,7 @@ public final class PythonCextUnicodeBuiltins {
                 for (int i = 0; i < prec - numdigits; i++) {
                     b1[b1i++] = '0';
                 }
+                LoopNode.reportLoopCount(inliningTarget, prec - numdigits);
                 for (int i = 0; i < numdigits; i++) {
                     b1[b1i++] = buf[bufi++];
                     b1[b1i] = '\0';
@@ -508,6 +510,7 @@ public final class PythonCextUnicodeBuiltins {
                         buf[i] -= 'a' - 'A';
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, Math.max(0, len - bufi));
             }
             return fromCharArrayNode.execute(buf);
         }
@@ -848,6 +851,7 @@ public final class PythonCextUnicodeBuiltins {
                 }
                 appendStringNode.execute(sb, item);
             }
+            LoopNode.reportLoopCount(inliningTarget, items.length);
             return toStringNode.execute(sb);
         }
     }

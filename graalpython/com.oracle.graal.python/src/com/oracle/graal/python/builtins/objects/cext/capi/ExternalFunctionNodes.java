@@ -189,6 +189,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1248,7 +1249,8 @@ public abstract class ExternalFunctionNodes {
                 }
                 kwnamesTuplePtr = createNativeKwNamesTupleNode.execute(context, fastcallKwnames);
             }
-            long nativeFastcallArgs = MethFastcallRoot.createFastcallArgsArray(fastcallArgs, argToNativeNode);
+            LoopNode.reportLoopCount(this, fastcallArgs.length);
+            long nativeFastcallArgs = MethFastcallRoot.createFastcallArgsArray(this, fastcallArgs, argToNativeNode);
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
@@ -1330,7 +1332,8 @@ public abstract class ExternalFunctionNodes {
                 }
                 kwnamesTuple = PFactory.createTuple(context.getLanguage(), fastcallKwnames);
             }
-            long nativeFastcallArgs = MethFastcallRoot.createFastcallArgsArray(fastcallArgs, argToNativeNode);
+            LoopNode.reportLoopCount(this, fastcallArgs.length);
+            long nativeFastcallArgs = MethFastcallRoot.createFastcallArgsArray(this, fastcallArgs, argToNativeNode);
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCMETHOD(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
@@ -1394,7 +1397,8 @@ public abstract class ExternalFunctionNodes {
             for (int i = 0; i < args.length; i++) {
                 promotedArgs[i] = ensurePythonObject(args[i]);
             }
-            long argsArray = createFastcallArgsArray(promotedArgs, argToNativeNode);
+            LoopNode.reportLoopCount(this, args.length);
+            long argsArray = createFastcallArgsArray(this, promotedArgs, argToNativeNode);
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
@@ -1412,7 +1416,7 @@ public abstract class ExternalFunctionNodes {
          * {@code PyObject *arr[]}. This will not create new {@code PyObject *} references (i.e.
          * refcount is not increased).
          */
-        static long createFastcallArgsArray(Object[] data, PythonToNativeNode argToNativeNode) {
+        static long createFastcallArgsArray(Node inliningTarget, Object[] data, PythonToNativeNode argToNativeNode) {
             if (data.length == 0) {
                 return NULLPTR;
             }
@@ -1422,6 +1426,7 @@ public abstract class ExternalFunctionNodes {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(data[i]);
                 NativeMemory.writePtrArrayElement(ptr, i, argToNativeNode.execute(data[i]));
             }
+            LoopNode.reportLoopCount(inliningTarget, data.length);
             return ptr;
         }
 

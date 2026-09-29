@@ -138,6 +138,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -155,6 +156,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedByteValueProfile;
@@ -255,6 +257,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 for (int index = 0, value = start; index < len; index++, value += step) {
                     putValueNode.execute(null, inliningTarget, array, index, value);
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
 
                 return array;
             }
@@ -298,6 +301,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     for (int i = 0; i < length; i++) {
                         putValueNode.execute(frame, inliningTarget, array, i, getValueNode.execute(inliningTarget, initializer, i));
                     }
+                    LoopNode.reportLoopCount(inliningTarget, length);
                     return array;
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -319,6 +323,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     for (int i = 0; i < length; i++) {
                         putValueNode.execute(frame, inliningTarget, array, i, getItemNode.execute(inliningTarget, storage, i));
                     }
+                    LoopNode.reportLoopCount(inliningTarget, length);
                     return array;
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -355,6 +360,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         break;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, length);
 
                 setLengthNode.execute(inliningTarget, array, length);
                 return array;
@@ -436,6 +442,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 for (int i = 0; loopProfile.inject(inliningTarget, i < value); i++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength, bufferLib);
                 }
+                LoopNode.reportLoopCount(inliningTarget, value);
                 return newArray;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -470,6 +477,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 for (int i = 0; i < value; i++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), 0, self.getBuffer(), segmentLength * i, segmentLength, bufferLib);
                 }
+                LoopNode.reportLoopCount(inliningTarget, value > 0 ? value : 0);
                 return self;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -499,17 +507,22 @@ public final class ArrayBuiltins extends PythonBuiltins {
             fullCmpProfile.enter(inliningTarget);
             int commonLength = Math.min(left.getLength(), right.getLength());
             loopProfile.profileCounted(inliningTarget, commonLength); // ignoring the early exit
-            for (int i = 0; loopProfile.inject(inliningTarget, i < commonLength); i++) {
-                Object leftValue = getLeft.execute(inliningTarget, left, i);
-                Object rightValue = getRight.execute(inliningTarget, right, i);
-                if (!richCmpEqNode.execute(frame, inliningTarget, leftValue, rightValue, RichCmpOp.Py_EQ)) {
-                    if (op == RichCmpOp.Py_EQ) {
-                        return false;
-                    } else if (op == RichCmpOp.Py_NE) {
-                        return true;
+            int i = 0;
+            try {
+                for (; loopProfile.inject(inliningTarget, i < commonLength); i++) {
+                    Object leftValue = getLeft.execute(inliningTarget, left, i);
+                    Object rightValue = getRight.execute(inliningTarget, right, i);
+                    if (!richCmpEqNode.execute(frame, inliningTarget, leftValue, rightValue, RichCmpOp.Py_EQ)) {
+                        if (op == RichCmpOp.Py_EQ) {
+                            return false;
+                        } else if (op == RichCmpOp.Py_NE) {
+                            return true;
+                        }
+                        return richCmpOpNode.execute(frame, inliningTarget, leftValue, rightValue, op);
                     }
-                    return richCmpOpNode.execute(frame, inliningTarget, leftValue, rightValue, op);
                 }
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             if (op.isEqOrNe()) {
                 return op.isEq();
@@ -539,12 +552,17 @@ public final class ArrayBuiltins extends PythonBuiltins {
             fullCmpProfile.enter(inliningTarget);
             int commonLength = Math.min(left.getLength(), right.getLength());
             loopProfile.profileCounted(inliningTarget, commonLength); // ignoring the early exit
-            for (int i = 0; loopProfile.inject(inliningTarget, i < commonLength); i++) {
-                double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
-                double rightValue = (Double) getRight.execute(inliningTarget, right, i);
-                if (leftValue != rightValue) {
-                    return op.compare(leftValue, rightValue);
+            int i = 0;
+            try {
+                for (; loopProfile.inject(inliningTarget, i < commonLength); i++) {
+                    double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
+                    double rightValue = (Double) getRight.execute(inliningTarget, right, i);
+                    if (leftValue != rightValue) {
+                        return op.compare(leftValue, rightValue);
+                    }
                 }
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             if (op.isEqOrNe()) {
                 return op.isEq();
@@ -618,6 +636,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         Object value = getValueNode.execute(inliningTarget, self, i);
                         appendStringNode.execute(sb, cast.execute(inliningTarget, repr.execute(frame, inliningTarget, value)));
                     }
+                    LoopNode.reportLoopCount(inliningTarget, length);
                     appendStringNode.execute(sb, T_RBRACKET);
                 }
             }
@@ -690,6 +709,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 for (int i = sliceInfo.start, j = 0; j < sliceInfo.sliceLength; i += sliceInfo.step, j++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), i << itemShift, newArray.getBuffer(), j << itemShift, itemsize, bufferLib);
                 }
+                LoopNode.reportLoopCount(inliningTarget, sliceInfo.sliceLength);
             }
             return newArray;
         }
@@ -835,6 +855,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     for (cur = start, offset = 0; offset < sliceLength - 1; cur += step, offset++) {
                         bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (step - 1) << itemShift, bufferLib);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, offset);
                     bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (length - cur - 1) << itemShift, bufferLib);
                     setLengthNode.execute(inliningTarget, self, length - sliceLength);
                 }
@@ -843,6 +864,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
                     bufferLib.readIntoBuffer(sourceBuffer, i << itemShift, self.getBuffer(), cur << itemShift, itemsize, bufferLib);
                 }
+                LoopNode.reportLoopCount(inliningTarget, sliceLength);
             } else {
                 wrongLengthProfile.enter(inliningTarget);
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
@@ -1078,6 +1100,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 putValueNode.execute(frame, inliningTarget, self, length, getItemNode.execute(inliningTarget, storage, i));
                 setLengthNode.execute(inliningTarget, self, ++length);
             }
+            LoopNode.reportLoopCount(inliningTarget, storageLength);
 
             return PNone.NONE;
         }
@@ -1113,7 +1136,6 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 putValueNode.execute(frame, inliningTarget, self, length - 1, nextValue);
                 setLengthNode.execute(inliningTarget, self, length);
             }
-
             return PNone.NONE;
         }
 
@@ -1175,6 +1197,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 if (eqNode.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
                     self.checkCanResize(inliningTarget, raiseNode);
                     deleteSliceNode.execute(inliningTarget, self, i, 1);
+                    LoopNode.reportLoopCount(inliningTarget, i + 1);
                     return PNone.NONE;
                 }
             }
@@ -1313,6 +1336,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 for (int i = 0; i < length; i++) {
                     putValueNode.execute(frame, inliningTarget, self, self.getLength() + i, getItemScalarNode.execute(inliningTarget, storage, i));
                 }
+                LoopNode.reportLoopCount(inliningTarget, length);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
@@ -1358,6 +1382,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     TruffleString value = fromCodePointNode.execute(nextNode.execute(it, TS_ENCODING), TS_ENCODING, true);
                     putValueNode.execute(frame, inliningTarget, self, self.getLength() + codePointIndex++, value);
                 }
+                LoopNode.reportLoopCount(inliningTarget, length);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
@@ -1421,6 +1446,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; i < length; i++) {
                 appendStringNode.execute(sb, (TruffleString) getValueNode.execute(inliningTarget, self, i));
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             return toStringNode.execute(sb);
         }
     }
@@ -1463,6 +1489,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     callMethod.execute(frame, inliningTarget, file, T_WRITE, PFactory.createBytes(language, buffer));
                     remaining -= blocksize;
                 }
+                // Rounding up remaining to whole blocks above can overflow to a negative nblocks.
+                LoopNode.reportLoopCount(inliningTarget, Math.max(0, nblocks));
             }
             return PNone.NONE;
         }
@@ -1479,29 +1507,35 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getFormat().bytesize == 2")
         static Object byteswap2(PArray self,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            doByteSwapExploded(self, 2, self.getBuffer(), bufferLib);
+            doByteSwapExploded(inliningTarget, self, 2, self.getBuffer(), bufferLib);
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.getFormat().bytesize == 4")
         static Object byteswap4(PArray self,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            doByteSwapExploded(self, 4, self.getBuffer(), bufferLib);
+            doByteSwapExploded(inliningTarget, self, 4, self.getBuffer(), bufferLib);
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.getFormat().bytesize == 8")
         static Object byteswap8(PArray self,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            doByteSwapExploded(self, 8, self.getBuffer(), bufferLib);
+            doByteSwapExploded(inliningTarget, self, 8, self.getBuffer(), bufferLib);
             return PNone.NONE;
         }
 
-        private static void doByteSwapExploded(PArray self, int itemsize, Object buffer, PythonBufferAccessLibrary bufferLib) {
+        private static void doByteSwapExploded(Node inliningTarget, PArray self, int itemsize, Object buffer, PythonBufferAccessLibrary bufferLib) {
+            CompilerAsserts.compilationConstant(itemsize);
             for (int i = 0; i < self.getBytesLength(); i += itemsize) {
                 doByteSwapExplodedInnerLoop(buffer, itemsize, i, bufferLib);
             }
+            // over-reporting, but also inner loop is not counted...
+            LoopNode.reportLoopCount(inliningTarget, self.getBytesLength());
         }
 
         @ExplodeLoop
@@ -1537,9 +1571,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             for (int i = start; i < stop && i < length; i++) {
                 if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
+                    LoopNode.reportLoopCount(inliningTarget, i - start + 1);
                     return i;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, Math.min(stop, length) > start ? Math.min(stop, length) - start : 0);
             throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
         }
 
@@ -1573,6 +1609,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reverse(PArray self,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             int itemsize = self.getFormat().bytesize;
             int itemShift = self.getItemSizeShift();
@@ -1583,6 +1620,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 bufferLib.readIntoBuffer(self.getBuffer(), (length - i - 1) << itemShift, self.getBuffer(), i << itemShift, itemsize, bufferLib);
                 bufferLib.writeFromByteArray(self.getBuffer(), (length - i - 1) << itemShift, tmp, 0, itemsize);
             }
+            LoopNode.reportLoopCount(inliningTarget, length / 2);
             return PNone.NONE;
         }
     }

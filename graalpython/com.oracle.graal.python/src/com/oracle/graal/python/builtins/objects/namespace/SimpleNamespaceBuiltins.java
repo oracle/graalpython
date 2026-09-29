@@ -110,6 +110,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -180,6 +181,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
             for (PKeyword keyword : kwargs) {
                 writeAttrNode.execute(self, keyword.getName(), keyword.getValue());
             }
+            LoopNode.reportLoopCount(inliningTarget, kwargs.length);
             return PNone.NONE;
         }
     }
@@ -248,8 +250,9 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
             if (!(resultObject instanceof PSimpleNamespace result)) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE, self, resultObject);
             }
-            for (Object key : getKeyArrayNode.execute(self)) {
-                if (key instanceof TruffleString name) {
+            Object[] keys = getKeyArrayNode.execute(self);
+            for (int i = 0; i < keys.length; i++) {
+                if (keys[i] instanceof TruffleString name) {
                     Object value = readAttrNode.execute(inliningTarget, self, name, PNone.NO_VALUE);
                     if (value != PNone.NO_VALUE) {
                         writeAttrNode.execute(result, name, value);
@@ -259,6 +262,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
             for (PKeyword change : changes) {
                 writeAttrNode.execute(result, change.getName(), change.getValue());
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, (long) keys.length + changes.length));
             return result;
         }
     }
@@ -296,6 +300,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                     appendStringNode.execute(sb, T_EQ);
                     appendStringNode.execute(sb, item.getRight());
                 }
+                LoopNode.reportLoopCount(appendStringNode, items.size());
             }
         }
 

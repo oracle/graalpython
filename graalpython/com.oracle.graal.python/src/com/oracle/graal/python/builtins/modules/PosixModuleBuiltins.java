@@ -154,6 +154,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -475,6 +476,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, bytes.length);
         }
 
         private static void checkWindowsEnvName(Node inliningTarget, TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode,
@@ -580,6 +582,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 Buffer bytes = posixLib.getPathAsBytes(context.getPosixSupport(), opaquePath);
                 opaqueArgs[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             // TODO ValueError "execv() arg 2 first element cannot be empty"
 
             auditNode.audit(frame, inliningTarget, T_OS_EXEC, path.originalObject, argv, PNone.NONE);

@@ -143,7 +143,7 @@ abstract class SequenceFromArrayNode extends Node {
     private SequenceStorage initialize(Object[] objectElements) {
         SequenceStorage storage;
         try {
-            storage = SequenceStorageFactory.createStorage(objectElements);
+            storage = SequenceStorageFactory.createStorage(this, objectElements);
             type = storage.getElementType();
         } catch (Throwable t) {
             // we do not want to repeatedly deopt if a value execution
@@ -189,7 +189,7 @@ abstract class SequenceFromArrayNode extends Node {
         private static final ListFromArrayNode UNCACHED = new ListFromArrayNode() {
             @Override
             public PList execute(PythonLanguage language, Object[] elements) {
-                return PFactory.createList(language, SequenceStorageFactory.createStorage(elements));
+                return PFactory.createList(language, SequenceStorageFactory.createStorage(this, elements));
             }
         };
 
@@ -252,7 +252,7 @@ abstract class SequenceFromArrayNode extends Node {
         private static final TupleFromArrayNode UNCACHED = new TupleFromArrayNode() {
             @Override
             public PTuple execute(PythonLanguage language, Object[] elements) {
-                return PFactory.createTuple(language, SequenceStorageFactory.createStorage(elements));
+                return PFactory.createTuple(language, SequenceStorageFactory.createStorage(this, elements));
             }
         };
 

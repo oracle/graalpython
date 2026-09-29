@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
@@ -133,11 +134,13 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     }
 
     private static boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry, int depth) {
-        for (Object baseCls : basesAry) {
-            if (isSubclassNode.executeInternal(frame, baseCls, cachedCls, depth + 1)) {
+        for (int i = 0; i < basesAry.length; i++) {
+            if (isSubclassNode.executeInternal(frame, basesAry[i], cachedCls, depth + 1)) {
+                LoopNode.reportLoopCount(isSubclassNode, i);
                 return true;
             }
         }
+        LoopNode.reportLoopCount(isSubclassNode, basesAry.length);
         return false;
     }
 
@@ -194,11 +197,14 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
             return false;
         }
 
-        for (Object baseCls : getObjectArrayNode.execute(inliningTarget, bases)) {
-            if (isSubclassNode.executeInternal(frame, baseCls, cls, depth + 1)) {
+        Object[] basesArray = getObjectArrayNode.execute(inliningTarget, bases);
+        for (int i = 0; i < basesArray.length; i++) {
+            if (isSubclassNode.executeInternal(frame, basesArray[i], cls, depth + 1)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return true;
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, basesArray.length);
         return false;
     }
 

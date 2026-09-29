@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -233,6 +234,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 assert hasNext;
                 keysArray[i] = getIterKey.execute(inliningTarget, storage, it);
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             PTuple contents = PFactory.createTuple(language, new Object[]{PFactory.createList(language, keysArray)});
             Object state = getStateNode.execute(frame, inliningTarget, self);
             return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), contents, state});

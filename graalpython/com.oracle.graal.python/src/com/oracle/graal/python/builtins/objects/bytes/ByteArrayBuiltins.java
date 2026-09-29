@@ -760,11 +760,11 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
             Result result;
             if (bTable != null && bDelete != null) {
-                result = translateAndDelete(bSelf, bTable, bDelete);
+                result = translateAndDelete(inliningTarget, bSelf, bTable, bDelete);
             } else if (bTable != null) {
                 result = translate(bSelf, bTable);
             } else if (bDelete != null) {
-                result = delete(bSelf, bDelete);
+                result = delete(inliningTarget, bSelf, bDelete);
             } else {
                 return PFactory.createByteArray(language, bSelf);
             }

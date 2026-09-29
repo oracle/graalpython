@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,8 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -136,7 +138,7 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    public Object[] getCopyOfInternalArray() {
+    public Object[] getCopyOfInternalArray(Node inliningTarget) {
         /*
          * Have to box and copy.
          */
@@ -146,6 +148,7 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
             boxed[i] = values[i];
         }
 
+        LoopNode.reportLoopCount(inliningTarget, length);
         return boxed;
     }
 

@@ -99,6 +99,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -260,6 +261,7 @@ public final class SetBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; i++) {
                 result = addAllToOther.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, args[i]), result);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return PFactory.createSet(language, result);
         }
     }
@@ -315,6 +317,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 Object key = storageIterKey.execute(inliningTarget, source, iterator);
                 curStorage = setStorageItem.execute(frame, inliningTarget, curStorage, key, PNone.NONE);
             }
+            LoopNode.reportLoopCount(inliningTarget, size);
             collection.setDictStorage(curStorage);
         }
 
@@ -337,6 +340,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 Object key = getItemScalarNode.execute(inliningTarget, sequenceStorage, i);
                 curStorage = setStorageItem.execute(frame, inliningTarget, curStorage, key, PNone.NONE);
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             collection.setDictStorage(curStorage);
         }
 
@@ -412,6 +416,7 @@ public final class SetBuiltins extends PythonBuiltins {
             for (Object o : args) {
                 storage = addAllToOther.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, o), storage);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             self.setDictStorage(storage);
             return PNone.NONE;
         }
@@ -496,6 +501,7 @@ public final class SetBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; i++) {
                 result = intersectNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return createResult(self, result);
         }
 
@@ -608,6 +614,7 @@ public final class SetBuiltins extends PythonBuiltins {
             for (Object o : args) {
                 result = xorNode.executeMutatingLeft(frame, inliningTarget, result, getHashingStorage.execute(frame, inliningTarget, o));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             self.setDictStorage(result);
             return PNone.NONE;
         }
@@ -682,6 +689,7 @@ public final class SetBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; i++) {
                 result = diffNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return PFactory.createSet(language, result);
         }
 
@@ -733,6 +741,7 @@ public final class SetBuiltins extends PythonBuiltins {
             for (Object o : args) {
                 result = diffNode.execute(frame, inliningTarget, result, getHashingStorage.execute(frame, inliningTarget, o));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             self.setDictStorage(result);
             return PNone.NONE;
         }

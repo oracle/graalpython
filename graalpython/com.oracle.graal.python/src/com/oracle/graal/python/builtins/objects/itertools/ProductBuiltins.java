@@ -115,7 +115,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached.Shared("typeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
-            constructOneRepeat(frame, self, iterables, toArrayNode);
+            constructOneRepeat(frame, inliningTarget, self, iterables, toArrayNode);
             return self;
         }
 
@@ -145,27 +145,27 @@ public final class ProductBuiltins extends PythonBuiltins {
                 self.setStopped(false);
             } else if (repeatInt == 1) {
                 oneProfile.enter(inliningTarget);
-                constructOneRepeat(frame, self, iterables, toArrayNode);
+                constructOneRepeat(frame, inliningTarget, self, iterables, toArrayNode);
             } else {
                 genericProfile.enter(inliningTarget);
-                Object[][] lists = unpackIterables(frame, iterables, toArrayNode);
+                Object[][] lists = unpackIterables(frame, inliningTarget, iterables, toArrayNode);
                 Object[][] gears = new Object[lists.length * repeatInt][];
                 loopProfile.profileCounted(inliningTarget, repeatInt);
                 LoopNode.reportLoopCount(inliningTarget, repeatInt);
                 for (int i = 0; loopProfile.inject(inliningTarget, i < repeatInt); i++) {
                     PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
                 }
-                construct(self, gears);
+                construct(inliningTarget, self, gears);
             }
             return self;
         }
 
-        private static void constructOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, IteratorNodes.ToArrayNode toArrayNode) {
-            Object[][] gears = unpackIterables(frame, iterables, toArrayNode);
-            construct(self, gears);
+        private static void constructOneRepeat(VirtualFrame frame, Node inliningTarget, PProduct self, Object[] iterables, IteratorNodes.ToArrayNode toArrayNode) {
+            Object[][] gears = unpackIterables(frame, inliningTarget, iterables, toArrayNode);
+            construct(inliningTarget, self, gears);
         }
 
-        private static void construct(PProduct self, Object[][] gears) {
+        private static void construct(Node inliningTarget, PProduct self, Object[][] gears) {
             self.setGears(gears);
             for (int i = 0; i < gears.length; i++) {
                 if (gears[i].length == 0) {
@@ -175,16 +175,18 @@ public final class ProductBuiltins extends PythonBuiltins {
                     return;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, gears.length);
             self.setIndices(new int[gears.length]);
             self.setLst(null);
             self.setStopped(false);
         }
 
-        private static Object[][] unpackIterables(VirtualFrame frame, Object[] iterables, IteratorNodes.ToArrayNode toArrayNode) {
+        private static Object[][] unpackIterables(VirtualFrame frame, Node inliningTarget, Object[] iterables, IteratorNodes.ToArrayNode toArrayNode) {
             Object[][] lists = new Object[iterables.length][];
             for (int i = 0; i < lists.length; i++) {
                 lists[i] = toArrayNode.execute(frame, iterables[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, lists.length);
             return lists;
         }
 
@@ -220,6 +222,7 @@ public final class ProductBuiltins extends PythonBuiltins {
             for (int i = 0; loopProfile.inject(inliningTarget, i < lst.length); i++) {
                 lst[i] = self.getGears()[i][0];
             }
+            LoopNode.reportLoopCount(inliningTarget, lst.length);
             self.setLst(lst);
             return PFactory.createTuple(language, lst);
         }
@@ -275,19 +278,23 @@ public final class ProductBuiltins extends PythonBuiltins {
             indices[x] = 0;
             x = x - 1;
             // the outer loop runs as long as we have a carry
-            while (loopProfile.profile(inliningTarget, x >= 0)) {
-                Object[] gear = gears[x];
-                int index = indices[x] + 1;
-                if (index < gear.length) {
-                    // no carry: done
-                    doneProfile.enter(inliningTarget);
-                    lst[x] = gear[index];
-                    indices[x] = index;
-                    return;
+            try {
+                while (loopProfile.profile(inliningTarget, x >= 0)) {
+                    Object[] gear = gears[x];
+                    int index = indices[x] + 1;
+                    if (index < gear.length) {
+                        // no carry: done
+                        doneProfile.enter(inliningTarget);
+                        lst[x] = gear[index];
+                        indices[x] = index;
+                        return;
+                    }
+                    lst[x] = gear[0];
+                    indices[x] = 0;
+                    x = x - 1;
                 }
-                lst[x] = gear[0];
-                indices[x] = 0;
-                x = x - 1;
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, gears.length - 2 - x);
             }
             self.setLst(null);
             self.setStopped(true);

@@ -133,6 +133,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
@@ -188,11 +189,14 @@ public final class PythonCextTypeBuiltins {
                         } else {
                             setItem.execute(null, inliningTarget, dict, key, promoted);
                         }
+                        LoopNode.reportLoopCount(inliningTarget, i);
                         return promoted;
                     }
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return value;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, mro.length());
             return NATIVE_NULL;
         }
     }

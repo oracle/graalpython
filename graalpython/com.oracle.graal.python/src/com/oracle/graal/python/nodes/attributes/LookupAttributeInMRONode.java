@@ -75,6 +75,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -188,6 +189,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             while (i < mro.length && !isSameTypeNode.execute(inliningTarget, type, mro[i])) {
                 i++;
             }
+            LoopNode.reportLoopCount(inliningTarget, i);
             if (i + 1 >= mro.length) {
                 return NO_MRO_SUFFIX;
             }

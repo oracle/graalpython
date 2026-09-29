@@ -59,6 +59,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -176,6 +177,7 @@ final class ForeignBufferAcquireExports {
                 for (int i = 0; i < length; i++) {
                     otherLib.writeByte(dest, destOffset + i, readByte(srcOffset + i, interop));
                 }
+                LoopNode.reportLoopCount(inliningTarget, Math.max(0, length));
             }
         }
 

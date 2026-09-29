@@ -84,6 +84,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -266,6 +267,7 @@ public final class MatchBuiltins extends PythonBuiltins {
                     appendStringNode.execute(builder, substring);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, template.indices.length);
 
             // add the extra literal
             Object literal = template.literals[template.literals.length - 1];
@@ -309,6 +311,7 @@ public final class MatchBuiltins extends PythonBuiltins {
                     Object group = getSliceNode.execute(frame, inliningTarget, self, args[i]);
                     groups[i] = group;
                 }
+                LoopNode.reportLoopCount(inliningTarget, args.length);
 
                 return PFactory.createTuple(language, groups);
             }
@@ -342,6 +345,7 @@ public final class MatchBuiltins extends PythonBuiltins {
                     groups[i] = group;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, groups.length);
 
             return PFactory.createTuple(language, groups);
         }
@@ -375,6 +379,7 @@ public final class MatchBuiltins extends PythonBuiltins {
                     keysAndValues[i + 1] = group;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, keysAndValues.length / 2);
 
             LinkedHashMap<String, Object> groupNameToGroupMap = arrayToMap(keysAndValues);
             return PFactory.createDictFromMap(language, groupNameToGroupMap);
@@ -553,6 +558,7 @@ public final class MatchBuiltins extends PythonBuiltins {
 
                 spans[groupIndex] = PFactory.createTuple(language, new int[]{start, end});
             }
+            LoopNode.reportLoopCount(inliningTarget, spans.length);
 
             return PFactory.createTuple(language, spans);
         }

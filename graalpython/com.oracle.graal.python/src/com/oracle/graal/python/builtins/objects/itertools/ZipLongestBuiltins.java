@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,28 +163,33 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
             Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, result.length);
-            for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
-                Object it = self.getItTuple()[i];
-                Object item;
-                if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
-                    item = fillValue;
-                } else {
-                    try {
-                        item = nextNode.execute(frame, inliningTarget, it);
-                    } catch (IteratorExhausted e) {
-                        self.setNumActive(self.getNumActive() - 1);
-                        if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
-                            throw iteratorExhausted();
-                        } else {
-                            item = fillValue;
-                            self.getItTuple()[i] = PNone.NONE;
+            int i = 0;
+            try {
+                for (; loopProfile.inject(inliningTarget, i < result.length); i++) {
+                    Object it = self.getItTuple()[i];
+                    Object item;
+                    if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
+                        item = fillValue;
+                    } else {
+                        try {
+                            item = nextNode.execute(frame, inliningTarget, it);
+                        } catch (IteratorExhausted e) {
+                            self.setNumActive(self.getNumActive() - 1);
+                            if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
+                                throw iteratorExhausted();
+                            } else {
+                                item = fillValue;
+                                self.getItTuple()[i] = PNone.NONE;
+                            }
+                        } catch (PException e) {
+                            self.setNumActive(0);
+                            throw e;
                         }
-                    } catch (PException e) {
-                        self.setNumActive(0);
-                        throw e;
                     }
+                    result[i] = item;
                 }
-                result[i] = item;
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             return PFactory.createTuple(PythonLanguage.get(inliningTarget), result);
         }

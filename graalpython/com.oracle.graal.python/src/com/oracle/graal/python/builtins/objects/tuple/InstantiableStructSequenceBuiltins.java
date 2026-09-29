@@ -71,6 +71,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -162,6 +163,7 @@ public class InstantiableStructSequenceBuiltins extends PythonBuiltins {
                     dst[i] = PNone.NONE;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, dst.length);
             return PFactory.createTuple(cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, minLen));
         }
     }

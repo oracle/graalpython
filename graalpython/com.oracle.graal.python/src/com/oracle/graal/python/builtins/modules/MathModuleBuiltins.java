@@ -954,6 +954,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
         public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind Node inliningTarget,
                         @Cached Gcd2Node gdcNode,
                         @Cached LoopConditionProfile profile) {
             Object res = args[0];
@@ -961,6 +962,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             for (int i = 1; profile.inject(i < args.length); i++) {
                 res = gdcNode.execute(frame, res, args[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length - 1);
             return res;
         }
 
@@ -1116,6 +1118,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 Object m = mulNode.execute(frame, f, b);
                 a = absNode.execute(frame, m);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length - 1);
             return a;
         }
 
@@ -2342,6 +2345,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 }
                 coordinates[i] = x;
             }
+            LoopNode.reportLoopCount(inliningTarget, arguments.length);
             if (Double.isInfinite(max)) {
                 return max;
             }
@@ -2364,6 +2368,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 csum += x;
                 frac += (oldcsum - csum) + x;
             }
+            LoopNode.reportLoopCount(inliningTarget, arguments.length);
             return max * Math.sqrt(csum - 1.0 + frac);
         }
     }
@@ -2824,6 +2829,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     max = x;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             if (infProfile.profile(inliningTarget, Double.isInfinite(max))) {
                 return max;
             }
@@ -2845,6 +2851,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 csum += x;
                 frac += (oldcsum - csum) + x;
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             return max * Math.sqrt(csum - 1.0 + frac);
         }
     }

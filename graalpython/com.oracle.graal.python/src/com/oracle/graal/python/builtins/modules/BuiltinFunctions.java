@@ -1609,6 +1609,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 callWrite.execute(frame, writeMethod, strNode.execute(frame, inliningTarget, values[i]));
                 callWrite.execute(frame, writeMethod, sep);
             }
+            LoopNode.reportLoopCount(inliningTarget, values.length == 0 ? 0 : values.length - 1);
             if (lastValue >= 0) {
                 callWrite.execute(frame, writeMethod, strNode.execute(frame, inliningTarget, values[lastValue]));
             }

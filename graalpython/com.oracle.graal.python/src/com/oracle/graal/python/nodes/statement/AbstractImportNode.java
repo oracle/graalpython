@@ -95,6 +95,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -577,6 +578,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 }
             }
 
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.max(0L, (long) level - 1));
             TruffleString base = substringNode.execute(pkgString, 0, lastDotIdx, TS_ENCODING, true);
             if (name.isEmpty()) {
                 return base;

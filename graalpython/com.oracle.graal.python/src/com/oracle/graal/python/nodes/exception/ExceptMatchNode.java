@@ -67,6 +67,7 @@ import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
@@ -138,9 +139,11 @@ public abstract class ExceptMatchNode extends Node {
         for (int i = 0; i < length; i++) {
             Object clauseType = getItemNode.execute(inliningTarget, storage, i);
             if (recursiveNode.executeMatch(e, clauseType)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return true;
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, length);
         return false;
     }
 

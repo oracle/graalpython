@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnadoptableNode;
 
@@ -130,11 +131,14 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
 
     private static boolean loopRecursive(VirtualFrame frame, Object arg, Object clsTuple, Node inliningTarget, TupleNodes.GetTupleStorage getTupleStorage,
                     SequenceStorageNodes.ToArrayNode toArrayNode, PyObjectRecursiveBinaryCheckNode node, int depth) {
-        for (Object cls : getTupleArray(inliningTarget, clsTuple, getTupleStorage, toArrayNode)) {
-            if (node.executeInternal(frame, arg, cls, depth)) {
+        Object[] classes = getTupleArray(inliningTarget, clsTuple, getTupleStorage, toArrayNode);
+        for (int i = 0; i < classes.length; i++) {
+            if (node.executeInternal(frame, arg, classes[i], depth)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return true;
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, classes.length);
         return false;
     }
 

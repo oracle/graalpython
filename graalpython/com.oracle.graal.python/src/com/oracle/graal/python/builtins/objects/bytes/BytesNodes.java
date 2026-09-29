@@ -124,6 +124,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
@@ -194,6 +195,7 @@ public abstract class BytesNodes {
                 try {
                     next = nextNode.execute(frame, inliningTarget, iterator);
                 } catch (IteratorExhausted e) {
+                    LoopNode.reportLoopCount(inliningTarget, parts.size());
                     return joinArrays(sep, parts, partsTotalSize);
                 }
                 partsTotalSize += append(parts, toBytesNode.execute(frame, next));
@@ -706,7 +708,7 @@ public abstract class BytesNodes {
         public abstract TruffleString execute(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
 
         @Specialization(guards = "bytesPerSepGroup == 0")
-        static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+        static TruffleString zero(Node inliningTarget, byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
                         @Shared @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
 
             int resultlen = arglen * 2;
@@ -718,6 +720,7 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c >>> 4];
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
+            LoopNode.reportLoopCount(inliningTarget, arglen);
             return fromByteArrayNode.execute(retbuf, 0, retbuf.length, TruffleString.CompactionLevel.S1, false);
         }
 
@@ -739,7 +742,7 @@ public abstract class BytesNodes {
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0, fromByteArrayNode);
+                return zero(inliningTarget, argbuf, arglen, sep, 0, fromByteArrayNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -758,7 +761,7 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c >>> 4];
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
-
+            LoopNode.reportLoopCount(inliningTarget, arglen);
             return fromByteArrayNode.execute(retbuf, 0, retbuf.length, TruffleString.CompactionLevel.S1, false);
         }
 
@@ -780,7 +783,7 @@ public abstract class BytesNodes {
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0, fromByteArrayNode);
+                return zero(inliningTarget, argbuf, arglen, sep, 0, fromByteArrayNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -800,6 +803,7 @@ public abstract class BytesNodes {
                 retbuf[j--] = BytesUtils.HEXDIGITS[c & 0x0f];
                 retbuf[j--] = BytesUtils.HEXDIGITS[c >>> 4];
             }
+            LoopNode.reportLoopCount(inliningTarget, arglen);
             return fromByteArrayNode.execute(retbuf, 0, retbuf.length, TruffleString.CompactionLevel.S1, false);
         }
     }
@@ -1075,24 +1079,26 @@ public abstract class BytesNodes {
             for (int i = 0; i < 256; i++) {
                 result[i] = false;
             }
-            for (byte b : delete) {
-                result[b & 0xFF] = true;
+            for (int i = 0; i < delete.length; i++) {
+                result[delete[i] & 0xFF] = true;
             }
             return result;
         }
 
-        protected static Result delete(byte[] self, byte[] table) {
+        protected static Result delete(Node inliningTarget, byte[] self, byte[] table) {
             final int length = self.length;
             byte[] result = new byte[length];
             int resultLen = 0;
             boolean[] toDelete = createDeleteTable(table);
 
-            for (byte b : self) {
+            for (int i = 0; i < length; i++) {
+                byte b = self[i];
                 if (!toDelete[b & 0xFF]) {
                     result[resultLen] = b;
                     resultLen++;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, (long) length + table.length));
             if (resultLen == length) {
                 return new Result(result, false);
             }
@@ -1114,14 +1120,15 @@ public abstract class BytesNodes {
             return new Result(result, changed);
         }
 
-        protected static Result translateAndDelete(byte[] self, byte[] table, byte[] delete) {
+        protected static Result translateAndDelete(Node inliningTarget, byte[] self, byte[] table, byte[] delete) {
             final int length = self.length;
             byte[] result = new byte[length];
             int resultLen = 0;
             boolean changed = false;
             boolean[] toDelete = createDeleteTable(delete);
 
-            for (byte value : self) {
+            for (int i = 0; i < length; i++) {
+                byte value = self[i];
                 int idx = value & 0xFF;
                 if (!toDelete[idx]) {
                     byte b = table[idx];
@@ -1132,6 +1139,7 @@ public abstract class BytesNodes {
                     resultLen++;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, (long) length + delete.length));
             if (resultLen == length) {
                 return new Result(result, changed);
             }

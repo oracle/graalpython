@@ -112,6 +112,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -376,11 +377,13 @@ public final class ErrorHandlers {
             for (int i = start; i < end; ++i) {
                 replacementLength += getXmlCharRefReplacementLength(codePointAtIndexNode.execute(src, i));
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             byte[] replacement = new byte[replacementLength];
             int pos = 0;
             for (int i = start; i < end; ++i) {
                 pos = appendXmlCharRefReplacement(replacement, pos, codePointAtIndexNode.execute(src, i));
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, 0, replacement.length, TruffleString.CompactionLevel.S1, false);
             return PFactory.createTuple(language, new Object[]{resultAscii, end});
         }
@@ -423,6 +426,7 @@ public final class ErrorHandlers {
                 for (int i = start; i < end; i++) {
                     pos = BytesUtils.byteEscape(src[i] & 0xFF, pos, replacement);
                 }
+                LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             } finally {
                 accessLib.release(srcBuf, frame, callData);
             }
@@ -457,12 +461,14 @@ public final class ErrorHandlers {
                     len += 1 + 1 + 2;       // \\xNN
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             byte[] replacement = new byte[len];
             int pos = 0;
             for (int i = start; i < end; i++) {
                 int cp = codePointAtIndexNode.execute(src, i);
                 pos = BytesUtils.unicodeNonAsciiEscape(cp, pos, replacement, true);
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, 0, replacement.length, TruffleString.CompactionLevel.S1, false);
             return PFactory.createTuple(language, new Object[]{resultAscii, end});
         }
@@ -515,6 +521,7 @@ public final class ErrorHandlers {
                     appendStringNode.execute(tsb, fromByteArrayNode.execute(buf, 0, len, TruffleString.CompactionLevel.S1, true));
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             return PFactory.createTuple(language, new Object[]{toStringNode.execute(tsb), end});
         }
 
@@ -563,6 +570,7 @@ public final class ErrorHandlers {
                 encodeCodepoint(encoding, result, pos, cp);
                 pos += encoding.byteLength;
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, result), end});
         }
 
@@ -691,6 +699,7 @@ public final class ErrorHandlers {
                 }
                 result[pos++] = (byte) (cp - 0xdc00);
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, result), end});
         }
 

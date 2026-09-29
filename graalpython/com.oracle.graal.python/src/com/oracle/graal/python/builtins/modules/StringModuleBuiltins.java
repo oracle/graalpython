@@ -66,6 +66,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__STRING)
@@ -97,15 +99,16 @@ public final class StringModuleBuiltins extends PythonBuiltins {
             } finally {
                 ExecutionContext.BoundaryCallContext.exit(frame, language, context, state);
             }
-            return parserListToIterator(parserList, language);
+            return parserListToIterator(this, parserList, language);
         }
     }
 
-    private static PSequenceIterator parserListToIterator(ArrayList<Object[]> parserList, PythonLanguage language) {
+    private static PSequenceIterator parserListToIterator(Node inliningTarget, ArrayList<Object[]> parserList, PythonLanguage language) {
         Object[] tuples = new Object[parserList.size()];
         for (int i = 0; i < tuples.length; i++) {
             tuples[i] = PFactory.createTuple(language, parserList.get(i));
         }
+        LoopNode.reportLoopCount(inliningTarget, tuples.length);
         return PFactory.createSequenceIterator(language, PFactory.createList(language, tuples));
     }
 
@@ -131,7 +134,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
             } finally {
                 ExecutionContext.BoundaryCallContext.exit(frame, language, context, state);
             }
-            return PFactory.createTuple(language, new Object[]{result.first, parserListToIterator(result.parserList, language)});
+            return PFactory.createTuple(language, new Object[]{result.first, parserListToIterator(this, result.parserList, language)});
         }
     }
 }

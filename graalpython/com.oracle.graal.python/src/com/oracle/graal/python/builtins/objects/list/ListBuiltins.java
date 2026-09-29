@@ -225,6 +225,7 @@ public final class ListBuiltins extends PythonBuiltins {
                     Object value = getItem.execute(storage, index);
                     appendStringNode.execute(buf, reprNode.execute(frame, inliningTarget, value));
                 }
+                LoopNode.reportLoopCount(inliningTarget, length);
                 appendStringNode.execute(buf, T_RBRACKET);
                 return toStringNode.execute(buf);
             } finally {
@@ -260,6 +261,7 @@ public final class ListBuiltins extends PythonBuiltins {
                 array[i] = value;
                 value += step;
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             list.setSequenceStorage(new IntSequenceStorage(array));
             return PNone.NONE;
         }

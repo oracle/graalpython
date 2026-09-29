@@ -51,6 +51,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.GenerateLibrary;
@@ -198,6 +199,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
             for (int i = 0; i < length; i++) {
                 dest[destOffset + i] = readByte(receiver, srcOffset + i);
             }
+            LoopNode.reportLoopCount(this, Math.max(0, length));
         }
     }
 
@@ -218,6 +220,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
             for (int i = 0; i < length; i++) {
                 writeByte(receiver, destOffset + i, src[srcOffset + i]);
             }
+            LoopNode.reportLoopCount(this, Math.max(0, length));
         }
     }
 
@@ -239,6 +242,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
             for (int i = 0; i < length; i++) {
                 otherLib.writeByte(dest, destOffset + i, readByte(receiver, srcOffset + i));
             }
+            LoopNode.reportLoopCount(this, Math.max(0, length));
         }
     }
 

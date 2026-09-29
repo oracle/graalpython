@@ -114,6 +114,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -130,6 +131,7 @@ public class StructBuiltins extends PythonBuiltins {
                 buffer_offset += code.size;
             }
         }
+        LoopNode.reportLoopCount(packValueNode, (int) Math.min(Integer.MAX_VALUE, (long) codes.length + pos));
     }
 
     public static Object[] unpackInternal(PStruct self, StructNodes.UnpackValueNode unpackValueNode, byte[] bytes, int offset) {
@@ -144,6 +146,7 @@ public class StructBuiltins extends PythonBuiltins {
                 buffer_offset += code.size;
             }
         }
+        LoopNode.reportLoopCount(unpackValueNode, (int) Math.min(Integer.MAX_VALUE, (long) codes.length + pos));
         return values;
     }
 

@@ -146,6 +146,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.AbstractTruffleString;
 import com.oracle.truffle.api.strings.InternalByteArray;
@@ -879,10 +880,12 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
+    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
+                    @Bind Node inliningTarget) throws PosixException {
         int largestFD = findMax(readfds, -1);
         largestFD = findMax(writefds, largestFD);
         largestFD = findMax(errorfds, largestFD);
+        LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, (long) readfds.length + writefds.length + errorfds.length));
         // This will be treated as boolean array (output parameter), each item indicating if given
         // FD was selected or not
         byte[] selected = new byte[readfds.length + writefds.length + errorfds.length];
@@ -935,7 +938,8 @@ public final class NativePosixSupport extends PosixSupport {
 
     private static int findMax(int[] items, int currentMax) {
         int max = currentMax;
-        for (int item : items) {
+        for (int i = 0; i < items.length; i++) {
+            int item = items[i];
             if (item > max) {
                 max = item;
             }
@@ -1931,7 +1935,8 @@ public final class NativePosixSupport extends PosixSupport {
 
     @ExportMessage
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork,
+                    @Bind Node inliningTarget) throws PosixException {
 
         // The following strings and string arrays need to be present in the native function:
         // - char** of executable names ('\0'-terminated strings with an extra NULL at the end)
@@ -1962,16 +1967,16 @@ public final class NativePosixSupport extends PosixSupport {
 
         try {
             offsetsLen = executables.length + 1;
-            dataLen = addLengthsOfCStrings(0, executables);
+            dataLen = addLengthsOfCStrings(inliningTarget, 0, executables);
 
             argsPos = offsetsLen;
             offsetsLen += args.length + 1;
-            dataLen = addLengthsOfCStrings(dataLen, args);
+            dataLen = addLengthsOfCStrings(inliningTarget, dataLen, args);
 
             if (env != null) {
                 envPos = offsetsLen;
                 offsetsLen += env.length + 1;
-                dataLen = addLengthsOfCStrings(dataLen, env);
+                dataLen = addLengthsOfCStrings(inliningTarget, dataLen, env);
             } else {
                 envPos = -1;
             }
@@ -2044,7 +2049,8 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void execv(Object pathname, Object[] args) throws PosixException {
+    public void execv(Object pathname, Object[] args,
+                    @Bind Node inliningTarget) throws PosixException {
 
         if (WINDOWS) {
             throw newPosixException(OSErrorEnum.ENOSYS.getNumber());
@@ -2070,7 +2076,7 @@ public final class NativePosixSupport extends PosixSupport {
         try {
             // The +1 can overflow only if the buffer contains 2^63-1 bytes, which is impossible
             // since we are using Java arrays limited to 2^31-1.
-            dataLen = addLengthsOfCStrings(pathnameLen + 1L, args);
+            dataLen = addLengthsOfCStrings(inliningTarget, pathnameLen + 1L, args);
         } catch (OverflowException e) {
             throw newPosixException(OSErrorEnum.E2BIG.getNumber());
         }
@@ -2114,11 +2120,12 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    private static long addLengthsOfCStrings(long prevLen, Object[] src) throws OverflowException {
+    private static long addLengthsOfCStrings(Node inliningTarget, long prevLen, Object[] src) throws OverflowException {
         long len = prevLen;
-        for (Object o : src) {
-            len = PythonUtils.addExact(len, ((Buffer) o).length);
+        for (int i = 0; i < src.length; i++) {
+            len = PythonUtils.addExact(len, ((Buffer) src[i]).length);
         }
+        LoopNode.reportLoopCount(inliningTarget, src.length);
         return PythonUtils.addExact(len, src.length);   // add space for terminating '\0'
     }
 
@@ -3351,7 +3358,7 @@ public final class NativePosixSupport extends PosixSupport {
             TruffleString utf16 = switchEncodingNode.execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
         }
-        return checkNarrowPath(encodeFSDefaultNode.execute(null, inliningTarget, path));
+        return checkNarrowPath(inliningTarget, encodeFSDefaultNode.execute(null, inliningTarget, path));
     }
 
     @ExportMessage
@@ -3366,7 +3373,7 @@ public final class NativePosixSupport extends PosixSupport {
             TruffleString utf16 = switchEncodingNode.execute(utf8, UTF_16LE, windowsPathDecodeErrorHandler(inliningTarget, path));
             return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
         }
-        return checkNarrowPath(path);
+        return checkNarrowPath(inliningTarget, path);
     }
 
     @ExportMessage
@@ -3425,12 +3432,13 @@ public final class NativePosixSupport extends PosixSupport {
                     @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                     @Exclusive @Cached TruffleString.IsValidNode isValidNode,
                     @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        return checkCString(getUTF8StringBytes(inliningTarget, string, switchEncodingNode, isValidNode, copyToByteArrayNode));
+        return checkCString(inliningTarget, getUTF8StringBytes(inliningTarget, string, switchEncodingNode, isValidNode, copyToByteArrayNode));
     }
 
     @ExportMessage
-    public Object createCStringFromBytes(byte[] bytes) {
-        return checkCString(bytes);
+    public Object createCStringFromBytes(byte[] bytes,
+                    @Bind Node inliningTarget) {
+        return checkCString(inliningTarget, bytes);
     }
 
     @ExportMessage
@@ -3501,20 +3509,22 @@ public final class NativePosixSupport extends PosixSupport {
         return PRaiseNode.raiseExceptionObjectStatic(node, exception);
     }
 
-    private static Buffer checkCString(byte[] path) {
-        for (byte b : path) {
-            if (b == 0) {
+    private static Buffer checkCString(Node inliningTarget, byte[] path) {
+        for (int i = 0; i < path.length; i++) {
+            if (path[i] == 0) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return null;
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, path.length);
         // TODO we keep a byte[] provided by the caller, who can potentially change it, making our
         // check for embedded nulls pointless. Maybe we should copy it and while on it, might as
         // well add the terminating null character, avoiding the copy we do later in pathToCString.
         return Buffer.wrap(path);
     }
 
-    private static NarrowPath checkNarrowPath(byte[] path) {
-        return checkCString(path) == null ? null : new NarrowPath(path);
+    private static NarrowPath checkNarrowPath(Node inliningTarget, byte[] path) {
+        return checkCString(inliningTarget, path) == null ? null : new NarrowPath(path);
     }
 
     private static WidePath checkWidePath(byte[] path) {

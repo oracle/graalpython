@@ -82,6 +82,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -186,6 +187,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
                 Object str = encodeStatefulNode.execute(frame, self, strobj, 0);
                 callMethod.execute(frame, inliningTarget, self.stream, WRITE, str);
             }
+            LoopNode.reportLoopCount(inliningTarget, n);
             return PNone.NONE;
         }
     }

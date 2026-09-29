@@ -127,6 +127,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -500,6 +501,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                     callKeywords[idx] = kw;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, keywords.length);
             callKeywords = PythonUtils.arrayCopyOfRange(callKeywords, 0, kwIndex);
 
             return callNode.execute(frame, self.getFn(), callArgs, callKeywords);
@@ -511,10 +513,12 @@ public final class PartialBuiltins extends PythonBuiltins {
     abstract static class PartialReprNode extends PythonUnaryBuiltinNode {
         private static void reprArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilderUTF32 sb, PyObjectReprAsTruffleStringNode reprNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode) {
-            for (Object arg : partial.getArgs()) {
+            Object[] args = partial.getArgs();
+            for (int i = 0; i < args.length; i++) {
                 appendStringNode.execute(sb, T_COMMA_SPACE);
-                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, arg));
+                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, args[i]));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
         }
 
         private static void reprKwArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilderUTF32 sb, PyObjectReprAsTruffleStringNode reprNode,

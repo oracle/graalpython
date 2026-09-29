@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -147,9 +148,11 @@ public class KeywordsStorage extends HashingStorage {
                 TruffleString currentKey = self.keywords[i].getName();
                 long keyHash = hashNode.execute(frame, inliningTarget, currentKey);
                 if (keyHash == hash && eqNode.executeEq(frame, inliningTarget, key, currentKey)) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return self.keywords[i].getValue();
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, self.keywords.length);
             return null;
         }
     }
@@ -158,6 +161,7 @@ public class KeywordsStorage extends HashingStorage {
         for (PKeyword entry : keywords) {
             putNode.execute(inliningTarget, storage, entry.getName(), entry.getValue());
         }
+        LoopNode.reportLoopCount(inliningTarget, keywords.length);
     }
 
     public HashingStorage copy() {

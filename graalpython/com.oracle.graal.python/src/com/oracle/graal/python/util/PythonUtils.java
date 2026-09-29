@@ -97,6 +97,7 @@ import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -803,6 +804,7 @@ public final class PythonUtils {
         for (int i = 0; i < array.length; i++) {
             result[i] = PythonUtils.internString(cast.execute(inliningTarget, array[i]));
         }
+        LoopNode.reportLoopCount(inliningTarget, array.length);
         return result;
     }
 
@@ -922,11 +924,12 @@ public final class PythonUtils {
         }
     }
 
-    public static long crc32(int initialValue, byte[] bytes, int offset, int length) {
+    public static long crc32(Node inliningTarget, int initialValue, byte[] bytes, int offset, int length) {
         int crc = ~initialValue;
         for (int i = 0; i < length; ++i) {
             crc = CRC_32_TAB[(crc ^ bytes[offset + i]) & 0xff] ^ (crc >>> 8);
         }
+        LoopNode.reportLoopCount(inliningTarget, length);
         return ~crc & 0xFFFFFFFFL;
     }
 
@@ -965,11 +968,12 @@ public final class PythonUtils {
                     0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
     };
 
-    public static long crcHqx(int initialValue, byte[] bytes, int offset, int length) {
+    public static long crcHqx(Node inliningTarget, int initialValue, byte[] bytes, int offset, int length) {
         int crc = initialValue & 0xffff;
         for (int i = offset; i < length; i++) {
             crc = ((crc << 8) & 0xff00) ^ CRC_HQX_TAB[(crc >>> 8) ^ (bytes[i] & 0xff)];
         }
+        LoopNode.reportLoopCount(inliningTarget, length - offset);
         return crc;
     }
 

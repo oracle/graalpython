@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -118,6 +119,7 @@ public abstract class HandleExceptionsInHandlerNode extends Node {
                         for (Object exc : exceptionGroupAcc.getExceptions()) {
                             exceptionGroupsInAcc.add(exc);
                         }
+                        LoopNode.reportLoopCount(inliningTarget, exceptionGroupAcc.getExceptions().length);
 
                         if (clause == PNone.NONE) {
                             // uncaught grouped exceptions should be bundled together with
@@ -156,6 +158,7 @@ public abstract class HandleExceptionsInHandlerNode extends Node {
                 for (Object exc : exceptionGroupAcc.getExceptions()) {
                     exceptionGroupsInAcc.add(exc);
                 }
+                LoopNode.reportLoopCount(inliningTarget, exceptionGroupAcc.getExceptions().length);
                 exceptionGroupsInAcc.add(exceptionToAdd.getUnreifiedException());
                 outerExceptionGroup = (PBaseExceptionGroup) deriveExceptionGroup.execute(
                                 frame,
