@@ -64,6 +64,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MANAGED_DICT;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MANAGED_WEAKREF;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_FLAGS;
@@ -100,7 +101,7 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
+import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefDescriptorNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -255,6 +256,7 @@ import com.oracle.truffle.api.strings.TruffleString.IsValidNode;
 public abstract class TypeNodes {
 
     private static final int SIZEOF_PY_OBJECT_PTR = Long.BYTES;
+    private static final long MANAGED_WEAKREF_OFFSET = -4L * SIZEOF_PY_OBJECT_PTR;
 
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 40 -> 21
@@ -2212,9 +2214,9 @@ public abstract class TypeNodes {
         @TruffleBoundary
         private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonLanguage language) {
             if (LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___WEAKREF__) == PNone.NO_VALUE) {
-                Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
+                Builtin builtin = GetWeakRefDescriptorNode.class.getAnnotation(Builtin.class);
                 BuiltinFunctionRootNode rootNode = PythonLanguage.get(null).createCachedRootNode(
-                                l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class);
+                                l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefDescriptorNodeFactory.getInstance(), true), GetWeakRefDescriptorNode.class);
                 setAttribute(T___WEAKREF__, builtin, rootNode, pythonClass, language);
             }
         }
@@ -2284,7 +2286,12 @@ public abstract class TypeNodes {
                 dictOffset = -1;
             }
             if (ctx.addWeak) {
-                weakListOffset = slotOffset;
+                // The weakref pointer lives in the preheader, not after the instance slots.
+                weakListOffset = MANAGED_WEAKREF_OFFSET;
+            }
+            if (weakListOffset == MANAGED_WEAKREF_OFFSET) {
+                long flags = GetTypeFlagsNode.executeUncached(pythonClass);
+                SetTypeFlagsNode.executeUncached(pythonClass, flags | MANAGED_WEAKREF);
             }
 
             SetDictOffsetNode.executeUncached(pythonClass, dictOffset);

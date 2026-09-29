@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.weakref.ProxyTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
@@ -240,6 +241,18 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object getRefs(@SuppressWarnings("unused") Object object) {
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "__weakref__", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetWeakRefDescriptorNode extends PythonBuiltinNode {
+        @Specialization
+        static Object get(PythonAbstractObject object,
+                        @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readWeaklistNode) {
+            Object ref = readWeaklistNode.execute(inliningTarget, object, HiddenAttr.WEAKLIST, null);
+            return ref == null ? PNone.NONE : ref;
         }
     }
 

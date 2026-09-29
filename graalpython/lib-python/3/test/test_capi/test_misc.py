@@ -771,6 +771,8 @@ class CAPITest(unittest.TestCase):
         inst = C4()
         inst.append(0)
         str(inst.__weakref__)
+        ref = weakref.ref(inst)
+        self.assertIs(inst.__weakref__, ref)
 
         for cls in (_testcapi.HeapCTypeWithManagedDict, _testcapi.HeapCTypeWithManagedWeakref):
             for cls2 in (_testcapi.HeapCTypeWithDict, _testcapi.HeapCTypeWithWeakref):
