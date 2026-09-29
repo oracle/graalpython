@@ -46,6 +46,10 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PosixSupport {
+
+    public static abstract class Path {
+    }
+
     public void setEnv(@SuppressWarnings("unused") Env env) {
         // nop
     }
