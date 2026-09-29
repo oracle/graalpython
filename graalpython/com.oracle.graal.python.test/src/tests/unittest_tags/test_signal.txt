@@ -14,4 +14,5 @@ test.test_signal.RaiseSignalTest.test_handler @ darwin-arm64,linux-aarch64,linux
 test.test_signal.SiginterruptTest.test_siginterrupt_off @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Timeout
 !test.test_signal.StressTest.test_stress_modifying_handlers
+test.test_signal.WindowsSignalTests.test_issue9324 @ win32-AMD64-github
 test.test_signal.WindowsSignalTests.test_valid_signals @ win32-AMD64,win32-AMD64-github
