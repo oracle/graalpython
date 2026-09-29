@@ -226,8 +226,18 @@ public final class DescriptorBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    abstract static class GetOrCreateIndexedSlots extends Node {
+    public abstract static class GetOrCreateIndexedSlots extends Node {
         abstract Object[] execute(Node inliningTarget, PythonAbstractObject object);
+
+        public static Object[] executeKnownCount(Node inliningTarget, InlinedBranchProfile initProfile, PythonAbstractObject object, int slotsCount) {
+            Object[] slots = object.getIndexedSlots();
+            if (slots == null) {
+                initProfile.enter(inliningTarget);
+                slots = new Object[slotsCount];
+                object.setIndexedSlots(slots);
+            }
+            return slots;
+        }
 
         @Specialization(guards = "object.getIndexedSlots() != null")
         static Object[] doGet(PythonAbstractObject object) {

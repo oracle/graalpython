@@ -44,10 +44,11 @@ import unittest
 if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncached_interpreter:
 
     skipUnlessSingleContext = unittest.skipUnless(__graalpython__.is_single_context, "requires single-context mode")
+    skipUnlessMultiContext = unittest.skipIf(__graalpython__.is_single_context, "requires multi-context mode")
 
     def assert_contains_bytecode(fun, bytecode_str):
         bytecode = __graalpython__.dis(fun)
-        assert bytecode_str in bytecode, bytecode
+        assert bytecode_str + ' ' in bytecode, bytecode
 
 
     def test_read_name_quickening_local():
@@ -84,6 +85,22 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester, "GetAttribute$Module")
 
 
+    def test_get_attr_quickening_module_with_getattr():
+        module = types.ModuleType("test_module")
+        module.value = "original"
+        module.__getattr__ = lambda name: "fallback: " + name
+
+        def tester(mod):
+            return mod.value
+
+        for _ in range(5):
+            assert tester(module) == "original"
+        assert_contains_bytecode(tester, "GetAttribute$Module")
+
+        del module.value
+        assert tester(module) == "fallback: value"
+
+
     @skipUnlessSingleContext
     def test_get_attr_quickening_module_int():
         def tester_i(s):
@@ -97,6 +114,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         assert_contains_bytecode(tester_i, "GetAttribute$Module$int")
 
 
+    @skipUnlessSingleContext
     def test_get_attr_quickening_type():
         class K:
             MY_ATTR = 'forty-two'
@@ -107,6 +125,19 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         for i in range(5):
             assert tester(K) == 'forty-two'
         assert_contains_bytecode(tester, "GetAttribute$Type")
+
+
+    @skipUnlessMultiContext
+    def test_get_attr_quickening_builtin_type_multi_context():
+        import _blake2
+
+        def tester(o):
+            return o.MAX_DIGEST_SIZE
+
+        expected = _blake2.blake2b.MAX_DIGEST_SIZE
+        for _ in range(5):
+            assert tester(_blake2.blake2b) == expected
+        assert_contains_bytecode(tester, "GetAttribute$BuiltinTypeMultiContext")
 
 
     @skipUnlessSingleContext
@@ -120,6 +151,24 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         for i in range(5):
             assert tester(Q) == 42
         assert_contains_bytecode(tester, "GetAttribute$Type$int")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_type_mutable_non_descriptor():
+        class Value:
+            pass
+
+        value = Value()
+
+        class Q:
+            MY_ATTR = value
+
+        def tester(o):
+            return o.MY_ATTR
+
+        for i in range(5):
+            assert tester(Q) is value
+        assert_contains_bytecode(tester, "GetAttribute$TypeMutableNonDescriptor")
 
 
     def test_get_method_str_quickening():
@@ -138,7 +187,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         d = {i:i for i in reversed(range(5))}
         for i in range(5):
             assert tester(d)[0] == i
-        assert_contains_bytecode(tester, "GetMethod$FastPath")
+        assert_contains_bytecode(tester, "GetMethod$FastPathBuiltin")
 
 
     def test_get_method_module_quickening():
@@ -308,6 +357,175 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
         for i in range(5):
             assert tester(K()) == 42
         assert_contains_bytecode(tester, "GetAttribute$InstanceValue")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_property():
+        class K:
+            @property
+            def attr(self):
+                return 42
+
+        def tester(o):
+            return o.attr
+
+        for _ in range(5):
+            assert tester(K()) == 42
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        del K.attr
+        instance = K()
+        instance.attr = 43
+        assert tester(instance) == 43
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_property_with_setter():
+        class K:
+            def __init__(self):
+                self._attr = 0
+
+            @property
+            def attr(self):
+                return self._attr
+
+            @attr.setter
+            def attr(self, value):
+                self._attr = value
+
+        def tester(o):
+            return o.attr
+
+        instance = K()
+        for i in range(5):
+            instance.attr = i
+            assert tester(instance) == i
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+
+        for i in range(5):
+            instance.attr = -i
+            assert tester(instance) == -i
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_indexed_slot():
+        class K:
+            __slots__ = ("attr",)
+
+        def tester(o):
+            return o.attr
+
+        instance = K()
+        for i in range(5):
+            instance.attr = i
+            assert tester(instance) == i
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor")
+        K.attr = property(lambda self: "overridden")
+        assert tester(instance) == "overridden"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_indexed_slot_int():
+        class K:
+            __slots__ = ("attr",)
+
+        def tester(o):
+            return o.attr + 5
+
+        instance = K()
+        for i in range(5):
+            instance.attr = i
+            assert tester(instance) == i + 5
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor$int")
+
+        instance.attr = 1.5
+        assert tester(instance) == 6.5
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor$Generic")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_indexed_slot_int_invalidation():
+        class K:
+            __slots__ = ("attr",)
+
+        def tester(o):
+            return o.attr + 5
+
+        instance = K()
+        instance.attr = 37
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor$int")
+        K.attr = property(lambda self: 38)
+        for _ in range(5):
+            assert tester(instance) == 43
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_inherited_indexed_slot():
+        class Base:
+            __slots__ = ("attr",)
+
+        class Child(Base):
+            pass
+
+        def tester(o):
+            return o.attr
+
+        instance = Child()
+        instance.attr = 42
+        instance.__dict__["attr"] = "shadow"
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$IndexedSlotDescriptor")
+        del instance.attr
+        with unittest.TestCase().assertRaises(AttributeError):
+            tester(instance)
+        instance.attr = 43
+        assert tester(instance) == 43
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_property_reinitialized():
+        class K:
+            attr = property(lambda self: 42)
+
+        def tester(o):
+            return o.attr
+
+        instance = K()
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        K.attr.__init__(lambda self: 43)
+        for _ in range(5):
+            assert tester(instance) == 43
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        K.attr = property()
+        with unittest.TestCase().assertRaises(AttributeError):
+            tester(instance)
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_inherited_property():
+        class Base:
+            attr = property(lambda self: 42)
+
+        class Child(Base):
+            pass
+
+        def tester(o):
+            return o.attr
+
+        instance = Child()
+        instance.__dict__["attr"] = "shadow"
+        for _ in range(5):
+            assert tester(instance) == 42
+        assert_contains_bytecode(tester, "GetAttribute$Property")
+        Base.attr = property(lambda self: 43)
+        assert tester(instance) == 43
+        Child.__getattribute__ = lambda self, name: 44
+        assert tester(instance) == 44
 
 
     @skipUnlessSingleContext

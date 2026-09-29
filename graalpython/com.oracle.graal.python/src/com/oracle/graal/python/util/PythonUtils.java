@@ -96,6 +96,7 @@ import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -1082,5 +1083,11 @@ public final class PythonUtils {
             }
         }
         return getter;
+    }
+
+    public static void checkAssumption(Assumption assumption) throws InvalidAssumptionException {
+        if (assumption != null) {
+            assumption.check();
+        }
     }
 }

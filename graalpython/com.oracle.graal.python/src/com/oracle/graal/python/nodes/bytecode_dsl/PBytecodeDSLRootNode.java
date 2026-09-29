@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
+import static com.oracle.graal.python.util.PythonUtils.checkAssumption;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -99,6 +100,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.GetOrCreateIndexedSlots;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.IndexedSlotDescriptor;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
@@ -112,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -315,6 +319,7 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.SlowPathException;
@@ -2124,69 +2129,136 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return getValue(getter, receiver);
         }
 
-        // For type instance field: for builtin type we know descriptors only have dunder names
-        // (__xxx__), so we can skip descriptor check + we need to check the __get__ (tp_descr_get)
-        // on the resulting value (this is common situation)
-        public static Object loadTypeInstanceValue(VirtualFrame frame, Node inliningTarget, PythonManagedClass object, GetObjectSlotsNode getValueSlotsNode,
-                        CallSlotDescrGet callSlotDescrGet, PropertyGetter cachedPropertyGetter, InlinedBranchProfile hasNonDescriptorValueProfile) throws FastPathBailoutException {
+        static Object loadCacheableTypeAttr(PythonManagedClass object, TruffleString key) {
+            return loadCacheableTypeAttr(object, key, false);
+        }
+
+        static Object loadCacheableTypeAttr(PythonManagedClass object, TruffleString key, boolean allowMutableValueClass) {
             assert object.checkDictFlags();
-            Object value = cachedPropertyGetter.get(object);
-            if (value != PNone.NO_VALUE && value != null) {
-                var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
-                if (valueGet == null) {
-                    hasNonDescriptorValueProfile.enter(inliningTarget);
+            // Dunder attributes may be descriptors on the metaclass, which take precedence over the type dictionary.
+            if (canBeSpecialMethod(key)) {
+                return PNone.NO_VALUE;
+            }
+            Object value = DynamicObject.GetNode.getUncached().execute(object, key, PNone.NO_VALUE);
+            if (value == PNone.NO_VALUE) {
+                return PNone.NO_VALUE;
+            }
+            // Some types with known tp_descr_get implementation that just return itself when
+            // `instance` parameter to tp_descr_get is NO_VALUE
+            if (value instanceof PBuiltinFunction || value instanceof PFunction) {
+                assert CallSlotDescrGet.executeUncached(GetObjectSlotsNode.executeUncached(value).tp_descr_get(), value, PNone.NO_VALUE, object) == value;
+                return value;
+            }
+            Object valueKlass = GetClassNode.executeUncached(value);
+            if (valueKlass instanceof PythonBuiltinClassType valueType) {
+                // Note: this covers primitives and TruffleString
+                if (valueType.getSlots().tp_descr_get() == null) {
                     return value;
-                } else {
-                    Object result = callSlotDescrGet.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
-                    if (result != null) {
-                        return result;
-                    }
                 }
             }
-            throw FastPathBailoutException.INSTANCE;
+            if (allowMutableValueClass && valueKlass instanceof PythonClass pyClass) {
+                if (pyClass.getTpSlots().tp_descr_get() == null) {
+                    return value;
+                }
+            }
+            return PNone.NO_VALUE;
         }
 
         @Idempotent
-        public static boolean isBuiltinType(Shape cachedShape) {
+        public static boolean isSingleContext() {
+            CompilerAsserts.neverPartOfCompilation();
+            return PythonLanguage.get(null).isSingleContext();
+        }
+
+        @Idempotent
+        public static boolean isBuiltinTypeType(Shape cachedShape) {
             return cachedShape.getDynamicType() == PythonBuiltinClassType.PythonClass;
         }
 
+        public static Assumption getTypeStableAssumptionForReceiver(PythonManagedClass klass) {
+            return klass instanceof PythonClass pc ? pc.getTypeStableAssumption() : null;
+        }
+
+        @Idempotent
+        public static boolean canCacheBuiltinTypeMultiContext(Object value, PythonManagedClass receiver) {
+            CompilerAsserts.neverPartOfCompilation();
+            return !isSingleContext() && receiver instanceof PythonBuiltinClass && PythonLanguage.canCache(value);
+        }
+
         @Specialization(guards = {
-                        "!canBeSpecialMethod(cachedKey)", //
-                        "!hasMaterializedDict(cachedShape)", "isBuiltinType(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)"}, //
-                        rewriteOn = {FastPathBailoutException.class, UnexpectedResultException.class}, limit = "3")
+                        "isSingleContext()", "!isNoValue(result)", //
+                        "!hasMaterializedDict(cachedShape)", "isBuiltinTypeType(cachedShape)", //
+                        /* dynamic checks: */ "cachedReceiver == receiver"}, //
+                        rewriteOn = {UnexpectedResultException.class, InvalidAssumptionException.class}, limit = "3")
         static int doTypeInt(@SuppressWarnings("unused") VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
                         @Bind Node inliningTarget,
-                        @Cached("key") TruffleString cachedKey,
                         @Cached("receiver.getShape()") Shape cachedShape,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @SuppressWarnings("unused") @Shared("typeGetObjectSlots") @Cached GetObjectSlotsNode getObjectSlotsNode,
-                        @SuppressWarnings("unused") @Shared("typeCallSlotDescrGet") @Cached CallSlotDescrGet callSlotDescrGet,
-                        @SuppressWarnings("unused") @Shared("typeNonDescriptorProfile") @Cached InlinedBranchProfile hasNonDescriptorValueProfile) throws FastPathBailoutException,
-                        UnexpectedResultException {
-            assert key == cachedKey; // should be a constant operand
-            // A primitive int cannot itself be a descriptor, so the direct field value is final.
-            return getIntValue(getter, receiver);
+                        @Cached("loadCacheableTypeAttr(receiver, key)") Object result,
+                        @Cached("receiver") PythonManagedClass cachedReceiver,
+                        @Cached("getTypeStableAssumptionForReceiver(cachedReceiver)") Assumption typeStableAssumption) throws UnexpectedResultException, InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            if (result instanceof Integer) {
+                return (int) result;
+            }
+            throw new UnexpectedResultException(result);
         }
 
         @ForceQuickening
-        @StoreBytecodeIndex // we may be calling the descriptor
         @Specialization(guards = {
-                        "!canBeSpecialMethod(cachedKey)", //
-                        "!hasMaterializedDict(cachedShape)", "isBuiltinType(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)"}, //
-                        replaces = "doTypeInt", rewriteOn = FastPathBailoutException.class, limit = "3")
-        static Object doType(VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
+                        "isSingleContext()", "!isNoValue(result)", //
+                        "!hasMaterializedDict(cachedShape)", "isBuiltinTypeType(cachedShape)", //
+                        /* dynamic checks: */ "cachedReceiver == receiver"}, //
+                        rewriteOn = InvalidAssumptionException.class, replaces = "doTypeInt", limit = "3")
+        static Object doType(@SuppressWarnings("unused") VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
                         @Bind Node inliningTarget,
-                        @Cached("key") TruffleString cachedKey,
                         @Cached("receiver.getShape()") Shape cachedShape,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Shared("typeGetObjectSlots") @Cached GetObjectSlotsNode getObjectSlotsNode,
-                        @Shared("typeCallSlotDescrGet") @Cached CallSlotDescrGet callSlotDescrGet,
-                        @Shared("typeNonDescriptorProfile") @Cached InlinedBranchProfile hasNonDescriptorValueProfile) throws FastPathBailoutException {
-            assert key == cachedKey; // should be a constant operand
-            return loadTypeInstanceValue(frame, inliningTarget, receiver, getObjectSlotsNode, callSlotDescrGet, getter, hasNonDescriptorValueProfile);
+                        @Cached("loadCacheableTypeAttr(receiver, key)") Object result,
+                        @Cached("receiver") PythonManagedClass cachedReceiver,
+                        @Cached("getTypeStableAssumptionForReceiver(cachedReceiver)") Assumption typeStableAssumption) throws InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            return result;
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {
+                        "canCacheBuiltinTypeMultiContext(result, cachedReceiver)", "!isNoValue(result)", //
+                        "!hasMaterializedDict(cachedShape)", "isBuiltinTypeType(cachedShape)", //
+                        /* dynamic checks: */ "cachedReceiver == receiver"}, //
+                        limit = "3", excludeForUncached = true)
+        static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("loadCacheableTypeAttr(receiver, key)") Object result,
+                        @Cached(value = "receiver", weak = true) PythonManagedClass cachedReceiver) {
+            return result;
+        }
+
+        public static Assumption getTypeStableAssumptionForValue(Object descrValue) {
+            Object klass = GetClassNode.executeUncached(descrValue);
+            if (klass instanceof PythonBuiltinClassType) {
+                return null;
+            } else if (klass instanceof PythonClass pyClass) {
+                return pyClass.getTypeStableAssumption();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {
+                        "isSingleContext()", "!isNoValue(result)", //
+                        "!hasMaterializedDict(cachedShape)", "isBuiltinTypeType(cachedShape)", //
+                        /* dynamic checks: */ "cachedReceiver == receiver"}, //
+                        limit = "3", excludeForUncached = true, rewriteOn = InvalidAssumptionException.class)
+        static Object doTypeMutableNonDescriptor(@SuppressWarnings("unused") VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("loadCacheableTypeAttr(receiver, key, true)") Object result,
+                        @Cached("receiver") PythonManagedClass cachedReceiver,
+                        @Cached("getTypeStableAssumptionForValue(result)") Assumption valueTypeStableAssumption,
+                        @Cached("getTypeStableAssumptionForReceiver(cachedReceiver)") Assumption typeStableAssumption) throws InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            checkAssumption(valueTypeStableAssumption);
+            return result;
         }
 
         private static boolean hasObjectOrModuleGetattro(TpSlots slots) {
@@ -2216,6 +2288,133 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         public static Assumption getTypeStableAssumption(PythonClass klass) {
             return klass == null ? Assumption.ALWAYS_VALID : klass.getTypeStableAssumption();
+        }
+
+        public static Assumption getTypeStableAssumption(Shape cachedShape) {
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClassType || type instanceof PythonBuiltinClass) {
+                return null;
+            } else if (type instanceof PythonClass pythonClass) {
+                return pythonClass.getTypeStableAssumption();
+            }
+            // Earlier guards ensure a Python class or an immutable builtin class.
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        static Object getTypeAttribute(Shape cachedShape, TruffleString key) {
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClass pbc) {
+                type = pbc.getType();
+            }
+            Object value;
+            if (type instanceof PythonBuiltinClassType pbct) {
+                if (!hasObjectOrModuleGetattro(pbct.getSlots())) {
+                    return null;
+                }
+                value = LookupAttributeInMRONode.findAttr(pbct, key);
+            } else if (type instanceof PythonClass klass) {
+                if (!hasObjectOrModuleGetattro(klass.getTpSlots())) {
+                    return null;
+                }
+                value = LookupAttributeInMRONode.lookupSlowPathNoSideEffects(klass, key);
+            } else {
+                return null;
+            }
+            return value;
+        }
+
+        static PProperty getProperty(Shape cachedShape, TruffleString key) {
+            Object value = getTypeAttribute(cachedShape, key);
+            // Property subclasses can override __get__, so only bypass exact builtin properties.
+            return value instanceof PProperty property && GetClassNode.executeUncached(property) == PythonBuiltinClassType.PProperty ? property : null;
+        }
+
+        @ForceQuickening
+        @StoreBytecodeIndex
+        @Specialization(guards = {
+                        /* static checks: */ "property != null", //
+                        /* dynamic checks: */ "cachedShape.check(receiver)"}, rewriteOn = {FastPathBailoutException.class, InvalidAssumptionException.class}, limit = "3", excludeForUncached = true)
+        static Object doProperty(VirtualFrame frame, TruffleString key, PythonObject receiver,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getProperty(cachedShape, key)") PProperty property,
+                        @Cached("getTypeStableAssumption(cachedShape)") Assumption typeStableAssumption,
+                        @Cached CallUnaryMethodNode callNode) throws FastPathBailoutException, InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            Object fget = property.getFget();
+            if (fget == null) {
+                throw FastPathBailoutException.INSTANCE;
+            }
+            return callNode.executeObject(frame, fget, receiver);
+        }
+
+        static IndexedSlotDescriptor getIndexedSlotDescriptor(Shape cachedShape, TruffleString key) {
+            Object value = getTypeAttribute(cachedShape, key);
+            return value instanceof IndexedSlotDescriptor descriptor ? descriptor : null;
+        }
+
+        @Idempotent
+        static boolean isValidDescriptor(Shape cachedShape, IndexedSlotDescriptor descriptor) {
+            CompilerAsserts.neverPartOfCompilation();
+            assert cachedShape.getDynamicType() != null;
+            return IsSubtypeNode.getUncached().execute(cachedShape.getDynamicType(), descriptor.getType());
+        }
+
+        static Object getIndexedSlotValue(Node inliningTarget, InlinedBranchProfile initProfile, PythonObject receiver, int index, int slotsCount) throws FastPathBailoutException {
+            Object[] slots = GetOrCreateIndexedSlots.executeKnownCount(inliningTarget, initProfile, receiver, slotsCount);
+            Object value = slots[index];
+            if (value != null) {
+                return value;
+            }
+            throw FastPathBailoutException.INSTANCE;
+        }
+
+        static int getIndexedSlotsCount(Shape cachedShape) {
+            CompilerAsserts.neverPartOfCompilation();
+            Object klass = cachedShape.getDynamicType();
+            if (klass instanceof PythonBuiltinClassType type) {
+                return PythonContext.get(null).lookupType(type).getIndexedSlotCount();
+            } else if (klass instanceof PythonManagedClass pyClass) {
+                return pyClass.getIndexedSlotCount();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(guards = {
+                        "indexedSlotDescriptor != null", "isValidDescriptor(cachedShape, indexedSlotDescriptor)", //
+                        "cachedShape.check(receiver)"}, rewriteOn = {FastPathBailoutException.class,
+                                        UnexpectedResultException.class, InvalidAssumptionException.class}, limit = "3", excludeForUncached = true)
+        static int doIndexedSlotDescriptorInt(TruffleString key, PythonObject receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getIndexedSlotDescriptor(cachedShape, key)") IndexedSlotDescriptor indexedSlotDescriptor,
+                        @Cached("indexedSlotDescriptor.getIndex()") int index,
+                        @Cached("getTypeStableAssumption(cachedShape)") Assumption typeStableAssumption,
+                        @Cached("getIndexedSlotsCount(cachedShape)") int slotsCount,
+                        @Exclusive @Cached InlinedBranchProfile initProfile) throws FastPathBailoutException, UnexpectedResultException, InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            Object value = getIndexedSlotValue(inliningTarget, initProfile, receiver, index, slotsCount);
+            if (value instanceof Integer integer) {
+                return integer;
+            }
+            throw new UnexpectedResultException(value);
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {
+                        "indexedSlotDescriptor != null", "isValidDescriptor(cachedShape, indexedSlotDescriptor)", //
+                        "cachedShape.check(receiver)"}, //
+                        replaces = "doIndexedSlotDescriptorInt", //
+                        rewriteOn = {FastPathBailoutException.class, InvalidAssumptionException.class}, limit = "3", excludeForUncached = true)
+        static Object doIndexedSlotDescriptor(TruffleString key, PythonObject receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getIndexedSlotDescriptor(cachedShape, key)") IndexedSlotDescriptor indexedSlotDescriptor,
+                        @Cached("indexedSlotDescriptor.getIndex()") int index,
+                        @Cached("getTypeStableAssumption(cachedShape)") Assumption typeStableAssumption,
+                        @Cached("getIndexedSlotsCount(cachedShape)") int slotsCount,
+                        @Exclusive @Cached InlinedBranchProfile initProfile) throws FastPathBailoutException, InvalidAssumptionException {
+            checkAssumption(typeStableAssumption);
+            return getIndexedSlotValue(inliningTarget, initProfile, receiver, index, slotsCount);
         }
 
         @Specialization(guards = {
@@ -2251,7 +2450,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return getValue(getter, receiver);
         }
 
-        @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType"})
+        @ForceQuickening
+        @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType", "doTypeMutableNonDescriptor", "doProperty", "doIndexedSlotDescriptor"})
         @StoreBytecodeIndex
         public static Object doIt(VirtualFrame frame,
                         TruffleString key,
