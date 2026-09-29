@@ -59,8 +59,8 @@ import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRU
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
-import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_POLLFD;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
@@ -787,7 +787,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public long write(int fd, Buffer data) throws PosixException {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {

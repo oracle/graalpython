@@ -718,7 +718,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -732,7 +731,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 }
                 try {
                     return PosixModuleBuiltins.WriteNode.write(self.getFD(), bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer),
-                                    inliningTarget, posixLib, context.getPosixSupport(), errorProfile, gil);
+                                    inliningTarget, context.getPosixSupport(), errorProfile, gil);
                 } catch (PosixException e) {
                     if (e.hasErrno(EAGAIN)) {
                         return PNone.NONE;

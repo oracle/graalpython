@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -237,7 +236,6 @@ public class BufferedWriterNodes {
         @Specialization(guards = "self.hasFileIORaw()")
         static int bufferedwriterRawWriteFileIO(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -252,7 +250,7 @@ public class BufferedWriterNodes {
             final int n;
             try {
                 n = Math.toIntExact(PosixModuleBuiltins.WriteNode.write(fileIO.getFD(), buf, len,
-                                inliningTarget, posixLib, context.getPosixSupport(), errorProfile, gil));
+                                inliningTarget, context.getPosixSupport(), errorProfile, gil));
             } catch (PosixException e) {
                 if (e.hasErrno(OSErrorEnum.EAGAIN)) {
                     return -2;

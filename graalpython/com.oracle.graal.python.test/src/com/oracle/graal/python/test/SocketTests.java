@@ -98,8 +98,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PosixSupport;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -111,9 +109,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -537,7 +537,7 @@ public class SocketTests {
     public void streamUnconnectedWrite() {
         // From send(2): Linux may return EPIPE instead of ENOTCONN.
         expectErrno(() -> {
-            lib.write(posixSupport, new TcpClient(AF_INET.value).fd, Buffer.wrap(DATA));
+            posixSupport.write(new TcpClient(AF_INET.value).fd, Buffer.wrap(DATA));
         }, OSErrorEnum.ENOTCONN, OSErrorEnum.EPIPE);
     }
 
@@ -574,7 +574,7 @@ public class SocketTests {
     public void streamListeningWrite() {
         // From send(2): Linux may return EPIPE instead of ENOTCONN.
         expectErrno(() -> {
-            lib.write(posixSupport, new TcpServer(AF_INET.value).fd, Buffer.wrap(DATA));
+            posixSupport.write(new TcpServer(AF_INET.value).fd, Buffer.wrap(DATA));
         }, OSErrorEnum.ENOTCONN, OSErrorEnum.EPIPE);
     }
 
@@ -1235,7 +1235,7 @@ public class SocketTests {
         }
 
         void write(byte[] data) throws PosixException {
-            assertEquals(data.length, lib.write(posixSupport, fd, Buffer.wrap(data)));
+            assertEquals(data.length, posixSupport.write(fd, Buffer.wrap(data)));
         }
 
         void read(byte[] expectedData) throws PosixException {

@@ -497,19 +497,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         return open(file, fc);
     }
 
-    @ExportMessage
-    public long write(int fd, Buffer data,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    public long write(int fd, Buffer data) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (!(channel instanceof WritableByteChannel)) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
         try {
             return doWriteOp(data.getByteBuffer(), (WritableByteChannel) channel);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }

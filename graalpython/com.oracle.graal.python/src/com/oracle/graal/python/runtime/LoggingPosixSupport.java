@@ -186,12 +186,11 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long write(int fd, Buffer data,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final long write(int fd, Buffer data) throws PosixException {
         logEnter("write", "%d, %d", fd, data.length);
         try {
-            return logExit("write", "%d", lib.write(delegate, fd, data));
+            return logExit("write", "%d", delegate.write(fd, data));
         } catch (PosixException e) {
             throw logException("write", e);
         }

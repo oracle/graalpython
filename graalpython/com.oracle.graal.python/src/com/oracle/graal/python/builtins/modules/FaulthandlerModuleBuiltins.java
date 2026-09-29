@@ -408,7 +408,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         public void flush() throws IOException {
             super.flush();
             try {
-                PosixSupportLibrary.getUncached().write(PythonContext.get(null).getPosixSupport(), fd, PosixSupportLibrary.Buffer.wrap(bb.toArray()));
+                PythonContext.get(null).getPosixSupport().write(fd, PosixSupportLibrary.Buffer.wrap(bb.toArray()));
             } catch (PosixSupportLibrary.PosixException e) {
                 // Ignore
             }

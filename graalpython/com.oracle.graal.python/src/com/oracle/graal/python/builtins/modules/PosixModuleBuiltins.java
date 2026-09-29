@@ -1026,12 +1026,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), inliningTarget, posixLib, context.getPosixSupport(), errorProfile, gil);
+                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), inliningTarget, context.getPosixSupport(), errorProfile, gil);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
@@ -1040,13 +1039,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         public static long write(int fd, byte[] dataBytes,
-                        int dataLen, Node inliningTarget, PosixSupportLibrary posixLib, PosixSupport posixSupport,
+                        int dataLen, Node inliningTarget, PosixSupport posixSupport,
                         InlinedBranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
                     try {
-                        return posixLib.write(posixSupport, fd, new Buffer(dataBytes, dataLen));
+                        return posixSupport.write(fd, new Buffer(dataBytes, dataLen));
                     } catch (PosixErrnoException e) {
                         errorProfile.enter(inliningTarget);
                         if (e.hasErrno(OSErrorEnum.EINTR)) {

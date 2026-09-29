@@ -74,13 +74,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(PosixSupportLibrary.class)
 public class PreInitPosixSupport extends PosixSupport {
 
-    protected final PosixSupport nativePosixSupport;
-    private PosixSupport emulatedPosixSupport;
+    protected final NativePosixSupport nativePosixSupport;
+    private EmulatedPosixSupport emulatedPosixSupport;
     private HashSet<Integer> emulatedFds;
     private IdentityHashMap<Object, Object> emulatedDirStreams;
     private boolean inPreInitialization;
 
-    public PreInitPosixSupport(Env env, PosixSupport nativePosixSupport, PosixSupport emulatedPosixSupport) {
+    public PreInitPosixSupport(Env env, NativePosixSupport nativePosixSupport, EmulatedPosixSupport emulatedPosixSupport) {
         this.inPreInitialization = env.isPreInitialization();
         this.nativePosixSupport = nativePosixSupport;
         this.emulatedPosixSupport = emulatedPosixSupport;
@@ -204,11 +204,10 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.read(fd, length);
     }
 
-    @ExportMessage
-    final long write(int fd, Buffer data,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long write(int fd, Buffer data) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.write(nativePosixSupport, fd, data);
+        return nativePosixSupport.write(fd, data);
     }
 
     @ExportMessage
