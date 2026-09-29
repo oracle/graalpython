@@ -174,12 +174,11 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Buffer read(int fd, long length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final Buffer read(int fd, long length) throws PosixException {
         logEnter("read", "%d, %d", fd, length);
         try {
-            Buffer retVal = lib.read(delegate, fd, length);
+            Buffer retVal = delegate.read(fd, length);
             logExit("read", "%d", retVal.length);
             return retVal;
         } catch (PosixException e) {

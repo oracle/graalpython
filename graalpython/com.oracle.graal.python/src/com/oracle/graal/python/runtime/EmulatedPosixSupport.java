@@ -217,7 +217,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -283,6 +282,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.module.UnixSystem;
 
@@ -533,20 +533,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         return channel.write(data);
     }
 
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public Buffer read(int fd, long length,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    public Buffer read(int fd, long length) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (!(channel instanceof ReadableByteChannel)) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
         try {
             return readBytesFromChannel((ReadableByteChannel) channel, length);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
@@ -4841,7 +4836,7 @@ public final class EmulatedPosixSupport extends PosixResources {
      * {@link PosixConstants#AT_FDCWD}.
      */
     private TruffleFile resolvePath(Node inliningTarget, int dirFd, TruffleString pathname, InlinedConditionProfile defaultDirFdPofile,
-                                    ToJavaStringNode toJavaStringNode)
+                    ToJavaStringNode toJavaStringNode)
                     throws PosixException {
         if (defaultDirFdPofile.profile(inliningTarget, dirFd == AT_FDCWD.value)) {
             return getTruffleFile(pathname);

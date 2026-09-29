@@ -99,6 +99,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PosixSupport;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -158,7 +159,7 @@ public class SocketTests {
     private static final byte[] DATA2 = new byte[]{4, 5, 6, 7};
     private static final UnixSockAddr UNIX_SOCK_ADDR_UNNAMED = new UnixSockAddr(new byte[0]);
 
-    private Object posixSupport;
+    private PosixSupport posixSupport;
     private PosixSupportLibrary lib;
     private UniversalSockAddrLibrary usaLib;
     private AddrInfoCursorLibrary aicLib;
@@ -528,7 +529,7 @@ public class SocketTests {
     @Test
     public void streamUnconnectedRead() {
         expectErrno(() -> {
-            lib.read(posixSupport, new TcpClient(AF_INET.value).fd, 10);
+            posixSupport.read(new TcpClient(AF_INET.value).fd, 10);
         }, OSErrorEnum.ENOTCONN);
     }
 
@@ -565,7 +566,7 @@ public class SocketTests {
     @Test
     public void streamListeningRead() {
         expectErrno(() -> {
-            lib.read(posixSupport, new TcpServer(AF_INET.value).fd, 10);
+            posixSupport.read(new TcpServer(AF_INET.value).fd, 10);
         }, OSErrorEnum.ENOTCONN);
     }
 
@@ -1238,7 +1239,7 @@ public class SocketTests {
         }
 
         void read(byte[] expectedData) throws PosixException {
-            Buffer buf = lib.read(posixSupport, fd, expectedData.length * 2);
+            Buffer buf = posixSupport.read(fd, expectedData.length * 2);
             assertEquals(expectedData.length, buf.length);
             assertArrayEquals(expectedData, Arrays.copyOf(buf.data, expectedData.length));
         }

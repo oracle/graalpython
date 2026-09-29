@@ -770,7 +770,7 @@ public final class NativePosixSupport extends PosixSupport {
         return rv;
     }
 
-    @ExportMessage
+    @Override
     public Buffer read(int fd, long length) throws PosixException {
         long count = Math.min(length, MAX_READ);
         Buffer buffer = Buffer.allocate(count);

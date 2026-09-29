@@ -972,7 +972,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, error, posixLib.strerror(context.getPosixSupport(), error));
             }
             try {
-                return read(fd, length, inliningTarget, posixLib, context.getPosixSupport(), errorProfile1, gil);
+                return read(fd, length, inliningTarget, context.getPosixSupport(), errorProfile1, gil);
             } catch (PosixException e) {
                 errorProfile2.enter(inliningTarget);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -981,14 +981,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         public static PBytes read(int fd, int length,
                         Node inliningTarget,
-                        PosixSupportLibrary posixLib,
                         PosixSupport posixSupport,
                         InlinedBranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
                     try {
-                        Buffer result = posixLib.read(posixSupport, fd, length);
+                        Buffer result = posixSupport.read(fd, length);
                         if (result.length > Integer.MAX_VALUE) {
                             // sanity check that it is safe to cast result.length to int, to be
                             // removed once we support large arrays

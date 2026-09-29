@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -51,4 +53,6 @@ public abstract class PosixSupport {
     public static PosixSupport get(Node node) {
         return PythonContext.get(node).getPosixSupport();
     }
+
+    public abstract Buffer read(int fd, long length) throws PosixException;
 }

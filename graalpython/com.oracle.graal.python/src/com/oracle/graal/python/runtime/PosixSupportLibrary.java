@@ -92,8 +92,6 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int close(Object receiver, int fd) throws PosixException;
 
-    public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
-
     public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
 
     /** Returns {@code 'r'}, {@code 'w'}, or zero when {@code fd} is not a Windows console. */

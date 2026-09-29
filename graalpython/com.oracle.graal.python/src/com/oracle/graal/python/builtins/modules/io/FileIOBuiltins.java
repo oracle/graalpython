@@ -526,11 +526,10 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile readErrorProfile,
                         @Cached InlinedBranchProfile readErrorProfile2,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return PosixModuleBuiltins.ReadNode.read(self.getFD(), size, inliningTarget, posixLib, context.getPosixSupport(), readErrorProfile, gil);
+                return PosixModuleBuiltins.ReadNode.read(self.getFD(), size, inliningTarget, context.getPosixSupport(), readErrorProfile, gil);
             } catch (PosixException e) {
                 if (e.hasErrno(EAGAIN)) {
                     readErrorProfile2.enter(inliningTarget);
@@ -592,7 +591,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             int bytesRead = 0;
             PBytes b;
             try {
-                b = PosixModuleBuiltins.ReadNode.read(self.getFD(), bufsize, inliningTarget, posixLib, context.getPosixSupport(), readErrorProfile, gil);
+                b = PosixModuleBuiltins.ReadNode.read(self.getFD(), bufsize, inliningTarget, context.getPosixSupport(), readErrorProfile, gil);
                 bytesRead = b.getSequenceStorage().length();
                 if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
                     return b;
@@ -620,7 +619,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
                 int n;
                 try {
-                    b = PosixModuleBuiltins.ReadNode.read(self.getFD(), bufsize - bytesRead, inliningTarget, posixLib, context.getPosixSupport(), readErrorProfile, gil);
+                    b = PosixModuleBuiltins.ReadNode.read(self.getFD(), bufsize - bytesRead, inliningTarget, context.getPosixSupport(), readErrorProfile, gil);
                     /*
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
@@ -674,7 +673,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     return 0;
                 }
                 try {
-                    PBytes data = PosixModuleBuiltins.ReadNode.read(self.getFD(), size, inliningTarget, posixLib, context.getPosixSupport(), readErrorProfile, gil);
+                    PBytes data = PosixModuleBuiltins.ReadNode.read(self.getFD(), size, inliningTarget, context.getPosixSupport(), readErrorProfile, gil);
                     int n = bufferLib.getBufferLength(data);
                     bufferLib.readIntoBuffer(data, 0, buffer, 0, n, bufferLib);
                     return n;

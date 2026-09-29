@@ -196,13 +196,12 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativeLib.close(nativePosixSupport, fd);
     }
 
-    @ExportMessage
-    final Buffer read(int fd, long length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final Buffer read(int fd, long length) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().read(emulatedPosixSupport, fd, length);
+            return emulatedPosixSupport.read(fd, length);
         }
-        return nativeLib.read(nativePosixSupport, fd, length);
+        return nativePosixSupport.read(fd, length);
     }
 
     @ExportMessage
