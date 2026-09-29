@@ -37,7 +37,7 @@ test.test_zipimport.CompressedZipImportTestCase.testUncheckedHashBasedPyc @ darw
 test.test_zipimport.CompressedZipImportTestCase.testUnencodable @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipimport.CompressedZipImportTestCase.testZip64 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipimport.CompressedZipImportTestCase.testZip64CruftAndComment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_zipimport.CompressedZipImportTestCase.testZip64LargeFile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_zipimport.CompressedZipImportTestCase.testZip64LargeFile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_zipimport.CompressedZipImportTestCase.testZipImporterMethods @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipimport.CompressedZipImportTestCase.testZipImporterMethodsInSubDirectory @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipimport.CompressedZipImportTestCase.test_checked_hash_based_change_pyc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
