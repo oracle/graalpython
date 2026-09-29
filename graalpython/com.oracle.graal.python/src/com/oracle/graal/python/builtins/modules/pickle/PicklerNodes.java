@@ -42,13 +42,8 @@ package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_IMPORT_MAPPING;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_NAME_MAPPING;
-import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_IMPORT_MAPPING;
-import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_STR_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
@@ -64,7 +59,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.CachedHashingStorageGetItem;
@@ -103,7 +97,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -118,7 +111,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PicklerNodes {
     abstract static class BasePickleNode extends Node {
         private static final TruffleString T_LOCALS = tsLiteral("<locals>");
-        static final TruffleString T_SYS_MODULES = tsLiteral("sys.modules");
         public static final TruffleString T_CODEC_RAW_UNICODE_ESCAPE = tsLiteral("raw_unicode_escape");
         public static final TruffleString T_CODEC_BYTES = tsLiteral("bytes");
         public static final TruffleString T_CODEC_ASCII = tsLiteral("ascii");
@@ -155,13 +147,9 @@ public final class PicklerNodes {
         @Child private TruffleString.FromByteArrayNode tsFromByteArrayNode;
         @Child private TruffleString.FromByteArrayWithCompactionUTF32Node tsFromByteArrayWithCompactionNode;
         @Child private TruffleString.CodePointLengthNode tsCodePointLengthNode;
-        @Child private TruffleString.CodePointAtIndexUTF32Node tsCodePointAtIndexUTF32Node;
-        @Child private TruffleString.FromLongNode tsFromLongNode;
         @Child private TruffleString.IndexOfStringNode tsIndexOfStringNode;
         @Child private TruffleString.SubstringNode tsSubstringNode;
         @Child private TruffleString.EqualNode tsEqualNode;
-        @Child private TruffleString.CopyToByteArrayNode tsCopyToByteArrayNode;
-        @Child private TruffleString.GetCodeRangeNode tsGetCodeRangeNode;
         @Child private TruffleString.SwitchEncodingNode tsSwitchEncodingNode;
         @Child private HashingStorageGetIterator getHashingStorageIteratorNode;
         @Child private HashingStorageIteratorNext hashingStorageItNext;
@@ -208,22 +196,6 @@ public final class PicklerNodes {
             return tsCodePointLengthNode;
         }
 
-        protected TruffleString.CodePointAtIndexUTF32Node ensureTsCodePointAtIndexUTF32Node() {
-            if (tsCodePointAtIndexUTF32Node == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsCodePointAtIndexUTF32Node = insert(TruffleString.CodePointAtIndexUTF32Node.create());
-            }
-            return tsCodePointAtIndexUTF32Node;
-        }
-
-        protected TruffleString.FromLongNode ensureTsFromLongNode() {
-            if (tsFromLongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsFromLongNode = insert(TruffleString.FromLongNode.create());
-            }
-            return tsFromLongNode;
-        }
-
         protected TruffleString.IndexOfStringNode ensureTsIndexOfStringNode() {
             if (tsIndexOfStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -246,22 +218,6 @@ public final class PicklerNodes {
                 tsEqualNode = insert(TruffleString.EqualNode.create());
             }
             return tsEqualNode;
-        }
-
-        protected TruffleString.CopyToByteArrayNode ensureTsCopyToByteArrayNode() {
-            if (tsCopyToByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsCopyToByteArrayNode = insert(TruffleString.CopyToByteArrayNode.create());
-            }
-            return tsCopyToByteArrayNode;
-        }
-
-        protected TruffleString.GetCodeRangeNode ensureTsGetCodeRangeNode() {
-            if (tsGetCodeRangeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsGetCodeRangeNode = insert(TruffleString.GetCodeRangeNode.create());
-            }
-            return tsGetCodeRangeNode;
         }
 
         protected TruffleString.SwitchEncodingNode ensureTsSwitchEncodingNode() {
@@ -587,18 +543,6 @@ public final class PicklerNodes {
             }
         }
 
-        public TruffleString asStringStrict(Object value) {
-            if (value instanceof TruffleString) {
-                return (TruffleString) value;
-            } else {
-                try {
-                    return toStringNode.executeCached(value);
-                } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, MUST_BE_STR_NOT_P, value);
-                }
-            }
-        }
-
         public static Pair<Object, Object> getDeepAttribute(VirtualFrame frame, PyObjectLookupAttr lookup, Object obj, TruffleString[] names) {
             Object parent = null;
             Object object = obj;
@@ -642,11 +586,6 @@ public final class PicklerNodes {
             } else {
                 return lookupAttributeStrict(frame, obj, name);
             }
-        }
-
-        protected Pair<TruffleString, TruffleString> get3to2Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
-            PickleState state = getGlobalState(core);
-            return getMapping(frame, state.nameMapping3To2, state.importMapping3To2, T_CP_REVERSE_NAME_MAPPING, T_CP_REVERSE_IMPORT_MAPPING, moduleName, globalName);
         }
 
         protected Pair<TruffleString, TruffleString> get2To3Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
@@ -701,55 +640,6 @@ public final class PicklerNodes {
             // modules, which then cause the getattribute to fail.
             Object module = importModule(frame, boundaryCallData, mName);
             return getattribute(frame, module, gName, self.getProto() >= 4);
-        }
-
-        private static boolean checkModule(VirtualFrame frame, PyObjectLookupAttr lookup, Object moduleName, Object module, Object global, TruffleString[] dottedPath) {
-            if (module == PNone.NONE) {
-                return false;
-            }
-
-            assert !(moduleName instanceof String) : "moduleName shouldn't be j.l.String";
-
-            if (moduleName instanceof TruffleString && ((TruffleString) moduleName).equalsUncached(T___MAIN__, TS_ENCODING)) {
-                return false;
-            }
-            final Pair<Object, Object> pair = getDeepAttribute(frame, lookup, module, dottedPath);
-            if (pair == null) {
-                return false;
-            }
-            return pair.getLeft() == global;
-        }
-
-        public TruffleString whichModule(VirtualFrame frame, PythonContext context, Object global, TruffleString[] dottedPath) {
-            Object moduleName = lookupAttribute(frame, global, T___MODULE__);
-            if (moduleName != NO_VALUE) {
-                // In some rare cases (e.g., bound methods of extension types), __module__ can be
-                // None. If it is so, then search sys.modules for the module of global
-                if (moduleName != PNone.NONE) {
-                    return asStringStrict(moduleName);
-                }
-            }
-
-            // Fallback on walking sys.modules
-            final PDict sysModules = context.getSysModules();
-            if (sysModules == null) {
-                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNABLE_TO_GET_S, T_SYS_MODULES);
-            }
-
-            final HashingStorage storage = sysModules.getDictStorage();
-            HashingStorageIterator it = getHashingStorageIterator(storage);
-            HashingStorageIteratorNext nextNode = ensureHashingStorageIteratorNext();
-            HashingStorageIteratorKey getKeyNode = ensureHashingStorageIteratorKey();
-            HashingStorageIteratorValue getValueNode = ensureHashingStorageIteratorValue();
-            while (nextNode.executeCached(storage, it)) {
-                Object value = getValueNode.executeCached(storage, it);
-                Object key = getKeyNode.executeCached(storage, it);
-                if (checkModule(frame, getLookupAttrNode(), moduleName, value, global, dottedPath)) {
-                    return asStringStrict(key);
-                }
-            }
-            // If no module is found, use __main__
-            return T___MAIN__;
         }
     }
 }
