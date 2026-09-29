@@ -504,6 +504,10 @@ public class PPickler extends PythonBuiltinObject {
 
         protected void writeUtf8(PPickler pickler, TruffleString string) {
             TruffleString encoded = ensureTsSwitchEncodingNode().execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            writeUtf8Converted(pickler, encoded);
+        }
+
+        public void writeUtf8Converted(PPickler pickler, TruffleString encoded) {
             int length = encoded.byteLength(TruffleString.Encoding.UTF_8);
             ensureBufferSpace(pickler, length);
             ensureTsCopyToByteArrayNode().execute(encoded, 0, pickler.outputBuffer, pickler.outputLen, length, TruffleString.Encoding.UTF_8);
@@ -588,25 +592,20 @@ public class PPickler extends PythonBuiltinObject {
 
         public void ensureBufferSpace(PPickler pickler, int dataLen) {
             boolean needNewFrame = pickler.isFraming() && pickler.frameStart == -1;
-            int n = (needNewFrame) ? dataLen + PickleUtils.FRAME_HEADER_SIZE : dataLen;
+            int n = CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame) ? dataLen + PickleUtils.FRAME_HEADER_SIZE : dataLen;
             int required = pickler.outputLen + n;
 
-            if (required > pickler.maxOutputLen) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, required > pickler.maxOutputLen)) {
                 // Make place in buffer for the pickle chunk
                 // TODO: when GR-24978 is completed we should use PY_SSIZE_T_MAX
-                if (pickler.outputLen >= Integer.MAX_VALUE / 2 - n) {
+                if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, pickler.outputLen >= Integer.MAX_VALUE / 2 - n)) {
                     throw raise(PythonBuiltinClassType.MemoryError);
                 }
                 pickler.maxOutputLen = (pickler.outputLen + n) / 2 * 3;
                 pickler.outputBuffer = PythonUtils.arrayCopyOf(pickler.outputBuffer, pickler.maxOutputLen);
             }
-            if (needNewFrame) {
-                int frameStart = pickler.outputLen;
-                pickler.frameStart = frameStart;
-                for (int i = 0; i < PickleUtils.FRAME_HEADER_SIZE; i++) {
-                    // Write an invalid value, for debugging
-                    pickler.outputBuffer[frameStart + i] = (byte) 0xFE;
-                }
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame)) {
+                pickler.frameStart = pickler.outputLen;
                 pickler.outputLen += PickleUtils.FRAME_HEADER_SIZE;
             }
         }
@@ -693,6 +692,10 @@ public class PPickler extends PythonBuiltinObject {
         private static final int SEEN_LONG_STORAGE = 1 << 25;
         private static final int SEEN_DOUBLE_STORAGE = 1 << 26;
         private static final int SEEN_GENERIC_STORAGE = 1 << 27;
+        private static final int SEEN_CUSTOM_DISPATCH = 1 << 28;
+        private static final int SEEN_REGISTERED_REDUCER = 1 << 29;
+        private static final int SEEN_REDUCE_EX = 1 << 30;
+        private static final int SEEN_REDUCE = 1 << 31;
 
         @CompilationFinal private int seenTypes;
 
@@ -1494,7 +1497,7 @@ public class PPickler extends PythonBuiltinObject {
                 } else {
                     writeIntOp(pickler, PickleUtils.OPCODE_BINUNICODE, size);
                 }
-                writeUtf8(pickler, utf8);
+                writeUtf8Converted(pickler, utf8);
             }
 
             if (bypassBuffer && wasFraming) {
@@ -2308,6 +2311,7 @@ public class PPickler extends PythonBuiltinObject {
                 PickleState state = getGlobalState(ctx.getCore());
                 reduceFunc = getDictItem(frame, state.dispatchTable, type);
             } else {
+                profileSeen(SEEN_CUSTOM_DISPATCH);
                 try {
                     reduceFunc = getItem(frame, pickler.dispatchTable, type);
                 } catch (PException ex) {
@@ -2317,6 +2321,7 @@ public class PPickler extends PythonBuiltinObject {
 
             Object reduceValue;
             if (reduceFunc != null) {
+                profileSeen(SEEN_REGISTERED_REDUCER);
                 reduceValue = callNode.execute(frame, reduceFunc, obj);
             } else if (isSubType(type, PythonBuiltinClassType.PythonClass)) {
                 profileSeen(SEEN_TYPE);
@@ -2332,11 +2337,13 @@ public class PPickler extends PythonBuiltinObject {
                 // Check for a __reduce_ex__ method.
                 reduceFunc = lookupAttribute(frame, obj, T___REDUCE_EX__);
                 if (reduceFunc != PNone.NO_VALUE) {
+                    profileSeen(SEEN_REDUCE_EX);
                     reduceValue = callNode.execute(frame, reduceFunc, proto);
                 } else {
                     // Check for a __reduce__ method.
                     reduceFunc = lookupAttribute(frame, obj, T___REDUCE__);
                     if (reduceFunc != PNone.NO_VALUE) {
+                        profileSeen(SEEN_REDUCE);
                         reduceValue = callNode.execute(frame, reduceFunc);
                     } else {
                         throw raise(PicklingError, ErrorMessages.CANNOT_PICKLE_P_P, type, obj);
