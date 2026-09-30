@@ -3018,33 +3018,38 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("shm_unlink");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    int semGetValue(long handle) throws PosixException {
+    public int semGetValue(long handle) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    void semPost(long handle) throws PosixException {
+    public void semPost(long handle) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    void semWait(long handle) throws PosixException {
+    public void semWait(long handle) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    boolean semTryWait(long handle) throws PosixException {
+    public boolean semTryWait(long handle) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    boolean semTimedWait(long handle, long deadlineNs) throws PosixException {
+    public boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 

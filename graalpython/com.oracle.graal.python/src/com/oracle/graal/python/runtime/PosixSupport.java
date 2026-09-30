@@ -80,6 +80,16 @@ public abstract class PosixSupport {
 
     public abstract void shmUnlink(Object name) throws PosixException;
 
+    public abstract int semGetValue(long handle) throws PosixException;
+
+    public abstract void semPost(long handle) throws PosixException;
+
+    public abstract void semWait(long handle) throws PosixException;
+
+    public abstract boolean semTryWait(long handle) throws PosixException;
+
+    public abstract boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException;
+
     public abstract void raise(int signal) throws PosixException;
 
     public abstract int alarm(int seconds) throws PosixException;

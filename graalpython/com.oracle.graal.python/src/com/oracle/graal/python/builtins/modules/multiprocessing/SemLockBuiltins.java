@@ -201,7 +201,6 @@ public class SemLockBuiltins extends PythonBuiltins {
         static boolean acquire(VirtualFrame frame, PSemLock self, boolean blocking, Object timeoutObj,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -223,7 +222,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             /* Check whether we can acquire without releasing the GIL and blocking */
             boolean acquired;
             try {
-                acquired = posixLib.semTryWait(posixSupport, self.getHandle());
+                acquired = posixSupport.semTryWait(self.getHandle());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -232,9 +231,9 @@ public class SemLockBuiltins extends PythonBuiltins {
                     gil.release(true);
                     try {
                         if (hasDeadline) {
-                            acquired = posixLib.semTimedWait(posixSupport, self.getHandle(), deadlineNs);
+                            acquired = posixSupport.semTimedWait(inliningTarget, self.getHandle(), deadlineNs);
                         } else {
-                            posixLib.semWait(posixSupport, self.getHandle());
+                            posixSupport.semWait(self.getHandle());
                             acquired = true;
                         }
                     } finally {
@@ -266,7 +265,6 @@ public class SemLockBuiltins extends PythonBuiltins {
         static PNone release(VirtualFrame frame, PSemLock self,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (self.getKind() == PSemLock.RECURSIVE_MUTEX) {
@@ -281,16 +279,16 @@ public class SemLockBuiltins extends PythonBuiltins {
                 int sval;
                 try {
                     try {
-                        sval = posixLib.semGetValue(posixSupport, self.getHandle());
+                        sval = posixSupport.semGetValue(self.getHandle());
                         if (sval >= self.getMaxValue()) {
                             throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
                         }
                     } catch (UnsupportedPosixFeatureException e) {
                         /* We will only check properly the maxvalue == 1 case */
                         if (self.getMaxValue() == 1) {
-                            if (posixLib.semTryWait(posixSupport, self.getHandle())) {
+                            if (posixSupport.semTryWait(self.getHandle())) {
                                 /* it was not locked so undo wait and raise */
-                                posixLib.semPost(posixSupport, self.getHandle());
+                                posixSupport.semPost(self.getHandle());
                                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
                             }
                         }
@@ -300,7 +298,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                 }
             }
             try {
-                posixLib.semPost(posixSupport, self.getHandle());
+                posixSupport.semPost(self.getHandle());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -354,11 +352,10 @@ public class SemLockBuiltins extends PythonBuiltins {
         int get(VirtualFrame frame, PSemLock self,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                int sval = posixLib.semGetValue(posixSupport, self.getHandle());
+                int sval = posixSupport.semGetValue(self.getHandle());
                 /*
                  * some posix implementations use negative numbers to indicate the number of waiting
                  * threads
@@ -383,14 +380,13 @@ public class SemLockBuiltins extends PythonBuiltins {
         static boolean get(VirtualFrame frame, PSemLock self,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 try {
-                    return posixLib.semGetValue(posixSupport, self.getHandle()) == 0;
+                    return posixSupport.semGetValue(self.getHandle()) == 0;
                 } catch (UnsupportedPosixFeatureException e) {
-                    if (posixLib.semTryWait(posixSupport, self.getHandle())) {
-                        posixLib.semPost(posixSupport, self.getHandle());
+                    if (posixSupport.semTryWait(self.getHandle())) {
+                        posixSupport.semPost(self.getHandle());
                         return false;
                     } else {
                         return true;

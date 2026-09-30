@@ -3167,8 +3167,9 @@ public final class NativePosixSupport extends PosixSupport {
 
     private static final UnsupportedPosixFeatureException NO_SEM_GETVALUE_EXCEPTION = new UnsupportedPosixFeatureException("sem_getvalue is not available on the current platform");
 
-    @ExportMessage
-    int semGetValue(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public int semGetValue(long handle) throws PosixException {
         /*
          * This works on Linux and is emulated with Windows semaphore APIs as on CPython. It
          * doesn't work on Darwin. It might work on some other Unix-likes, but it's hard to check,
@@ -3189,24 +3190,27 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void semPost(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semPost(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_post(handle);
         if (res < 0) {
             throw getSemPostErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    void semWait(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semWait(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_wait(handle);
         if (res < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    boolean semTryWait(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public boolean semTryWait(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_trywait(handle);
         if (res < 0) {
             int errno = getErrno();
@@ -3218,10 +3222,9 @@ public final class NativePosixSupport extends PosixSupport {
         return true;
     }
 
-    @ExportMessage
-    boolean semTimedWait(long handle, long deadlineNs,
-                    @Bind Node node,
-                    @CachedLibrary("this") PosixSupportLibrary thisLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException {
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_LINUX) {
             int res = posixNativeFunctionInvoker.call_sem_timedwait(handle, deadlineNs);
             if (res < 0) {
@@ -3235,7 +3238,7 @@ public final class NativePosixSupport extends PosixSupport {
         } else {
             long deadlineMs = deadlineNs / 1_000_000;
             while (true) {
-                if (thisLib.semTryWait(this, handle)) {
+                if (semTryWait(handle)) {
                     return true;
                 }
                 long currentMs = System.currentTimeMillis();
@@ -3243,7 +3246,7 @@ public final class NativePosixSupport extends PosixSupport {
                     return false;
                 }
                 long delayMs = Math.min(deadlineMs - currentMs, 20);
-                TruffleSafepoint.setBlockedThreadInterruptible(node, Thread::sleep, delayMs);
+                TruffleSafepoint.setBlockedThreadInterruptible(location, Thread::sleep, delayMs);
             }
         }
     }

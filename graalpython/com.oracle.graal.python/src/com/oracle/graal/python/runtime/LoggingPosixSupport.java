@@ -1588,56 +1588,56 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int semGetValue(long handle,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int semGetValue(long handle) throws PosixException {
         logEnter("semGetValue", "0x%x", handle);
         try {
-            return logExit("semGetValue", "%d", lib.semGetValue(delegate, handle));
+            return logExit("semGetValue", "%d", delegate.semGetValue(handle));
         } catch (PosixException e) {
             throw logException("semGetValue", e);
         }
     }
 
-    @ExportMessage
-    final void semPost(long handle,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semPost(long handle) throws PosixException {
         logEnter("semPost", "0x%x", handle);
         try {
-            lib.semPost(delegate, handle);
+            delegate.semPost(handle);
         } catch (PosixException e) {
             throw logException("semPost", e);
         }
     }
 
-    @ExportMessage
-    final void semWait(long handle,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semWait(long handle) throws PosixException {
         logEnter("semWait", "0x%x", handle);
         try {
-            lib.semWait(delegate, handle);
+            delegate.semWait(handle);
         } catch (PosixException e) {
             throw logException("semWait", e);
         }
     }
 
-    @ExportMessage
-    final boolean semTryWait(long handle,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final boolean semTryWait(long handle) throws PosixException {
         logEnter("semTryWait", "0x%x", handle);
         try {
-            return logExit("semTryWait", "%b", lib.semTryWait(delegate, handle));
+            return logExit("semTryWait", "%b", delegate.semTryWait(handle));
         } catch (PosixException e) {
             throw logException("semTryWait", e);
         }
     }
 
-    @ExportMessage
-    final boolean semTimedWait(long handle, long deadlineNs,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException {
         logEnter("semTimedWait", "0x%x %d", handle, deadlineNs);
         try {
-            return logExit("semTimedWait", "%b", lib.semTimedWait(delegate, handle, deadlineNs));
+            return logExit("semTimedWait", "%b", delegate.semTimedWait(location, handle, deadlineNs));
         } catch (PosixException e) {
             throw logException("semTimedWait", e);
         }

@@ -108,16 +108,6 @@ public abstract class PosixSupportLibrary extends Library {
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 
-    public abstract int semGetValue(Object receiver, long handle) throws PosixException;
-
-    public abstract void semPost(Object receiver, long handle) throws PosixException;
-
-    public abstract void semWait(Object receiver, long handle) throws PosixException;
-
-    public abstract boolean semTryWait(Object receiver, long handle) throws PosixException;
-
-    public abstract boolean semTimedWait(Object receiver, long handle, long deadlineNs) throws PosixException;
-
     public static final class PwdResult {
         public final TruffleString name;
         /**

@@ -1149,39 +1149,39 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.shmUnlink(name);
     }
 
-    @ExportMessage
-    final int semGetValue(long handle,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int semGetValue(long handle) throws PosixException {
         checkNotInPreInitialization();
-        return lib.semGetValue(nativePosixSupport, handle);
+        return nativePosixSupport.semGetValue(handle);
     }
 
-    @ExportMessage
-    final void semPost(long handle,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semPost(long handle) throws PosixException {
         checkNotInPreInitialization();
-        lib.semPost(nativePosixSupport, handle);
+        nativePosixSupport.semPost(handle);
     }
 
-    @ExportMessage
-    final void semWait(long handle,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semWait(long handle) throws PosixException {
         checkNotInPreInitialization();
-        lib.semWait(nativePosixSupport, handle);
+        nativePosixSupport.semWait(handle);
     }
 
-    @ExportMessage
-    final boolean semTryWait(long handle,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final boolean semTryWait(long handle) throws PosixException {
         checkNotInPreInitialization();
-        return lib.semTryWait(nativePosixSupport, handle);
+        return nativePosixSupport.semTryWait(handle);
     }
 
-    @ExportMessage
-    final boolean semTimedWait(long handle, long deadlineNs,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException {
         checkNotInPreInitialization();
-        return lib.semTimedWait(nativePosixSupport, handle, deadlineNs);
+        return nativePosixSupport.semTimedWait(location, handle, deadlineNs);
     }
 
     @ExportMessage
