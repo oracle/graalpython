@@ -921,60 +921,60 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final boolean wcoredump(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wcoredump(int status) {
         logEnter("wcoredump", "%d", status);
-        return logExit("wcoredump", "%b", lib.wcoredump(delegate, status));
+        return logExit("wcoredump", "%b", delegate.wcoredump(status));
     }
 
-    @ExportMessage
-    final boolean wifcontinued(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifcontinued(int status) {
         logEnter("wifcontinued", "%d", status);
-        return logExit("wifcontinued", "%b", lib.wifcontinued(delegate, status));
+        return logExit("wifcontinued", "%b", delegate.wifcontinued(status));
     }
 
-    @ExportMessage
-    final boolean wifstopped(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifstopped(int status) {
         logEnter("wifstopped", "%d", status);
-        return logExit("wifstopped", "%b", lib.wifstopped(delegate, status));
+        return logExit("wifstopped", "%b", delegate.wifstopped(status));
     }
 
-    @ExportMessage
-    final boolean wifsignaled(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifsignaled(int status) {
         logEnter("wifsignaled", "%d", status);
-        return logExit("wifsignaled", "%b", lib.wifsignaled(delegate, status));
+        return logExit("wifsignaled", "%b", delegate.wifsignaled(status));
     }
 
-    @ExportMessage
-    final boolean wifexited(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifexited(int status) {
         logEnter("wifexited", "%d", status);
-        return logExit("wifexited", "%b", lib.wifexited(delegate, status));
+        return logExit("wifexited", "%b", delegate.wifexited(status));
     }
 
-    @ExportMessage
-    final int wexitstatus(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int wexitstatus(int status) {
         logEnter("wexitstatus", "%d", status);
-        return logExit("wexitstatus", "%d", lib.wexitstatus(delegate, status));
+        return logExit("wexitstatus", "%d", delegate.wexitstatus(status));
     }
 
-    @ExportMessage
-    final int wtermsig(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int wtermsig(int status) {
         logEnter("wtermsig", "%d", status);
-        return logExit("wtermsig", "%d", lib.wtermsig(delegate, status));
+        return logExit("wtermsig", "%d", delegate.wtermsig(status));
     }
 
-    @ExportMessage
-    final int wstopsig(int status,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int wstopsig(int status) {
         logEnter("wstopsig", "%d", status);
-        return logExit("wstopsig", "%d", lib.wstopsig(delegate, status));
+        return logExit("wstopsig", "%d", delegate.wstopsig(status));
     }
 
     @ExportMessage

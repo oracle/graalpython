@@ -80,6 +80,22 @@ public abstract class PosixSupport {
 
     public abstract long[] waitpid(Node location, long pid, int options) throws PosixException;
 
+    public abstract boolean wcoredump(int status);
+
+    public abstract boolean wifcontinued(int status);
+
+    public abstract boolean wifstopped(int status);
+
+    public abstract boolean wifsignaled(int status);
+
+    public abstract boolean wifexited(int status);
+
+    public abstract int wexitstatus(int status);
+
+    public abstract int wtermsig(int status);
+
+    public abstract int wstopsig(int status);
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

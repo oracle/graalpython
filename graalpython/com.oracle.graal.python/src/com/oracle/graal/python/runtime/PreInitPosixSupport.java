@@ -675,60 +675,60 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.waitpid(location, pid, options);
     }
 
-    @ExportMessage
-    final boolean wcoredump(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wcoredump(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wcoredump(nativePosixSupport, status);
+        return nativePosixSupport.wcoredump(status);
     }
 
-    @ExportMessage
-    final boolean wifcontinued(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifcontinued(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wifcontinued(nativePosixSupport, status);
+        return nativePosixSupport.wifcontinued(status);
     }
 
-    @ExportMessage
-    final boolean wifstopped(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifstopped(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wifstopped(nativePosixSupport, status);
+        return nativePosixSupport.wifstopped(status);
     }
 
-    @ExportMessage
-    final boolean wifsignaled(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifsignaled(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wifsignaled(nativePosixSupport, status);
+        return nativePosixSupport.wifsignaled(status);
     }
 
-    @ExportMessage
-    final boolean wifexited(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final boolean wifexited(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wifexited(nativePosixSupport, status);
+        return nativePosixSupport.wifexited(status);
     }
 
-    @ExportMessage
-    final int wexitstatus(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final int wexitstatus(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wexitstatus(nativePosixSupport, status);
+        return nativePosixSupport.wexitstatus(status);
     }
 
-    @ExportMessage
-    final int wtermsig(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final int wtermsig(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wtermsig(nativePosixSupport, status);
+        return nativePosixSupport.wtermsig(status);
     }
 
-    @ExportMessage
-    final int wstopsig(int status,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final int wstopsig(int status) {
         checkNotInPreInitialization();
-        return nativeLib.wstopsig(nativePosixSupport, status);
+        return nativePosixSupport.wstopsig(status);
     }
 
     @ExportMessage

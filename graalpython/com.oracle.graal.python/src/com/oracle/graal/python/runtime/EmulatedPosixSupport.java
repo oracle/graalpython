@@ -2148,49 +2148,57 @@ public final class EmulatedPosixSupport extends PosixResources {
     // TODO the implementation of the following builtins is taken from posix.py,
     // do they really make sense for the emulated backend? Is the handling of exist status correct?
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public boolean wcoredump(int status) {
         return false;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public boolean wifcontinued(int status) {
         return false;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public boolean wifstopped(int status) {
         return false;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public boolean wifsignaled(int status) {
         return status > 128;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public boolean wifexited(int status) {
         return !wifsignaled(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public int wexitstatus(int status) {
         return status & 127;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public int wtermsig(int status) {
         return status - 128;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     @SuppressWarnings("static-method")
     public int wstopsig(int status) {
         return 0;

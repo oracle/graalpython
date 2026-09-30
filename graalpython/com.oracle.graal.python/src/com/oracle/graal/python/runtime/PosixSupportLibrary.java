@@ -79,22 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract boolean wcoredump(Object receiver, int status);
-
-    public abstract boolean wifcontinued(Object receiver, int status);
-
-    public abstract boolean wifstopped(Object receiver, int status);
-
-    public abstract boolean wifsignaled(Object receiver, int status);
-
-    public abstract boolean wifexited(Object receiver, int status);
-
-    public abstract int wexitstatus(Object receiver, int status);
-
-    public abstract int wtermsig(Object receiver, int status);
-
-    public abstract int wstopsig(Object receiver, int status);
-
     public abstract long getuid(Object receiver);
 
     public abstract long geteuid(Object receiver) throws UnsupportedPosixFeatureException;

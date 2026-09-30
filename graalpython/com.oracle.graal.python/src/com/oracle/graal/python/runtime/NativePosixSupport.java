@@ -1779,42 +1779,50 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wcoredump(int status) {
         return posixNativeFunctionInvoker.call_wcoredump(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifcontinued(int status) {
         return posixNativeFunctionInvoker.call_wifcontinued(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifstopped(int status) {
         return posixNativeFunctionInvoker.call_wifstopped(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifsignaled(int status) {
         return posixNativeFunctionInvoker.call_wifsignaled(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifexited(int status) {
         return posixNativeFunctionInvoker.call_wifexited(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public int wexitstatus(int status) {
         return posixNativeFunctionInvoker.call_wexitstatus(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public int wtermsig(int status) {
         return posixNativeFunctionInvoker.call_wtermsig(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public int wstopsig(int status) {
         return posixNativeFunctionInvoker.call_wstopsig(status);
     }
