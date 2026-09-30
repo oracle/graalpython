@@ -977,37 +977,37 @@ public class LoggingPosixSupport extends PosixSupport {
         return logExit("wstopsig", "%d", delegate.wstopsig(status));
     }
 
-    @ExportMessage
-    final long getuid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final long getuid() {
         logEnter("getuid", "");
-        return logExit("getuid", "%d", lib.getuid(delegate));
+        return logExit("getuid", "%d", delegate.getuid());
     }
 
-    @ExportMessage
-    final long geteuid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long geteuid() throws UnsupportedPosixFeatureException {
         logEnter("geteuid", "");
         try {
-            return logExit("geteuid", "%d", lib.geteuid(delegate));
+        return logExit("geteuid", "%d", delegate.geteuid());
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("geteuid", e);
         }
     }
 
-    @ExportMessage
-    final long getgid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final long getgid() {
         logEnter("getgid", "");
-        return logExit("getgid", "%d", lib.getgid(delegate));
+        return logExit("getgid", "%d", delegate.getgid());
     }
 
-    @ExportMessage
-    final long getegid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long getegid() throws UnsupportedPosixFeatureException {
         logEnter("getegid", "");
         try {
-            return logExit("getegid", "%d", lib.getegid(delegate));
+        return logExit("getegid", "%d", delegate.getegid());
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("getegid", e);
         }
@@ -1079,12 +1079,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long[] getgroups(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] getgroups() throws PosixException {
         logEnter("getgroups", "");
         try {
-            return logExit("getgroups", "%s", lib.getgroups(delegate));
+            return logExit("getgroups", "%s", delegate.getgroups());
         } catch (PosixException e) {
             throw logException("getgroups", e);
         }

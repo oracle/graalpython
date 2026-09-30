@@ -731,28 +731,32 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.wstopsig(status);
     }
 
-    @ExportMessage
-    final long getuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final long getuid() {
         checkNotInPreInitialization();
-        return nativeLib.getuid(nativePosixSupport);
+        return nativePosixSupport.getuid();
     }
 
-    @ExportMessage
-    final long geteuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long geteuid() throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
-        return nativeLib.geteuid(nativePosixSupport);
+        return nativePosixSupport.geteuid();
     }
 
-    @ExportMessage
-    final long getgid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final long getgid() {
         checkNotInPreInitialization();
-        return nativeLib.getgid(nativePosixSupport);
+        return nativePosixSupport.getgid();
     }
 
-    @ExportMessage
-    final long getegid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long getegid() throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
-        return nativeLib.getegid(nativePosixSupport);
+        return nativePosixSupport.getegid();
     }
 
     @ExportMessage
@@ -795,11 +799,11 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativeLib.setsid(nativePosixSupport);
     }
 
-    @ExportMessage
-    final long[] getgroups(
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] getgroups() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getgroups(nativePosixSupport);
+        return nativePosixSupport.getgroups();
     }
 
     @ExportMessage

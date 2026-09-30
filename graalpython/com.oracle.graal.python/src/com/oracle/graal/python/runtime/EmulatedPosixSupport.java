@@ -2204,7 +2204,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return 0;
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getuid() {
@@ -2220,14 +2220,14 @@ public final class EmulatedPosixSupport extends PosixResources {
         return 1000;
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long geteuid() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("geteuid");
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getgid() {
@@ -2243,7 +2243,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return 1000;
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getegid() throws UnsupportedPosixFeatureException {
@@ -2286,7 +2286,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("getsid");
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public long[] getgroups() throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {

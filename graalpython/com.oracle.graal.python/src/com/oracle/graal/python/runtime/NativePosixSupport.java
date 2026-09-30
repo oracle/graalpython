@@ -1827,22 +1827,26 @@ public final class NativePosixSupport extends PosixSupport {
         return posixNativeFunctionInvoker.call_wstopsig(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getuid() {
         return posixNativeFunctionInvoker.call_getuid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long geteuid() {
         return posixNativeFunctionInvoker.call_geteuid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getgid() {
         return posixNativeFunctionInvoker.call_getgid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getegid() {
         return posixNativeFunctionInvoker.call_getegid();
     }
@@ -1892,7 +1896,8 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] getgroups() throws PosixException {
         // The first call gets us the number of groups, so we can allocate the output array
         int res = posixNativeFunctionInvoker.call_getgroups(0, NULLPTR);

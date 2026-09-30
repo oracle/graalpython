@@ -96,6 +96,16 @@ public abstract class PosixSupport {
 
     public abstract int wstopsig(int status);
 
+    public abstract long getuid();
+
+    public abstract long geteuid() throws UnsupportedPosixFeatureException;
+
+    public abstract long getgid();
+
+    public abstract long getegid() throws UnsupportedPosixFeatureException;
+
+    public abstract long[] getgroups() throws PosixException;
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

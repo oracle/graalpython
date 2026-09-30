@@ -79,14 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract long getuid(Object receiver);
-
-    public abstract long geteuid(Object receiver) throws UnsupportedPosixFeatureException;
-
-    public abstract long getgid(Object receiver);
-
-    public abstract long getegid(Object receiver) throws UnsupportedPosixFeatureException;
-
     public abstract long getppid(Object receiver) throws UnsupportedPosixFeatureException;
 
     public abstract long getpgid(Object receiver, long pid) throws PosixException;
@@ -98,8 +90,6 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract long getsid(Object receiver, long pid) throws PosixException;
 
     public abstract long setsid(Object receiver) throws PosixException;
-
-    public abstract long[] getgroups(Object receiver) throws PosixException;
 
     /**
      * Equivalent to struct r_usage with the fields expected on macOS and Linux.
