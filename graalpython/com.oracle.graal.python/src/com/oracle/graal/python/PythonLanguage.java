@@ -103,9 +103,8 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport.WindowsVersion;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -1075,7 +1074,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             assert !ImageInfo.inImageBuildtimeCode();
             try {
-                windowsVersion = PosixSupportLibrary.getUncached().getWindowsVersion(PythonContext.get(node).getPosixSupport());
+                windowsVersion = PythonContext.get(node).getPosixSupport().getWindowsVersion();
             } catch (PosixException e) {
                 EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
                 Node previousNode = encapsulating.set(node);

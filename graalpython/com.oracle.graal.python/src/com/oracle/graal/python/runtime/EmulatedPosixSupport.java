@@ -250,7 +250,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.IPAddressUtil;
@@ -1084,7 +1083,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return new int[]{context.getOption(PythonOptions.TerminalWidth), context.getOption(PythonOptions.TerminalHeight)};
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public long sysconf(int name) throws PosixException {
         // Constants derived from POSIX specs or common kernel configs
@@ -1426,22 +1425,20 @@ public final class EmulatedPosixSupport extends PosixResources {
         return mode;
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
-    public Object[] uname(
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+    public Object[] uname() {
         return new Object[]{
-                        fromJavaStringNode.execute(getPythonOS().getUname(), TS_ENCODING),
-                        fromJavaStringNode.execute(getHostName(withoutIOSocket), TS_ENCODING),
-                        fromJavaStringNode.execute(getOsVersion(), TS_ENCODING),
+                        toTruffleStringUncached(getPythonOS().getUname()),
+                        toTruffleStringUncached(getHostName(withoutIOSocket)),
+                        toTruffleStringUncached(getOsVersion()),
                         T_EMPTY_STRING,
                         PythonUtils.getPythonArch()
         };
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public WindowsVersion getWindowsVersion() {
         String[] winvers = System.getProperty("os.version", "10.0.20000").split("\\.");
         int major = 0;

@@ -65,7 +65,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -409,12 +408,11 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long sysconf(int name,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final long sysconf(int name) throws PosixException {
         logEnter("sysconf", "%d", name);
         try {
-            return logExit("sysconf", "%s", lib.sysconf(delegate, name));
+            return logExit("sysconf", "%s", delegate.sysconf(name));
         } catch (PosixException e) {
             throw logException("sysconf", e);
         }
@@ -464,23 +462,22 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Object[] uname(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final Object[] uname() throws PosixException {
         logEnter("uname", "");
         try {
-            return logExit("uname", "%s", lib.uname(delegate));
+            return logExit("uname", "%s", delegate.uname());
         } catch (PosixException e) {
             throw logException("uname", e);
         }
     }
 
-    @ExportMessage
-    final WindowsVersion getWindowsVersion(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final WindowsVersion getWindowsVersion() throws PosixException {
         logEnter("getWindowsVersion", "");
         try {
-            return logExit("getWindowsVersion", "%s", lib.getWindowsVersion(delegate));
+            return logExit("getWindowsVersion", "%s", delegate.getWindowsVersion());
         } catch (PosixException e) {
             throw logException("getWindowsVersion", e);
         }

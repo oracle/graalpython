@@ -107,6 +107,8 @@ public abstract class PosixSupport {
 
     public abstract int[] getTerminalSize(int fd) throws PosixException;
 
+    public abstract long sysconf(int name) throws PosixException;
+
     public abstract Buffer read(int fd, long length) throws PosixException;
 
     public abstract long write(int fd, Buffer data) throws PosixException;
@@ -140,4 +142,14 @@ public abstract class PosixSupport {
     public abstract long[] statvfs(Object path) throws PosixException;
 
     public abstract long[] fstatvfs(int fd) throws PosixException;
+
+    public abstract Object[] uname() throws PosixException;
+
+    public record WindowsVersion(int major, int minor, int build, int platform, TruffleString servicePack,
+                    int servicePackMajor, int servicePackMinor, int suiteMask, int productType,
+                    int platformMajor, int platformMinor, int platformBuild) {
+    }
+
+    /** Returns the Windows version and product information. */
+    public abstract WindowsVersion getWindowsVersion() throws PosixException;
 }

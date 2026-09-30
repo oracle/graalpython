@@ -123,7 +123,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
@@ -1092,7 +1091,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public long sysconf(int name) throws PosixException {
         long result = posixNativeFunctionInvoker.call_sysconf(name);
         if (result == Long.MIN_VALUE) {
@@ -1177,10 +1176,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object[] uname(
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
+    @Override
+    public Object[] uname() throws PosixException {
         long sysPtr = NULLPTR;
         long nodePtr = NULLPTR;
         long relPtr = NULLPTR;
@@ -1198,11 +1195,11 @@ public final class NativePosixSupport extends PosixSupport {
             }
             return new Object[]{
                             // TODO PyUnicode_DecodeFSDefault
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, sysPtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, nodePtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, relPtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, verPtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, machinePtr)
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(sysPtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(nodePtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(relPtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(verPtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(machinePtr)
             };
         } finally {
             NativeMemory.free(machinePtr);
@@ -1213,7 +1210,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public WindowsVersion getWindowsVersion() throws PosixException {
         long out = NativeMemory.mallocIntArray(11);

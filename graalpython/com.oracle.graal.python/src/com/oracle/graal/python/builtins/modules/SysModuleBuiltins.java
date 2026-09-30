@@ -257,7 +257,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
+import com.oracle.graal.python.runtime.PosixSupport.WindowsVersion;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonOptions;

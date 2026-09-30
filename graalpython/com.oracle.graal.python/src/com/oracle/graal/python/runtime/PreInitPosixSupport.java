@@ -63,7 +63,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -347,11 +346,10 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getTerminalSize(fd);
     }
 
-    @ExportMessage
-    final long sysconf(int name,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long sysconf(int name) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.sysconf(nativePosixSupport, name);
+        return nativePosixSupport.sysconf(name);
     }
 
     @Override
@@ -386,16 +384,17 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.fstatvfs(fd);
     }
 
-    @ExportMessage
-    final Object[] uname(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final Object[] uname() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.uname(nativePosixSupport);
+        return nativePosixSupport.uname();
     }
 
-    @ExportMessage
-    final WindowsVersion getWindowsVersion(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final WindowsVersion getWindowsVersion() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getWindowsVersion(nativePosixSupport);
+        return nativePosixSupport.getWindowsVersion();
     }
 
     @ExportMessage

@@ -1607,10 +1607,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple uname(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return PFactory.createStructSeq(context.getLanguage(inliningTarget), UNAME_RESULT_DESC, posixLib.uname(context.getPosixSupport()));
+                return PFactory.createStructSeq(context.getLanguage(inliningTarget), UNAME_RESULT_DESC, context.getPosixSupport().uname());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -2971,7 +2970,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetItem getItem,
                         @Cached PRaiseNode raiseNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int id;
             if (longCheckNode.execute(inliningTarget, arg)) {
@@ -2988,7 +2986,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONFIGURATION_NAMES_MUST_BE_STRINGS_OR_INTEGERS);
             }
             try {
-                return posixLib.sysconf(context.getPosixSupport(), id);
+                return context.getPosixSupport().sysconf(id);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
