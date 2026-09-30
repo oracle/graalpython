@@ -120,6 +120,8 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @ExportMessage
+    @TruffleBoundary
     public final TruffleString getBackend() {
         logEnter(Level.FINEST, "getBackend", "");
         return logExit(Level.FINEST, "getBackend", "%s", delegate.getBackend());
@@ -1644,26 +1646,26 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
         logEnter("createUniversalSockAddrInet4", "%s", src);
-        return logExit("createUniversalSockAddrInet4", "%s", lib.createUniversalSockAddrInet4(delegate, src));
+        return logExit("createUniversalSockAddrInet4", "%s", delegate.createUniversalSockAddrInet4(src));
     }
 
-    @ExportMessage
-    final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
         logEnter("createUniversalSockAddrInet6", "%s", src);
-        return logExit("createUniversalSockAddrInet6", "%s", lib.createUniversalSockAddrInet6(delegate, src));
+        return logExit("createUniversalSockAddrInet6", "%s", delegate.createUniversalSockAddrInet6(src));
     }
 
-    @ExportMessage
-    final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException {
         logEnter("createUniversalSockAddrUnix", "%s", src);
         try {
-            return logExit("createUniversalSockAddrUnix", "%s", lib.createUniversalSockAddrUnix(delegate, src));
+            return logExit("createUniversalSockAddrUnix", "%s", delegate.createUniversalSockAddrUnix(src));
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("createUniversalSockAddrUnix", e);
         } catch (InvalidUnixSocketPathException e) {

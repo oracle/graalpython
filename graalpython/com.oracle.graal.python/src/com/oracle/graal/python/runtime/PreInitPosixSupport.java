@@ -153,6 +153,8 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @ExportMessage
+    @TruffleBoundary
     public final TruffleString getBackend() {
         checkNotInPreInitialization();
         return nativePosixSupport.getBackend();
@@ -1187,25 +1189,25 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.semTimedWait(location, handle, deadlineNs);
     }
 
-    @ExportMessage
-    final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
         checkNotInPreInitialization();
-        return nativeLib.createUniversalSockAddrInet4(nativePosixSupport, src);
+        return nativePosixSupport.createUniversalSockAddrInet4(src);
     }
 
-    @ExportMessage
-    final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
         checkNotInPreInitialization();
-        return nativeLib.createUniversalSockAddrInet6(nativePosixSupport, src);
+        return nativePosixSupport.createUniversalSockAddrInet6(src);
     }
 
-    @ExportMessage
-    final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException {
         checkNotInPreInitialization();
-        return nativeLib.createUniversalSockAddrUnix(nativePosixSupport, src);
+        return nativePosixSupport.createUniversalSockAddrUnix(src);
     }
 
     @Override

@@ -73,6 +73,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateLibrary(receiverType = PosixSupport.class)
 public abstract class PosixSupportLibrary extends Library {
 
+    /** Retained for the generated library until the remaining exports are removed. */
+    public abstract TruffleString getBackend(Object receiver);
+
     public static final char POSIX_FILENAME_SEPARATOR = '/';
 
     // Constants for accessing the fields of the fstat result:
@@ -168,9 +171,15 @@ public abstract class PosixSupportLibrary extends Library {
      * {@link FamilySpecificSockAddr} subclasses). This interface roughly corresponds to POSIX
      * {@code struct sockaddr_storage}.
      *
-     * @see UniversalSockAddrLibrary
      */
     public interface UniversalSockAddr {
+        int getFamily();
+
+        Inet4SockAddr asInet4SockAddr();
+
+        Inet6SockAddr asInet6SockAddr();
+
+        UnixSockAddr asUnixSockAddr();
     }
 
     /**
@@ -391,68 +400,6 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     // endregion
-
-    /**
-     * Allocates a new {@link UniversalSockAddr} and initializes it with the provided address.
-     */
-    public abstract UniversalSockAddr createUniversalSockAddrInet4(Object receiver, Inet4SockAddr src);
-
-    public abstract UniversalSockAddr createUniversalSockAddrInet6(Object receiver, Inet6SockAddr src);
-
-    public abstract UniversalSockAddr createUniversalSockAddrUnix(Object receiver, UnixSockAddr src) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException;
-
-    /**
-     * Provides messages for manipulating {@link UniversalSockAddr}.
-     */
-    @GenerateLibrary
-    public abstract static class UniversalSockAddrLibrary extends Library {
-
-        protected UniversalSockAddrLibrary() {
-        }
-
-        /**
-         * Returns the socket family of the address (one of the {@code AF_xxx} values defined in
-         * {@link PosixConstants}).
-         */
-        public abstract int getFamily(UniversalSockAddr receiver);
-
-        /**
-         * Converts the address represented by the receiver (which must be of the
-         * {@link PosixConstants#AF_INET} family) into a {@link Inet4SockAddr} instance.
-         *
-         * @throws IllegalArgumentException if the socket family of the address is not
-         *             {@link PosixConstants#AF_INET}
-         */
-        public abstract Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver);
-
-        /**
-         * Converts the address represented by the receiver (which must be of the
-         * {@link PosixConstants#AF_INET6} family) into a {@link Inet6SockAddr} instance.
-         *
-         * @throws IllegalArgumentException if the socket family of the address is not
-         *             {@link PosixConstants#AF_INET6}
-         */
-        public abstract Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver);
-
-        /**
-         * Converts the address represented by the receiver (which must be of the
-         * {@link PosixConstants#AF_UNIX} family) into a {@link UnixSockAddr} instance.
-         *
-         * @throws IllegalArgumentException if the socket family of the address is not
-         *             {@link PosixConstants#AF_UNIX}
-         */
-        public abstract UnixSockAddr asUnixSockAddr(UniversalSockAddr receiver);
-
-        static final LibraryFactory<UniversalSockAddrLibrary> FACTORY = LibraryFactory.resolve(UniversalSockAddrLibrary.class);
-
-        public static LibraryFactory<UniversalSockAddrLibrary> getFactory() {
-            return FACTORY;
-        }
-
-        public static UniversalSockAddrLibrary getUncached() {
-            return FACTORY.getUncached();
-        }
-    }
 
     /**
      * Base class for exceptions that originate in the POSIX support layer.

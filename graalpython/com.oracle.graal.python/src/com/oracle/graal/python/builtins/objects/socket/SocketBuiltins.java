@@ -102,7 +102,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -223,7 +222,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, Object fileno,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PyLongAsIntNode asIntNode,
@@ -240,7 +238,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 UniversalSockAddr addr = context.getPosixSupport().getsockname(fd);
                 if (family == -1) {
-                    family = addrLib.getFamily(addr);
+                    family = addr.getFamily();
                 }
             } catch (PosixException e) {
                 if (family == -1 || e.hasErrno(EBADF) || e.hasErrno(ENOTSOCK)) {

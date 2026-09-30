@@ -116,7 +116,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -272,7 +271,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Object ip,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
@@ -287,7 +285,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
              */
             auditNode.audit(frame, inliningTarget, T_SOCKET_GETHOSTBYADDR, ip);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, idnaConverter.execute(frame, ip), AF_UNSPEC.value);
-            int family = sockAddrLibrary.getFamily(addr);
+            int family = addr.getFamily();
             try {
                 Object[] getnameinfoResult = context.getPosixSupport().getnameinfo(addr, NI_NAMEREQD.value);
                 TruffleString hostname = context.getPosixSupport().getCStringAsString(getnameinfoResult[0]);
@@ -338,7 +336,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static TruffleString getHostByName(VirtualFrame frame, Object nameObj,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -347,7 +344,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             byte[] name = idnaConverter.execute(frame, nameObj);
             auditNode.audit(frame, inliningTarget, T_SOCKET_GETHOSTBYNAME, PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{nameObj}));
             UniversalSockAddr addr = setIpAddrNode.execute(frame, name, AF_INET.value);
-            Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
+            Inet4SockAddr inet4SockAddr = addr.asInet4SockAddr();
             try {
                 return context.getPosixSupport().getCStringAsString(context.getPosixSupport().inet_ntop(AF_INET.value, inet4SockAddr.getAddressAsBytes()));
             } catch (PosixException e) {
@@ -368,7 +365,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static Object get(VirtualFrame frame, Object nameObj,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -387,7 +383,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                                 null, AF_INET.value, 0, 0, AI_CANONNAME.value);
                 try {
                     TruffleString canonName = posixSupport.getCStringAsString(cursor.getCanonName());
-                    Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(cursor.getSockAddr());
+                    Inet4SockAddr inet4SockAddr = cursor.getSockAddr().asInet4SockAddr();
                     TruffleString addr = posixSupport.getCStringAsString(posixSupport.inet_ntop(AF_INET.value, inet4SockAddr.getAddressAsBytes()));
                     // getaddrinfo doesn't support aliases
                     PList aliases = PFactory.createList(context.getLanguage(inliningTarget));
@@ -421,7 +417,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noneProtocol,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -457,7 +452,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 }
                 try {
                     UniversalSockAddr addr = cursor.getSockAddr();
-                    return sockAddrLibrary.asInet4SockAddr(addr).getPort();
+                    return addr.asInet4SockAddr().getPort();
                 } finally {
                     cursor.release();
                 }
@@ -512,7 +507,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    UniversalSockAddr addr = posixLib.createUniversalSockAddrInet4(getPosixSupport(), new Inet4SockAddr(port, INADDR_ANY.value));
+                    UniversalSockAddr addr = getPosixSupport().createUniversalSockAddrInet4(new Inet4SockAddr(port, INADDR_ANY.value));
                     int flags = 0;
                     if (protocolName != null && equalNode.execute(protocolName, T_UDP, TS_ENCODING)) {
                         flags |= NI_DGRAM.value;
@@ -556,7 +551,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Cached GilNode gil,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached CastToTruffleStringNode castAddress,
@@ -619,9 +613,9 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     if (addrLen != 2) {
                         throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.IPV4_MUST_BE_2_TUPLE);
                     }
-                    queryAddr = posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress()));
+                    queryAddr = posixSupport.createUniversalSockAddrInet4(new Inet4SockAddr(port, resolvedAddr.asInet4SockAddr().getAddress()));
                 } else if (family == AF_INET6.value) {
-                    queryAddr = posixLib.createUniversalSockAddrInet6(posixSupport, new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid));
+                    queryAddr = posixSupport.createUniversalSockAddrInet6(new Inet6SockAddr(port, resolvedAddr.asInet6SockAddr().getAddress(), flowinfo, scopeid));
                 } else {
                     throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.UNKNOWN_FAMILY);
                 }

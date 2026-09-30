@@ -120,7 +120,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
@@ -712,6 +711,8 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @ExportMessage
+    @TruffleBoundary
     public TruffleString getBackend() {
         return nativeBackend;
     }
@@ -2977,8 +2978,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         addr.setFamily(AF_INET.value);
         ARRAY_ACCESSOR_BE.putShort(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT), (short) src.getPort());
@@ -2987,8 +2989,9 @@ public final class NativePosixSupport extends PosixSupport {
         return addr;
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         addr.setFamily(AF_INET6.value);
         ARRAY_ACCESSOR_BE.putShort(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT), (short) src.getPort());
@@ -3000,8 +3003,9 @@ public final class NativePosixSupport extends PosixSupport {
         return addr;
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws InvalidUnixSocketPathException {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws InvalidUnixSocketPathException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         addr.setFamily(AF_UNIX.value);
         byte[] path = src.getPath();
@@ -3014,7 +3018,6 @@ public final class NativePosixSupport extends PosixSupport {
         return addr;
     }
 
-    @ExportLibrary(UniversalSockAddrLibrary.class)
     protected static class UniversalSockAddrImpl implements UniversalSockAddr {
 
         private final NativePosixSupport nativePosixSupport;
@@ -3026,8 +3029,9 @@ public final class NativePosixSupport extends PosixSupport {
             this.data = new byte[(int) getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
         }
 
-        @ExportMessage
-        int getFamily() {
+        @Override
+        @TruffleBoundary
+        public int getFamily() {
             int offset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
             int size = (int) getConstant(SIZEOF_STRUCT_SOCKADDR_SA_FAMILY);
             if (getLen() >= offset + size) {
@@ -3059,8 +3063,9 @@ public final class NativePosixSupport extends PosixSupport {
             }
         }
 
-        @ExportMessage
-        Inet4SockAddr asInet4SockAddr() {
+        @Override
+        @TruffleBoundary
+        public Inet4SockAddr asInet4SockAddr() {
             if (getFamily() != AF_INET.value) {
                 throw CompilerDirectives.shouldNotReachHere("Only AF_INET socket address can be converted to Inet4SockAddr");
             }
@@ -3072,8 +3077,9 @@ public final class NativePosixSupport extends PosixSupport {
             return new Inet4SockAddr(port, address);
         }
 
-        @ExportMessage
-        Inet6SockAddr asInet6SockAddr() {
+        @Override
+        @TruffleBoundary
+        public Inet6SockAddr asInet6SockAddr() {
             if (getFamily() != AF_INET6.value) {
                 throw CompilerDirectives.shouldNotReachHere("Only AF_INET6 socket address can be converted to Inet6SockAddr");
             }
@@ -3088,8 +3094,9 @@ public final class NativePosixSupport extends PosixSupport {
             return new Inet6SockAddr(port, address, flowInfo, scopeId);
         }
 
-        @ExportMessage
-        UnixSockAddr asUnixSockAddr() {
+        @Override
+        @TruffleBoundary
+        public UnixSockAddr asUnixSockAddr() {
             if (getFamily() != AF_UNIX.value) {
                 throw CompilerDirectives.shouldNotReachHere("Only AF_UNIX socket address can be converted to UnixSockAddr");
             }

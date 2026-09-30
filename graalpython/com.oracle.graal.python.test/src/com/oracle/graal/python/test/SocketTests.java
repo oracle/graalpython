@@ -114,7 +114,6 @@ import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
@@ -130,7 +129,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.test.integration.CleanupRule;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -159,14 +157,10 @@ public class SocketTests {
     private static final UnixSockAddr UNIX_SOCK_ADDR_UNNAMED = new UnixSockAddr(new byte[0]);
 
     private PosixSupport posixSupport;
-    private PosixSupportLibrary lib;
-    private UniversalSockAddrLibrary usaLib;
 
     @Before
     public void setUp() {
         posixSupport = withPythonContextRule.getPythonContext().getPosixSupport();
-        lib = PosixSupportLibrary.getUncached();
-        usaLib = UniversalSockAddrLibrary.getUncached();
     }
 
     @Test
@@ -428,7 +422,7 @@ public class SocketTests {
         checkUsa(cli.address(), c.getpeername());
 
         c.send(DATA, 0);
-        assertEquals(AF_UNSPEC.value, usaLib.getFamily(cli.recvfrom(DATA, 0)));
+        assertEquals(AF_UNSPEC.value, cli.recvfrom(DATA, 0).getFamily());
     }
 
     @Test
@@ -477,7 +471,7 @@ public class SocketTests {
         Socket cli = new Socket(AF_UNIX.value, SOCK_STREAM.value);
         UniversalSockAddr addr = null;
         try {
-            addr = lib.createUniversalSockAddrUnix(posixSupport, unixSockAddr);
+            addr = posixSupport.createUniversalSockAddrUnix(unixSockAddr);
         } catch (InvalidUnixSocketPathException e) {
             assumeNoException(e);
         }
@@ -805,9 +799,9 @@ public class SocketTests {
             assertNull(aic.getCanonName());
 
             UniversalSockAddr usa = aic.getSockAddr();
-            assertEquals(family, usaLib.getFamily(usa));
+            assertEquals(family, usa.getFamily());
             if (family == AF_INET.value) {
-                Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
+                Inet4SockAddr addr2 = usa.asInet4SockAddr();
                 assertEquals(INADDR_LOOPBACK.value, addr2.getAddress());
                 assertEquals(443, addr2.getPort());
             }
@@ -818,14 +812,14 @@ public class SocketTests {
     public void getaddrinfoPassive() throws PosixException, GetAddrInfoException {
         Object service = s2p("https");
         AddrInfoCursor aic = posixSupport.getaddrinfo(null, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_PASSIVE.value);
-        cleanup.add(() -> aic.release());
+        cleanup.add(aic::release);
         assertEquals(AF_INET.value, aic.getFamily());
         assertEquals(SOCK_STREAM.value, aic.getSockType());
         assertEquals(IPPROTO_TCP.value, aic.getProtocol());
         assertNull(aic.getCanonName());
 
         UniversalSockAddr usa = aic.getSockAddr();
-        Inet4SockAddr addr = usaLib.asInet4SockAddr(usa);
+        Inet4SockAddr addr = usa.asInet4SockAddr();
         assertEquals(INADDR_ANY.value, addr.getAddress());
         assertEquals(443, addr.getPort());
     }
@@ -834,7 +828,7 @@ public class SocketTests {
     public void getaddrinfoServerOnlyNoCanon() throws PosixException, GetAddrInfoException {
         Object node = s2p("localhost");
         AddrInfoCursor aic = posixSupport.getaddrinfo(node, null, AF_UNSPEC.value, SOCK_DGRAM.value, 0, 0);
-        cleanup.add(() -> aic.release());
+        cleanup.add(aic::release);
         do {
             assertEquals(SOCK_DGRAM.value, aic.getSockType());
             assertEquals(IPPROTO_UDP.value, aic.getProtocol());
@@ -842,8 +836,8 @@ public class SocketTests {
 
             if (aic.getFamily() == AF_INET.value) {
                 UniversalSockAddr usa = aic.getSockAddr();
-                assertEquals(AF_INET.value, usaLib.getFamily(usa));
-                Inet4SockAddr addr = usaLib.asInet4SockAddr(usa);
+                assertEquals(AF_INET.value, usa.getFamily());
+                Inet4SockAddr addr = usa.asInet4SockAddr();
                 assertEquals(INADDR_LOOPBACK.value, addr.getAddress());
                 assertEquals(0, addr.getPort());
             }
@@ -855,15 +849,15 @@ public class SocketTests {
         Object node = s2p("localhost");
         Object service = s2p("https");
         AddrInfoCursor aic = posixSupport.getaddrinfo(node, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_CANONNAME.value);
-        cleanup.add(() -> aic.release());
+        cleanup.add(aic::release);
         assertEquals(AF_INET.value, aic.getFamily());
         assertEquals(SOCK_STREAM.value, aic.getSockType());
         assertEquals(IPPROTO_TCP.value, aic.getProtocol());
         assertEquals("localhost", p2s(aic.getCanonName()));
 
         UniversalSockAddr usa = aic.getSockAddr();
-        assertEquals(AF_INET.value, usaLib.getFamily(usa));
-        Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
+        assertEquals(AF_INET.value, usa.getFamily());
+        Inet4SockAddr addr2 = usa.asInet4SockAddr();
         assertEquals(INADDR_LOOPBACK.value, addr2.getAddress());
         assertEquals(443, addr2.getPort());
     }
@@ -1017,7 +1011,7 @@ public class SocketTests {
 
     @Test
     public void gethostname() throws PosixException {
-        assertTrue(p2s(posixSupport.gethostname()).length() > 0);
+        assertFalse(p2s(posixSupport.gethostname()).isEmpty());
     }
 
     private static FamilySpecificSockAddr localAddress(int family, int port) {
@@ -1028,13 +1022,13 @@ public class SocketTests {
         }
     }
 
-    private int checkBound(int family, UniversalSockAddr usa) {
-        assertEquals(family, usaLib.getFamily(usa));
+    private static int checkBound(int family, UniversalSockAddr usa) {
+        assertEquals(family, usa.getFamily());
         int port;
         if (family == AF_INET.value) {
-            port = usaLib.asInet4SockAddr(usa).getPort();
+            port = usa.asInet4SockAddr().getPort();
         } else if (family == AF_INET6.value) {
-            port = usaLib.asInet6SockAddr(usa).getPort();
+            port = usa.asInet6SockAddr().getPort();
         } else {
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -1043,26 +1037,23 @@ public class SocketTests {
     }
 
     private void checkUsa(FamilySpecificSockAddr expectedAddr, UniversalSockAddr actualUsa) {
-        if (expectedAddr instanceof Inet4SockAddr) {
-            Inet4SockAddr expected = (Inet4SockAddr) expectedAddr;
-            assertEquals(AF_INET.value, usaLib.getFamily(actualUsa));
-            Inet4SockAddr actual = usaLib.asInet4SockAddr(actualUsa);
+        if (expectedAddr instanceof Inet4SockAddr expected) {
+            assertEquals(AF_INET.value, actualUsa.getFamily());
+            Inet4SockAddr actual = actualUsa.asInet4SockAddr();
             assertEquals(expected.getPort(), actual.getPort());
             assertEquals(expected.getAddress(), actual.getAddress());
-        } else if (expectedAddr instanceof Inet6SockAddr) {
-            Inet6SockAddr expected = (Inet6SockAddr) expectedAddr;
-            assertEquals(AF_INET6.value, usaLib.getFamily(actualUsa));
-            Inet6SockAddr actual = usaLib.asInet6SockAddr(actualUsa);
+        } else if (expectedAddr instanceof Inet6SockAddr expected) {
+            assertEquals(AF_INET6.value, actualUsa.getFamily());
+            Inet6SockAddr actual = actualUsa.asInet6SockAddr();
             assertEquals(expected.getPort(), actual.getPort());
             assertArrayEquals(expected.getAddress(), actual.getAddress());
             assertEquals(expected.getScopeId(), actual.getScopeId());
             if ("native".equals(backendName)) {
                 assertEquals(expected.getFlowInfo(), actual.getFlowInfo());
             }
-        } else if (expectedAddr instanceof UnixSockAddr) {
-            UnixSockAddr expected = (UnixSockAddr) expectedAddr;
-            assertEquals(AF_UNIX.value, usaLib.getFamily(actualUsa));
-            UnixSockAddr actual = usaLib.asUnixSockAddr(actualUsa);
+        } else if (expectedAddr instanceof UnixSockAddr expected) {
+            assertEquals(AF_UNIX.value, actualUsa.getFamily());
+            UnixSockAddr actual = actualUsa.asUnixSockAddr();
             assertNullTerminatedArrayEquals(expected.getPath(), actual.getPath());
         } else {
             fail("Unexpected subclass of FamilySpecificSockAddr: " + expectedAddr.getClass().getName());
@@ -1108,12 +1099,12 @@ public class SocketTests {
 
     private UniversalSockAddr createUsa(FamilySpecificSockAddr src) throws PosixException {
         if (src instanceof Inet4SockAddr inet4SockAddr) {
-            return lib.createUniversalSockAddrInet4(posixSupport, inet4SockAddr);
+            return posixSupport.createUniversalSockAddrInet4(inet4SockAddr);
         } else if (src instanceof Inet6SockAddr inet6SockAddr) {
-            return lib.createUniversalSockAddrInet6(posixSupport, inet6SockAddr);
+            return posixSupport.createUniversalSockAddrInet6(inet6SockAddr);
         } else if (src instanceof UnixSockAddr unixSockAddr) {
             try {
-                return lib.createUniversalSockAddrUnix(posixSupport, unixSockAddr);
+                return posixSupport.createUniversalSockAddrUnix(unixSockAddr);
             } catch (InvalidUnixSocketPathException e) {
                 assumeNoException(e);
                 return null; // unreachable
@@ -1236,7 +1227,7 @@ public class SocketTests {
         }
 
         void read(byte[] expectedData) throws PosixException {
-            Buffer buf = posixSupport.read(fd, expectedData.length * 2);
+            Buffer buf = posixSupport.read(fd, expectedData.length * 2L);
             assertEquals(expectedData.length, buf.length);
             assertArrayEquals(expectedData, Arrays.copyOf(buf.data, expectedData.length));
         }

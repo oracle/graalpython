@@ -246,7 +246,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -381,6 +380,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @ExportMessage
+    @TruffleBoundary
     public TruffleString getBackend() {
         return T_JAVA;
     }
@@ -3800,22 +3801,24 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
         return EmulatedUniversalSockAddrImpl.inet4(src.getAddressAsBytes(), src.getPort());
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
         return EmulatedUniversalSockAddrImpl.inet6(src.getAddress(), src.getScopeId(), src.getPort());
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("AF_UNIX");
     }
 
-    @ExportLibrary(UniversalSockAddrLibrary.class)
     protected static class EmulatedUniversalSockAddrImpl implements UniversalSockAddr {
         final int family;
         final InetSocketAddress socketAddress;
@@ -3826,23 +3829,24 @@ public final class EmulatedPosixSupport extends PosixResources {
             this.socketAddress = socketAddress;
         }
 
-        @ExportMessage
-        int getFamily() {
+        @Override
+        @TruffleBoundary
+        public int getFamily() {
             return family;
         }
 
-        @ExportMessage
+        @Override
         @TruffleBoundary
-        Inet4SockAddr asInet4SockAddr() {
+        public Inet4SockAddr asInet4SockAddr() {
             if (getFamily() != AF_INET.value) {
                 throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
             }
             return new Inet4SockAddr(socketAddress.getPort(), socketAddress.getAddress().getAddress());
         }
 
-        @ExportMessage
+        @Override
         @TruffleBoundary
-        Inet6SockAddr asInet6SockAddr() {
+        public Inet6SockAddr asInet6SockAddr() {
             if (getFamily() != AF_INET6.value) {
                 throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
             }
@@ -3856,9 +3860,9 @@ public final class EmulatedPosixSupport extends PosixResources {
             return new Inet6SockAddr(socketAddress.getPort(), ipv6, 0, 0);
         }
 
-        @ExportMessage
+        @Override
         @TruffleBoundary
-        UnixSockAddr asUnixSockAddr() {
+        public UnixSockAddr asUnixSockAddr() {
             assert getFamily() != AF_UNIX.value;
             throw new IllegalArgumentException("Only AF_UNIX socket address can be converted to Unix4SockAddr");
         }
