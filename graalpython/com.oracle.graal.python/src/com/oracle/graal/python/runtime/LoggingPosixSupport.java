@@ -1134,23 +1134,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final void setenv(Object name, Object value, boolean overwrite,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void setenv(Object name, Object value, boolean overwrite) throws PosixException {
         logEnter("setenv", "%s, %s, %b", name, value, overwrite);
         try {
-            lib.setenv(delegate, name, value, overwrite);
+            delegate.setenv(name, value, overwrite);
         } catch (PosixException e) {
             throw logException("setenv", e);
         }
     }
 
-    @ExportMessage
-    final void unsetenv(Object name,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void unsetenv(Object name) throws PosixException {
         logEnter("unsetenv", "%s", name);
         try {
-            lib.unsetenv(delegate, name);
+            delegate.unsetenv(name);
         } catch (PosixException e) {
             throw logException("unsetenv", e);
         }

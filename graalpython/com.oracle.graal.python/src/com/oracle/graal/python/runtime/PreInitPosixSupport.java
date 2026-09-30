@@ -829,18 +829,18 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.ctermid();
     }
 
-    @ExportMessage
-    final void setenv(Object name, Object value, boolean overwrite,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void setenv(Object name, Object value, boolean overwrite) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.setenv(nativePosixSupport, name, value, overwrite);
+        nativePosixSupport.setenv(name, value, overwrite);
     }
 
-    @ExportMessage
-    final void unsetenv(Object name,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void unsetenv(Object name) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.unsetenv(nativePosixSupport, name);
+        nativePosixSupport.unsetenv(name);
     }
 
     @ExportMessage

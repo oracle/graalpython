@@ -126,6 +126,11 @@ public abstract class PosixSupport {
 
     public abstract TruffleString ctermid() throws PosixException;
 
+    // note: this leaks memory in native backend and is not synchronized
+    public abstract void setenv(Object name, Object value, boolean overwrite) throws PosixException;
+
+    public abstract void unsetenv(Object name) throws PosixException;
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

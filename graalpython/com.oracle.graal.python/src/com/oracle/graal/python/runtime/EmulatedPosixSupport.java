@@ -2383,7 +2383,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return T_DEV_TTY;
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void setenv(Object name, Object value, boolean overwrite) {
         String nameStr = pathToJavaString(name);
@@ -2395,7 +2395,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void unsetenv(Object name) {
         String nameStr = pathToJavaString(name);
