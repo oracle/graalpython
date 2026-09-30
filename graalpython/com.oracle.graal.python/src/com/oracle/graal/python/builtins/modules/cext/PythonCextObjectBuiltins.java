@@ -154,7 +154,6 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -172,7 +171,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -504,7 +502,6 @@ public abstract class PythonCextObjectBuiltins {
         static Object asFileDescriptor(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode,
                         @Cached PRaiseNode raiseNode) {

@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupport.Timeval;
 
 public abstract class TimeUtils {
     public static final long SEC_TO_MS = 1000L;

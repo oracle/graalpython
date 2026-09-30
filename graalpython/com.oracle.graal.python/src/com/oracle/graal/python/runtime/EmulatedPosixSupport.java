@@ -229,25 +229,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMe
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
 import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.IPAddressUtil;
@@ -262,19 +243,10 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleSafepoint;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.module.UnixSystem;
@@ -306,7 +278,6 @@ import com.sun.security.auth.module.UnixSystem;
  * <li>{@code select} supports only network sockets, but not regular files.</li>
  * </ul>
  */
-@ExportLibrary(PosixSupportLibrary.class)
 @SuppressWarnings("unused")
 public final class EmulatedPosixSupport extends PosixResources {
 
@@ -380,7 +351,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @ExportMessage
     @TruffleBoundary
     public TruffleString getBackend() {
         return T_JAVA;
@@ -410,6 +380,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public long getpid() {
         if (pidInitialized) {
             return pid;
@@ -418,6 +389,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public int umask(int umask) {
         int prev = currentUmask;
         currentUmask = umask & 00777;
@@ -429,6 +401,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public TruffleString strerror(int errorCode) {
         OSErrorEnum err = OSErrorEnum.fromNumber(errorCode);
         if (err == null) {
@@ -438,6 +411,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public int close(int fd) throws PosixException {
         try {
             if (!removeFD(fd)) {
@@ -485,6 +459,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public long write(int fd, Buffer data) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (!(channel instanceof WritableByteChannel)) {
@@ -515,6 +490,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public Buffer read(int fd, long length) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (!(channel instanceof ReadableByteChannel)) {
@@ -549,12 +525,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public int dup(int fd) {
         // TODO: will disappear once the super class is merged with this class
         return super.dup(fd);
     }
 
     @Override
+    @TruffleBoundary
     public int dup2(int fd, int fd2, @SuppressWarnings("unused") boolean inheritable) throws PosixException {
         // TODO: will merge with super.dup2 once the super class is merged with this class
         try {
@@ -565,29 +543,34 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public boolean getInheritable(int fd) {
         compatibilityIgnored("getting inheritable for file descriptor %d in POSIX emulation layer (not supported, always returns false)", fd);
         return false;
     }
 
     @Override
+    @TruffleBoundary
     public void setInheritable(int fd, boolean inheritable) {
         compatibilityIgnored("setting inheritable '%b' for file descriptor %d in POSIX emulation layer (not supported)", inheritable, fd);
     }
 
     @Override
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public long getOsfHandle(int fd) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("get_osfhandle");
     }
 
     @Override
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public int openOsfHandle(long handle, int flags) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("open_osfhandle");
     }
 
     @Override
+    @TruffleBoundary
     public int setMode(int fd, int mode) throws PosixException {
         int binary = PosixConstants.O_BINARY.getValueIfDefined();
         int text = PosixConstants.O_TEXT.getValueIfDefined();
@@ -602,6 +585,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
@@ -617,6 +601,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public int[] pipe() throws PosixException {
         try {
             return super.pipeResource();
@@ -903,6 +888,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public void ftruncate(int fd, long length) throws PosixException {
         Object ret;
         try {
@@ -916,6 +902,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public void truncate(Object path, long length) throws PosixException {
         TruffleFile file = getTruffleFile(pathToJavaString(path));
         try {
@@ -933,6 +920,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public void fsync(int fd) throws PosixException {
         if (!hasFsyncResource(fd)) {
             throw posixException(OSErrorEnum.ENOENT);
@@ -940,6 +928,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public void flock(int fd, int operation) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
@@ -956,6 +945,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
@@ -1424,6 +1414,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public Object[] uname() {
         return new Object[]{
                         toTruffleStringUncached(getPythonOS().getUname()),
@@ -1931,6 +1922,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
+    @TruffleBoundary
     public Object readlinkat(int dirFd, Object path) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         try {

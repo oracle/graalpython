@@ -81,9 +81,8 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.Buffer;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -97,7 +96,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -111,7 +109,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
     /**
      * Helper converter which iterates the argv argument and converts each element to the opaque
-     * narrow string representation used by {@link PosixSupportLibrary}.
+     * narrow string representation used by {@link PosixSupport}.
      */
     abstract static class ProcessArgsConversionNode extends ArgumentCastNode {
         @Specialization
@@ -129,7 +127,6 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
             PList argsList;
@@ -178,7 +175,6 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached PyObjectGetItem getItem,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, inliningTarget, env);
@@ -242,8 +238,8 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         private static Object createCStringFromBytes(Node inliningTarget, byte[] bytes, PRaiseNode raiseNode) {
             Object o = PosixSupport.get(inliningTarget).createCStringFromBytes(bytes);
             if (o == null) {
-                // TODO reconsider the contract of PosixSupportLibrary#createCStringFromBytes w.r.t.
-                // embedded null checks (we need to review that anyway since PosixSupportLibrary
+                // TODO reconsider the contract of PosixSupport#createCStringFromBytes w.r.t.
+                // embedded null checks (we need to review that anyway since PosixSupport
                 // cannot do Python-specific fsencode)
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
@@ -258,7 +254,6 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
                         boolean restoreSignals, boolean callSetsid, int pgidToSet, Object gidObject, Object groupsList,
                         Object uidObject, int childUmask, Object preexecFn, boolean allowVFork,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,

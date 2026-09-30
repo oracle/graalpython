@@ -140,8 +140,7 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -236,7 +235,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
         private static int open(VirtualFrame frame, TruffleString name, int flags, int mode,
                         PythonContext ctxt,
                         Node inliningTarget,
-                        PosixSupportLibrary posixLib,
                         GilNode gil,
                         InlinedBranchProfile errorProfile,
                         PRaiseNode raiseNode,
@@ -314,7 +312,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"})
         static void doInit(VirtualFrame frame, Node inliningTarget, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached(inline = false) CallNode callOpener,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -363,7 +360,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     }
 
                     if (opener instanceof PNone) {
-                        self.setFD(open(frame, name, flags, 0666, context, inliningTarget, posixLib, gil, exceptionProfile, raiseNode, constructAndRaiseNode), context);
+                        self.setFD(open(frame, name, flags, 0666, context, inliningTarget, gil, exceptionProfile, raiseNode, constructAndRaiseNode), context);
                     } else {
                         Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
                         if (!indexCheckNode.execute(inliningTarget, fdobj)) {
@@ -400,7 +397,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      * On Unix, open will succeed for directories. In Python, there should be no
                      * file objects referring to directories, so we need a check.
                      */
-                    if (errorProfile.profile(inliningTarget, PosixSupportLibrary.isDIR(fstatResult[0]))) {
+                    if (errorProfile.profile(inliningTarget, PosixSupport.isDIR(fstatResult[0]))) {
                         errorCleanup(frame, self, fdIsOwn, posixClose);
                         TruffleString fname = name == null ? fromLongNode.execute(fd, TS_ENCODING, false) : name;
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EISDIR, fname);
@@ -663,7 +660,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedBranchProfile readErrorProfile,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {

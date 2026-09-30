@@ -50,8 +50,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.NativePosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -225,7 +224,7 @@ public final class PMMap extends PythonObject {
     long getNativePointer(@Bind Node inliningTarget) {
         try {
             return PythonContext.get(inliningTarget).getPosixSupport().mmapGetPointer(getPosixSupportHandle());
-        } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+        } catch (PosixSupport.UnsupportedPosixFeatureException e) {
             return NULLPTR;
         }
     }

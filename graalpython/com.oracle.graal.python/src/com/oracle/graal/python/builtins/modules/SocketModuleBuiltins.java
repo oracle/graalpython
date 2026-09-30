@@ -109,13 +109,12 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.AddrInfoCursor;
+import com.oracle.graal.python.runtime.PosixSupport.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupport.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.Inet6SockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -246,7 +245,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static TruffleString doGeneric(VirtualFrame frame,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -270,7 +268,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object ip,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
@@ -335,7 +332,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString getHostByName(VirtualFrame frame, Object nameObj,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -364,7 +360,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(VirtualFrame frame, Object nameObj,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -416,7 +411,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noneProtocol,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -481,7 +475,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         Object getServByPort(VirtualFrame frame, int port, Object protocolNameObj,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile nonProtocol,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -550,7 +543,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached CastToTruffleStringNode castAddress,
@@ -655,7 +647,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedExactClassProfile profile,
                         @Cached("createIdna()") IdnaFromStringOrBytesConverterNode idna,
                         @Cached PyLongAsLongNode asLongNode,
@@ -804,7 +795,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static PBytes doConvert(TruffleString addr,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode) {
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
@@ -812,7 +802,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = new byte[4];
                 ByteArraySupport.bigEndian().putInt(bytes, 0, converted);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
-            } catch (PosixSupportLibrary.InvalidAddressException e) {
+            } catch (PosixSupport.InvalidAddressException e) {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
             }
         }
@@ -833,7 +823,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, callData);
             try {
@@ -860,7 +849,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static PBytes doConvert(VirtualFrame frame, int family, TruffleString addr,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -869,7 +857,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
-            } catch (PosixSupportLibrary.InvalidAddressException e) {
+            } catch (PosixSupport.InvalidAddressException e) {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_PTON);
             }
         }
@@ -891,7 +879,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, callData);

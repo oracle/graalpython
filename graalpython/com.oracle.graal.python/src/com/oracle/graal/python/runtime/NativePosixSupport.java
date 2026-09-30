@@ -78,7 +78,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
@@ -103,24 +102,6 @@ import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
@@ -136,13 +117,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.AbstractTruffleString;
 import com.oracle.truffle.api.strings.InternalByteArray;
@@ -159,7 +134,6 @@ import sun.misc.Unsafe;
  * functions store errno in a C thread-local only when the POSIX return value indicates an error. This
  * avoids unconditional FFM call-state capture on the hot POSIX path.
  */
-@ExportLibrary(PosixSupportLibrary.class)
 public final class NativePosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
     private static final int UNAME_BUF_LENGTH = 256;
@@ -711,13 +685,13 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
-    @ExportMessage
     @TruffleBoundary
     public TruffleString getBackend() {
         return nativeBackend;
     }
 
     @Override
+    @TruffleBoundary
     public TruffleString strerror(int errorCode) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
@@ -735,16 +709,19 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public long getpid() {
         return posixNativeFunctionInvoker.call_getpid();
     }
 
     @Override
+    @TruffleBoundary
     public int umask(int mask) {
         return posixNativeFunctionInvoker.call_umask(mask);
     }
 
     @Override
+    @TruffleBoundary
     public int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -759,6 +736,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int close(int fd) throws PosixException {
         final int rv = posixNativeFunctionInvoker.call_close(fd);
         if (rv < 0) {
@@ -768,6 +746,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public Buffer read(int fd, long length) throws PosixException {
         long count = Math.min(length, MAX_READ);
         Buffer buffer = Buffer.allocate(count);
@@ -785,6 +764,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public long write(int fd, Buffer data) throws PosixException {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {
@@ -822,6 +802,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int dup(int fd) throws PosixException {
         int newFd = posixNativeFunctionInvoker.call_dup(fd);
         if (newFd < 0) {
@@ -831,6 +812,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         int newFd = posixNativeFunctionInvoker.call_dup2(fd, fd2, inheritable ? 1 : 0);
         if (newFd < 0) {
@@ -840,6 +822,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public boolean getInheritable(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.get_inheritable(fd);
         if (result < 0) {
@@ -849,6 +832,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void setInheritable(int fd, boolean inheritable) throws PosixException {
         if (posixNativeFunctionInvoker.set_inheritable(fd, inheritable ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
@@ -856,6 +840,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public long getOsfHandle(int fd) throws PosixException {
         long nativeOut = NativeMemory.mallocLongArray(1);
         try {
@@ -869,6 +854,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int openOsfHandle(long handle, int flags) throws PosixException {
         int fd = posixNativeFunctionInvoker.call_open_osfhandle(handle, flags);
         if (fd < 0) {
@@ -878,6 +864,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int setMode(int fd, int mode) throws PosixException {
         int previousMode = posixNativeFunctionInvoker.call_setmode(fd, mode);
         if (previousMode < 0) {
@@ -887,6 +874,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         if (posixNativeFunctionInvoker.call_msvcrt_locking(fd, mode, nbytes) != 0) {
             throw getErrnoAndThrowPosixException();
@@ -894,6 +882,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int[] pipe() throws PosixException {
         int[] fds = new int[2];
         long nativeFds = NativeMemory.mallocIntArray(fds.length);
@@ -909,6 +898,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         int largestFD = findMax(readfds, -1);
         largestFD = findMax(writefds, largestFD);
@@ -975,6 +965,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         assert fds.length == events.length && fds.length == revents.length;
         int count = fds.length;
@@ -1006,6 +997,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public long lseek(int fd, long offset, int how) throws PosixException {
         long res = posixNativeFunctionInvoker.call_lseek(fd, offset, how);
         if (res < 0) {
@@ -1015,6 +1007,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void ftruncate(int fd, long length) throws PosixException {
         int res = posixNativeFunctionInvoker.call_ftruncate(fd, length);
         if (res != 0) {
@@ -1023,6 +1016,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void truncate(Object path, long length) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1036,6 +1030,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void fsync(int fd) throws PosixException {
         int res = posixNativeFunctionInvoker.call_fsync(fd);
         if (res != 0) {
@@ -1044,6 +1039,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void flock(int fd, int operation) throws PosixException {
         int res = posixNativeFunctionInvoker.call_flock(fd, operation);
         if (res != 0) {
@@ -1052,6 +1048,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         int res = posixNativeFunctionInvoker.call_fcntl_lock(fd, blocking ? 1 : 0, lockType, whence, start, length);
         if (res != 0) {
@@ -1060,6 +1057,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public boolean getBlocking(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.get_blocking(fd);
         if (result < 0) {
@@ -1069,6 +1067,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public void setBlocking(int fd, boolean blocking) throws PosixException {
         if (posixNativeFunctionInvoker.set_blocking(fd, blocking ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
@@ -1076,6 +1075,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public int[] getTerminalSize(int fd) throws PosixException {
         int[] size = new int[2];
         long nativeSize = NativeMemory.mallocIntArray(size.length);
@@ -1091,6 +1091,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public long sysconf(int name) throws PosixException {
         long result = posixNativeFunctionInvoker.call_sysconf(name);
         if (result == Long.MIN_VALUE) {
@@ -1176,6 +1177,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public Object[] uname() throws PosixException {
         long sysPtr = NULLPTR;
         long nodePtr = NULLPTR;
@@ -1654,6 +1656,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public Object readlinkat(int dirFd, Object path) throws PosixException {
         int bufferBytes = WINDOWS ? PATH_MAX.value * 2 : PATH_MAX.value;
         byte[] buffer = new byte[bufferBytes];

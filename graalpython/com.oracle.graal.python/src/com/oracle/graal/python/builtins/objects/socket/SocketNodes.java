@@ -86,17 +86,16 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.PosixSupport.AddrInfoCursor;
+import com.oracle.graal.python.runtime.PosixSupport.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupport.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.Inet6SockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupport.InvalidUnixSocketPathException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.UnixSockAddr;
+import com.oracle.graal.python.runtime.PosixSupport.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -127,7 +126,6 @@ public abstract class SocketNodes {
         @Specialization(guards = "isInet(socket)")
         static UniversalSockAddr doInet(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached @Shared("tupleSize") PyTupleSizeNode tupleSize,
                         @Cached @Shared("tupleGetItem") PyTupleGetItem tupleGetItem,
@@ -154,7 +152,6 @@ public abstract class SocketNodes {
         @Specialization(guards = "isInet6(socket)")
         static UniversalSockAddr doInet6(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached @Shared("tupleSize") PyTupleSizeNode tupleSize,
                         @Cached @Shared("tupleGetItem") PyTupleGetItem tupleGetItem,
@@ -198,7 +195,6 @@ public abstract class SocketNodes {
                         @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             byte[] path;
             if (unicodeCheckNode.execute(inliningTarget, address)) {
@@ -275,7 +271,6 @@ public abstract class SocketNodes {
         @Specialization
         static UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InetPtoNCachedPNode inetPtoNCachedPNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GilNode gil,
@@ -311,7 +306,7 @@ public abstract class SocketNodes {
                 /* avoid a name resolution in case of numeric address */
                 /* check for an IPv4 address */
                 if (family == AF_INET.value || family == AF_UNSPEC.value) {
-                    byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixLib, posixSupport, AF_INET.value, name);
+                    byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixSupport, AF_INET.value, name);
                     if (bytes != null) {
                         return posixSupport.createUniversalSockAddrInet4(new Inet4SockAddr(0, bytes));
                     }
@@ -322,7 +317,7 @@ public abstract class SocketNodes {
                  * index
                  */
                 if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(inliningTarget, name)) {
-                    byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixLib, posixSupport, AF_INET6.value, name);
+                    byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixSupport, AF_INET6.value, name);
                     if (bytes != null) {
                         return posixSupport.createUniversalSockAddrInet6(new Inet6SockAddr(0, bytes, 0, 0));
                     }
@@ -352,19 +347,19 @@ public abstract class SocketNodes {
         @GenerateCached(false)
         @ImportStatic(Arrays.class)
         abstract static class InetPtoNCachedPNode extends Node {
-            abstract byte[] execute(Node inliningTarget, PosixSupportLibrary posixLib, PosixSupport posixSupport, int family, byte[] string);
+            abstract byte[] execute(Node inliningTarget, PosixSupport posixSupport, int family, byte[] string);
 
             @Specialization(guards = {"family == cachedFamily", "equals(string, cachedString)"}, limit = "3")
             @SuppressWarnings("unused")
-            static byte[] cached(PosixSupportLibrary posixLib, PosixSupport posixSupport, int family, byte[] string,
+            static byte[] cached(PosixSupport posixSupport, int family, byte[] string,
                             @Cached("family") int cachedFamily,
                             @Cached(value = "string", dimensions = 1) byte[] cachedString,
-                            @Cached(value = "doParse(posixLib, posixSupport, family, string)", dimensions = 1) byte[] cachedResult) {
+                            @Cached(value = "doParse(posixSupport, family, string)", dimensions = 1) byte[] cachedResult) {
                 return cachedResult;
             }
 
             @Specialization(replaces = "cached")
-            static byte[] doParse(PosixSupportLibrary posixLib, PosixSupport posixSupport, int family, byte[] string) {
+            static byte[] doParse(PosixSupport posixSupport, int family, byte[] string) {
                 assert family == AF_INET.value || family == AF_INET6.value;
                 try {
                     return posixSupport.inet_pton(family, posixSupport.createCStringFromBytes(string));

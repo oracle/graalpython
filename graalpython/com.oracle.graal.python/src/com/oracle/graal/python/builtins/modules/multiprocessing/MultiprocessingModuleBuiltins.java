@@ -60,8 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -89,7 +88,6 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         PBytes doit(VirtualFrame frame, int handle, int size,
                         @Bind PythonContext context,
                         @Bind PythonLanguage language,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] buffer = new byte[size];
@@ -121,7 +119,6 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         static int doit(VirtualFrame frame, int handle, Object buffer,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -170,7 +167,6 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone doit(VirtualFrame frame, TruffleString name,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {

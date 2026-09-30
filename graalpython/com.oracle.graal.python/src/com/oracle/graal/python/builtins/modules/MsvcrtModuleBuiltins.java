@@ -59,14 +59,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -112,7 +111,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
                 } finally {
                     gilNode.acquire();
                 }
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
@@ -135,7 +134,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 return getPosixSupport().setMode(fd, flags);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -158,7 +157,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_GET_OSFHANDLE, fd);
             try {
                 return getPosixSupport().getOsfHandle(fd);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -182,7 +181,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_OPEN_OSFHANDLE, handle, flags);
             try {
                 return getPosixSupport().openOsfHandle(handle, flags);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }

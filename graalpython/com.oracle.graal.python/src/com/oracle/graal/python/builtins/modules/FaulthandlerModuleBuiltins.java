@@ -86,8 +86,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -405,8 +405,8 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         public void flush() throws IOException {
             super.flush();
             try {
-                PythonContext.get(null).getPosixSupport().write(fd, PosixSupportLibrary.Buffer.wrap(bb.toArray()));
-            } catch (PosixSupportLibrary.PosixException e) {
+                PythonContext.get(null).getPosixSupport().write(fd, PosixSupport.Buffer.wrap(bb.toArray()));
+            } catch (PosixSupport.PosixException e) {
                 // Ignore
             }
         }

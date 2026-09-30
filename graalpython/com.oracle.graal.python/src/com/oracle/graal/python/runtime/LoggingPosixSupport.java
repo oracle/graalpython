@@ -46,34 +46,12 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.FrameInstance;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -97,7 +75,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <li>FINEST - supporting messages (e.g. path conversions) + top 5 frames of the call stack</li>
  * </ul>
  */
-@ExportLibrary(PosixSupportLibrary.class)
 public class LoggingPosixSupport extends PosixSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LoggingPosixSupport.class);
@@ -120,7 +97,6 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
-    @ExportMessage
     @TruffleBoundary
     public final TruffleString getBackend() {
         logEnter(Level.FINEST, "getBackend", "");
@@ -128,18 +104,21 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final TruffleString strerror(int errorCode) {
         logEnter(Level.FINEST, "strerror", "%d", errorCode);
         return logExit(Level.FINEST, "strerror", "%s", delegate.strerror(errorCode));
     }
 
     @Override
+    @TruffleBoundary
     public final long getpid() {
         logEnter("getpid", "");
         return logExit("getpid", "%d", delegate.getpid());
     }
 
     @Override
+    @TruffleBoundary
     public final int umask(int mask) throws PosixException {
         logEnter("umask", "0%o", mask);
         try {
@@ -150,6 +129,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         logEnter("openAt", "%d, %s, 0x%x, 0%o", dirFd, pathname, flags, mode);
         try {
@@ -160,6 +140,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int close(int fd) throws PosixException {
         logEnter("close", "%d", fd);
         try {
@@ -170,6 +151,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final Buffer read(int fd, long length) throws PosixException {
         logEnter("read", "%d, %d", fd, length);
         try {
@@ -182,6 +164,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long write(int fd, Buffer data) throws PosixException {
         logEnter("write", "%d, %d", fd, data.length);
         try {
@@ -210,6 +193,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int dup(int fd) throws PosixException {
         logEnter("dup", "%d", fd);
         try {
@@ -220,6 +204,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         logEnter("dup2", "%d, %d, %b", fd, fd2, inheritable);
         try {
@@ -230,6 +215,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final boolean getInheritable(int fd) throws PosixException {
         logEnter("getInheritable", "%d", fd);
         try {
@@ -240,6 +226,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void setInheritable(int fd, boolean inheritable) throws PosixException {
         logEnter("setInheritable", "%d, %b", fd, inheritable);
         try {
@@ -250,6 +237,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long getOsfHandle(int fd) throws PosixException {
         logEnter("getOsfHandle", "%d", fd);
         try {
@@ -260,6 +248,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int openOsfHandle(long handle, int flags) throws PosixException {
         logEnter("openOsfHandle", "%d, %d", handle, flags);
         try {
@@ -270,6 +259,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int setMode(int fd, int mode) throws PosixException {
         logEnter("setMode", "%d, %d", fd, mode);
         try {
@@ -280,6 +270,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         logEnter("msvcrtLocking", "%d, %d, %d", fd, mode, nbytes);
         try {
@@ -290,6 +281,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int[] pipe() throws PosixException {
         logEnter("pipe", "");
         try {
@@ -300,6 +292,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         logEnter("select", "%s %s %s %s", readfds, writefds, errorfds, timeout);
         try {
@@ -310,6 +303,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         logEnter("poll", "%s %s %s", fds, events, timeout);
         try {
@@ -321,6 +315,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long lseek(int fd, long offset, int how) throws PosixException {
         logEnter("lseek", "%d, %d, %d", fd, offset, how);
         try {
@@ -331,6 +326,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void ftruncate(int fd, long length) throws PosixException {
         logEnter("ftruncate", "%d, %d", fd, length);
         try {
@@ -341,6 +337,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void truncate(Object path, long length) throws PosixException {
         logEnter("truncate", "%s, %d", path, length);
         try {
@@ -351,6 +348,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void fsync(int fd) throws PosixException {
         logEnter("fsync", "%d", fd);
         try {
@@ -361,6 +359,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void flock(int fd, int operation) throws PosixException {
         logEnter("flock", "%d %d", fd, operation);
         try {
@@ -371,6 +370,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         logEnter("fcntlLock", "%d %s %d %d %d %d", fd, blocking, lockType, whence, start, length);
         try {
@@ -381,6 +381,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final boolean getBlocking(int fd) throws PosixException {
         logEnter("getBlocking", "%d", fd);
         try {
@@ -391,6 +392,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void setBlocking(int fd, boolean blocking) throws PosixException {
         logEnter("setBlocking", "%d, %b", fd, blocking);
         try {
@@ -401,6 +403,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int[] getTerminalSize(int fd) throws PosixException {
         logEnter("getTerminalSize", "%d", fd);
         try {
@@ -411,6 +414,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long sysconf(int name) throws PosixException {
         logEnter("sysconf", "%d", name);
         try {
@@ -465,6 +469,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final Object[] uname() throws PosixException {
         logEnter("uname", "");
         try {
@@ -793,6 +798,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final Object readlinkat(int dirFd, Object path) throws PosixException {
         logEnter("readlinkat", "%d, %s", dirFd, path);
         try {
@@ -991,7 +997,7 @@ public class LoggingPosixSupport extends PosixSupport {
     public final long geteuid() throws UnsupportedPosixFeatureException {
         logEnter("geteuid", "");
         try {
-        return logExit("geteuid", "%d", delegate.geteuid());
+            return logExit("geteuid", "%d", delegate.geteuid());
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("geteuid", e);
         }
@@ -1009,7 +1015,7 @@ public class LoggingPosixSupport extends PosixSupport {
     public final long getegid() throws UnsupportedPosixFeatureException {
         logEnter("getegid", "");
         try {
-        return logExit("getegid", "%d", delegate.getegid());
+            return logExit("getegid", "%d", delegate.getegid());
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("getegid", e);
         }
@@ -1171,7 +1177,8 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+    public final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd,
+                    int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
         logEnter("forkExec", "%s, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %b, %b, %b, %d, %s, %b", executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd,
                         stderrReadFd,

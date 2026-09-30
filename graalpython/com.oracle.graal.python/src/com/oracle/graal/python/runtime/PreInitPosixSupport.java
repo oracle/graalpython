@@ -45,33 +45,11 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@ExportLibrary(PosixSupportLibrary.class)
 public class PreInitPosixSupport extends PosixSupport {
 
     protected final NativePosixSupport nativePosixSupport;
@@ -153,7 +131,6 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
-    @ExportMessage
     @TruffleBoundary
     public final TruffleString getBackend() {
         checkNotInPreInitialization();
@@ -161,24 +138,28 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final TruffleString strerror(int errorCode) {
         checkNotInPreInitialization();
         return nativePosixSupport.strerror(errorCode);
     }
 
     @Override
+    @TruffleBoundary
     public final long getpid() {
         checkNotInPreInitialization();
         return nativePosixSupport.getpid();
     }
 
     @Override
+    @TruffleBoundary
     public final int umask(int mask) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.umask(mask);
     }
 
     @Override
+    @TruffleBoundary
     public final int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         if (inPreInitialization) {
             return addFd(emulatedPosixSupport.openat(dirFd, pathname, flags, mode));
@@ -187,6 +168,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int close(int fd) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.close(removeFd(fd));
@@ -195,6 +177,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final Buffer read(int fd, long length) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.read(fd, length);
@@ -203,6 +186,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long write(int fd, Buffer data) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.write(fd, data);
@@ -225,24 +209,28 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final int dup(int fd) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.dup(fd);
     }
 
     @Override
+    @TruffleBoundary
     public final int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.dup2(fd, fd2, inheritable);
     }
 
     @Override
+    @TruffleBoundary
     public final boolean getInheritable(int fd) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.getInheritable(fd);
     }
 
     @Override
+    @TruffleBoundary
     public final void setInheritable(int fd, boolean inheritable) throws PosixException {
         if (inPreInitialization) {
             emulatedPosixSupport.setInheritable(fd, inheritable);
@@ -252,48 +240,56 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long getOsfHandle(int fd) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.getOsfHandle(fd);
     }
 
     @Override
+    @TruffleBoundary
     public final int openOsfHandle(long handle, int flags) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.openOsfHandle(handle, flags);
     }
 
     @Override
+    @TruffleBoundary
     public final int setMode(int fd, int mode) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.setMode(fd, mode);
     }
 
     @Override
+    @TruffleBoundary
     public final void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.msvcrtLocking(fd, mode, nbytes);
     }
 
     @Override
+    @TruffleBoundary
     public final int[] pipe() throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.pipe();
     }
 
     @Override
+    @TruffleBoundary
     public final SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.select(readfds, writefds, errorfds, timeout);
     }
 
     @Override
+    @TruffleBoundary
     public final void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.poll(fds, events, revents, timeout);
     }
 
     @Override
+    @TruffleBoundary
     public final long lseek(int fd, long offset, int how) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.lseek(fd, offset, how);
@@ -302,60 +298,70 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final void ftruncate(int fd, long length) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.ftruncate(fd, length);
     }
 
     @Override
+    @TruffleBoundary
     public final void truncate(Object path, long length) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.truncate(path, length);
     }
 
     @Override
+    @TruffleBoundary
     public final void fsync(int fd) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.fsync(fd);
     }
 
     @Override
+    @TruffleBoundary
     public final void flock(int fd, int operation) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.flock(fd, operation);
     }
 
     @Override
+    @TruffleBoundary
     public final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.fcntlLock(fd, blocking, lockType, whence, start, length);
     }
 
     @Override
+    @TruffleBoundary
     public final boolean getBlocking(int fd) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.getBlocking(fd);
     }
 
     @Override
+    @TruffleBoundary
     public final void setBlocking(int fd, boolean blocking) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.setBlocking(fd, blocking);
     }
 
     @Override
+    @TruffleBoundary
     public final int[] getTerminalSize(int fd) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.getTerminalSize(fd);
     }
 
     @Override
+    @TruffleBoundary
     public final long sysconf(int name) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.sysconf(name);
     }
 
     @Override
+    @TruffleBoundary
     public final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.fstatat(dirFd, pathname, followSymlinks);
@@ -364,6 +370,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long[] fstat(int fd) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.fstat(fd);
@@ -372,6 +379,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long[] statvfs(Object path) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.statvfs(path);
@@ -380,6 +388,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final long[] fstatvfs(int fd) throws PosixException {
         if (inPreInitialization) {
             return emulatedPosixSupport.fstatvfs(fd);
@@ -388,6 +397,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final Object[] uname() throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.uname();
@@ -616,6 +626,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @Override
+    @TruffleBoundary
     public final Object readlinkat(int dirFd, Object path) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.readlinkat(dirFd, path);
@@ -847,7 +858,8 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+    public final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd,
+                    int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.forkExec(executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd, errPipeWriteFd,

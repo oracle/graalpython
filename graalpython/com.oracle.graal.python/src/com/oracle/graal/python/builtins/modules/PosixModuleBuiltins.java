@@ -123,12 +123,11 @@ import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupport.Buffer;
+import com.oracle.graal.python.runtime.PosixSupport.OpenPtyResult;
+import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -327,12 +326,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
-        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
         PosixSupport posixSupport = core.getContext().getPosixSupport();
         PythonLanguage language = core.getLanguage();
 
         // fill the environ dictionary with the current environment
-        // TODO we should probably use PosixSupportLibrary to get environ
+        // TODO we should probably use PosixSupport to get environ
         Map<String, String> getenv = core.getContext().getEnv().getEnvironment();
         PDict environ = PFactory.createDict(language);
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
@@ -432,7 +430,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
@@ -509,7 +506,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             Object nameOpaque;
@@ -552,7 +548,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object execvArgs(VirtualFrame frame, PosixPath path, Object argv,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile isPListProfile,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PyTupleCheckNode tupleCheckNode,
@@ -626,7 +621,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-            return context.getPosixSupport().geteuid();
+                return context.getPosixSupport().geteuid();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
@@ -650,7 +645,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-            return context.getPosixSupport().getegid();
+                return context.getPosixSupport().getegid();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
@@ -1762,7 +1757,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static TruffleString getcwd(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 return context.getPosixSupport().getPathAsString(context.getPosixSupport().getcwd());
@@ -1779,7 +1773,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PBytes getcwdb(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 Object path = context.getPosixSupport().getcwd();
@@ -1932,12 +1925,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PList listdirPath(VirtualFrame frame, PosixPath path,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_LISTDIR, path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return listdir(frame, inliningTarget, context.getPosixSupport().opendir(path.value), path.wasBufferLike, false, posixLib, constructAndRaiseNode,
+                return listdir(frame, inliningTarget, context.getPosixSupport().opendir(path.value), path.wasBufferLike, false, constructAndRaiseNode,
                                 context.getLanguage(inliningTarget), context.getPosixSupport());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -1948,16 +1940,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PList listdirFd(VirtualFrame frame, PosixFd fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_LISTDIR, fd.originalObject);
             Object dirStream = dupAndFdopendir(frame, inliningTarget, context.getPosixSupport(), fd, constructAndRaiseNode);
-            return listdir(frame, inliningTarget, dirStream, false, true, posixLib, constructAndRaiseNode, context.getLanguage(inliningTarget), context.getPosixSupport());
+            return listdir(frame, inliningTarget, dirStream, false, true, constructAndRaiseNode, context.getLanguage(inliningTarget), context.getPosixSupport());
         }
 
-        private static PList listdir(VirtualFrame frame, Node inliningTarget, Object dirStream, boolean produceBytes, boolean needsRewind, PosixSupportLibrary posixLib,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode, PythonLanguage language, PosixSupport posixSupport) {
+        private static PList listdir(VirtualFrame frame, Node inliningTarget, Object dirStream, boolean produceBytes, boolean needsRewind, PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        PythonLanguage language, PosixSupport posixSupport) {
             List<Object> list = new ArrayList<>();
             try {
                 while (true) {
@@ -2553,7 +2544,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object readlinkAsBytes(VirtualFrame frame, PosixPath path, int dirFd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile wasBufferLikeProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
@@ -2840,7 +2830,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
             // conversions for emulated backend because the bytes version after fsencode conversion
@@ -3063,7 +3052,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     /**
      * Helper node that accepts either str or bytes and converts it to a representation specific to
-     * the {@link PosixSupportLibrary} in use. Basically equivalent of
+     * the {@link PosixSupport} in use. Basically equivalent of
      * {@code PyUnicode_EncodeFSDefault}.
      */
     @GenerateInline
@@ -3076,7 +3065,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object doString(Node inliningTarget, Object strObj,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString str = castToStringNode.execute(inliningTarget, strObj);
             return checkPath(inliningTarget, context.getPosixSupport().createPathFromString(str), raiseNode);
@@ -3086,7 +3074,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object doBytes(Node inliningTarget, PBytes bytes,
                         @Cached(inline = false) BytesNodes.ToBytesNode toBytesNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             return checkPath(inliningTarget, context.getPosixSupport().createPathFromBytes(toBytesNode.execute(bytes)), raiseNode);
         }
@@ -3101,7 +3088,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     /**
      * Similar to {@code PyUnicode_FSConverter}, but the actual conversion is delegated to the
-     * {@link PosixSupportLibrary} implementation.
+     * {@link PosixSupport} implementation.
      */
     @GenerateInline
     @GenerateCached(false)
@@ -3420,7 +3407,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PosixFileHandle doNone(@SuppressWarnings("unused") PNone value,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object path = context.getPosixSupport().createPathFromString(T_DOT);
             return new PosixPath(null, checkPath(inliningTarget, path, raiseNode), false);
@@ -3459,7 +3445,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castToStringNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString str = castToStringNode.execute(inliningTarget, value);
             Object path = context.getPosixSupport().createPathFromString(str);
@@ -3472,7 +3457,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object path = context.getPosixSupport().createPathFromBytes(toByteArrayNode.execute(value));
             return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), true);
@@ -3499,7 +3483,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,
                         @Exclusive @Cached CastToTruffleStringNode castToStringNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object pathObject;
             try {
@@ -3511,10 +3494,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
             // by design
             if (pathObject instanceof PBytes) {
-                return doBytes((PBytes) pathObject, inliningTarget, toByteArrayNode, context, posixLib, raiseNode);
+                return doBytes((PBytes) pathObject, inliningTarget, toByteArrayNode, context, raiseNode);
             }
             if (PGuards.isString(pathObject)) {
-                return doUnicode(pathObject, inliningTarget, castToStringNode, context, posixLib, raiseNode);
+                return doUnicode(pathObject, inliningTarget, castToStringNode, context, raiseNode);
             }
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
         }
@@ -3731,7 +3714,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
+     * Contains the path converted to the representation used by the {@code PosixSupport}
      * implementation
      *
      * @see PosixSupport#createPathFromString(TruffleString)

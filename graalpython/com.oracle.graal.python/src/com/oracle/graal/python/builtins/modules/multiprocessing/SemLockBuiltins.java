@@ -77,9 +77,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,7 +86,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -120,7 +118,6 @@ public class SemLockBuiltins extends PythonBuiltins {
         static PSemLock construct(VirtualFrame frame, Object cls, int kind, int value, int maxValue, TruffleString name, boolean unlink,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -418,7 +415,6 @@ public class SemLockBuiltins extends PythonBuiltins {
         static Object rebuild(VirtualFrame frame, Object cls, long origHandle, int kind, int maxValue, Object name,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
