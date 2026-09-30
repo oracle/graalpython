@@ -161,5 +161,13 @@ public abstract class PosixSupport {
 
     public abstract void mkdirat(int dirFd, Object pathname, int mode) throws PosixException;
 
+    public abstract Object getcwd() throws PosixException;
+
+    public abstract void chdir(Object path) throws PosixException;
+
+    public abstract void fchdir(int fd) throws PosixException;
+
+    public abstract boolean isatty(int fd);
+
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }

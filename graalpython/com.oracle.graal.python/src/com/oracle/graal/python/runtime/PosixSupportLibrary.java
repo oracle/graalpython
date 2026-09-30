@@ -79,21 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract Object getcwd(Object receiver) throws PosixException;
-
-    public abstract void chdir(Object receiver, Object path) throws PosixException;
-
-    /**
-     * Performs operation of fchdir(fd).
-     *
-     * @param receiver the receiver of the message
-     * @param fd the file descriptor
-     * @throws PosixException if an error occurs
-     */
-    public abstract void fchdir(Object receiver, int fd) throws PosixException;
-
-    public abstract boolean isatty(Object receiver, int fd);
-
     /**
      * Caller is responsible for calling {@link #closedir(Object, Object)} to free the allocated
      * resources.

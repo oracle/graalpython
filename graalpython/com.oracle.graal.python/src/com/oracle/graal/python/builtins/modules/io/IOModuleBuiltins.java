@@ -93,7 +93,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -107,7 +106,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -206,7 +204,6 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached PyObjectSetAttr setAttrNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -218,7 +215,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 int buffering = bufferingValue;
                 if (buffering < 0) {
                     // copied from PFileIOBuiltins.IsAttyNode
-                    isatty = posixLib.isatty(PosixSupport.get(inliningTarget), fileIO.getFD());
+                    isatty = PosixSupport.get(inliningTarget).isatty(fileIO.getFD());
                     /*-
                         // CPython way is slow in our case.
                         Object res = libFileIO.lookupAndCallRegularMethod(fileIO, frame, ISATTY);
@@ -292,11 +289,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyNumberCheckNode numberCheckNode,
                         @Exclusive @Cached PyOSFSPathNode fsPathNode,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, numberCheckNode, fsPathNode, createBufferedIO, posixLib,
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, numberCheckNode, fsPathNode, createBufferedIO,
                             callClose, raiseNode);
         }
 
@@ -311,7 +307,6 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyNumberCheckNode numberCheckNode,
                         @Exclusive @Cached PyOSFSPathNode fsPathNode,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             PFileIO fileIO = createFileIOFromOpen(frame, inliningTarget, file, mode, closefd, opener, initFileIO, numberCheckNode, fsPathNode);
@@ -321,7 +316,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 int buffering = bufferingValue;
                 if (buffering < 0) {
                     // copied from PFileIOBuiltins.IsAttyNode
-                    isatty = posixLib.isatty(PosixSupport.get(inliningTarget), fileIO.getFD());
+                    isatty = PosixSupport.get(inliningTarget).isatty(fileIO.getFD());
                     /*-
                         // CPython way is slow in our case.
                         Object res = libFileIO.lookupAndCallRegularMethod(fileIO, frame, ISATTY);

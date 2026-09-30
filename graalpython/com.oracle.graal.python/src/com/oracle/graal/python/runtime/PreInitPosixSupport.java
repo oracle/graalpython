@@ -425,31 +425,32 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.mkdirat(dirFd, pathname, mode);
     }
 
-    @ExportMessage
-    final Object getcwd(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object getcwd() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getcwd(nativePosixSupport);
+        return nativePosixSupport.getcwd();
     }
 
-    @ExportMessage
-    final void chdir(Object path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void chdir(Object path) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.chdir(nativePosixSupport, path);
+        nativePosixSupport.chdir(path);
     }
 
-    @ExportMessage
-    final void fchdir(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchdir(int fd) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fchdir(nativePosixSupport, fd);
+        nativePosixSupport.fchdir(fd);
     }
 
-    @ExportMessage
-    final boolean isatty(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final boolean isatty(int fd) {
         checkNotInPreInitialization();
-        return nativeLib.isatty(nativePosixSupport, fd);
+        return nativePosixSupport.isatty(fd);
     }
 
     @ExportMessage

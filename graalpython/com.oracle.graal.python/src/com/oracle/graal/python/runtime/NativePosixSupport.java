@@ -1295,7 +1295,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object getcwd() throws PosixException {
         for (int bufLen = 1024;; bufLen += 1024) {
             int byteLen = WINDOWS ? bufLen * 2 : bufLen;
@@ -1320,7 +1321,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void chdir(Object path) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1333,7 +1335,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchdir(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.call_fchdir(fd);
         if (result != 0) {
@@ -1341,7 +1344,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean isatty(int fd) {
         return posixNativeFunctionInvoker.call_isatty(fd) != 0;
     }

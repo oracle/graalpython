@@ -255,6 +255,7 @@ import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -1543,66 +1544,60 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object getcwd() {
         return context.getEnv().getCurrentWorkingDirectory().toString();
     }
 
-    @ExportMessage
-    public void chdir(Object path,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
-        chdirStr(inliningTarget, pathToJavaString(path), errorBranch);
+    @Override
+    @TruffleBoundary
+    public void chdir(Object path) throws PosixException {
+        chdirStr(pathToJavaString(path));
     }
 
-    @ExportMessage
-    public void fchdir(int fd,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void fchdir(int fd) throws PosixException {
         String path = getFilePath(fd);
         if (path == null) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
-        chdirStr(inliningTarget, path, errorBranch);
+        chdirStr(path);
     }
 
     private static final TruffleString T_FILESYSTEM_DOES_NOT_SUPPORT_CHANGING_CUR_DIR = tsLiteral("The filesystem does not support changing of the current working directory");
 
-    private void chdirStr(Node inliningTarget, String pathStr, InlinedBranchProfile errorBranch) throws PosixException {
+    private void chdirStr(String pathStr) throws PosixException {
+        CompilerAsserts.neverPartOfCompilation();
         TruffleFile truffleFile = getTruffleFile(pathStr).getAbsoluteFile();
         if (!truffleFile.exists()) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOENT);
         }
         if (!truffleFile.isDirectory()) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOTDIR);
         }
         try {
             context.getEnv().setCurrentWorkingDirectory(truffleFile);
         } catch (IllegalArgumentException ignored) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOENT);
         } catch (SecurityException ignored) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         } catch (UnsupportedOperationException ignored) {
-            errorBranch.enter(inliningTarget);
             throw posixException(new ErrorAndMessagePair(OSErrorEnum.EIO, T_FILESYSTEM_DOES_NOT_SUPPORT_CHANGING_CUR_DIR));
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public boolean isatty(int fd) {
         if (isStandardStream(fd)) {
             return context.getOption(PythonOptions.TerminalIsInteractive);
-        } else {
-            // These two files are explicitly specified by POSIX
-            String path = getFilePath(fd);
-            return path != null && (path.equals("/dev/tty") || path.equals("/dev/console"));
         }
+
+        // These two files are explicitly specified by POSIX
+        String path = getFilePath(fd);
+        return "/dev/tty".equals(path) || "/dev/console".equals(path);
     }
 
     private static final class EmulatedDirStream {

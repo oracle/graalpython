@@ -527,44 +527,44 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Object getcwd(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object getcwd() throws PosixException {
         logEnter("getcwd", "");
         try {
-            return logExit("getcwd", "%s", lib.getcwd(delegate));
+            return logExit("getcwd", "%s", delegate.getcwd());
         } catch (PosixException e) {
             throw logException("getcwd", e);
         }
     }
 
-    @ExportMessage
-    final void chdir(Object path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void chdir(Object path) throws PosixException {
         logEnter("chdir", "%s", path);
         try {
-            lib.chdir(delegate, path);
+            delegate.chdir(path);
         } catch (PosixException e) {
             throw logException("chdir", e);
         }
     }
 
-    @ExportMessage
-    final void fchdir(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchdir(int fd) throws PosixException {
         logEnter("fchdir", "%d", fd);
         try {
-            lib.fchdir(delegate, fd);
+            delegate.fchdir(fd);
         } catch (PosixException e) {
             throw logException("fchdir", e);
         }
     }
 
-    @ExportMessage
-    final boolean isatty(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final boolean isatty(int fd) {
         logEnter("isatty", "%d", fd);
-        return logExit("isatty", "%b", lib.isatty(delegate, fd));
+        return logExit("isatty", "%b", delegate.isatty(fd));
     }
 
     @ExportMessage

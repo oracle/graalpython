@@ -269,7 +269,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2481,7 +2480,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 try {
                     long fileno = PyLongAsLongNode.executeUncached(PyObjectCallMethodObjArgs.executeUncached(stdin, T_FILENO));
                     if (fileno == 0) {
-                        tty = PosixSupportLibrary.getUncached().isatty(context.getPosixSupport(), 0);
+                        tty = context.getPosixSupport().isatty(0);
                     }
                 } catch (AbstractTruffleException e) {
                     // not a tty

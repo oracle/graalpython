@@ -896,11 +896,10 @@ public final class FileIOBuiltins extends PythonBuiltins {
     abstract static class IsattyNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isClosed()")
         boolean isatty(@SuppressWarnings("unused") PFileIO self,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                return posixLib.isatty(getPosixSupport(), self.getFD());
+                return getPosixSupport().isatty(self.getFD());
             } finally {
                 gil.acquire();
             }

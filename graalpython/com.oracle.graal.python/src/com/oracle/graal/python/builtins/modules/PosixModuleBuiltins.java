@@ -1778,7 +1778,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getPathAsString(context.getPosixSupport(), posixLib.getcwd(context.getPosixSupport()));
+                return posixLib.getPathAsString(context.getPosixSupport(), context.getPosixSupport().getcwd());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1795,7 +1795,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object path = posixLib.getcwd(context.getPosixSupport());
+                Object path = context.getPosixSupport().getcwd();
                 return opaquePathToBytes(path, posixLib, context.getPosixSupport(), context.getLanguage(inliningTarget));
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -1817,10 +1817,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PNone chdirPath(VirtualFrame frame, PosixPath path,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.chdir(context.getPosixSupport(), path.value);
+                context.getPosixSupport().chdir(path.value);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1831,10 +1830,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PNone chdirFd(VirtualFrame frame, PosixFd fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.fchdir(context.getPosixSupport(), fd.fd);
+                context.getPosixSupport().fchdir(fd.fd);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -1856,12 +1854,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PNone fchdir(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             while (true) {
                 try {
-                    posixLib.fchdir(context.getPosixSupport(), fd);
+                    context.getPosixSupport().fchdir(fd);
                     return PNone.NONE;
                 } catch (PosixException e) {
                     errorProfile.enter(inliningTarget);
@@ -1888,11 +1885,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static boolean isatty(int fd,
                         @Cached GilNode gil,
-                        @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @Bind PythonContext context) {
             gil.release(true);
             try {
-                return posixLib.isatty(context.getPosixSupport(), fd);
+                return context.getPosixSupport().isatty(fd);
             } finally {
                 gil.acquire();
             }
