@@ -1120,11 +1120,19 @@ public class PPickler extends PythonBuiltinObject {
         private static final int SEEN_REGISTERED_REDUCER = 1 << 29;
         private static final int SEEN_REDUCE_EX = 1 << 30;
         private static final int SEEN_REDUCE = 1 << 31;
+        private static final long SEEN_NEWOBJ_EX = 1L << 32;
+        private static final long SEEN_NEWOBJ = 1L << 33;
+        private static final long SEEN_PLAIN_REDUCE = 1L << 34;
+        private static final long SEEN_REDUCE_LISTITEMS = 1L << 35;
+        private static final long SEEN_REDUCE_DICTITEMS = 1L << 36;
+        private static final long SEEN_REDUCE_STATE = 1L << 37;
 
-        @CompilationFinal private int seenTypes;
+        @CompilationFinal private long seenTypes;
 
         private final int depth;
-        @Child private SaveNode recursiveSaveNode;
+        @Child private SaveNode recursiveSaveNode1;
+        @Child private SaveNode recursiveSaveNode2;
+        @Child private SaveNode recursiveSaveNode3;
         @Child private BoundaryCallData boundaryCallData;
         @Child private PyLongAsLongNode pyLongAsLongNode;
         @Child private PyObjectStrAsObjectNode pyObjectStrAsObjectNode;
@@ -1142,7 +1150,7 @@ public class PPickler extends PythonBuiltinObject {
             this.depth = depth;
         }
 
-        private void profileSeen(int seen) {
+        private void profileSeen(long seen) {
             if ((seenTypes & seen) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 seenTypes |= seen;
@@ -1175,31 +1183,72 @@ public class PPickler extends PythonBuiltinObject {
 
         private void save(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
             if (depth < 0) {
-                // This should never be reached for compilation, but native-image can't prove it
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                execute(frame, pickler, obj, persSave);
+                saveDepthExceeded(pickler, obj, persSave);
                 return;
             }
-            if (recursiveSaveNode == null) {
+            if (recursiveSaveNode1 == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveSaveNode = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+                recursiveSaveNode1 = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
             }
             if (depth < MAX_RECURSION_DEPTH) {
-                recursiveSaveNode.execute(frame, pickler, obj, persSave);
+                recursiveSaveNode1.execute(frame, pickler, obj, persSave);
             } else {
-                BoundaryCallData callData = getBoundaryCallData();
-                Object savedState = BoundaryCallContext.enter(frame, callData);
-                try {
-                    saveBoundary(pickler, obj, persSave);
-                } finally {
-                    BoundaryCallContext.exit(frame, callData, savedState);
-                }
+                saveSetupBoundary(frame, recursiveSaveNode1, pickler, obj, persSave);
+            }
+        }
+
+        private void save2(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, persSave);
+                return;
+            }
+            if (recursiveSaveNode2 == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveSaveNode2 = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+            }
+            if (depth < MAX_RECURSION_DEPTH) {
+                recursiveSaveNode2.execute(frame, pickler, obj, persSave);
+            } else {
+                saveSetupBoundary(frame, recursiveSaveNode2, pickler, obj, persSave);
+            }
+        }
+
+        private void save3(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, persSave);
+                return;
+            }
+            if (recursiveSaveNode3 == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveSaveNode3 = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+            }
+            if (depth < MAX_RECURSION_DEPTH) {
+                recursiveSaveNode3.execute(frame, pickler, obj, persSave);
+            } else {
+                saveSetupBoundary(frame, recursiveSaveNode3, pickler, obj, persSave);
+            }
+        }
+
+        // This should never be reached for compilation, but native-image can't prove it at build time
+        @TruffleBoundary
+        private void saveDepthExceeded(PPickler pickler, Object obj, int persSave) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            execute(null, pickler, obj, persSave);
+        }
+
+        private void saveSetupBoundary(VirtualFrame frame, SaveNode saveNode, PPickler pickler, Object obj, int persSave) {
+            BoundaryCallData callData = getBoundaryCallData();
+            Object savedState = BoundaryCallContext.enter(frame, callData);
+            try {
+                saveBoundary(saveNode, pickler, obj, persSave);
+            } finally {
+                BoundaryCallContext.exit(frame, callData, savedState);
             }
         }
 
         @TruffleBoundary
-        private void saveBoundary(PPickler pickler, Object obj, int persSave) {
-            recursiveSaveNode.execute(null, pickler, obj, persSave);
+        private void saveBoundary(SaveNode saveNode, PPickler pickler, Object obj, int persSave) {
+            saveNode.execute(null, pickler, obj, persSave);
         }
 
         private long asLong(VirtualFrame frame, Object object) {
@@ -1298,7 +1347,7 @@ public class PPickler extends PythonBuiltinObject {
                 while (nextNode.executeCached(storage, it)) {
                     save(frame, pickler, getKeyNode.executeCached(storage, it), 0);
                     if (saveValues) {
-                        save(frame, pickler, getValueNode.executeCached(storage, it), 0);
+                        save2(frame, pickler, getValueNode.executeCached(storage, it), 0);
                     }
                     if (++i == PickleUtils.BATCHSIZE) {
                         break;
@@ -1388,7 +1437,7 @@ public class PPickler extends PythonBuiltinObject {
                             },
                             (Object item) -> {
                                 save(frame, pickler, getItem(frame, item, 0), 0);
-                                save(frame, pickler, getItem(frame, item, 1), 0);
+                                save2(frame, pickler, getItem(frame, item, 1), 0);
                             });
         }
 
@@ -1426,7 +1475,7 @@ public class PPickler extends PythonBuiltinObject {
                                     throw raise(TypeError, ErrorMessages.MUST_S_ITER_RETURN_2TUPLE, DICT_ITEMS);
                                 }
                                 save(frame, pickler, getItem(frame, item, 0), 0);
-                                save(frame, pickler, getItem(frame, item, 1), 0);
+                                save2(frame, pickler, getItem(frame, item, 1), 0);
                             });
         }
 
@@ -1582,6 +1631,7 @@ public class PPickler extends PythonBuiltinObject {
             final int argtupSize = length(frame, argtup);
 
             if (useNewobjEx) {
+                profileSeen(SEEN_NEWOBJ_EX);
                 Object cls;
                 Object args;
                 Object kwargs;
@@ -1607,8 +1657,8 @@ public class PPickler extends PythonBuiltinObject {
 
                 if (proto >= 4) {
                     save(frame, pickler, cls, 0);
-                    save(frame, pickler, args, 0);
-                    save(frame, pickler, kwargs, 0);
+                    save2(frame, pickler, args, 0);
+                    save3(frame, pickler, kwargs, 0);
                     write(this, pickler, PickleUtils.OPCODE_NEWOBJ_EX);
                 } else {
                     PickleState st = getGlobalState(ctx.getCore());
@@ -1627,10 +1677,11 @@ public class PPickler extends PythonBuiltinObject {
                     callable = callStarArgsAndKwArgs(frame, st.partial, newargs, kwargs);
 
                     save(frame, pickler, callable, 0);
-                    save(frame, pickler, PFactory.createEmptyTuple(PythonLanguage.get(this)), 0);
+                    save2(frame, pickler, PFactory.createEmptyTuple(PythonLanguage.get(this)), 0);
                     write(this, pickler, PickleUtils.OPCODE_REDUCE);
                 }
             } else if (useNewobj) {
+                profileSeen(SEEN_NEWOBJ);
                 Object cls;
                 Object newargtup;
                 Object objClass;
@@ -1684,12 +1735,13 @@ public class PPickler extends PythonBuiltinObject {
                 // Save the class and its __new__ arguments
                 save(frame, pickler, cls, 0);
                 newargtup = getItem(frame, argtup, PFactory.createIntSlice(PythonLanguage.get(this), 1, argtupSize, 1));
-                save(frame, pickler, newargtup, 0);
+                save2(frame, pickler, newargtup, 0);
                 write(this, pickler, PickleUtils.OPCODE_NEWOBJ);
             } else {
+                profileSeen(SEEN_PLAIN_REDUCE);
                 // Not using NEWOBJ
                 save(frame, pickler, callable, 0);
-                save(frame, pickler, argtup, 0);
+                save2(frame, pickler, argtup, 0);
                 write(this, pickler, PickleUtils.OPCODE_REDUCE);
             }
 
@@ -1710,14 +1762,17 @@ public class PPickler extends PythonBuiltinObject {
             }
 
             if (listitems != null) {
+                profileSeen(SEEN_REDUCE_LISTITEMS);
                 batchList(frame, pickler, proto, listitems);
             }
 
             if (dictitems != null) {
+                profileSeen(SEEN_REDUCE_DICTITEMS);
                 batchDict(frame, pickler, proto, dictitems);
             }
 
             if (state != null) {
+                profileSeen(SEEN_REDUCE_STATE);
                 if (stateSetter == null) {
                     save(frame, pickler, state, 0);
                     write(this, pickler, PickleUtils.OPCODE_BUILD);
@@ -1730,8 +1785,8 @@ public class PPickler extends PythonBuiltinObject {
                     // whole operation has to be stack-transparent. Thus, we finally pop the call's
                     // output from the stack.
                     save(frame, pickler, stateSetter, 0);
-                    save(frame, pickler, obj, 0);
-                    save(frame, pickler, state, 0);
+                    save2(frame, pickler, obj, 0);
+                    save3(frame, pickler, state, 0);
                     write(this, pickler, PickleUtils.OPCODE_TUPLE2);
                     write(this, pickler, PickleUtils.OPCODE_REDUCE);
                     write(this, pickler, PickleUtils.OPCODE_POP);
