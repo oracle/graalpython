@@ -1670,32 +1670,32 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Object createPathFromString(TruffleString path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final Object createPathFromString(TruffleString path) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);
-        return logExit(Level.FINEST, "createPathFromString", "%s", lib.createPathFromString(delegate, path));
+        return logExit(Level.FINEST, "createPathFromString", "%s", delegate.createPathFromString(path));
     }
 
-    @ExportMessage
-    final Object createPathFromBytes(byte[] path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final Object createPathFromBytes(byte[] path) {
         logEnter(Level.FINEST, "createPathFromBytes", "%s", path);
-        return logExit(Level.FINEST, "createPathFromBytes", "%s", lib.createPathFromBytes(delegate, path));
+        return logExit(Level.FINEST, "createPathFromBytes", "%s", delegate.createPathFromBytes(path));
     }
 
-    @ExportMessage
-    final TruffleString getPathAsString(Object path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final TruffleString getPathAsString(Object path) {
         logEnter(Level.FINEST, "getPathAsString", "%s", path);
-        return logExit(Level.FINEST, "getPathAsString", "%s", lib.getPathAsString(delegate, path));
+        return logExit(Level.FINEST, "getPathAsString", "%s", delegate.getPathAsString(path));
     }
 
-    @ExportMessage
-    final Buffer getPathAsBytes(Object path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final Buffer getPathAsBytes(Object path) {
         logEnter(Level.FINEST, "getPathAsBytes", "%s", path);
-        return logExit(Level.FINEST, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path));
+        return logExit(Level.FINEST, "getPathAsBytes", "%s", delegate.getPathAsBytes(path));
     }
 
     @ExportMessage

@@ -227,7 +227,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
-import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -4438,32 +4438,32 @@ public final class EmulatedPosixSupport extends PosixResources {
     // ------------------
     // Path conversions
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public Object createPathFromString(TruffleString path,
-                    @Bind Node inliningTarget,
-                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                    @Exclusive @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
+    public Object createPathFromString(TruffleString path) {
         String javaPath = getPythonOS() == PLATFORM_WIN32
-                        ? toJavaStringNode.execute(path)
-                        : createUTF8String(encodeFSDefaultNode.execute(null, inliningTarget, path));
+                        ? TruffleString.ToJavaStringNode.getUncached().execute(path)
+                        : createUTF8String(PyUnicodeEncodeFSDefaultNodeGen.getUncached().execute(null, null, path));
         return checkEmbeddedNulls(javaPath);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public Object createPathFromBytes(byte[] path) {
         return checkEmbeddedNulls(createUTF8String(path));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public TruffleString getPathAsString(Object path,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return fromJavaStringNode.execute((String) path, TS_ENCODING);
+    public TruffleString getPathAsString(Object path) {
+        return TruffleString.FromJavaStringNode.getUncached().execute((String) path, TS_ENCODING);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public Buffer getPathAsBytes(Object path) {
         return Buffer.wrap(utf8StringToBytes((String) path));
@@ -4488,7 +4488,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public TruffleString getCStringAsString(Object string,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         return fromJavaStringNode.execute((String) string, TS_ENCODING);
     }
 

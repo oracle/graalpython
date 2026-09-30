@@ -203,7 +203,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object pathEncoded = encodeFSDefault.execute(inliningTarget, name);
-            Buffer nameBytes = posixLib.getPathAsBytes(context.getPosixSupport(), pathEncoded);
+            Buffer nameBytes = context.getPosixSupport().getPathAsBytes(pathEncoded);
             Object nameEncoded = posixLib.createCStringFromBytes(context.getPosixSupport(), nameBytes.data);
             PwdResult pwd;
             try {

@@ -151,7 +151,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 Object o = getItemNode.execute(argsStorage, i);
                 Object path = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
-                Buffer bytes = posixLib.getPathAsBytes(context.getPosixSupport(), path);
+                Buffer bytes = context.getPosixSupport().getPathAsBytes(path);
                 argsArray[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
             }
             LoopNode.reportLoopCount(inliningTarget, len);

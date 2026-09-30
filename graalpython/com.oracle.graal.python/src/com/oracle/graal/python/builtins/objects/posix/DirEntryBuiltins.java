@@ -121,9 +121,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 if (produceBytesProfile.profile(inliningTarget, self.produceBytes())) {
-                    return opaquePathToBytes(context.getPosixSupport().dirEntryGetName(self.dirEntryData), posixLib, context.getPosixSupport(), context.getLanguage(inliningTarget));
+                    return opaquePathToBytes(context.getPosixSupport().dirEntryGetName(self.dirEntryData), context.getPosixSupport(), context.getLanguage(inliningTarget));
                 } else {
-                    return posixLib.getPathAsString(context.getPosixSupport(), context.getPosixSupport().dirEntryGetName(self.dirEntryData));
+                    return context.getPosixSupport().getPathAsString(context.getPosixSupport().dirEntryGetName(self.dirEntryData));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -173,9 +173,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (produceBytesProfile.profile(inliningTarget, self.produceBytes())) {
-                self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, posixLib, context.getPosixSupport(), context.getLanguage(inliningTarget)), opaquePath, true);
+                self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, context.getPosixSupport(), context.getLanguage(inliningTarget)), opaquePath, true);
             } else {
-                self.pathCache = new PosixPath(posixLib.getPathAsString(context.getPosixSupport(), opaquePath), opaquePath, false);
+                self.pathCache = new PosixPath(context.getPosixSupport().getPathAsString(opaquePath), opaquePath, false);
             }
             return self.pathCache;
         }

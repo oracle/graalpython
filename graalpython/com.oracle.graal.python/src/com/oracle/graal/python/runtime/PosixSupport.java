@@ -117,6 +117,16 @@ public abstract class PosixSupport {
      */
     public abstract PwdResult[] getpwentries() throws PosixException;
 
+    /** Returns null if the converted path contains embedded null characters. */
+    public abstract Object createPathFromString(TruffleString path);
+
+    /** Returns null if the converted path contains embedded null characters. */
+    public abstract Object createPathFromBytes(byte[] path);
+
+    public abstract TruffleString getPathAsString(Object path);
+
+    public abstract Buffer getPathAsBytes(Object path);
+
     public abstract void raise(int signal) throws PosixException;
 
     public abstract int alarm(int seconds) throws PosixException;

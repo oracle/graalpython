@@ -139,34 +139,6 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
-    /**
-     * Converts a {@code TruffleString} into the internal representation of paths used by the
-     * library implementation. The implementation should return {@code null} if the path after any
-     * necessary conversion contains embedded null characters.
-     *
-     * @param receiver the receiver of the message
-     * @param path the path as a {@code TruffleString}
-     * @return an opaque object representing the path or {@code null} if the path contains null
-     *         characters
-     */
-    public abstract Object createPathFromString(Object receiver, TruffleString path);
-
-    /**
-     * Converts a {@code byte} array into the internal representation of paths used by the library
-     * implementation. The implementation should return {@code null} if the path after any necessary
-     * conversion contains embedded null characters.
-     *
-     * @param receiver the receiver of the message
-     * @param path the path as a a {@code byte[]} array
-     * @return an opaque object representing the path or {@code null} if the path contains null
-     *         characters
-     */
-    public abstract Object createPathFromBytes(Object receiver, byte[] path);
-
-    public abstract TruffleString getPathAsString(Object receiver, Object path);
-
-    public abstract Buffer getPathAsBytes(Object receiver, Object path);
-
     /** Converts a string to strict UTF-8 for non-filesystem APIs that use CPython's {@code s} conversion. */
     public abstract Object createCStringFromString(Object receiver, TruffleString string);
 

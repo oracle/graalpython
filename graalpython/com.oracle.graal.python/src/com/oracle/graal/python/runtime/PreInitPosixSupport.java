@@ -1207,40 +1207,40 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativeLib.createUniversalSockAddrUnix(nativePosixSupport, src);
     }
 
-    @ExportMessage
-    final Object createPathFromString(TruffleString path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Object createPathFromString(TruffleString path) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().createPathFromString(emulatedPosixSupport, path);
+            return emulatedPosixSupport.createPathFromString(path);
         }
-        return nativeLib.createPathFromString(nativePosixSupport, path);
+        return nativePosixSupport.createPathFromString(path);
     }
 
-    @ExportMessage
-    final Object createPathFromBytes(byte[] path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Object createPathFromBytes(byte[] path) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().createPathFromBytes(emulatedPosixSupport, path);
+            return emulatedPosixSupport.createPathFromBytes(path);
         }
-        return nativeLib.createPathFromBytes(nativePosixSupport, path);
+        return nativePosixSupport.createPathFromBytes(path);
     }
 
-    @ExportMessage
-    final TruffleString getPathAsString(Object path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final TruffleString getPathAsString(Object path) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().getPathAsString(emulatedPosixSupport, path);
+            return emulatedPosixSupport.getPathAsString(path);
         }
-        return nativeLib.getPathAsString(nativePosixSupport, path);
+        return nativePosixSupport.getPathAsString(path);
     }
 
-    @ExportMessage
-    final Buffer getPathAsBytes(Object path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Buffer getPathAsBytes(Object path) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().getPathAsBytes(emulatedPosixSupport, path);
+            return emulatedPosixSupport.getPathAsBytes(path);
         }
-        return nativeLib.getPathAsBytes(nativePosixSupport, path);
+        return nativePosixSupport.getPathAsBytes(path);
     }
 
     @ExportMessage

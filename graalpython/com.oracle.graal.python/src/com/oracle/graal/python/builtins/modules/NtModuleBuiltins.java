@@ -125,7 +125,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
             // TODO should call WINAPI PathCchSkipRoot
 
             PythonLanguage language = PythonLanguage.get(null);
-            TruffleString pathString = PosixSupportLibrary.getUncached().getPathAsString(getPosixSupport(), path.value);
+            TruffleString pathString = getPosixSupport().getPathAsString(path.value);
             int len = pathString.codePointLengthUncached(TS_ENCODING);
             int index = pathString.indexOfCodePointUncached(':', 0, len, TS_ENCODING);
             if (index <= 0) {

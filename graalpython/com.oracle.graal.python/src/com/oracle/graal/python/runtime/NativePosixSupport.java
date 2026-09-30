@@ -99,7 +99,7 @@ import com.oracle.graal.python.annotations.DowncallSignature;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -3446,57 +3446,50 @@ public final class NativePosixSupport extends PosixSupport {
     // ------------------
     // Path conversions
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public Object createPathFromString(TruffleString path,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    @Exclusive @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
+    public Object createPathFromString(TruffleString path) {
         if (WINDOWS) {
-            TruffleString utf16 = switchEncodingNode.execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-            return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
+            TruffleString utf16 = TruffleString.SwitchEncodingNode.getUncached().execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            return checkWidePath(TruffleString.CopyToByteArrayNode.getUncached().execute(utf16, UTF_16LE));
         }
-        return checkNarrowPath(encodeFSDefaultNode.execute(null, inliningTarget, path));
+        return checkNarrowPath(PyUnicodeEncodeFSDefaultNodeGen.getUncached().execute(null, null, path));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public Object createPathFromBytes(byte[] path,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+    public Object createPathFromBytes(byte[] path) {
         if (WINDOWS) {
-            TruffleString utf8 = fromByteArrayNode.execute(path, UTF_8, true);
-            TruffleString utf16 = switchEncodingNode.execute(utf8, UTF_16LE, windowsPathDecodeErrorHandler(inliningTarget, path));
-            return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
+            TruffleString utf8 = TruffleString.FromByteArrayNode.getUncached().execute(path, UTF_8, true);
+            TruffleString utf16 = TruffleString.SwitchEncodingNode.getUncached().execute(utf8, UTF_16LE, windowsPathDecodeErrorHandler(null, path));
+            return checkWidePath(TruffleString.CopyToByteArrayNode.getUncached().execute(utf16, UTF_16LE));
         }
         return checkNarrowPath(path);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public TruffleString getPathAsString(Object path,
-                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+    public TruffleString getPathAsString(Object path) {
         NativePath result = (NativePath) path;
-        TruffleString encoded = fromByteArrayNode.execute(result.data, 0, result.data.length, result.encoding(), true);
+        TruffleString encoded = TruffleString.FromByteArrayNode.getUncached().execute(result.data, 0, result.data.length, result.encoding(), true);
         if (result instanceof WidePath) {
-            return switchEncodingNode.execute(encoded, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            return TruffleString.SwitchEncodingNode.getUncached().execute(encoded, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
         }
         TruffleString utf8 = encoded;
-        if (isValidNode.execute(utf8, UTF_8)) {
-            return switchEncodingNode.execute(utf8, TS_ENCODING);
+        if (TruffleString.IsValidNode.getUncached().execute(utf8, UTF_8)) {
+            return TruffleString.SwitchEncodingNode.getUncached().execute(utf8, TS_ENCODING);
         }
         TranscodingErrorHandler errorHandler = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32
                         ? TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8
                         : PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER;
-        return switchEncodingNode.execute(utf8, TS_ENCODING, errorHandler);
+        return TruffleString.SwitchEncodingNode.getUncached().execute(utf8, TS_ENCODING, errorHandler);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public Buffer getPathAsBytes(Object path) {
         NativePath nativePath = (NativePath) path;

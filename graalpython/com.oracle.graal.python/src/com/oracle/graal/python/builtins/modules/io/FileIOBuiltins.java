@@ -241,7 +241,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         InlinedBranchProfile errorProfile,
                         PRaiseNode raiseNode,
                         PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            Object path = posixLib.createPathFromString(ctxt.getPosixSupport(), name);
+            Object path = ctxt.getPosixSupport().createPathFromString(name);
             if (path == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, EMBEDDED_NULL_BYTE);
             }
