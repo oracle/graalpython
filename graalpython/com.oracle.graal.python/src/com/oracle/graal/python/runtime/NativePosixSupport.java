@@ -1756,9 +1756,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public long[] waitpid(long pid, int options,
-                    @Bind Node node) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long[] waitpid(Node node, long pid, int options) throws PosixException {
         boolean hasNohang = (options & WNOHANG.getValueIfDefined()) != 0;
         int subOptions = options | WNOHANG.getValueIfDefined();
         long nativeStatus = NativeMemory.callocIntArray(1);

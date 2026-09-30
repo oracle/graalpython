@@ -78,6 +78,8 @@ public abstract class PosixSupport {
 
     public abstract void killpg(long pid, int signal) throws PosixException;
 
+    public abstract long[] waitpid(Node location, long pid, int options) throws PosixException;
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

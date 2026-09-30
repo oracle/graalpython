@@ -888,12 +888,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long[] waitpid(long pid, int options,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] waitpid(Node location, long pid, int options) throws PosixException {
         logEnter("waitpid", "%d, %d", pid, options);
         try {
-            return logExit("waitpid", "%s", lib.waitpid(delegate, pid, options));
+            return logExit("waitpid", "%s", delegate.waitpid(location, pid, options));
         } catch (PosixException e) {
             throw logException("waitpid", e);
         }

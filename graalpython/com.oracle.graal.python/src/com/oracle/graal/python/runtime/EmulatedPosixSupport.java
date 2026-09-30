@@ -2112,13 +2112,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("killpg");
     }
 
-    @ExportMessage
-    public long[] waitpid(long pid, int options,
-                    @CachedLibrary("this") PosixSupportLibrary posixLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long[] waitpid(Node location, long pid, int options) throws PosixException {
         try {
             if (options == 0) {
                 int[] exitStatus = new int[1];
-                TruffleSafepoint.setBlockedThreadInterruptible(posixLib, (s) -> {
+                TruffleSafepoint.setBlockedThreadInterruptible(location, (s) -> {
                     exitStatus[0] = s.waitpid((int) pid);
                 }, this);
                 return new long[]{pid, exitStatus[0]};

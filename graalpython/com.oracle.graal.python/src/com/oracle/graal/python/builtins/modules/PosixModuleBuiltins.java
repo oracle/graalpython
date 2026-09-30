@@ -2653,14 +2653,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GilNode gil,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             gil.release(true);
             try {
                 while (true) {
                     try {
-                        long[] result = posixLib.waitpid(context.getPosixSupport(), pid, options);
+                        long[] result = context.getPosixSupport().waitpid(inliningTarget, pid, options);
                         return PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{result[0], result[1]});
                     } catch (PosixException e) {
                         errorProfile.enter(inliningTarget);

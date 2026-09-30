@@ -68,6 +68,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(PosixSupportLibrary.class)
@@ -667,11 +668,11 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.killpg(pgid, signal);
     }
 
-    @ExportMessage
-    final long[] waitpid(long pid, int options,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] waitpid(Node location, long pid, int options) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.waitpid(nativePosixSupport, pid, options);
+        return nativePosixSupport.waitpid(location, pid, options);
     }
 
     @ExportMessage

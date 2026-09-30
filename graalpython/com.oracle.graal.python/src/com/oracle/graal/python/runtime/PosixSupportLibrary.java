@@ -79,8 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract long[] waitpid(Object receiver, long pid, int options) throws PosixException;
-
     public abstract boolean wcoredump(Object receiver, int status);
 
     public abstract boolean wifcontinued(Object receiver, int status);
