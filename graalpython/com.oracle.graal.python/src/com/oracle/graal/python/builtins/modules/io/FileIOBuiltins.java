@@ -380,7 +380,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         }
                     }
                     try {
-                        posixLib.setInheritable(context.getPosixSupport(), self.getFD(), false);
+                        context.getPosixSupport().setInheritable(self.getFD(), false);
                     } catch (PosixException e) {
                         exceptionProfile1.enter(inliningTarget);
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

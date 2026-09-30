@@ -790,9 +790,9 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    int dup = posixLib.dup(context.getPosixSupport(), fd);
+                    int dup = context.getPosixSupport().dup(fd);
                     try {
-                        posixLib.setInheritable(context.getPosixSupport(), dup, false);
+                        context.getPosixSupport().setInheritable(dup, false);
                     } catch (PosixException e1) {
                         try {
                             posixLib.close(context.getPosixSupport(), dup);

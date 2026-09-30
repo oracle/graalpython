@@ -859,8 +859,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 OpenPtyResult result = posixLib.openpty(context.getPosixSupport());
-                posixLib.setInheritable(context.getPosixSupport(), result.masterFd(), false);
-                posixLib.setInheritable(context.getPosixSupport(), result.slaveFd(), false);
+                context.getPosixSupport().setInheritable(result.masterFd(), false);
+                context.getPosixSupport().setInheritable(result.slaveFd(), false);
                 return PFactory.createTuple(context.getLanguage(inliningTarget), new int[]{result.masterFd(), result.slaveFd()});
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -1075,10 +1075,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static int dup(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.dup(context.getPosixSupport(), fd);
+                return context.getPosixSupport().dup(fd);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1111,7 +1110,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
 
             try {
-                return posixLib.dup2(context.getPosixSupport(), fd, fd2, inheritable);
+                return context.getPosixSupport().dup2(fd, fd2, inheritable);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1132,10 +1131,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static boolean getInheritable(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getInheritable(context.getPosixSupport(), fd);
+                return context.getPosixSupport().getInheritable(fd);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1157,11 +1155,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PNone setInheritable(VirtualFrame frame, int fd, int inheritable,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 // not sure why inheritable is not a boolean, but that is how they do it in CPython
-                posixLib.setInheritable(context.getPosixSupport(), fd, inheritable != 0);
+                context.getPosixSupport().setInheritable(fd, inheritable != 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -2039,10 +2036,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static Object dupAndFdopendir(VirtualFrame frame, Node inliningTarget, PosixSupportLibrary posixLib, Object posixSupport, PosixFd fd, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+    static Object dupAndFdopendir(VirtualFrame frame, Node inliningTarget, PosixSupportLibrary posixLib, PosixSupport posixSupport, PosixFd fd, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
         int dupFd = -1;
         try {
-            dupFd = posixLib.dup(posixSupport, fd.fd);
+            dupFd = posixSupport.dup(fd.fd);
             // when fdopenddir succeeds, we are no longer responsible for closing dupFd
             return posixLib.fdopendir(posixSupport, dupFd);
         } catch (PosixException e) {

@@ -214,45 +214,41 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int dup(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int dup(int fd) throws PosixException {
         logEnter("dup", "%d", fd);
         try {
-            return logExit("dup", "%d", lib.dup(delegate, fd));
+            return logExit("dup", "%d", delegate.dup(fd));
         } catch (PosixException e) {
             throw logException("dup", e);
         }
     }
 
-    @ExportMessage
-    final int dup2(int fd, int fd2, boolean inheritable,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         logEnter("dup2", "%d, %d, %b", fd, fd2, inheritable);
         try {
-            return logExit("dup2", "%d", lib.dup2(delegate, fd, fd2, inheritable));
+            return logExit("dup2", "%d", delegate.dup2(fd, fd2, inheritable));
         } catch (PosixException e) {
             throw logException("dup2", e);
         }
     }
 
-    @ExportMessage
-    final boolean getInheritable(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final boolean getInheritable(int fd) throws PosixException {
         logEnter("getInheritable", "%d", fd);
         try {
-            return logExit("getInheritable", "%b", lib.getInheritable(delegate, fd));
+            return logExit("getInheritable", "%b", delegate.getInheritable(fd));
         } catch (PosixException e) {
             throw logException("getInheritable", e);
         }
     }
 
-    @ExportMessage
-    final void setInheritable(int fd, boolean inheritable,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void setInheritable(int fd, boolean inheritable) throws PosixException {
         logEnter("setInheritable", "%d, %b", fd, inheritable);
         try {
-            lib.setInheritable(delegate, fd, inheritable);
+            delegate.setInheritable(fd, inheritable);
         } catch (PosixException e) {
             throw logException("setInheritable", e);
         }

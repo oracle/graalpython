@@ -226,35 +226,31 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.writeWindowsConsole(fd, data);
     }
 
-    @ExportMessage
-    final int dup(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int dup(int fd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.dup(nativePosixSupport, fd);
+        return nativePosixSupport.dup(fd);
     }
 
-    @ExportMessage
-    final int dup2(int fd, int fd2, boolean inheritable,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.dup2(nativePosixSupport, fd, fd2, inheritable);
+        return nativePosixSupport.dup2(fd, fd2, inheritable);
     }
 
-    @ExportMessage
-    final boolean getInheritable(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final boolean getInheritable(int fd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getInheritable(nativePosixSupport, fd);
+        return nativePosixSupport.getInheritable(fd);
     }
 
-    @ExportMessage
-    final void setInheritable(int fd, boolean inheritable,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void setInheritable(int fd, boolean inheritable) throws PosixException {
         if (inPreInitialization) {
-            PosixSupportLibrary.getUncached().setInheritable(emulatedPosixSupport, fd, inheritable);
+            emulatedPosixSupport.setInheritable(fd, inheritable);
             return;
         }
-        nativeLib.setInheritable(nativePosixSupport, fd, inheritable);
+        nativePosixSupport.setInheritable(fd, inheritable);
     }
 
     @ExportMessage

@@ -556,13 +556,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @ExportMessage
     public int dup(int fd) {
         // TODO: will disappear once the super class is merged with this class
         return super.dup(fd);
     }
 
-    @ExportMessage
+    @Override
     public int dup2(int fd, int fd2, @SuppressWarnings("unused") boolean inheritable) throws PosixException {
         // TODO: will merge with super.dup2 once the super class is merged with this class
         try {
@@ -572,15 +571,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
     public boolean getInheritable(int fd) {
         compatibilityIgnored("getting inheritable for file descriptor %d in POSIX emulation layer (not supported, always returns false)", fd);
         return false;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
     public void setInheritable(int fd, boolean inheritable) {
         compatibilityIgnored("setting inheritable '%b' for file descriptor %d in POSIX emulation layer (not supported)", inheritable, fd);
     }

@@ -201,7 +201,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
                 try {
-                    posixLib.setInheritable(context.getPosixSupport(), fd, false);
+                    context.getPosixSupport().setInheritable(fd, false);
                     sockInit(context, posixLib, self, fd, family, type, proto);
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it
@@ -326,7 +326,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                 false, false);
                 try {
                     Object pythonAddr = makeSockAddrNode.execute(frame, inliningTarget, acceptResult.sockAddr);
-                    posixLib.setInheritable(posixSupport, acceptResult.socketFd, false);
+                    posixSupport.setInheritable(acceptResult.socketFd, false);
                     return PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{acceptResult.socketFd, pythonAddr});
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it

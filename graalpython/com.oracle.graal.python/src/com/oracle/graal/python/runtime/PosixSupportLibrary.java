@@ -91,14 +91,6 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int close(Object receiver, int fd) throws PosixException;
 
-    public abstract int dup(Object receiver, int fd) throws PosixException;
-
-    public abstract int dup2(Object receiver, int fd, int fd2, boolean inheritable) throws PosixException;
-
-    public abstract boolean getInheritable(Object receiver, int fd) throws PosixException;
-
-    public abstract void setInheritable(Object receiver, int fd, boolean inheritable) throws PosixException;
-
     public abstract long getOsfHandle(Object receiver, int fd) throws PosixException;
 
     public abstract int openOsfHandle(Object receiver, long handle, int flags) throws PosixException;

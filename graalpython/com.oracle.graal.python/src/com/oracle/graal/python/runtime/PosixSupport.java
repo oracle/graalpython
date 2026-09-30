@@ -69,6 +69,14 @@ public abstract class PosixSupport {
 
     public abstract long writeWindowsConsole(int fd, Buffer data) throws PosixException;
 
+    public abstract int dup(int fd) throws PosixException;
+
+    public abstract int dup2(int fd, int fd2, boolean inheritable) throws PosixException;
+
+    public abstract boolean getInheritable(int fd) throws PosixException;
+
+    public abstract void setInheritable(int fd, boolean inheritable) throws PosixException;
+
     // see stat_struct_to_longs in posix.c for the layout of the array
     public abstract long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
 

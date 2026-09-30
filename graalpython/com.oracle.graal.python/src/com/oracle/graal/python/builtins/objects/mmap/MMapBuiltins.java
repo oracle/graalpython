@@ -302,7 +302,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 // MAP_ANONYMOUS, maybe this can be detected and handled by the POSIX layer
             } else if (mmapArgs.trackFd()) {
                 try {
-                    trackedFd = posixSupportLib.dup(posixSupport, fd);
+                    trackedFd = posixSupport.dup(fd);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }

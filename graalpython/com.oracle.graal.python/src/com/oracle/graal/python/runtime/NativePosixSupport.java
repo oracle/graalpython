@@ -824,7 +824,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public int dup(int fd) throws PosixException {
         int newFd = posixNativeFunctionInvoker.call_dup(fd);
         if (newFd < 0) {
@@ -833,7 +833,7 @@ public final class NativePosixSupport extends PosixSupport {
         return newFd;
     }
 
-    @ExportMessage
+    @Override
     public int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         int newFd = posixNativeFunctionInvoker.call_dup2(fd, fd2, inheritable ? 1 : 0);
         if (newFd < 0) {
@@ -842,7 +842,7 @@ public final class NativePosixSupport extends PosixSupport {
         return newFd;
     }
 
-    @ExportMessage
+    @Override
     public boolean getInheritable(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.get_inheritable(fd);
         if (result < 0) {
@@ -851,7 +851,7 @@ public final class NativePosixSupport extends PosixSupport {
         return result != 0;
     }
 
-    @ExportMessage
+    @Override
     public void setInheritable(int fd, boolean inheritable) throws PosixException {
         if (posixNativeFunctionInvoker.set_inheritable(fd, inheritable ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
