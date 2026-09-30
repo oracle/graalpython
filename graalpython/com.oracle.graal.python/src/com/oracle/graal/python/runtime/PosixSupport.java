@@ -204,5 +204,9 @@ public abstract class PosixSupport {
 
     public abstract void utimes(Object filename, Timeval[] timeval) throws PosixException;
 
+    public abstract void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
+
+    public abstract void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
+
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }

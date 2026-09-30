@@ -1555,7 +1555,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         long oldPathPtr = NULLPTR;
         long newPathPtr = NULLPTR;
@@ -1572,7 +1573,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         long oldPathPtr = NULLPTR;
         long newPathPtr = NULLPTR;

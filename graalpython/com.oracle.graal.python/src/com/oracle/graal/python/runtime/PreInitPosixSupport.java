@@ -563,18 +563,18 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.utimes(filename, timeval);
     }
 
-    @ExportMessage
-    final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.renameat(nativePosixSupport, oldDirFd, oldPath, newDirFd, newPath);
+        nativePosixSupport.renameat(oldDirFd, oldPath, newDirFd, newPath);
     }
 
-    @ExportMessage
-    final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.replaceat(nativePosixSupport, oldDirFd, oldPath, newDirFd, newPath);
+        nativePosixSupport.replaceat(oldDirFd, oldPath, newDirFd, newPath);
     }
 
     @ExportMessage

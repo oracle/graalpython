@@ -1814,7 +1814,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         return FileTime.from(seconds, TimeUnit.SECONDS);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         try {
             TruffleFile newFile = resolvePath(newDirFd, pathToJavaString(newPath));
@@ -1828,7 +1829,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         try {
             TruffleFile newFile = resolvePath(newDirFd, pathToJavaString(newPath));

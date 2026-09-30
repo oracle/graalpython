@@ -2265,13 +2265,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PNone rename(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_RENAME, src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
             try {
-                posixLib.renameat(context.getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
+                context.getPosixSupport().renameat(srcDirFd, src.value, dstDirFd, dst.value);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
             }
@@ -2295,13 +2294,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PNone replace(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_RENAME, src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
             try {
-                posixLib.replaceat(context.getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
+                context.getPosixSupport().replaceat(srcDirFd, src.value, dstDirFd, dst.value);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
             }

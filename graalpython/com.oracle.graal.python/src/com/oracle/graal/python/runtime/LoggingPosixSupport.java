@@ -713,23 +713,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         logEnter("renameAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
         try {
-            lib.renameat(delegate, oldDirFd, oldPath, newDirFd, newPath);
+            delegate.renameat(oldDirFd, oldPath, newDirFd, newPath);
         } catch (PosixException e) {
             throw logException("renameAt", e);
         }
     }
 
-    @ExportMessage
-    final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         logEnter("replaceAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
         try {
-            lib.replaceat(delegate, oldDirFd, oldPath, newDirFd, newPath);
+            delegate.replaceat(oldDirFd, oldPath, newDirFd, newPath);
         } catch (PosixException e) {
             throw logException("replaceAt", e);
         }

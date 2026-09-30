@@ -79,10 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract void renameat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
-
-    public abstract void replaceat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
-
     public abstract boolean faccessat(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException;
 
     public abstract void fchmodat(Object receiver, int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
