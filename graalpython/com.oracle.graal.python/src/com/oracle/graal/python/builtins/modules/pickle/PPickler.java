@@ -912,7 +912,7 @@ public class PPickler extends PythonBuiltinObject {
                 return;
             }
             int frameLen = pickler.outputLen - pickler.frameStart - PickleUtils.FRAME_HEADER_SIZE;
-            if (frameLen >= PickleUtils.FRAME_SIZE_TARGET) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, frameLen >= PickleUtils.FRAME_SIZE_TARGET)) {
                 pickler.commitFrame();
                 // Flush the content of the committed frame to the underlying
                 // file and reuse the pickler buffer for the next frame so as
@@ -1051,10 +1051,11 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        protected static boolean bypassBuffer(PPickler pickler, int dataSize) {
+        protected boolean bypassBuffer(PPickler pickler, int dataSize) {
             boolean bypassBuffer = dataSize >= PickleUtils.FRAME_SIZE_TARGET;
 
             if (bypassBuffer) {
+                profileSeen(SEEN_BYPASS_BUFFER);
                 assert pickler.outputBuffer != null;
                 // Commit the previous frame.
                 pickler.commitFrame();
@@ -1126,6 +1127,7 @@ public class PPickler extends PythonBuiltinObject {
         private static final long SEEN_REDUCE_LISTITEMS = 1L << 35;
         private static final long SEEN_REDUCE_DICTITEMS = 1L << 36;
         private static final long SEEN_REDUCE_STATE = 1L << 37;
+        private static final long SEEN_BYPASS_BUFFER = 1L << 38;
 
         @CompilationFinal private long seenTypes;
 
@@ -1957,7 +1959,7 @@ public class PPickler extends PythonBuiltinObject {
             memoPut(pickler, proto, fastMode, obj);
         }
 
-        private static void writeUnicodeBinary(Node node, VirtualFrame frame, PPickler pickler, int proto, TruffleString string,
+        private void writeUnicodeBinary(Node node, VirtualFrame frame, PPickler pickler, int proto, TruffleString string,
                         TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         FlushToFileNode flushToFileNode, CallNode callNode) {
             TruffleString utf8 = switchEncodingNode.execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
