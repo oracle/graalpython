@@ -2349,7 +2349,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int socket(int domain, int type, int protocol) throws PosixException {
         int result = posixNativeFunctionInvoker.call_socket(domain, type, protocol);
         if (result == -1) {
@@ -2358,7 +2359,8 @@ public final class NativePosixSupport extends PosixSupport {
         return result;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public AcceptResult accept(int sockfd) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         long nativeAddr = NULLPTR;
@@ -2378,7 +2380,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void bind(int sockfd, UniversalSockAddr usa) throws PosixException {
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
         int addrLen = addr.getLen();
@@ -2394,7 +2397,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void connect(int sockfd, UniversalSockAddr usa) throws PosixException {
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
         int addrLen = addr.getLen();
@@ -2410,7 +2414,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void listen(int sockfd, int backlog) throws PosixException {
         int result = posixNativeFunctionInvoker.call_listen(sockfd, backlog);
         if (result == -1) {
@@ -2418,7 +2423,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public UniversalSockAddr getpeername(int sockfd) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         long nativeAddr = NULLPTR;
@@ -2438,7 +2444,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public UniversalSockAddr getsockname(int sockfd) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         long nativeAddr = NULLPTR;

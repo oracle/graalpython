@@ -963,53 +963,53 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativeLib.ioctlInt(nativePosixSupport, fd, request, arg);
     }
 
-    @ExportMessage
-    final int socket(int domain, int type, int protocol,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int socket(int domain, int type, int protocol) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.socket(nativePosixSupport, domain, type, protocol);
+        return nativePosixSupport.socket(domain, type, protocol);
     }
 
-    @ExportMessage
-    final AcceptResult accept(int sockfd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final AcceptResult accept(int sockfd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.accept(nativePosixSupport, sockfd);
+        return nativePosixSupport.accept(sockfd);
     }
 
-    @ExportMessage
-    final void bind(int sockfd, UniversalSockAddr addr,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.bind(nativePosixSupport, sockfd, addr);
+        nativePosixSupport.bind(sockfd, addr);
     }
 
-    @ExportMessage
-    final void connect(int sockfd, UniversalSockAddr addr,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.connect(nativePosixSupport, sockfd, addr);
+        nativePosixSupport.connect(sockfd, addr);
     }
 
-    @ExportMessage
-    final void listen(int sockfd, int backlog,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void listen(int sockfd, int backlog) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.listen(nativePosixSupport, sockfd, backlog);
+        nativePosixSupport.listen(sockfd, backlog);
     }
 
-    @ExportMessage
-    final UniversalSockAddr getpeername(int sockfd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr getpeername(int sockfd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getpeername(nativePosixSupport, sockfd);
+        return nativePosixSupport.getpeername(sockfd);
     }
 
-    @ExportMessage
-    final UniversalSockAddr getsockname(int sockfd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr getsockname(int sockfd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getsockname(nativePosixSupport, sockfd);
+        return nativePosixSupport.getsockname(sockfd);
     }
 
     @ExportMessage

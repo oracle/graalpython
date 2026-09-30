@@ -1294,78 +1294,78 @@ public class LoggingPosixSupport extends PosixSupport {
         return logExit("system", "%d", delegate.system(command));
     }
 
-    @ExportMessage
-    final int socket(int domain, int type, int protocol,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int socket(int domain, int type, int protocol) throws PosixException {
         logEnter("socket", "%d, %d, %d", domain, type, protocol);
         try {
-            return logExit("socket", "%d", lib.socket(delegate, domain, type, protocol));
+            return logExit("socket", "%d", delegate.socket(domain, type, protocol));
         } catch (PosixException e) {
             throw logException("socket", e);
         }
     }
 
-    @ExportMessage
-    final AcceptResult accept(int sockfd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final AcceptResult accept(int sockfd) throws PosixException {
         logEnter("accept", "%d", sockfd);
         try {
-            return logExit("accept", "%s", lib.accept(delegate, sockfd));
+            return logExit("accept", "%s", delegate.accept(sockfd));
         } catch (PosixException e) {
             throw logException("accept", e);
         }
     }
 
-    @ExportMessage
-    final void bind(int sockfd, UniversalSockAddr addr,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
         logEnter("bind", "%d, %s", sockfd, addr);
         try {
-            lib.bind(delegate, sockfd, addr);
+            delegate.bind(sockfd, addr);
         } catch (PosixException e) {
             throw logException("bind", e);
         }
     }
 
-    @ExportMessage
-    final void connect(int sockfd, UniversalSockAddr addr,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
         logEnter("connect", "%d, %s", sockfd, addr);
         try {
-            lib.connect(delegate, sockfd, addr);
+            delegate.connect(sockfd, addr);
         } catch (PosixException e) {
             throw logException("connect", e);
         }
     }
 
-    @ExportMessage
-    final void listen(int sockfd, int backlog,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void listen(int sockfd, int backlog) throws PosixException {
         logEnter("listen", "%d, %d", sockfd, backlog);
         try {
-            lib.listen(delegate, sockfd, backlog);
+            delegate.listen(sockfd, backlog);
         } catch (PosixException e) {
             throw logException("listen", e);
         }
     }
 
-    @ExportMessage
-    final UniversalSockAddr getpeername(int sockfd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr getpeername(int sockfd) throws PosixException {
         logEnter("getpeername", "%d", sockfd);
         try {
-            return logExit("getpeername", "%s", lib.getpeername(delegate, sockfd));
+            return logExit("getpeername", "%s", delegate.getpeername(sockfd));
         } catch (PosixException e) {
             throw logException("getpeername", e);
         }
     }
 
-    @ExportMessage
-    final UniversalSockAddr getsockname(int sockfd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final UniversalSockAddr getsockname(int sockfd) throws PosixException {
         logEnter("getsockname", "%d", sockfd);
         try {
-            return logExit("getsockname", "%s", lib.getsockname(delegate, sockfd));
+            return logExit("getsockname", "%s", delegate.getsockname(sockfd));
         } catch (PosixException e) {
             throw logException("getsockname", e);
         }

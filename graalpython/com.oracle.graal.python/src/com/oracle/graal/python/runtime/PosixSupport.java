@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -48,6 +49,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -139,6 +141,20 @@ public abstract class PosixSupport {
     public abstract TruffleString getCStringAsString(Object string);
 
     public abstract Buffer getCStringAsBytes(Object string);
+
+    public abstract int socket(int domain, int type, int protocol) throws PosixException;
+
+    public abstract AcceptResult accept(int sockfd) throws PosixException;
+
+    public abstract void bind(int sockfd, UniversalSockAddr addr) throws PosixException;
+
+    public abstract void connect(int sockfd, UniversalSockAddr addr) throws PosixException;
+
+    public abstract void listen(int sockfd, int backlog) throws PosixException;
+
+    public abstract UniversalSockAddr getpeername(int sockfd) throws PosixException;
+
+    public abstract UniversalSockAddr getsockname(int sockfd) throws PosixException;
 
     public abstract void raise(int signal) throws PosixException;
 

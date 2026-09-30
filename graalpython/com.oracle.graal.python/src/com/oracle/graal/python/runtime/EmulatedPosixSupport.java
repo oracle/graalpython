@@ -3126,7 +3126,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("ioctl");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int socket(int domain, int type, int protocol) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("socket was excluded");
@@ -3150,7 +3151,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public AcceptResult accept(int sockfd) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3177,7 +3178,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3195,7 +3196,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3213,7 +3214,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void listen(int sockfd, int backlog) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3227,7 +3228,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public UniversalSockAddr getpeername(int sockfd) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3245,7 +3246,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public UniversalSockAddr getsockname(int sockfd) throws PosixException {
         EmulatedSocket socket = getEmulatedSocket(sockfd);

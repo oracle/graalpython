@@ -196,7 +196,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 int fd;
                 gil.release(true);
                 try {
-                    fd = posixLib.socket(context.getPosixSupport(), family, type, proto);
+                    fd = context.getPosixSupport().socket(family, type, proto);
                 } finally {
                     gil.acquire();
                 }
@@ -238,7 +238,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             }
             int family = familyIn;
             try {
-                UniversalSockAddr addr = posixLib.getsockname(context.getPosixSupport(), fd);
+                UniversalSockAddr addr = context.getPosixSupport().getsockname(fd);
                 if (family == -1) {
                     family = addrLib.getFamily(addr);
                 }
@@ -322,7 +322,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
                 PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, self,
-                                (p, s) -> p.accept(s, self.getFd()),
+                                (p, s) -> s.accept(self.getFd()),
                                 false, false);
                 try {
                     Object pythonAddr = makeSockAddrNode.execute(frame, inliningTarget, acceptResult.sockAddr);
@@ -352,7 +352,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object bind(VirtualFrame frame, PSocket self, Object address,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLibrary,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -363,7 +362,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLibrary.bind(context.getPosixSupport(), self.getFd(), addr);
+                    context.getPosixSupport().bind(self.getFd(), addr);
                 } finally {
                     gil.acquire();
                 }
@@ -435,7 +434,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLib.connect(posixSupport, self.getFd(), connectAddr);
+                    posixSupport.connect(self.getFd(), connectAddr);
                 } finally {
                     gil.acquire();
                 }
@@ -511,7 +510,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 UniversalSockAddr addr;
                 gil.release(true);
                 try {
-                    addr = posixLib.getpeername(context.getPosixSupport(), socket.getFd());
+                    addr = context.getPosixSupport().getpeername(socket.getFd());
                 } finally {
                     gil.acquire();
                 }
@@ -538,7 +537,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 UniversalSockAddr addr;
                 gil.release(true);
                 try {
-                    addr = posixLib.getsockname(context.getPosixSupport(), socket.getFd());
+                    addr = context.getPosixSupport().getsockname(socket.getFd());
                 } finally {
                     gil.acquire();
                 }
@@ -592,7 +591,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLib.listen(context.getPosixSupport(), self.getFd(), backlog);
+                    context.getPosixSupport().listen(self.getFd(), backlog);
                 } finally {
                     gil.acquire();
                 }

@@ -306,20 +306,6 @@ public abstract class PosixSupportLibrary extends Library {
      * @see "socket(2) man pages"
      * @see PosixConstants
      */
-    public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
-
-    public abstract AcceptResult accept(Object receiver, int sockfd) throws PosixException;
-
-    public abstract void bind(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
-
-    public abstract void connect(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
-
-    public abstract void listen(Object receiver, int sockfd, int backlog) throws PosixException;
-
-    public abstract UniversalSockAddr getpeername(Object receiver, int sockfd) throws PosixException;
-
-    public abstract UniversalSockAddr getsockname(Object receiver, int sockfd) throws PosixException;
-
     public abstract int send(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
