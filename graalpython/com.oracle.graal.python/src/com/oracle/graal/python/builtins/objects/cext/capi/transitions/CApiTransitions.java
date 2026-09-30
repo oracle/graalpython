@@ -644,7 +644,7 @@ public abstract class CApiTransitions {
                                 }
                             }
                         } else if (currentEntry instanceof NativeObjectReference reference) {
-                            if (nativeLookupRemove(handleContext, reference.pointer) == reference) {
+                            if (nativeLookupRemove(handleContext, reference.pointer, reference)) {
                                 // The reference was still in our lookup table, it was not otherwise
                                 // freed and we can process it now
                                 LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
@@ -1143,7 +1143,17 @@ public abstract class CApiTransitions {
     public static void nativeLookupPut(HandleContext context, long pointer, NativeObjectReference value) {
         assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
         assert !PythonOptions.detailedAssertionsEnabled() || !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
-        context.nativeLookup.put(pointer, value);
+        IdReference<?> previous = context.nativeLookup.put(pointer, value);
+        if (previous instanceof NativeObjectReference) {
+            /*
+             * The old wrapper can be cleared before its queue entry is drained, especially while
+             * the native collector disables polling. The new wrapper already added its managed
+             * reference, so retire the old contribution now. Its eventual queue entry must neither
+             * remove the replacement nor subtract this contribution a second time.
+             */
+            long refCount = subNativeRefCount(pointer, MANAGED_REFCNT);
+            assert refCount >= MANAGED_REFCNT;
+        }
     }
 
     @TruffleBoundary
@@ -1156,6 +1166,11 @@ public abstract class CApiTransitions {
     @TruffleBoundary
     public static IdReference<?> nativeLookupRemove(HandleContext context, long pointer) {
         return context.nativeLookup.remove(pointer);
+    }
+
+    @TruffleBoundary
+    private static boolean nativeLookupRemove(HandleContext context, long pointer, IdReference<?> expected) {
+        return context.nativeLookup.remove(pointer, expected);
     }
 
     public static IdReference<?> nativeTypeLookupGet(HandleContext context, long pointer, int idx) {
