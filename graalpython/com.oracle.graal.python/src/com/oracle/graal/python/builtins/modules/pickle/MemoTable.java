@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,39 +53,6 @@ public final class MemoTable {
     private static final int INITIAL_CAPACITY = 8;
     private static final int OCCUPANCY_EXPONENT = 1; // 2^X relation between capacity and size
     private static final int CAPACITY_INC_EXPONENT = 2; // 2^X increase in capacity when resizing
-
-    public static final class MemoIterator {
-
-        private int index;
-        private final Object[] keys;
-        private final int[] values;
-
-        public MemoIterator(MemoTable table) {
-            this.keys = table.keys;
-            this.values = table.values;
-            this.index = -1;
-        }
-
-        public boolean advance() {
-            while (true) {
-                index++;
-                if (index >= keys.length) {
-                    return false;
-                }
-                if (keys[index] != null) {
-                    return true;
-                }
-            }
-        }
-
-        public Object key() {
-            return keys[index];
-        }
-
-        public int value() {
-            return values[index];
-        }
-    }
 
     private Object[] keys;
     private int[] values;
@@ -176,11 +143,20 @@ public final class MemoTable {
             throw PRaiseNode.raiseStatic(null, PicklingError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
         }
 
-        MemoIterator iterator = iterator(); // captures the current contents
+        Object[] oldKeys = keys;
+        int[] oldValues = values;
         initArrays(newLength);
 
-        while (iterator.advance()) {
-            setInternal(iterator.key(), iterator.value());
+        for (int i = 0; i < oldKeys.length; i++) {
+            Object key = oldKeys[i];
+            if (key != null) {
+                int index = getIndex(key);
+                while (keys[index] != null) {
+                    index = (index + 1) & mask;
+                }
+                keys[index] = key;
+                values[index] = oldValues[i];
+            }
         }
     }
 
@@ -192,7 +168,15 @@ public final class MemoTable {
         }
     }
 
-    public MemoIterator iterator() {
-        return new MemoIterator(this);
+    int capacity() {
+        return keys.length;
+    }
+
+    Object getKeyAt(int index) {
+        return keys[index];
+    }
+
+    int getValueAt(int index) {
+        return values[index];
     }
 }
