@@ -936,20 +936,17 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage(name = "fsync")
-    public void fsyncMessage(int fd) throws PosixException {
-        if (!fsync(fd)) {
+    @Override
+    public void fsync(int fd) throws PosixException {
+        if (!hasFsyncResource(fd)) {
             throw posixException(OSErrorEnum.ENOENT);
         }
     }
 
-    @ExportMessage
-    void flock(int fd, int operation,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    public void flock(int fd, int operation) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
         boolean unlock = operation == LOCK_UN.value;
@@ -957,26 +954,21 @@ public final class EmulatedPosixSupport extends PosixResources {
         boolean exclusive = (operation & LOCK_EX.value) != 0;
         boolean blocking = (operation & LOCK_NB.value) == 0;
         if (!unlock && !shared && !exclusive) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EINVAL);
         }
         doLockOperation(fd, channel, unlock, shared, blocking, 0, 0, Long.MAX_VALUE);
     }
 
-    @ExportMessage
-    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    public void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
         boolean unlock = lockType == F_UNLCK.getValueIfDefined();
         boolean shared = lockType == F_RDLCK.getValueIfDefined();
         boolean exclusive = lockType == F_WRLCK.getValueIfDefined();
         if (!unlock && !shared && !exclusive) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EINVAL);
         }
         doLockOperation(fd, channel, unlock, shared, blocking, whence, start, length);

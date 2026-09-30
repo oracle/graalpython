@@ -349,34 +349,31 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final void fsync(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void fsync(int fd) throws PosixException {
         logEnter("fsync", "%d", fd);
         try {
-            lib.fsync(delegate, fd);
+            delegate.fsync(fd);
         } catch (PosixException e) {
             throw logException("fsync", e);
         }
     }
 
-    @ExportMessage
-    final void flock(int fd, int operation,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void flock(int fd, int operation) throws PosixException {
         logEnter("flock", "%d %d", fd, operation);
         try {
-            lib.flock(delegate, fd, operation);
+            delegate.flock(fd, operation);
         } catch (PosixException e) {
             throw logException("flock", e);
         }
     }
 
-    @ExportMessage
-    final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         logEnter("fcntlLock", "%d %s %d %d %d %d", fd, blocking, lockType, whence, start, length);
         try {
-            lib.fcntlLock(delegate, fd, blocking, lockType, whence, start, length);
+            delegate.fcntlLock(fd, blocking, lockType, whence, start, length);
         } catch (PosixException e) {
             throw logException("fcntlLock", e);
         }

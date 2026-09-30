@@ -1037,7 +1037,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public void fsync(int fd) throws PosixException {
         int res = posixNativeFunctionInvoker.call_fsync(fd);
         if (res != 0) {
@@ -1045,16 +1045,16 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void flock(int fd, int operation) throws PosixException {
+    @Override
+    public void flock(int fd, int operation) throws PosixException {
         int res = posixNativeFunctionInvoker.call_flock(fd, operation);
         if (res != 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
+    @Override
+    public void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         int res = posixNativeFunctionInvoker.call_fcntl_lock(fd, blocking ? 1 : 0, lockType, whence, start, length);
         if (res != 0) {
             throw getErrnoAndThrowPosixException();

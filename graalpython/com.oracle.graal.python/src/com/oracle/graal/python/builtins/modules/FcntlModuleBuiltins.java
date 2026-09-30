@@ -135,11 +135,10 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         synchronized PNone flock(VirtualFrame frame, int fd, int operation,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_FCNTL_FLOCK, fd, operation);
             try {
-                posix.flock(getPosixSupport(), fd, operation);
+                getPosixSupport().flock(fd, operation);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -157,7 +156,6 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         PNone lockf(VirtualFrame frame, int fd, int code, Object lenObj, Object startObj, int whence,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -181,7 +179,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                 len = asLongNode.execute(frame, inliningTarget, lenObj);
             }
             try {
-                posix.fcntlLock(getPosixSupport(), fd, (code & LOCK_NB.value) == 0, lockType, whence, start, len);
+                getPosixSupport().fcntlLock(fd, (code & LOCK_NB.value) == 0, lockType, whence, start, len);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

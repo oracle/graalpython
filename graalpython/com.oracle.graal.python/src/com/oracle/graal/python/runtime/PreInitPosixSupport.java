@@ -311,25 +311,22 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.truncate(path, length);
     }
 
-    @ExportMessage
-    final void fsync(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void fsync(int fd) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fsync(nativePosixSupport, fd);
+        nativePosixSupport.fsync(fd);
     }
 
-    @ExportMessage
-    final void flock(int fd, int operation,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void flock(int fd, int operation) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.flock(nativePosixSupport, fd, operation);
+        nativePosixSupport.flock(fd, operation);
     }
 
-    @ExportMessage
-    final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fcntlLock(nativePosixSupport, fd, blocking, lockType, whence, start, length);
+        nativePosixSupport.fcntlLock(fd, blocking, lockType, whence, start, length);
     }
 
     @ExportMessage

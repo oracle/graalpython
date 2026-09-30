@@ -1323,12 +1323,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PNone fsync(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             while (true) {
                 try {
-                    posixLib.fsync(context.getPosixSupport(), fd);
+                    context.getPosixSupport().fsync(fd);
                     return PNone.NONE;
                 } catch (PosixException e) {
                     errorProfile.enter(inliningTarget);

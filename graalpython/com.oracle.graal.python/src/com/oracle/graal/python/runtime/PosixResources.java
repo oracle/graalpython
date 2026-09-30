@@ -403,7 +403,7 @@ abstract class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public boolean fsync(int fd) {
+    public boolean hasFsyncResource(int fd) {
         return files.getOrDefault(fd, null) != null;
     }
 
