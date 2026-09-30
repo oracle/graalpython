@@ -1355,10 +1355,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static boolean getBlocking(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getBlocking(context.getPosixSupport(), fd);
+                return context.getPosixSupport().getBlocking(fd);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1380,10 +1379,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PNone setBlocking(VirtualFrame frame, int fd, boolean blocking,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.setBlocking(context.getPosixSupport(), fd, blocking);
+                context.getPosixSupport().setBlocking(fd, blocking);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1405,11 +1403,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple getTerminalSize(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // TODO default value should be fileno(stdout)
             try {
-                int[] result = posixLib.getTerminalSize(context.getPosixSupport(), fd);
+                int[] result = context.getPosixSupport().getTerminalSize(fd);
                 return PFactory.createStructSeq(context.getLanguage(inliningTarget), TERMINAL_SIZE_DESC, result[0], result[1]);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

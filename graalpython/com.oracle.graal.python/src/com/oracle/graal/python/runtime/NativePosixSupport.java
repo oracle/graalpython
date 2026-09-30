@@ -1061,7 +1061,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public boolean getBlocking(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.get_blocking(fd);
         if (result < 0) {
@@ -1070,14 +1070,14 @@ public final class NativePosixSupport extends PosixSupport {
         return result != 0;
     }
 
-    @ExportMessage
+    @Override
     public void setBlocking(int fd, boolean blocking) throws PosixException {
         if (posixNativeFunctionInvoker.set_blocking(fd, blocking ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
+    @Override
     public int[] getTerminalSize(int fd) throws PosixException {
         int[] size = new int[2];
         long nativeSize = NativeMemory.mallocIntArray(size.length);

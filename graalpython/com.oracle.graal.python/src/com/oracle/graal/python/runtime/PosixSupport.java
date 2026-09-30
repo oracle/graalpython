@@ -101,6 +101,12 @@ public abstract class PosixSupport {
 
     public abstract void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException;
 
+    public abstract boolean getBlocking(int fd) throws PosixException;
+
+    public abstract void setBlocking(int fd, boolean blocking) throws PosixException;
+
+    public abstract int[] getTerminalSize(int fd) throws PosixException;
+
     public abstract Buffer read(int fd, long length) throws PosixException;
 
     public abstract long write(int fd, Buffer data) throws PosixException;

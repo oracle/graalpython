@@ -79,12 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract boolean getBlocking(Object receiver, int fd) throws PosixException;
-
-    public abstract void setBlocking(Object receiver, int fd, boolean blocking) throws PosixException;
-
-    public abstract int[] getTerminalSize(Object receiver, int fd) throws PosixException;
-
     public abstract long sysconf(Object receiver, int name) throws PosixException;
 
     public abstract Object[] uname(Object receiver) throws PosixException;

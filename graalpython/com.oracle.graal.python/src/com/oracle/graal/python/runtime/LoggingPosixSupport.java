@@ -379,34 +379,31 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final boolean getBlocking(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final boolean getBlocking(int fd) throws PosixException {
         logEnter("getBlocking", "%d", fd);
         try {
-            return logExit("getBlocking", "%b", lib.getBlocking(delegate, fd));
+            return logExit("getBlocking", "%b", delegate.getBlocking(fd));
         } catch (PosixException e) {
             throw logException("getBlocking", e);
         }
     }
 
-    @ExportMessage
-    final void setBlocking(int fd, boolean blocking,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void setBlocking(int fd, boolean blocking) throws PosixException {
         logEnter("setBlocking", "%d, %b", fd, blocking);
         try {
-            lib.setBlocking(delegate, fd, blocking);
+            delegate.setBlocking(fd, blocking);
         } catch (PosixException e) {
             throw logException("setBlocking", e);
         }
     }
 
-    @ExportMessage
-    final int[] getTerminalSize(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int[] getTerminalSize(int fd) throws PosixException {
         logEnter("getTerminalSize", "%d", fd);
         try {
-            return logExit("getTerminalSize", "%s", lib.getTerminalSize(delegate, fd));
+            return logExit("getTerminalSize", "%s", delegate.getTerminalSize(fd));
         } catch (PosixException e) {
             throw logException("getTerminalSize", e);
         }

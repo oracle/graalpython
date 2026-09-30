@@ -1022,18 +1022,19 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean getBlocking(int fd) throws PosixException {
         Channel channel = getChannel(fd);
         if (channel == null) {
             throw posixException(OSErrorEnum.EBADF);
         }
-        if (channel instanceof EmulatedSocket) {
-            return getBlocking((EmulatedSocket) channel);
+        if (channel instanceof EmulatedSocket emulatedSocket) {
+            return emulatedSocket.isBlocking();
         }
         Channel fileChannel = getFileChannel(fd);
-        if (fileChannel instanceof SelectableChannel) {
-            return getBlocking((SelectableChannel) fileChannel);
+        if (fileChannel instanceof SelectableChannel selectableChannel) {
+            return selectableChannel.isBlocking();
         }
         if (fileChannel == null) {
             throw posixException(OSErrorEnum.EBADFD);
@@ -1043,33 +1044,21 @@ public final class EmulatedPosixSupport extends PosixResources {
         return true;
     }
 
+    @Override
     @TruffleBoundary
-    @Ignore
-    private static boolean getBlocking(SelectableChannel channel) {
-        return channel.isBlocking();
-    }
-
-    @TruffleBoundary
-    @Ignore
-    private static boolean getBlocking(EmulatedSocket socket) {
-        return socket.isBlocking();
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
     public void setBlocking(int fd, boolean blocking) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("setBlocking was excluded");
         }
         try {
             Channel channel = getChannel(fd);
-            if (channel instanceof EmulatedSocket) {
-                setBlocking((EmulatedSocket) channel, blocking);
+            if (channel instanceof EmulatedSocket emulatedSocket) {
+                emulatedSocket.configureBlocking(blocking);
                 return;
             }
             Channel fileChannel = getFileChannel(fd);
-            if (fileChannel instanceof SelectableChannel) {
-                setBlocking((SelectableChannel) fileChannel, blocking);
+            if (fileChannel instanceof SelectableChannel selectableChannel) {
+                selectableChannel.configureBlocking(blocking);
             } else if (fileChannel != null) {
                 if (blocking) {
                     // Already blocking
@@ -1086,19 +1075,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw posixException(OSErrorEnum.EBADFD);
     }
 
+    @Override
     @TruffleBoundary
-    @Ignore
-    private static void setBlocking(SelectableChannel channel, boolean block) throws IOException {
-        channel.configureBlocking(block);
-    }
-
-    @TruffleBoundary
-    @Ignore
-    private static void setBlocking(EmulatedSocket socket, boolean block) throws IOException {
-        socket.configureBlocking(block);
-    }
-
-    @ExportMessage
     public int[] getTerminalSize(int fd) throws PosixException {
         if (getFileChannel(fd) == null) {
             throw posixException(OSErrorEnum.EBADF);

@@ -277,7 +277,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             long defaultTimeout = context.lookupBuiltinModule(T__SOCKET).getModuleState(Long.class);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
-                posixLib.setBlocking(context.getPosixSupport(), fd, false);
+                context.getPosixSupport().setBlocking(fd, false);
             }
         }
 
@@ -1006,10 +1006,9 @@ public final class SocketBuiltins extends PythonBuiltins {
         static PNone doBoolean(VirtualFrame frame, PSocket socket, boolean blocking,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.setBlocking(context.getPosixSupport(), socket.getFd(), blocking);
+                context.getPosixSupport().setBlocking(socket.getFd(), blocking);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1031,13 +1030,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object setTimeout(VirtualFrame frame, PSocket socket, Object seconds,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long timeout = parseTimeoutNode.execute(frame, inliningTarget, seconds);
             socket.setTimeoutNs(timeout);
             try {
-                posixLib.setBlocking(context.getPosixSupport(), socket.getFd(), timeout < 0);
+                context.getPosixSupport().setBlocking(socket.getFd(), timeout < 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

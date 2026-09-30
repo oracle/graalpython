@@ -329,25 +329,22 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.fcntlLock(fd, blocking, lockType, whence, start, length);
     }
 
-    @ExportMessage
-    final boolean getBlocking(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final boolean getBlocking(int fd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getBlocking(nativePosixSupport, fd);
+        return nativePosixSupport.getBlocking(fd);
     }
 
-    @ExportMessage
-    final void setBlocking(int fd, boolean blocking,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void setBlocking(int fd, boolean blocking) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.setBlocking(nativePosixSupport, fd, blocking);
+        nativePosixSupport.setBlocking(fd, blocking);
     }
 
-    @ExportMessage
-    final int[] getTerminalSize(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int[] getTerminalSize(int fd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getTerminalSize(nativePosixSupport, fd);
+        return nativePosixSupport.getTerminalSize(fd);
     }
 
     @ExportMessage

@@ -1249,11 +1249,11 @@ public class SocketTests {
         }
 
         void setBlocking(boolean block) throws PosixException {
-            lib.setBlocking(posixSupport, fd, block);
+            posixSupport.setBlocking(fd, block);
         }
 
         boolean getBlocking() throws PosixException {
-            return lib.getBlocking(posixSupport, fd);
+            return posixSupport.getBlocking(fd);
         }
 
         FamilySpecificSockAddr address() throws PosixException {
