@@ -663,10 +663,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static long getPpid(@Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getppid(context.getPosixSupport());
+                return context.getPosixSupport().getppid();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
@@ -713,10 +712,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static long getPgid(VirtualFrame frame, long pid,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getpgid(context.getPosixSupport(), pid);
+                return context.getPosixSupport().getpgid(pid);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -737,10 +735,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object setPgid(VirtualFrame frame, long pid, long pgid,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.setpgid(context.getPosixSupport(), pid, pgid);
+                context.getPosixSupport().setpgid(pid, pgid);
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -755,10 +752,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object getPpid(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.setpgid(context.getPosixSupport(), 0, 0);
+                context.getPosixSupport().setpgid(0, 0);
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -772,10 +768,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static long getPpid(@Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getpgrp(context.getPosixSupport());
+                return context.getPosixSupport().getpgrp();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
@@ -795,10 +790,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static long getSid(VirtualFrame frame, long pid,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.getsid(context.getPosixSupport(), pid);
+                return context.getPosixSupport().getsid(pid);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -813,10 +807,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object setsid(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.setsid(context.getPosixSupport());
+                context.getPosixSupport().setsid();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

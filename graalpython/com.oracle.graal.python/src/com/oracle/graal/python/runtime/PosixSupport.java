@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
@@ -104,7 +105,21 @@ public abstract class PosixSupport {
 
     public abstract long getegid() throws UnsupportedPosixFeatureException;
 
+    public abstract long getppid() throws UnsupportedPosixFeatureException;
+
+    public abstract long getpgid(long pid) throws PosixException;
+
+    public abstract void setpgid(long pid, long pgid) throws PosixException;
+
+    public abstract long getpgrp() throws UnsupportedPosixFeatureException;
+
+    public abstract long getsid(long pid) throws PosixException;
+
+    public abstract long setsid() throws PosixException;
+
     public abstract long[] getgroups() throws PosixException;
+
+    public abstract RusageResult getrusage(int who) throws PosixException;
 
     public abstract TruffleString getBackend();
 

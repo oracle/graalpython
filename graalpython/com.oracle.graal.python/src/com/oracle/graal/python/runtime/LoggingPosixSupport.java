@@ -1013,67 +1013,67 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long getppid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long getppid() throws UnsupportedPosixFeatureException {
         logEnter("getppid", "");
         try {
-            return logExit("getppid", "%d", lib.getppid(delegate));
+            return logExit("getppid", "%d", delegate.getppid());
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("getppid", e);
         }
     }
 
-    @ExportMessage
-    final long getpgid(long pid,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long getpgid(long pid) throws PosixException {
         logEnter("getpgid", "%d", pid);
         try {
-            return logExit("getpgid", "%d", lib.getpgid(delegate, pid));
+            return logExit("getpgid", "%d", delegate.getpgid(pid));
         } catch (PosixException e) {
             throw logException("getpgid", e);
         }
     }
 
-    @ExportMessage
-    final void setpgid(long pid, long pgid,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void setpgid(long pid, long pgid) throws PosixException {
         logEnter("setpgid", "%d, %d", pid, pgid);
         try {
-            lib.setpgid(delegate, pid, pgid);
+            delegate.setpgid(pid, pgid);
         } catch (PosixException e) {
             throw logException("setpgid", e);
         }
     }
 
-    @ExportMessage
-    final long getpgrp(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long getpgrp() throws UnsupportedPosixFeatureException {
         logEnter("getpgrp", "");
         try {
-            return logExit("getpgrp", "%d", lib.getpgrp(delegate));
+            return logExit("getpgrp", "%d", delegate.getpgrp());
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("getpgrp", e);
         }
     }
 
-    @ExportMessage
-    final long getsid(long pid,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long getsid(long pid) throws PosixException {
         logEnter("getsid", "%d", pid);
         try {
-            return logExit("getsid", "%d", lib.getsid(delegate, pid));
+            return logExit("getsid", "%d", delegate.getsid(pid));
         } catch (PosixException e) {
             throw logException("getsid", e);
         }
     }
 
-    @ExportMessage
-    final long setsid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long setsid() throws PosixException {
         logEnter("setsid", "");
         try {
-            return logExit("getsid", "%d", lib.setsid(delegate));
+            return logExit("getsid", "%d", delegate.setsid());
         } catch (PosixException e) {
             throw logException("setsid", e);
         }
@@ -1090,12 +1090,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final RusageResult getrusage(int who,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final RusageResult getrusage(int who) throws PosixException {
         logEnter("getrusage", "%d", who);
         try {
-            return logExit("getrusage", "%s", lib.getrusage(delegate, who));
+            return logExit("getrusage", "%s", delegate.getrusage(who));
         } catch (PosixException e) {
             throw logException("getrusage", e);
         }

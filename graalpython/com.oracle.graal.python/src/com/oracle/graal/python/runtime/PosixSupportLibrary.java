@@ -79,18 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract long getppid(Object receiver) throws UnsupportedPosixFeatureException;
-
-    public abstract long getpgid(Object receiver, long pid) throws PosixException;
-
-    public abstract void setpgid(Object receiver, long pid, long pgid) throws PosixException;
-
-    public abstract long getpgrp(Object receiver) throws UnsupportedPosixFeatureException;
-
-    public abstract long getsid(Object receiver, long pid) throws PosixException;
-
-    public abstract long setsid(Object receiver) throws PosixException;
-
     /**
      * Equivalent to struct r_usage with the fields expected on macOS and Linux.
      *
@@ -116,8 +104,6 @@ public abstract class PosixSupportLibrary extends Library {
                     long ru_minflt, long ru_majflt, long ru_nswap, long ru_inblock, long ru_oublock,
                     long ru_msgsnd, long ru_msgrcv, long ru_nsignals, long ru_nvcsw, long ru_nivcsw) {
     }
-
-    public abstract RusageResult getrusage(Object receiver, int who) throws PosixException;
 
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }

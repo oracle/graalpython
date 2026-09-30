@@ -2250,37 +2250,43 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("getegid");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long getppid() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("getppid");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long getpgid(long pid) throws PosixException {
         throw createUnsupportedFeature("getpgid");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void setpgid(long pid, long pgid) throws PosixException {
         throw createUnsupportedFeature("setpgid");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long getpgrp() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("getpgrp");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long getsid(long pid) throws PosixException {
         throw createUnsupportedFeature("getsid");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long setsid() throws PosixException {
         throw createUnsupportedFeature("getsid");
@@ -2300,7 +2306,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw new UnsupportedPosixFeatureException("getgroups was excluded");
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public RusageResult getrusage(int who) throws PosixException {
         Runtime runtime = Runtime.getRuntime();

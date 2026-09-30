@@ -1851,12 +1851,14 @@ public final class NativePosixSupport extends PosixSupport {
         return posixNativeFunctionInvoker.call_getegid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getppid() {
         return posixNativeFunctionInvoker.call_getppid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setpgid(long pid, long pgid) throws PosixException {
         int res = posixNativeFunctionInvoker.call_setpgid(pid, pgid);
         if (res < 0) {
@@ -1864,7 +1866,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getpgid(long pid) throws PosixException {
         long res = posixNativeFunctionInvoker.call_getpgid(pid);
         if (res < 0) {
@@ -1873,12 +1876,14 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getpgrp() {
         return posixNativeFunctionInvoker.call_getpgrp();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getsid(long pid) throws PosixException {
         long res = posixNativeFunctionInvoker.call_getsid(pid);
         if (res < 0) {
@@ -1887,7 +1892,8 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long setsid() throws PosixException {
         long res = posixNativeFunctionInvoker.call_setsid();
         if (res < 0) {
@@ -1921,7 +1927,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public RusageResult getrusage(int who) throws PosixException {
         long nativeResult = NativeMemory.mallocLongArray(16);
         try {

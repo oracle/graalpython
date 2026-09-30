@@ -759,44 +759,46 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getegid();
     }
 
-    @ExportMessage
-    final long getppid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long getppid() throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
-        return nativeLib.getppid(nativePosixSupport);
+        return nativePosixSupport.getppid();
     }
 
-    @ExportMessage
-    final long getpgid(long pid,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long getpgid(long pid) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getpgid(nativePosixSupport, pid);
+        return nativePosixSupport.getpgid(pid);
     }
 
-    @ExportMessage
-    final void setpgid(long pid, long pgid,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void setpgid(long pid, long pgid) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.setpgid(nativePosixSupport, pid, pgid);
+        nativePosixSupport.setpgid(pid, pgid);
     }
 
-    @ExportMessage
-    final long getpgrp(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long getpgrp() throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
-        return nativeLib.getpgrp(nativePosixSupport);
+        return nativePosixSupport.getpgrp();
     }
 
-    @ExportMessage
-    final long getsid(long pid,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long getsid(long pid) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getsid(nativePosixSupport, pid);
+        return nativePosixSupport.getsid(pid);
     }
 
-    @ExportMessage
-    final long setsid(
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long setsid() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.setsid(nativePosixSupport);
+        return nativePosixSupport.setsid();
     }
 
     @Override
@@ -806,11 +808,11 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getgroups();
     }
 
-    @ExportMessage
-    final RusageResult getrusage(int who,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final RusageResult getrusage(int who) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getrusage(nativePosixSupport, who);
+        return nativePosixSupport.getrusage(who);
     }
 
     @ExportMessage
