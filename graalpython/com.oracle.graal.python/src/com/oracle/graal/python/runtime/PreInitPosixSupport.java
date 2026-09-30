@@ -866,39 +866,39 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.system(command);
     }
 
-    @ExportMessage
-    final Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object mmap(Node location, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset, tagname);
+        return nativePosixSupport.mmap(location, length, prot, flags, fd, offset, tagname);
     }
 
-    @ExportMessage
-    final byte mmapReadByte(Object mmap, long index,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final byte mmapReadByte(Object mmap, long index) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.mmapReadByte(nativePosixSupport, mmap, index);
+        return nativePosixSupport.mmapReadByte(mmap, index);
     }
 
-    @ExportMessage
-    final void mmapWriteByte(Object mmap, long index, byte value,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void mmapWriteByte(Object mmap, long index, byte value) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.mmapWriteByte(nativePosixSupport, mmap, index, value);
+        nativePosixSupport.mmapWriteByte(mmap, index, value);
     }
 
-    @ExportMessage
-    final int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.mmapReadBytes(nativePosixSupport, mmap, index, bytes, length);
+        return nativePosixSupport.mmapReadBytes(mmap, index, bytes, length);
     }
 
-    @ExportMessage
-    final void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.mmapWriteBytes(nativePosixSupport, mmap, index, bytes, length);
+        nativePosixSupport.mmapWriteBytes(mmap, index, bytes, length);
     }
 
     @ExportMessage

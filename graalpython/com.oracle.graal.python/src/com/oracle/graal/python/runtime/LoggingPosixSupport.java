@@ -877,12 +877,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public Object mmap(Node location, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException {
         logEnter("mmap", "%d, %d, %d, %d, %d, %s", length, prot, flags, fd, offset, tagname);
         try {
-            return logExit("mmap", "%s", lib.mmap(delegate, length, prot, flags, fd, offset, tagname));
+            return logExit("mmap", "%s", delegate.mmap(location, length, prot, flags, fd, offset, tagname));
         } catch (PosixException e) {
             throw logException("mmap", e);
         }
@@ -899,23 +899,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public byte mmapReadByte(Object mmap, long index,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public byte mmapReadByte(Object mmap, long index) throws PosixException {
         logEnter("mmapReadByte", "%s, %d", mmap, index);
         try {
-            return logExit("mmapReadByte", "%s", lib.mmapReadByte(delegate, mmap, index));
+            return logExit("mmapReadByte", "%s", delegate.mmapReadByte(mmap, index));
         } catch (PosixException e) {
             throw logException("mmapReadByte", e);
         }
     }
 
-    @ExportMessage
-    public void mmapWriteByte(Object mmap, long index, byte value,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void mmapWriteByte(Object mmap, long index, byte value) throws PosixException {
         logEnter("mmapWriteByte", "%s, %d, %d", mmap, index, value);
         try {
-            lib.mmapWriteByte(delegate, mmap, index, value);
+            delegate.mmapWriteByte(mmap, index, value);
         } catch (PosixException e) {
             throw logException("mmapWriteByte", e);
         }
@@ -1101,12 +1101,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         logEnter("mmapReadBytes", "%s, %d, %d", mmap, index, length);
         try {
-            return logExit("mmapReadBytes", "%s", lib.mmapReadBytes(delegate, mmap, index, bytes, length));
+            return logExit("mmapReadBytes", "%s", delegate.mmapReadBytes(mmap, index, bytes, length));
         } catch (PosixException e) {
             throw logException("mmapReadBytes", e);
         }
@@ -1156,12 +1156,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         logEnter("mmapWriteBytes", "%s, %d, %d", mmap, index, length);
         try {
-            lib.mmapWriteBytes(delegate, mmap, index, bytes, length);
+            delegate.mmapWriteBytes(mmap, index, bytes, length);
         } catch (PosixException e) {
             throw logException("mmapWriteBytes", e);
         }

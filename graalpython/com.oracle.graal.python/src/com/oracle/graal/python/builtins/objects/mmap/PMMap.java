@@ -147,10 +147,9 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     byte readByte(int byteOffset,
                     @Bind Node inliningTarget,
-                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode) {
         try {
-            return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
+            return PythonContext.get(inliningTarget).getPosixSupport().mmapReadByte(getPosixSupportHandle(), byteOffset);
         } catch (PosixException e) {
             throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
@@ -159,10 +158,9 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     void writeByte(int byteOffset, byte value,
                     @Bind Node inliningTarget,
-                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode) {
         try {
-            posixLib.mmapWriteByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset, value);
+            PythonContext.get(inliningTarget).getPosixSupport().mmapWriteByte(getPosixSupportHandle(), byteOffset, value);
         } catch (PosixException e) {
             throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
@@ -227,7 +225,7 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     long getNativePointer(
                     @Bind Node inliningTarget,
-                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
         try {
             return posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), getPosixSupportHandle());
         } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {

@@ -141,6 +141,16 @@ public abstract class PosixSupport {
     // does not throw, because posix does not exactly define the return value
     public abstract int system(Object command);
 
+    public abstract Object mmap(Node location, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException;
+
+    public abstract byte mmapReadByte(Object mmap, long index) throws PosixException;
+
+    public abstract void mmapWriteByte(Object mmap, long index, byte value) throws PosixException;
+
+    public abstract int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException;
+
+    public abstract void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException;
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

@@ -108,16 +108,6 @@ public abstract class PosixSupportLibrary extends Library {
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 
-    public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException;
-
-    public abstract byte mmapReadByte(Object receiver, Object mmap, long index) throws PosixException;
-
-    public abstract void mmapWriteByte(Object receiver, Object mmap, long index, byte value) throws PosixException;
-
-    public abstract int mmapReadBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
-
-    public abstract void mmapWriteBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
-
     public abstract void mmapFlush(Object receiver, Object mmap, long offset, long length) throws PosixException;
 
     public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;

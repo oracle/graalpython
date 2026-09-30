@@ -2247,18 +2247,16 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public Object mmap(Node inliningTarget, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException {
         long tagnamePtr = NULLPTR;
         try {
             if (tagname instanceof TruffleString tagnameString) {
                 tagnamePtr = WINDOWS
-                                ? stringToNativeUTF16CString(tagnameString, switchEncodingNode, copyToByteArrayNode)
-                                : stringToNativeUTF8CString(inliningTarget, tagnameString, switchEncodingNode, isValidNode, copyToByteArrayNode);
+                                ? stringToNativeUTF16CString(tagnameString, TruffleString.SwitchEncodingNode.getUncached(), TruffleString.CopyToByteArrayNode.getUncached())
+                                : stringToNativeUTF8CString(inliningTarget, tagnameString, TruffleString.SwitchEncodingNode.getUncached(), TruffleString.IsValidNode.getUncached(),
+                                                TruffleString.CopyToByteArrayNode.getUncached());
             }
             long address = posixNativeFunctionInvoker.call_mmap(length, prot, flags, fd, offset, tagnamePtr);
             if (address == 0) {
@@ -2270,7 +2268,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public byte mmapReadByte(Object mmap, long index) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2281,7 +2280,8 @@ public final class NativePosixSupport extends PosixSupport {
         return UNSAFE.getByte(handle.pointer + index);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapWriteByte(Object mmap, long index, byte value) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2289,7 +2289,8 @@ public final class NativePosixSupport extends PosixSupport {
         UNSAFE.putByte(handle.pointer + index, value);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2298,7 +2299,8 @@ public final class NativePosixSupport extends PosixSupport {
         return length;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;

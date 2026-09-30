@@ -2785,17 +2785,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset, @SuppressWarnings("unused") Object tagname,
-                    @Bind Node inliningTarget,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile isAnonymousProfile) throws PosixException {
+    public MMapHandle mmap(@SuppressWarnings("unused") Node location, long length, int prot, int flags, int fd, long offset, @SuppressWarnings("unused") Object tagname) throws PosixException {
         if (prot == PROT_NONE.value) {
             return MMapHandle.NONE;
         }
 
-        // Note: the profile is not really defaultDirProfile, but it's good to share...
-        if (isAnonymousProfile.profile(inliningTarget, (flags & MAP_ANONYMOUS.value) != 0)) {
+        if ((flags & MAP_ANONYMOUS.value) != 0) {
             try {
                 return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
             } catch (OverflowException e) {
@@ -2837,39 +2835,34 @@ public final class EmulatedPosixSupport extends PosixResources {
         return file.newByteChannel(options);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public byte mmapReadByte(Object mmap, long index,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws PosixException {
+    public byte mmapReadByte(Object mmap, long index) throws PosixException {
         if (mmap == MMapHandle.NONE) {
-            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
         ByteBuffer readingBuffer = allocateByteBuffer(1);
-        int readSize = readBytes(inliningTarget, handle, index, readingBuffer, errBranch);
+        int readSize = readBytes(handle, index, readingBuffer);
         if (readSize == 0) {
             throw posixException(OSErrorEnum.ENODATA);
         }
         return getByte(readingBuffer);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public void mmapWriteByte(Object mmap, long index, byte value,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws PosixException {
-        mmapWriteBytes(mmap, index, new byte[]{value}, 1, inliningTarget, errBranch);
+    public void mmapWriteByte(Object mmap, long index, byte value) throws PosixException {
+        mmapWriteBytes(mmap, index, new byte[]{value}, 1);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws PosixException {
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
-            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
@@ -2877,34 +2870,30 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             sz = PythonUtils.toIntExact(length);
         } catch (OverflowException e) {
-            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EOVERFLOW);
         }
         ByteBuffer readingBuffer = allocateByteBuffer(sz);
-        int readSize = readBytes(inliningTarget, handle, index, readingBuffer, errBranch);
+        int readSize = readBytes(handle, index, readingBuffer);
         if (readSize > 0) {
             getByteBufferArray(readingBuffer, bytes, readSize);
         }
         return readSize;
     }
 
-    private static int readBytes(Node inliningTarget, MMapHandle handle, long index, ByteBuffer readingBuffer, InlinedBranchProfile errBranch) throws PosixException {
+    private static int readBytes(MMapHandle handle, long index, ByteBuffer readingBuffer) throws PosixException {
         try {
             position(handle.channel, index + handle.offset);
             return readChannel(handle.channel, readingBuffer);
         } catch (IOException e) {
-            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws PosixException {
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
-            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
@@ -2917,7 +2906,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
         } catch (Exception e) {
             // Catching generic Exception to also cover NonWritableChannelException
-            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
