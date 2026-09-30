@@ -152,4 +152,14 @@ public abstract class PosixSupport {
 
     /** Returns the Windows version and product information. */
     public abstract WindowsVersion getWindowsVersion() throws PosixException;
+
+    public abstract void unlinkat(int dirFd, Object pathname, boolean rmdir) throws PosixException;
+
+    public abstract void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;
+
+    public abstract void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException;
+
+    public abstract void mkdirat(int dirFd, Object pathname, int mode) throws PosixException;
+
+    public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }

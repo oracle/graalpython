@@ -79,14 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract void unlinkat(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
-
-    public abstract void linkat(Object receiver, int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;
-
-    public abstract void symlinkat(Object receiver, Object target, int linkpathDirFd, Object linkpath) throws PosixException;
-
-    public abstract void mkdirat(Object receiver, int dirFd, Object pathname, int mode) throws PosixException;
-
     public abstract Object getcwd(Object receiver) throws PosixException;
 
     public abstract void chdir(Object receiver, Object path) throws PosixException;
@@ -187,8 +179,6 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void fchownat(Object receiver, int dirFd, Object pathname, long owner, long group, boolean followSymlinks) throws PosixException;
 
     public abstract void fchown(Object receiver, int fd, long owner, long group) throws PosixException;
-
-    public abstract Object readlinkat(Object receiver, int dirFd, Object path) throws PosixException;
 
     public abstract void raise(Object receiver, int signal) throws PosixException;
 

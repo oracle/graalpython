@@ -397,32 +397,32 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getWindowsVersion();
     }
 
-    @ExportMessage
-    final void unlinkat(int dirFd, Object pathname, boolean rmdir,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void unlinkat(int dirFd, Object pathname, boolean rmdir) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.unlinkat(nativePosixSupport, dirFd, pathname, rmdir);
+        nativePosixSupport.unlinkat(dirFd, pathname, rmdir);
     }
 
-    @ExportMessage
-    final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.linkat(nativePosixSupport, oldFdDir, oldPath, newFdDir, newPath, flags);
+        nativePosixSupport.linkat(oldFdDir, oldPath, newFdDir, newPath, flags);
     }
 
-    @ExportMessage
-    final void symlinkat(Object target, int linkpathDirFd, Object linkpath,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.symlinkat(nativePosixSupport, target, linkpathDirFd, linkpath);
+        nativePosixSupport.symlinkat(target, linkpathDirFd, linkpath);
     }
 
-    @ExportMessage
-    final void mkdirat(int dirFd, Object pathname, int mode,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void mkdirat(int dirFd, Object pathname, int mode) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.mkdirat(nativePosixSupport, dirFd, pathname, mode);
+        nativePosixSupport.mkdirat(dirFd, pathname, mode);
     }
 
     @ExportMessage
@@ -610,11 +610,10 @@ public class PreInitPosixSupport extends PosixSupport {
         nativeLib.fchown(nativePosixSupport, fd, owner, group);
     }
 
-    @ExportMessage
-    final Object readlinkat(int dirFd, Object path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final Object readlinkat(int dirFd, Object path) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.readlinkat(nativePosixSupport, dirFd, path);
+        return nativePosixSupport.readlinkat(dirFd, path);
     }
 
     @ExportMessage

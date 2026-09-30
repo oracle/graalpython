@@ -483,45 +483,45 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final void unlinkat(int dirFd, Object pathname, boolean rmdir,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void unlinkat(int dirFd, Object pathname, boolean rmdir) throws PosixException {
         logEnter("unlinkAt", "%d, %s, %b", dirFd, pathname, rmdir);
         try {
-            lib.unlinkat(delegate, dirFd, pathname, rmdir);
+            delegate.unlinkat(dirFd, pathname, rmdir);
         } catch (PosixException e) {
             throw logException("unlinkAt", e);
         }
     }
 
-    @ExportMessage
-    final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException {
         logEnter("linkAt", "%d, %s, %d, %s, %d", oldFdDir, oldPath, newFdDir, newPath, flags);
         try {
-            lib.linkat(delegate, oldFdDir, oldPath, newFdDir, newPath, flags);
+            delegate.linkat(oldFdDir, oldPath, newFdDir, newPath, flags);
         } catch (PosixException e) {
             throw logException("symlinkAt", e);
         }
     }
 
-    @ExportMessage
-    final void symlinkat(Object target, int linkpathDirFd, Object linkpath,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
         logEnter("symlinkAt", "%s, %d, %s", target, linkpathDirFd, linkpath);
         try {
-            lib.symlinkat(delegate, target, linkpathDirFd, linkpath);
+            delegate.symlinkat(target, linkpathDirFd, linkpath);
         } catch (PosixException e) {
             throw logException("symlinkAt", e);
         }
     }
 
-    @ExportMessage
-    final void mkdirat(int dirFd, Object pathname, int mode,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void mkdirat(int dirFd, Object pathname, int mode) throws PosixException {
         logEnter("mkdirAt", "%d, %s, 0%o", dirFd, pathname, mode);
         try {
-            lib.mkdirat(delegate, dirFd, pathname, mode);
+            delegate.mkdirat(dirFd, pathname, mode);
         } catch (PosixException e) {
             throw logException("mkdirAt", e);
         }
@@ -790,12 +790,11 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Object readlinkat(int dirFd, Object path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final Object readlinkat(int dirFd, Object path) throws PosixException {
         logEnter("readlinkat", "%d, %s", dirFd, path);
         try {
-            return logExit("readlinkat", "%s", lib.readlinkat(delegate, dirFd, path));
+            return logExit("readlinkat", "%s", delegate.readlinkat(dirFd, path));
         } catch (PosixException e) {
             throw logException("readlinkat", e);
         }

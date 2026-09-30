@@ -1487,31 +1487,27 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    public void unlinkat(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void unlinkat(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir) throws PosixException {
         TruffleFile f = resolvePath(dirFd, pathToJavaString(path));
         if (f.exists(LinkOption.NOFOLLOW_LINKS)) {
             // we cannot check this if the file does not exist
             boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
             if (isDirectory != rmdir) {
-                errorBranch.enter(inliningTarget);
                 throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR);
             }
         }
         try {
             f.delete();
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
-    @ExportMessage
-    public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException {
         TruffleFile srcFile = resolvePath(oldFdDir, pathToJavaString(oldPath));
         TruffleFile dstFile = resolvePath(newFdDir, pathToJavaString(newPath));
         try {
@@ -1520,34 +1516,29 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             srcFile.createLink(dstFile);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
-    @ExportMessage
-    public void symlinkat(Object target, int linkDirFd, Object link,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void symlinkat(Object target, int linkDirFd, Object link) throws PosixException {
         TruffleFile linkFile = resolvePath(linkDirFd, pathToJavaString(link));
         TruffleFile targetFile = getTruffleFile(pathToJavaString(target));
         try {
             linkFile.createSymbolicLink(targetFile);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
-    @ExportMessage
-    public void mkdirat(int dirFd, Object path, int mode,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void mkdirat(int dirFd, Object path, int mode) throws PosixException {
         TruffleFile linkFile = resolvePath(dirFd, pathToJavaString(path));
         try {
             linkFile.createDirectory();
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
@@ -1989,7 +1980,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw createUnsupportedFeature("fchown");
     }
 
-    @ExportMessage
+    @Override
     public Object readlinkat(int dirFd, Object path) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         try {

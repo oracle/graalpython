@@ -1231,7 +1231,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void unlinkat(int dirFd, Object pathname, boolean rmdir) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -1244,7 +1245,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException {
         long oldPathPtr = NULLPTR;
         long newPathPtr = NULLPTR;
@@ -1261,7 +1263,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
         long targetPtr = NULLPTR;
         long linkpathPtr = NULLPTR;
@@ -1278,7 +1281,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void mkdirat(int dirFd, Object pathname, int mode) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -1646,7 +1650,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public Object readlinkat(int dirFd, Object path) throws PosixException {
         int bufferBytes = WINDOWS ? PATH_MAX.value * 2 : PATH_MAX.value;
         byte[] buffer = new byte[bufferBytes];
