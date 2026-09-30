@@ -358,10 +358,6 @@ public abstract class PosixSupportLibrary extends Library {
         UniversalSockAddr getSockAddr();
     }
 
-    public abstract int ioctlBytes(Object receiver, int fd, long request, byte[] arg) throws PosixException;
-
-    public abstract int ioctlInt(Object receiver, int fd, long request, int arg) throws PosixException;
-
     /**
      * Exception that indicates and error while executing
      * {@link PosixSupport#getaddrinfo(Object, Object, int, int, int, int)}.

@@ -3406,7 +3406,8 @@ public final class NativePosixSupport extends PosixSupport {
                         extractZeroTerminatedString(data, output[4], fromByteArrayNode, switchEncodingFromUtf8Node));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int ioctlBytes(int fd, long request, byte[] arg) throws PosixException {
         long nativeArg = NULLPTR;
         try {
@@ -3427,7 +3428,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int ioctlInt(int fd, long request, int arg) throws PosixException {
         int res = posixNativeFunctionInvoker.call_ioctl_int(fd, request, arg);
         if (res < 0) {

@@ -949,18 +949,18 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getpwentries();
     }
 
-    @ExportMessage
-    final int ioctlBytes(int fd, long request, byte[] arg,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int ioctlBytes(int fd, long request, byte[] arg) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.ioctlBytes(nativePosixSupport, fd, request, arg);
+        return nativePosixSupport.ioctlBytes(fd, request, arg);
     }
 
-    @ExportMessage
-    final int ioctlInt(int fd, long request, int arg,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int ioctlInt(int fd, long request, int arg) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.ioctlInt(nativePosixSupport, fd, request, arg);
+        return nativePosixSupport.ioctlInt(fd, request, arg);
     }
 
     @Override

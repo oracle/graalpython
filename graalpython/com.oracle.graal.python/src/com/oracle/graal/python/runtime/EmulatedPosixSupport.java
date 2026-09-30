@@ -3113,13 +3113,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         return new PwdResult(toTruffleStringUncached(unix.getUsername()), unix.getUid(), unix.getGid(), homeDir, T_BIN_SH);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
     public int ioctlBytes(int fd, long request, byte[] arg) throws PosixException {
         throw createUnsupportedFeature("ioctl");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
     public int ioctlInt(int fd, long request, int arg) throws PosixException {
         throw createUnsupportedFeature("ioctl");

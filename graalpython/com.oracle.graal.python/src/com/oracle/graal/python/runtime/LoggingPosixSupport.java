@@ -1265,23 +1265,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int ioctlBytes(int fd, long request, byte[] arg,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int ioctlBytes(int fd, long request, byte[] arg) throws PosixException {
         logEnter("ioctl", "%d %d %s", fd, request, arg);
         try {
-            return logExit("ioctl", "%d", lib.ioctlBytes(delegate, fd, request, arg));
+            return logExit("ioctl", "%d", delegate.ioctlBytes(fd, request, arg));
         } catch (PosixException e) {
             throw logException("ioctl", e);
         }
     }
 
-    @ExportMessage
-    final int ioctlInt(int fd, long request, int arg,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int ioctlInt(int fd, long request, int arg) throws PosixException {
         logEnter("ioctl", "%d %d %d", fd, request, arg);
         try {
-            return logExit("ioctl", "%d", lib.ioctlInt(delegate, fd, request, arg));
+            return logExit("ioctl", "%d", delegate.ioctlInt(fd, request, arg));
         } catch (PosixException e) {
             throw logException("ioctl", e);
         }

@@ -194,6 +194,10 @@ public abstract class PosixSupport {
     public abstract AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags)
                     throws UnsupportedPosixFeatureException, GetAddrInfoException;
 
+    public abstract int ioctlBytes(int fd, long request, byte[] arg) throws PosixException;
+
+    public abstract int ioctlInt(int fd, long request, int arg) throws PosixException;
+
     public abstract void raise(int signal) throws PosixException;
 
     public abstract int alarm(int seconds) throws PosixException;
