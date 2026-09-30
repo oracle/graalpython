@@ -62,11 +62,8 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.NEXT_MASK_UNREACHABLE;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__item;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__next;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
@@ -113,13 +110,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObject
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
@@ -1132,8 +1129,7 @@ public final class PythonCextBuiltins {
      * </p>
      * <p>
      * In order to save managed-native round trips, this upcall function expects the native pointer
-     * of a primary object and the pointer to a single linked list (node type
-     * {@link CStructs#GraalPyGC_CycleNode}) that contains the referents. The referents are usually
+     * of a primary object and the pointer to a contiguous array of its referent pointers. The referents are usually
      * determined by traversing the primary object.
      * </p>
      * <p>
@@ -1143,7 +1139,7 @@ public final class PythonCextBuiltins {
      * (e.g. a module object may store references in its native module state).
      * </p>
      * <p>
-     * The pointers of the referents in the single linked list are resolved (in particular, this
+     * The pointers of the referents in the array are resolved (in particular, this
      * means that it ensures the existence of a {@link PythonAbstractNativeObject} for each native
      * object) and then stored in a Java object array which is then attached to the primary object.
      * </p>
@@ -1151,7 +1147,7 @@ public final class PythonCextBuiltins {
     private static final Level REPLICATE_NATIVE_REFERENCES_LEVEL = Level.FINER;
 
     @CApiBuiltin(ret = Int, args = {Pointer, Pointer, Int}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class, int.class})
-    static int GraalPyPrivate_Object_ReplicateNativeReferences(long lPointer, long listHead, int n) {
+    static int GraalPyPrivate_Object_ReplicateNativeReferences(long lPointer, long itemsPointer, int n) {
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
         boolean loggable = GC_LOGGER.isLoggable(REPLICATE_NATIVE_REFERENCES_LEVEL);
@@ -1188,12 +1184,10 @@ public final class PythonCextBuiltins {
                 NativeSequenceStorage nativeSequenceStorage = getNativeSequenceStorage(object);
                 oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
             }
-            // Collect referents (traverse native list and resolve pointers)
-            long cur = listHead;
+            // Resolve the contiguous native pointer array before publishing the snapshot.
             CStructAccess.ReadObjectNode readObjectNode = CStructAccess.ReadObjectNode.getUncached();
             for (int i = 0; i < n; i++) {
-                referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
-                cur = readPtrField(cur, GraalPyGC_CycleNode__next);
+                referents[i] = readObjectNode.read(itemsPointer, (long) i * NativeMemory.POINTER_SIZE);
             }
 
             // Publish only a complete snapshot. On failure the previous graph must stay alive.

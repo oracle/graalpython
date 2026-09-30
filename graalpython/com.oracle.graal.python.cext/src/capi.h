@@ -112,14 +112,10 @@ typedef struct {
 
 /* GraalPy GC support */
 
-typedef struct _cycle_node {
-    PyObject *item;
-    struct _cycle_node *next;
-} GraalPyGC_CycleNode;
-
 typedef struct {
-    GraalPyGC_CycleNode *head;
+    PyObject **items;
     int32_t n;
+    int32_t capacity;
     PyGC_Head *reachable;
     int failed;
 } GraalPyGC_Cycle;
