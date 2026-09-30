@@ -842,10 +842,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object openpty(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                OpenPtyResult result = posixLib.openpty(context.getPosixSupport());
+                OpenPtyResult result = context.getPosixSupport().openpty();
                 context.getPosixSupport().setInheritable(result.masterFd(), false);
                 context.getPosixSupport().setInheritable(result.slaveFd(), false);
                 return PFactory.createTuple(context.getLanguage(inliningTarget), new int[]{result.masterFd(), result.slaveFd()});
@@ -2975,10 +2974,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static TruffleString ctermid(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.ctermid(context.getPosixSupport());
+                return context.getPosixSupport().ctermid();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

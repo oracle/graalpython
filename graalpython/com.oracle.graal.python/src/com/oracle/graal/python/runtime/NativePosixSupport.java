@@ -1958,7 +1958,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public OpenPtyResult openpty() throws PosixException {
         long nativeOutvars = NativeMemory.mallocIntArray(2);
         try {
@@ -1974,15 +1975,14 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public TruffleString ctermid(
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) {
+    @Override
+    @TruffleBoundary
+    public TruffleString ctermid() {
         long nativeBuf = NativeMemory.mallocByteArray(L_ctermid.value);
         try {
             posixNativeFunctionInvoker.call_ctermid(nativeBuf);
             // TODO PyUnicode_DecodeFSDefault
-            return zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, nativeBuf);
+            return NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(nativeBuf);
         } finally {
             NativeMemory.free(nativeBuf);
         }

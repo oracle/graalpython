@@ -1112,21 +1112,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final OpenPtyResult openpty(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final OpenPtyResult openpty() throws PosixException {
         logEnter("openpty", "");
         try {
-            return logExit("openpty", "%s", lib.openpty(delegate));
+            return logExit("openpty", "%s", delegate.openpty());
         } catch (PosixException e) {
             throw logException("openpty", e);
         }
     }
 
-    @ExportMessage
-    final TruffleString ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final TruffleString ctermid() throws PosixException {
         logEnter("ctermid", "");
         try {
-            return logExit("ctermid", "%s", lib.ctermid(delegate));
+            return logExit("ctermid", "%s", delegate.ctermid());
         } catch (PosixException e) {
             throw logException("ctermid", e);
         }

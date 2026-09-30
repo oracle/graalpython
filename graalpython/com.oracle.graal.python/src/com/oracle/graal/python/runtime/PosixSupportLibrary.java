@@ -108,10 +108,6 @@ public abstract class PosixSupportLibrary extends Library {
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 
-    public abstract OpenPtyResult openpty(Object receiver) throws PosixException;
-
-    public abstract TruffleString ctermid(Object receiver) throws PosixException;
-
     // note: this leaks memory in native backend and is not synchronized
     // TODO is it worth synchronizing at least all accesses made through PosixSupportLibrary?
     public abstract void setenv(Object receiver, Object name, Object value, boolean overwrite) throws PosixException;

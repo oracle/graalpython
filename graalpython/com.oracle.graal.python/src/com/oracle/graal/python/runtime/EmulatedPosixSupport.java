@@ -2369,13 +2369,15 @@ public final class EmulatedPosixSupport extends PosixResources {
                         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public OpenPtyResult openpty() throws PosixException {
         throw createUnsupportedFeature("openpty");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public TruffleString ctermid() {
         return T_DEV_TTY;

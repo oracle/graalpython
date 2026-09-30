@@ -815,16 +815,18 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getrusage(who);
     }
 
-    @ExportMessage
-    final OpenPtyResult openpty(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final OpenPtyResult openpty() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.openpty(nativePosixSupport);
+        return nativePosixSupport.openpty();
     }
 
-    @ExportMessage
-    final TruffleString ctermid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final TruffleString ctermid() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.ctermid(nativePosixSupport);
+        return nativePosixSupport.ctermid();
     }
 
     @ExportMessage
