@@ -66,6 +66,20 @@ public abstract class PosixSupport {
         return PythonContext.get(node).getPosixSupport();
     }
 
+    public abstract long semOpen(Object name, int openFlags, int mode, int value) throws PosixException;
+
+    public final long semOpen(Object name) throws PosixException {
+        return semOpen(name, 0, 0, 0);
+    }
+
+    public abstract void semClose(long handle) throws PosixException;
+
+    public abstract void semUnlink(Object name) throws PosixException;
+
+    public abstract int shmOpen(Object name, int openFlags, int mode) throws PosixException;
+
+    public abstract void shmUnlink(Object name) throws PosixException;
+
     public abstract void raise(int signal) throws PosixException;
 
     public abstract int alarm(int seconds) throws PosixException;

@@ -1114,39 +1114,39 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativeLib.getaddrinfo(nativePosixSupport, node, service, family, sockType, protocol, flags);
     }
 
-    @ExportMessage
-    final long semOpen(Object name, int openFlags, int mode, int value,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
         checkNotInPreInitialization();
-        return lib.semOpen(nativePosixSupport, name, openFlags, mode, value);
+        return nativePosixSupport.semOpen(name, openFlags, mode, value);
     }
 
-    @ExportMessage
-    final void semClose(long handle,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semClose(long handle) throws PosixException {
         checkNotInPreInitialization();
-        lib.semClose(nativePosixSupport, handle);
+        nativePosixSupport.semClose(handle);
     }
 
-    @ExportMessage
-    final void semUnlink(Object name,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semUnlink(Object name) throws PosixException {
         checkNotInPreInitialization();
-        lib.semUnlink(nativePosixSupport, name);
+        nativePosixSupport.semUnlink(name);
     }
 
-    @ExportMessage
-    final int shmOpen(Object name, int openFlags, int mode,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int shmOpen(Object name, int openFlags, int mode) throws PosixException {
         checkNotInPreInitialization();
-        return lib.shmOpen(nativePosixSupport, name, openFlags, mode);
+        return nativePosixSupport.shmOpen(name, openFlags, mode);
     }
 
-    @ExportMessage
-    final void shmUnlink(Object name,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void shmUnlink(Object name) throws PosixException {
         checkNotInPreInitialization();
-        lib.shmUnlink(nativePosixSupport, name);
+        nativePosixSupport.shmUnlink(name);
     }
 
     @ExportMessage

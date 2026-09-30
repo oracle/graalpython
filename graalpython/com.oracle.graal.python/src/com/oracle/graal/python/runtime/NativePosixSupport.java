@@ -3098,8 +3098,9 @@ public final class NativePosixSupport extends PosixSupport {
 
     }
 
-    @ExportMessage
-    long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             long ptr = posixNativeFunctionInvoker.call_sem_open(namePtr, openFlags, mode, value);
@@ -3112,16 +3113,18 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void semClose(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semClose(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_close(handle);
         if (res < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    void semUnlink(Object name) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semUnlink(Object name) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             int res = posixNativeFunctionInvoker.call_sem_unlink(namePtr);
@@ -3133,8 +3136,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    int shmOpen(Object name, int openFlags, int mode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public int shmOpen(Object name, int openFlags, int mode) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             int fd = posixNativeFunctionInvoker.call_shm_open(namePtr, openFlags, mode);
@@ -3147,8 +3151,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void shmUnlink(Object name) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void shmUnlink(Object name) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             int res = posixNativeFunctionInvoker.call_shm_unlink(namePtr);

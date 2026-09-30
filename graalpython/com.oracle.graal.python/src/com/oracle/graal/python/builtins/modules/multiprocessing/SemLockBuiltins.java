@@ -130,16 +130,16 @@ public class SemLockBuiltins extends PythonBuiltins {
             Object posixName = posixLib.createCStringFromString(posixSupport, name);
             long handle;
             try {
-                handle = posixLib.semOpen(posixSupport, posixName, O_CREAT.value | O_EXCL.value, 0600, value);
+                handle = posixSupport.semOpen(posixName, O_CREAT.value | O_EXCL.value, 0600, value);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (unlink) {
                 try {
-                    posixLib.semUnlink(posixSupport, posixName);
+                    posixSupport.semUnlink(posixName);
                 } catch (PosixException e) {
                     try {
-                        posixLib.semClose(posixSupport, handle);
+                        posixSupport.semClose(handle);
                     } catch (PosixException ex) {
                         // Ignore, we're already on an error path
                     }
@@ -432,7 +432,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             Object posixName = posixLib.createCStringFromString(posixSupport, posixNameString);
             long handle;
             try {
-                handle = posixLib.semOpen(posixSupport, posixName);
+                handle = posixSupport.semOpen(posixName);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

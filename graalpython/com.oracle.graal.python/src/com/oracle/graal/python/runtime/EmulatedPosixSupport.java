@@ -2983,33 +2983,38 @@ public final class EmulatedPosixSupport extends PosixResources {
         return ((ReadableByteChannel) readableChannel).read(dst);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
+    public long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    void semClose(long handle) throws PosixException {
+    public void semClose(long handle) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    void semUnlink(Object name) throws PosixException {
+    public void semUnlink(Object name) throws PosixException {
         throw posixException(OSErrorEnum.ENOENT);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    int shmOpen(Object name, int openFlags, int mode) throws PosixException {
+    public int shmOpen(Object name, int openFlags, int mode) throws PosixException {
         throw createUnsupportedFeature("shm_open");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("unused")
-    void shmUnlink(Object name) throws PosixException {
+    public void shmUnlink(Object name) throws PosixException {
         throw createUnsupportedFeature("shm_unlink");
     }
 

@@ -1533,56 +1533,56 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long semOpen(Object name, int openFlags, int mode, int value,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
         logEnter("semOpen", "%s %d %d %d", name, openFlags, mode, value);
         try {
-            return logExit("semOpen", "0x%x", lib.semOpen(delegate, name, openFlags, mode, value));
+            return logExit("semOpen", "0x%x", delegate.semOpen(name, openFlags, mode, value));
         } catch (PosixException e) {
             throw logException("semOpen", e);
         }
     }
 
-    @ExportMessage
-    final void semClose(long handle,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semClose(long handle) throws PosixException {
         logEnter("semClose", "0x%x", handle);
         try {
-            lib.semClose(delegate, handle);
+            delegate.semClose(handle);
         } catch (PosixException e) {
             throw logException("semClose", e);
         }
     }
 
-    @ExportMessage
-    final void semUnlink(Object name,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void semUnlink(Object name) throws PosixException {
         logEnter("semUnlink", "%s", name);
         try {
-            lib.semUnlink(delegate, name);
+            delegate.semUnlink(name);
         } catch (PosixException e) {
             throw logException("semUnlink", e);
         }
     }
 
-    @ExportMessage
-    final int shmOpen(Object name, int openFlags, int mode,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int shmOpen(Object name, int openFlags, int mode) throws PosixException {
         logEnter("shmOpen", "%s %d %d", name, openFlags, mode);
         try {
-            return logExit("shmOpen", "%d", lib.shmOpen(delegate, name, openFlags, mode));
+            return logExit("shmOpen", "%d", delegate.shmOpen(name, openFlags, mode));
         } catch (PosixException e) {
             throw logException("shmOpen", e);
         }
     }
 
-    @ExportMessage
-    final void shmUnlink(Object name,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void shmUnlink(Object name) throws PosixException {
         logEnter("shmUnlink", "%s", name);
         try {
-            lib.shmUnlink(delegate, name);
+            delegate.shmUnlink(name);
         } catch (PosixException e) {
             throw logException("shmUnlink", e);
         }
