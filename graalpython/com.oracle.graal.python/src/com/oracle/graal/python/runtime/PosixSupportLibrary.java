@@ -79,16 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract boolean faccessat(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException;
-
-    public abstract void fchmodat(Object receiver, int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
-
-    public abstract void fchmod(Object receiver, int fd, int mode) throws PosixException;
-
-    public abstract void fchownat(Object receiver, int dirFd, Object pathname, long owner, long group, boolean followSymlinks) throws PosixException;
-
-    public abstract void fchown(Object receiver, int fd, long owner, long group) throws PosixException;
-
     public abstract void raise(Object receiver, int signal) throws PosixException;
 
     public abstract int alarm(Object receiver, int seconds) throws PosixException;

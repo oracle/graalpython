@@ -366,8 +366,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         withoutIOSocket = !context.getContext().getEnv().isSocketIOAllowed();
     }
 
-    @TruffleBoundary
     static UnsupportedPosixFeatureException createUnsupportedFeature(String message) {
+        CompilerAsserts.neverPartOfCompilation();
         // TODO should have a link to some doc that tells you what to do about it
         return new UnsupportedPosixFeatureException("Feature not supported on 'java' POSIX backend: " + message);
     }
@@ -1844,12 +1844,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException {
         if (effectiveIds) {
-            errBranch.enter(inliningTarget);
             throw createUnsupportedFeature("faccess with effective user IDs");
         }
         TruffleFile file;
@@ -1869,7 +1867,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (!followSymlinks) {
             // TruffleFile#isExecutable/isReadable/isWriteable does not support LinkOptions, but
             // that's probably because Java NIO does not support NOFOLLOW_LINKS in permissions check
-            errBranch.enter(inliningTarget);
             throw createUnsupportedFeature("faccess with effective user IDs");
         }
         boolean result = true;
@@ -1885,7 +1882,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         return result;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
@@ -1904,7 +1902,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchmod(int fd, int mode) throws PosixException {
         String path = getFilePath(fd);
         if (path == null) {
@@ -1919,12 +1918,14 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) throws PosixException {
         throw createUnsupportedFeature("fchownat");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchown(int fd, long owner, long group) throws PosixException {
         throw createUnsupportedFeature("fchown");
     }

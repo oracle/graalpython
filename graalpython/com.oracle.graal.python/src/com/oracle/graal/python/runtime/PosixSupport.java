@@ -44,6 +44,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -207,6 +208,16 @@ public abstract class PosixSupport {
     public abstract void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
     public abstract void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
+
+    public abstract boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException;
+
+    public abstract void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
+
+    public abstract void fchmod(int fd, int mode) throws PosixException;
+
+    public abstract void fchownat(int dirFd, Object pathname, long owner, long group, boolean followSymlinks) throws PosixException;
+
+    public abstract void fchown(int fd, long owner, long group) throws PosixException;
 
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }

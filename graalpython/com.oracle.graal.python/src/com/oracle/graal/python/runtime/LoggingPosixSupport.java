@@ -735,56 +735,56 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException {
         logEnter("faccessAt", "%d, %s, 0%o, %b, %b", dirFd, path, mode, effectiveIds, followSymlinks);
         try {
-            return logExit("faccessAt", "%b", lib.faccessat(delegate, dirFd, path, mode, effectiveIds, followSymlinks));
+            return logExit("faccessAt", "%b", delegate.faccessat(dirFd, path, mode, effectiveIds, followSymlinks));
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("faccessAt", e);
         }
     }
 
-    @ExportMessage
-    final void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException {
         logEnter("fchmodat", "%d, %s, 0%o, %b", dirFd, path, mode, followSymlinks);
         try {
-            lib.fchmodat(delegate, dirFd, path, mode, followSymlinks);
+            delegate.fchmodat(dirFd, path, mode, followSymlinks);
         } catch (PosixException e) {
             throw logException("fchmodat", e);
         }
     }
 
-    @ExportMessage
-    final void fchmod(int fd, int mode,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchmod(int fd, int mode) throws PosixException {
         logEnter("fchmod", "%d, 0%o", fd, mode);
         try {
-            lib.fchmod(delegate, fd, mode);
+            delegate.fchmod(fd, mode);
         } catch (PosixException e) {
             throw logException("fchmod", e);
         }
     }
 
-    @ExportMessage
-    final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) throws PosixException {
         logEnter("fchownat", "%d, %s, %d, %d, %b", dirFd, path, owner, group, followSymlinks);
         try {
-            lib.fchownat(delegate, dirFd, path, owner, group, followSymlinks);
+            delegate.fchownat(dirFd, path, owner, group, followSymlinks);
         } catch (PosixException e) {
             throw logException("fchownat", e);
         }
     }
 
-    @ExportMessage
-    final void fchown(int fd, long owner, long group,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchown(int fd, long owner, long group) throws PosixException {
         logEnter("fchown", "%d, %d, %d", fd, owner, group);
         try {
-            lib.fchown(delegate, fd, owner, group);
+            delegate.fchown(fd, owner, group);
         } catch (PosixException e) {
             throw logException("fchown", e);
         }

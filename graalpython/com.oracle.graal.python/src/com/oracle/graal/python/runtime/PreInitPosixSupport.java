@@ -577,39 +577,39 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.replaceat(oldDirFd, oldPath, newDirFd, newPath);
     }
 
-    @ExportMessage
-    final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
-        return nativeLib.faccessat(nativePosixSupport, dirFd, path, mode, effectiveIds, followSymlinks);
+        return nativePosixSupport.faccessat(dirFd, path, mode, effectiveIds, followSymlinks);
     }
 
-    @ExportMessage
-    final void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fchmodat(nativePosixSupport, dirFd, path, mode, followSymlinks);
+        nativePosixSupport.fchmodat(dirFd, path, mode, followSymlinks);
     }
 
-    @ExportMessage
-    final void fchmod(int fd, int mode,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchmod(int fd, int mode) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fchmod(nativePosixSupport, fd, mode);
+        nativePosixSupport.fchmod(fd, mode);
     }
 
-    @ExportMessage
-    final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fchownat(nativePosixSupport, dirFd, path, owner, group, followSymlinks);
+        nativePosixSupport.fchownat(dirFd, path, owner, group, followSymlinks);
     }
 
-    @ExportMessage
-    final void fchown(int fd, long owner, long group,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void fchown(int fd, long owner, long group) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.fchown(nativePosixSupport, fd, owner, group);
+        nativePosixSupport.fchown(fd, owner, group);
     }
 
     @Override

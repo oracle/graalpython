@@ -1591,7 +1591,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) {
         long pathPtr = pathToNativeCString(path);
         int ret;
@@ -1606,7 +1607,8 @@ public final class NativePosixSupport extends PosixSupport {
         return ret == 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1619,7 +1621,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchmod(int fd, int mode) throws PosixException {
         int ret = posixNativeFunctionInvoker.call_fchmod(fd, mode);
         if (ret != 0) {
@@ -1627,7 +1630,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1640,7 +1644,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchown(int fd, long owner, long group) throws PosixException {
         int ret = posixNativeFunctionInvoker.call_fchown(fd, owner, group);
         if (ret != 0) {

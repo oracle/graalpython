@@ -2325,10 +2325,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static boolean access(PosixPath path, int mode, int dirFd, boolean effectiveIds, boolean followSymlinks,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.faccessat(context.getPosixSupport(), dirFd, path.value, mode, effectiveIds, followSymlinks);
+                return context.getPosixSupport().faccessat(dirFd, path.value, mode, effectiveIds, followSymlinks);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
@@ -2350,11 +2349,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_CHMOD, fd, mode, -1);
             try {
-                posixLib.fchmod(context.getPosixSupport(), fd, mode);
+                context.getPosixSupport().fchmod(fd, mode);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd);
             }
@@ -2380,12 +2378,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_CHMOD, path.originalObject, mode, dirFdForAudit(dirFd));
             try {
-                posixLib.fchmodat(context.getPosixSupport(), dirFd, path.value, mode, followSymlinks);
+                context.getPosixSupport().fchmodat(dirFd, path.value, mode, followSymlinks);
             } catch (PosixException e) {
                 // TODO CPython checks for ENOTSUP as well
                 if (e.hasErrno(OSErrorEnum.EOPNOTSUPP) && !followSymlinks) {
@@ -2405,7 +2402,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
                         @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode) {
@@ -2415,7 +2411,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             // arguments is used, CPython's implementation of chmod simply ignores dir_fd and
             // follow_symlinks if a fd is specified instead of a path.
             try {
-                posixLib.fchmod(context.getPosixSupport(), fd.fd, mode);
+                context.getPosixSupport().fchmod(fd.fd, mode);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -2434,14 +2430,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_CHOWN, fd, uid, gid, -1);
             try {
                 gil.release(true);
                 try {
-                    posixLib.fchown(context.getPosixSupport(), fd, uid, gid);
+                    context.getPosixSupport().fchown(fd, uid, gid);
                 } finally {
                     gil.acquire();
                 }
@@ -2468,14 +2463,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_CHOWN, path.originalObject, uid, gid, -1);
             try {
                 gil.release(true);
                 try {
-                    posixLib.fchownat(context.getPosixSupport(), AT_FDCWD.value, path.value, uid, gid, false);
+                    context.getPosixSupport().fchownat(AT_FDCWD.value, path.value, uid, gid, false);
                 } finally {
                     gil.acquire();
                 }
@@ -2504,7 +2498,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached GilNode gil,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
@@ -2513,7 +2506,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLib.fchownat(context.getPosixSupport(), dirFd, path.value, uid, gid, followSymlinks);
+                    context.getPosixSupport().fchownat(dirFd, path.value, uid, gid, followSymlinks);
                 } finally {
                     gil.acquire();
                 }
@@ -2528,7 +2521,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached GilNode gil,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -2542,7 +2534,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLib.fchown(context.getPosixSupport(), fd.fd, uid, gid);
+                    context.getPosixSupport().fchown(fd.fd, uid, gid);
                 } finally {
                     gil.acquire();
                 }
