@@ -1226,40 +1226,40 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public PwdResult getpwuid(long uid,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public PwdResult getpwuid(long uid) throws PosixException {
         logEnter("getpwuid", "%d", uid);
         try {
-            return logExit("getpwuid", "%s", lib.getpwuid(delegate, uid));
+            return logExit("getpwuid", "%s", delegate.getpwuid(uid));
         } catch (PosixException e) {
             throw logException("getpwuid", e);
         }
     }
 
-    @ExportMessage
-    public PwdResult getpwnam(Object name,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public PwdResult getpwnam(Object name) throws PosixException {
         logEnter("getpwnam", "%s", name);
         try {
-            return logExit("getpwnam", "%s", lib.getpwnam(delegate, name));
+            return logExit("getpwnam", "%s", delegate.getpwnam(name));
         } catch (PosixException e) {
             throw logException("getpwnam", e);
         }
     }
 
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean hasGetpwentries(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        return logExit("hasGetpwentries", "%b", lib.hasGetpwentries(delegate));
+    @Override
+    @TruffleBoundary
+    public boolean hasGetpwentries() {
+        return logExit("hasGetpwentries", "%b", delegate.hasGetpwentries());
     }
 
-    @ExportMessage
-    public PwdResult[] getpwentries(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public PwdResult[] getpwentries() throws PosixException {
         logEnter("getpwentries", "");
         try {
-            return logExit("getpwentries", "%s", lib.getpwentries(delegate));
+            return logExit("getpwentries", "%s", delegate.getpwentries());
         } catch (PosixException e) {
             throw logException("getpwentries", e);
         }

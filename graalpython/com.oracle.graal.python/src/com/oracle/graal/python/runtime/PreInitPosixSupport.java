@@ -922,29 +922,31 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.mmapGetPointer(mmap);
     }
 
-    @ExportMessage
-    public PwdResult getpwuid(long uid,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public PwdResult getpwuid(long uid) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getpwuid(nativePosixSupport, uid);
+        return nativePosixSupport.getpwuid(uid);
     }
 
-    @ExportMessage
-    public PwdResult getpwnam(Object name,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public PwdResult getpwnam(Object name) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getpwnam(nativePosixSupport, name);
+        return nativePosixSupport.getpwnam(name);
     }
 
-    @ExportMessage
-    public boolean hasGetpwentries(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        return nativeLib.hasGetpwentries(nativePosixSupport);
+    @Override
+    @TruffleBoundary
+    public boolean hasGetpwentries() {
+        return nativePosixSupport.hasGetpwentries();
     }
 
-    @ExportMessage
-    public PwdResult[] getpwentries(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public PwdResult[] getpwentries() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getpwentries(nativePosixSupport);
+        return nativePosixSupport.getpwentries();
     }
 
     @ExportMessage

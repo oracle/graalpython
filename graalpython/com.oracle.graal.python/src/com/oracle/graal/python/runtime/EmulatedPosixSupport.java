@@ -3053,7 +3053,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
@@ -3074,7 +3074,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw new UnsupportedPosixFeatureException("getpwuid was excluded");
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) throws PosixException {
@@ -3095,13 +3095,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw new UnsupportedPosixFeatureException("getpwnam was excluded");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public boolean hasGetpwentries() {
         return false;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult[] getpwentries() throws PosixException {
         throw createUnsupportedFeature("getpwent");

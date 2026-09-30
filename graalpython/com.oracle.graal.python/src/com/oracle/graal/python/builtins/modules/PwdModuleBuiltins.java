@@ -106,8 +106,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
-        boolean hasGetpwentries = posixLib.hasGetpwentries(PythonContext.get(null).getPosixSupport());
+        boolean hasGetpwentries = PythonContext.get(null).getPosixSupport().hasGetpwentries();
         if (hasGetpwentries) {
             return PwdModuleBuiltinsFactory.getFactories();
         } else {
@@ -145,7 +144,6 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached UidConversionNode uidConversionNode,
                         @Cached IsBuiltinObjectProfile classProfile,
                         @Cached GilNode gil,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -162,7 +160,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    pwd = posixLib.getpwuid(context.getPosixSupport(), uid);
+                    pwd = context.getPosixSupport().getpwuid(uid);
                 } finally {
                     gil.acquire(context);
                 }
@@ -211,7 +209,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    pwd = posixLib.getpwnam(context.getPosixSupport(), nameEncoded);
+                    pwd = context.getPosixSupport().getpwnam(nameEncoded);
                 } finally {
                     gil.acquire(context);
                 }
@@ -232,13 +230,12 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
         static Object doGetpall(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // We cannot release the GIL, because the underlying POSIX calls are not thread safe
             PwdResult[] entries;
             try {
-                entries = posixLib.getpwentries(context.getPosixSupport());
+                entries = context.getPosixSupport().getpwentries();
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

@@ -3251,38 +3251,38 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult getpwuid(long uid,
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
-        return getpw(uid, NULLPTR, fromByteArrayNode, switchEncodingFromUtf8Node);
+    public PwdResult getpwuid(long uid) throws PosixException {
+        return getpw(uid, NULLPTR, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached());
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult getpwnam(Object name,
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+    public PwdResult getpwnam(Object name) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
-            return getpw(-1, namePtr, fromByteArrayNode, switchEncodingFromUtf8Node);
+            return getpw(-1, namePtr, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached());
         } finally {
             NativeMemory.free(namePtr);
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public boolean hasGetpwentries() {
         return true;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult[] getpwentries(
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+    public PwdResult[] getpwentries() throws PosixException {
+        TruffleString.FromByteArrayNode fromByteArrayNode = TruffleString.FromByteArrayNode.getUncached();
+        TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node = TruffleString.SwitchEncodingNode.getUncached();
         // Note: this is not thread safe, so potentially problematic while running multiple contexts
         // within one VM
         int sysConfMax = getSysConfPwdSizeMax();

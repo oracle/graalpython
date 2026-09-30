@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
@@ -89,6 +90,32 @@ public abstract class PosixSupport {
     public abstract boolean semTryWait(long handle) throws PosixException;
 
     public abstract boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException;
+
+    /**
+     * Equivalent of POSIX {@code getpwuid_r}. On top of the error codes defined by POSIX, this may
+     * also throw {@code ENOMEM}. Returns {@code null} if no matching entry was found.
+     */
+    public abstract PwdResult getpwuid(long uid) throws PosixException;
+
+    /**
+     * Equivalent of POSIX {@code getpwnam_r}. On top of the error codes defined by POSIX, this may
+     * also throw {@code ENOMEM}. Returns {@code null} if no matching entry was found.
+     *
+     * @param name the name encoded the same way as paths
+     */
+    public abstract PwdResult getpwnam(Object name) throws PosixException;
+
+    /**
+     * Availability of {@link #getpwentries()}. If {@code false}, then {@link #getpwentries()} will
+     * throw {@link UnsupportedPosixFeatureException}.
+     */
+    public abstract boolean hasGetpwentries();
+
+    /**
+     * Returns a list of all entries in the password database. Equivalent of using POSIX functions
+     * {@code setpwent}, {@code getpwent}, and {@code endpwent}.
+     */
+    public abstract PwdResult[] getpwentries() throws PosixException;
 
     public abstract void raise(int signal) throws PosixException;
 
