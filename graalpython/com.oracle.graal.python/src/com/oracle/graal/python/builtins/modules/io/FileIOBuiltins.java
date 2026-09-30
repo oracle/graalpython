@@ -249,7 +249,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 try {
                     gil.release(true);
                     try {
-                        return posixLib.openat(ctxt.getPosixSupport(), AT_FDCWD.value, path, flags, mode);
+                        return ctxt.getPosixSupport().openat(AT_FDCWD.value, path, flags, mode);
                     } finally {
                         gil.acquire();
                     }

@@ -747,7 +747,7 @@ public final class NativePosixSupport extends PosixSupport {
         return posixNativeFunctionInvoker.call_umask(mask);
     }
 
-    @ExportMessage
+    @Override
     public int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -761,7 +761,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public int close(int fd) throws PosixException {
         final int rv = posixNativeFunctionInvoker.call_close(fd);
         if (rv < 0) {

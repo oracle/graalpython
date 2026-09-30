@@ -212,7 +212,7 @@ final class OwnFD extends FinalizableReference {
         if (markReleased()) {
             assert isReleased();
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                PosixSupportLibrary.getUncached().close(context.getPosixSupport(), (int) getReference());
+                context.getPosixSupport().close((int) getReference());
             } catch (PosixException e) {
                 // ignore
             }

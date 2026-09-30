@@ -79,10 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract int openat(Object receiver, int dirFd, Object pathname, int flags, int mode) throws PosixException;
-
-    public abstract int close(Object receiver, int fd) throws PosixException;
-
     public abstract long getOsfHandle(Object receiver, int fd) throws PosixException;
 
     public abstract int openOsfHandle(Object receiver, long handle, int flags) throws PosixException;

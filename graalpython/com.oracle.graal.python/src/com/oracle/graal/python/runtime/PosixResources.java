@@ -356,7 +356,7 @@ abstract class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public void close(int fd) {
+    public void closeResource(int fd) {
         try {
             removeFD(fd);
         } catch (IOException ignored) {

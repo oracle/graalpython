@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.NativePosixSupport;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -85,7 +86,7 @@ public final class PMMap extends PythonObject {
         return ref.getReference();
     }
 
-    void close(PosixSupportLibrary lib, Object posix) {
+    void close(PosixSupportLibrary lib, PosixSupport posix) {
         ref.close(lib, posix);
     }
 
@@ -196,7 +197,7 @@ public final class PMMap extends PythonObject {
             return new MMapBuiltins.ReleaseCallback(this);
         }
 
-        void close(PosixSupportLibrary posixLib, Object posixSupport) {
+        void close(PosixSupportLibrary posixLib, PosixSupport posixSupport) {
             if (!markReleased()) {
                 return;
             }
@@ -204,7 +205,7 @@ public final class PMMap extends PythonObject {
             Object handle = getReference();
             if (fd != -1) {
                 try {
-                    posixLib.close(posixSupport, fd);
+                    posixSupport.close(fd);
                 } catch (PosixException e) {
                     // ignored (CPython does not check the return value)
                 }

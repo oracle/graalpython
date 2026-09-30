@@ -148,23 +148,21 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int openat(int dirFd, Object pathname, int flags, int mode,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         logEnter("openAt", "%d, %s, 0x%x, 0%o", dirFd, pathname, flags, mode);
         try {
-            return logExit("openAt", "%d", lib.openat(delegate, dirFd, pathname, flags, mode));
+            return logExit("openAt", "%d", delegate.openat(dirFd, pathname, flags, mode));
         } catch (PosixException e) {
             throw logException("openAt", e);
         }
     }
 
-    @ExportMessage
-    final int close(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int close(int fd) throws PosixException {
         logEnter("close", "%d", fd);
         try {
-            return lib.close(delegate, fd);
+            return delegate.close(fd);
         } catch (PosixException e) {
             throw logException("close", e);
         }

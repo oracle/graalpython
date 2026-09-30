@@ -1105,7 +1105,7 @@ public class SocketTests {
 
     private int createSocket(int family, int type, int protocol) throws PosixException {
         int sockfd = lib.socket(posixSupport, family, type, protocol);
-        cleanup.add(() -> lib.close(posixSupport, sockfd));
+        cleanup.add(() -> posixSupport.close(sockfd));
         return sockfd;
     }
 
@@ -1278,7 +1278,7 @@ public class SocketTests {
 
         int acceptFd(FamilySpecificSockAddr expectedAddress) throws PosixException {
             AcceptResult acceptResult = lib.accept(posixSupport, fd);
-            cleanup.add(() -> lib.close(posixSupport, acceptResult.socketFd));
+            cleanup.add(() -> posixSupport.close(acceptResult.socketFd));
             checkUsa(expectedAddress, acceptResult.sockAddr);
             return acceptResult.socketFd;
         }

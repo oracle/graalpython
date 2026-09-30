@@ -69,6 +69,10 @@ public abstract class PosixSupport {
 
     public abstract int umask(int mask) throws PosixException;
 
+    public abstract int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException;
+
+    public abstract int close(int fd) throws PosixException;
+
     public abstract Buffer read(int fd, long length) throws PosixException;
 
     public abstract long write(int fd, Buffer data) throws PosixException;

@@ -247,8 +247,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -752,7 +752,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object close(VirtualFrame frame, Object fdObj,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached GilNode gil,
                         @Cached PyLongAsIntNode asIntNode,
@@ -761,7 +760,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLib.close(context.getPosixSupport(), fd);
+                    context.getPosixSupport().close(fd);
                 } finally {
                     gil.acquire();
                 }
@@ -781,7 +780,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object close(VirtualFrame frame, Object fdObj,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached GilNode gil,
                         @Cached PyLongAsIntNode asIntNode,
@@ -795,7 +793,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         context.getPosixSupport().setInheritable(dup, false);
                     } catch (PosixException e1) {
                         try {
-                            posixLib.close(context.getPosixSupport(), dup);
+                            context.getPosixSupport().close(dup);
                         } catch (PosixException e2) {
                             // ignore
                         }

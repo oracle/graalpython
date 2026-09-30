@@ -316,7 +316,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 if (trackedFd != ANONYMOUS_FD) {
                     try {
-                        posixSupportLib.close(posixSupport, trackedFd);
+                        posixSupport.close(trackedFd);
                     } catch (PosixException ignored) {
                     }
                 }

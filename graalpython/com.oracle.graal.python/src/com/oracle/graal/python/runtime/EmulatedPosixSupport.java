@@ -441,9 +441,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         return err.getMessage();
     }
 
-    @ExportMessage(name = "close")
-    public int closeMessage(int fd) throws PosixException {
-        // TODO: to be replaced with super.close once the super class is merged with this class
+    @Override
+    public int close(int fd) throws PosixException {
         try {
             if (!removeFD(fd)) {
                 throw posixException(OSErrorEnum.EBADF);
@@ -454,18 +453,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public int openat(int dirFd, Object path, int flags, int mode,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public int openat(int dirFd, Object path, int flags, int mode) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         Set<StandardOpenOption> options = flagsToOptions(flags);
         FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
         try {
             return openTruffleFile(file, options, attributes);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
             throw posixException(errAndMsg);
         }
@@ -1732,7 +1728,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw posixException(OSErrorEnum.fromException(e));
         } finally {
             if (dirStream.fd != -1) {
-                close(dirStream.fd);
+                closeResource(dirStream.fd);
             }
         }
     }

@@ -120,8 +120,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static int doit(VirtualFrame frame, int handle, Object buffer,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -148,11 +148,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone doit(VirtualFrame frame, int handle,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.close(context.getPosixSupport(), handle);
+                context.getPosixSupport().close(handle);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

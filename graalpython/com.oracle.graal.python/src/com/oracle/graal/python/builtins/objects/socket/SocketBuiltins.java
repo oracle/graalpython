@@ -207,7 +207,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     try {
-                        posixLib.close(context.getPosixSupport(), fd);
+                        context.getPosixSupport().close(fd);
                     } catch (PosixException posixException) {
                         // ignore
                     }
@@ -332,7 +332,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     try {
-                        posixLib.close(posixSupport, acceptResult.socketFd);
+                        posixSupport.close(acceptResult.socketFd);
                     } catch (PosixException posixException) {
                         // ignore
                     }
@@ -382,7 +382,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object close(VirtualFrame frame, PSocket socket,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int fd = socket.getFd();
@@ -391,7 +390,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     socket.setFd(INVALID_FD);
                     gil.release(true);
                     try {
-                        posixLib.close(context.getPosixSupport(), fd);
+                        context.getPosixSupport().close(fd);
                     } finally {
                         gil.acquire();
                     }

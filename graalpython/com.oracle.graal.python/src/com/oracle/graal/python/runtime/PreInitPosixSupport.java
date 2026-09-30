@@ -176,22 +176,20 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.umask(mask);
     }
 
-    @ExportMessage
-    final int openat(int dirFd, Object pathname, int flags, int mode,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         if (inPreInitialization) {
-            return addFd(PosixSupportLibrary.getUncached().openat(emulatedPosixSupport, dirFd, pathname, flags, mode));
+            return addFd(emulatedPosixSupport.openat(dirFd, pathname, flags, mode));
         }
-        return nativeLib.openat(nativePosixSupport, dirFd, pathname, flags, mode);
+        return nativePosixSupport.openat(dirFd, pathname, flags, mode);
     }
 
-    @ExportMessage
-    final int close(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int close(int fd) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().close(emulatedPosixSupport, removeFd(fd));
+            return emulatedPosixSupport.close(removeFd(fd));
         }
-        return nativeLib.close(nativePosixSupport, fd);
+        return nativePosixSupport.close(fd);
     }
 
     @Override
