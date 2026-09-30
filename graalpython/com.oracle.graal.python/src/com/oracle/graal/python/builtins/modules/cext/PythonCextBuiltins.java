@@ -1175,7 +1175,7 @@ public final class PythonCextBuiltins {
              * previous array and then it could happen, that they die during list processing.
              */
             Object[] oldReferents;
-            referents = new Object[n];
+            referents = n == 0 ? PythonUtils.EMPTY_OBJECT_ARRAY : new Object[n];
             if (object instanceof PythonAbstractNativeObject nativeObject) {
                 if (loggable) {
                     repr = nativeObject.toStringWithContext();

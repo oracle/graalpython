@@ -496,8 +496,9 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
     GraalPyGC_CycleNode *n;
     GraalPyGC_CycleNode *next;
 
-    // avoid costly upcalls
-    if (cycle->n > 0) {
+    /* An empty traversal must replace an earlier snapshot too. Managed
+     * objects are not traversed here; their Java references need no refresh. */
+    if (cycle->n > 0 || !is_managed(op)) {
         int dead = 0;
         // Some managed handles can be already collected if the GC is already cleaning the cycle
         for (n = cycle->head; n != NULL; n = n->next) {
