@@ -27,7 +27,7 @@ package com.oracle.graal.python;
 
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
-import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -304,7 +304,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static final String MIME_TYPE = "text/x-python";
 
-    public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
+    public static final String[] T_DEFAULT_PYTHON_EXTENSIONS = new String[]{J_PY_EXTENSION, ".pyc"};
 
     public static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
@@ -910,7 +910,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             String src = tsrc.toJavaStringUncached();
             if (mayBeFile) {
                 try {
-                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
+                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name.toJavaStringUncached(), PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                     if (truffleFile.exists()) {
                         // XXX: (tfel): We don't know if the expression has anything to do with the
                         // filename that's given. We would really have to compare the entire

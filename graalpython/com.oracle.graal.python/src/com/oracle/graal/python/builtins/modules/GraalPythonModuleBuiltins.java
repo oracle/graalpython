@@ -165,7 +165,6 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -630,13 +629,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PBytes doString(VirtualFrame frame, Object filenameObj,
+        static PBytes doString(VirtualFrame frame, Object filenameObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                TruffleString filename = castToTruffleStringNode.execute(inliningTarget, filenameObj);
+                String filename = castToStringNode.execute(filenameObj);
                 TruffleFile file = context.getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);

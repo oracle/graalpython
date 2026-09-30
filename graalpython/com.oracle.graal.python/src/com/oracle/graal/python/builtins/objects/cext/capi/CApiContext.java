@@ -1226,7 +1226,7 @@ public final class CApiContext {
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         NativeLibrary library;
 
-        TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getExtensionSuffix()).getCanonicalFile();
+        TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path.toJavaStringUncached(), context.getExtensionSuffix().toJavaStringUncached()).getCanonicalFile();
         String loadPath = cApiContext.nativeLibraryLocator.resolve(context, realPath);
         getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
         int dlopenFlags = context.getDlopenFlags();

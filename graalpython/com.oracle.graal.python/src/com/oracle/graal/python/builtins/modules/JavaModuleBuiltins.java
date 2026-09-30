@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -99,7 +99,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J_JAVA)
 public final class JavaModuleBuiltins extends PythonBuiltins {
-    private static final TruffleString T_JAR = tsLiteral(".jar");
+    private static final String J_JAR = ".jar";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -159,9 +159,11 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PNone add(Object[] args,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CastToTruffleStringNode castToString,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
-            Env env = PythonContext.get(inliningTarget).getEnv();
+            Env env = context.getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
@@ -172,7 +174,8 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     entry = castToString.execute(inliningTarget, arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
-                    env.addToHostClassPath(PythonContext.get(inliningTarget).getPublicTruffleFileRelaxed(entry, T_JAR));
+                    String jEntry = toJavaStringNode.execute(entry);
+                    env.addToHostClassPath(context.getPublicTruffleFileRelaxed(jEntry, J_JAR));
                 } catch (CannotCastException e) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {

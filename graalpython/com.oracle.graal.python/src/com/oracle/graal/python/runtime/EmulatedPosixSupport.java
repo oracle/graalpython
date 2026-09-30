@@ -4817,7 +4817,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     private TruffleFile getTruffleFile(TruffleString path) throws PosixException {
         try {
-            return context.getPublicTruffleFileRelaxed(path, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
+            return context.getPublicTruffleFileRelaxed(path.toJavaStringUncached(), PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
         } catch (Exception ex) {
             // So far it seem that this can only be InvalidPath exception from Java NIO, but we stay
             // on the safe side and catch generic exception

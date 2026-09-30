@@ -2277,33 +2277,38 @@ public final class PythonContext extends Python3Core {
         return old;
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public TruffleFile getPublicTruffleFileRelaxed(TruffleString path) {
+        return getPublicTruffleFileRelaxed(path.toJavaStringUncached());
+    }
+
     /**
      * This is like {@code Env#getPublicTruffleFile(String)} but also allows access to files in the
      * language home directory matching one of the given file extensions. This is mostly useful to
      * access files of the {@code stdlib}, {@code core} or similar.
      */
     @TruffleBoundary
-    public TruffleFile getPublicTruffleFileRelaxed(TruffleString path, TruffleString... allowedSuffixes) {
-        TruffleFile f = env.getInternalTruffleFile(path.toJavaStringUncached());
+    public TruffleFile getPublicTruffleFileRelaxed(String path, String... allowedSuffixes) {
+        TruffleFile f = env.getInternalTruffleFile(path);
         // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
         // escape the language home directory.
         // Also, during pre-initialization, we allow full internal access.
         if (env.isPreInitialization() || isPyFileInLanguageHome(f) && (f.isDirectory(LinkOption.NOFOLLOW_LINKS) || hasAllowedSuffix(path, allowedSuffixes))) {
             return f;
         } else {
-            return env.getPublicTruffleFile(path.toJavaStringUncached());
+            return env.getPublicTruffleFile(path);
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
-    private static boolean hasAllowedSuffix(TruffleString path, TruffleString[] allowedSuffixes) {
-        int pathLen = path.codePointLengthUncached(TS_ENCODING);
-        for (TruffleString suffix : allowedSuffixes) {
-            int suffixLen = suffix.codePointLengthUncached(TS_ENCODING);
+    private static boolean hasAllowedSuffix(String path, String[] allowedSuffixes) {
+        CompilerAsserts.neverPartOfCompilation();
+        int pathLen = path.length();
+        for (String suffix : allowedSuffixes) {
+            int suffixLen = suffix.length();
             if (suffixLen > pathLen) {
                 continue;
             }
-            if (path.regionEqualsUncached(pathLen - suffixLen, suffix, 0, suffixLen, TS_ENCODING)) {
+            if (path.endsWith(suffix)) {
                 return true;
             }
         }
