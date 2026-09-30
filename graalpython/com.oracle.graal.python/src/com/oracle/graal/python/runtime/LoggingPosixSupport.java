@@ -658,56 +658,56 @@ public class LoggingPosixSupport extends PosixSupport {
         return logExit("dirEntryGetType", "%d", delegate.dirEntryGetType(dirEntry));
     }
 
-    @ExportMessage
-    final void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException {
         logEnter("utimeNsAt", "%d, %s, %s, %b", dirFd, pathname, timespec, followSymlinks);
         try {
-            lib.utimensat(delegate, dirFd, pathname, timespec, followSymlinks);
+            delegate.utimensat(dirFd, pathname, timespec, followSymlinks);
         } catch (PosixException e) {
             throw logException("utimeNsAt", e);
         }
     }
 
-    @ExportMessage
-    final void futimens(int fd, long[] timespec,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void futimens(int fd, long[] timespec) throws PosixException {
         logEnter("futimeNs", "%d, %s", fd, timespec);
         try {
-            lib.futimens(delegate, fd, timespec);
+            delegate.futimens(fd, timespec);
         } catch (PosixException e) {
             throw logException("futimeNs", e);
         }
     }
 
-    @ExportMessage
-    final void futimes(int fd, Timeval[] timeval,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void futimes(int fd, Timeval[] timeval) throws PosixException {
         logEnter("futimes", "%d, %s", fd, timeval);
         try {
-            lib.futimes(delegate, fd, timeval);
+            delegate.futimes(fd, timeval);
         } catch (PosixException e) {
             throw logException("futimes", e);
         }
     }
 
-    @ExportMessage
-    final void lutimes(Object filename, Timeval[] timeval,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void lutimes(Object filename, Timeval[] timeval) throws PosixException {
         logEnter("lutimes", "%s, %s", filename, timeval);
         try {
-            lib.lutimes(delegate, filename, timeval);
+            delegate.lutimes(filename, timeval);
         } catch (PosixException e) {
             throw logException("lutimes", e);
         }
     }
 
-    @ExportMessage
-    final void utimes(Object filename, Timeval[] timeval,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void utimes(Object filename, Timeval[] timeval) throws PosixException {
         logEnter("utimes", "%s, %s", filename, timeval);
         try {
-            lib.utimes(delegate, filename, timeval);
+            delegate.utimes(filename, timeval);
         } catch (PosixException e) {
             throw logException("utimes", e);
         }

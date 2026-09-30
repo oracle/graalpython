@@ -2132,12 +2132,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long[] timespec = timespecNode.execute(frame, times, ns);
             auditNode.audit(frame, inliningTarget, T_OS_UTIME, path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.utimensat(context.getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
+                context.getPosixSupport().utimensat(dirFd, path.value, timespec, followSymlinks);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2151,12 +2150,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
             auditNode.audit(frame, inliningTarget, T_OS_UTIME, path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.utimes(context.getPosixSupport(), path.value, timeval);
+                context.getPosixSupport().utimes(path.value, timeval);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2170,12 +2168,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
             auditNode.audit(frame, inliningTarget, T_OS_UTIME, path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.lutimes(context.getPosixSupport(), path.value, timeval);
+                context.getPosixSupport().lutimes(path.value, timeval);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2203,12 +2200,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long[] timespec = timespecNode.execute(frame, times, ns);
             auditNode.audit(frame, inliningTarget, T_OS_UTIME, fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.futimens(context.getPosixSupport(), fd.fd, timespec);
+                context.getPosixSupport().futimens(fd.fd, timespec);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2222,12 +2218,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
             auditNode.audit(frame, inliningTarget, T_OS_UTIME, fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.futimes(context.getPosixSupport(), fd.fd, timeval);
+                context.getPosixSupport().futimes(fd.fd, timeval);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

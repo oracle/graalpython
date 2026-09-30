@@ -268,10 +268,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -1745,44 +1741,39 @@ public final class EmulatedPosixSupport extends PosixResources {
         return DT_UNKNOWN.value;
     }
 
-    @ExportMessage
-    public void utimensat(int dirFd, Object path, long[] timespec, boolean followSymlinks,
-                    @Bind Node inliningTarget,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void utimensat(int dirFd, Object path, long[] timespec, boolean followSymlinks) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
-        setUTimeNode.execute(inliningTarget, file, timespec, followSymlinks);
+        setUTime(file, timespec, followSymlinks);
     }
 
-    @ExportMessage
-    public void futimens(int fd, long[] timespec,
-                    @Bind Node inliningTarget,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void futimens(int fd, long[] timespec) throws PosixException {
         TruffleFile file = getTruffleFile(getFilePath(fd));
-        setUTimeNode.execute(inliningTarget, file, timespec, true);
+        setUTime(file, timespec, true);
     }
 
-    @ExportMessage
-    public void futimes(int fd, Timeval[] timeval,
-                    @Bind Node inliningTarget,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void futimes(int fd, Timeval[] timeval) throws PosixException {
         TruffleFile file = getTruffleFile(getFilePath(fd));
-        setUTimeNode.execute(inliningTarget, file, timevalToTimespec(timeval), true);
+        setUTime(file, timevalToTimespec(timeval), true);
     }
 
-    @ExportMessage
-    public void lutimes(Object filename, Timeval[] timeval,
-                    @Bind Node inliningTarget,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void lutimes(Object filename, Timeval[] timeval) throws PosixException {
         TruffleFile file = getTruffleFile(pathToJavaString(filename));
-        setUTimeNode.execute(inliningTarget, file, timevalToTimespec(timeval), false);
+        setUTime(file, timevalToTimespec(timeval), false);
     }
 
-    @ExportMessage
-    public void utimes(Object filename, Timeval[] timeval,
-                    @Bind Node inliningTarget,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void utimes(Object filename, Timeval[] timeval) throws PosixException {
         TruffleFile file = getTruffleFile(pathToJavaString(filename));
-        setUTimeNode.execute(inliningTarget, file, timevalToTimespec(timeval), true);
+        setUTime(file, timevalToTimespec(timeval), true);
     }
 
     private static long[] timevalToTimespec(Timeval[] timeval) {
@@ -1793,63 +1784,34 @@ public final class EmulatedPosixSupport extends PosixResources {
                         timeval[1].getSeconds(), timeval[1].getMicroseconds() * 1000};
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class SetUTimeNode extends Node {
-        abstract void execute(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks) throws PosixException;
-
-        @Specialization(guards = "timespec == null")
-        static void doCurrentTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
-                        @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws PosixException {
-            FileTime time = currentFileTime();
-            setFileTimes(inliningTarget, followSymlinks, file, time, time, errBranch);
+    private static void setUTime(TruffleFile file, long[] timespec, boolean followSymlinks) throws PosixException {
+        CompilerAsserts.neverPartOfCompilation();
+        FileTime atime;
+        FileTime mtime;
+        if (timespec == null) {
+            atime = mtime = FileTime.from(Instant.now());
+        } else {
+            atime = toFileTime(timespec[0], timespec[1]);
+            mtime = toFileTime(timespec[2], timespec[3]);
         }
-
-        @TruffleBoundary
-        private static FileTime currentFileTime() {
-            return FileTime.from(Instant.now());
-        }
-
-        // the second guard is just so that Truffle does not generate dead code that throws
-        // UnsupportedSpecializationException..
-        @Specialization(guards = {"timespec != null", "file != null"})
-        static void doGivenTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
-                        @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws PosixException {
-            FileTime atime = toFileTime(timespec[0], timespec[1]);
-            FileTime mtime = toFileTime(timespec[2], timespec[3]);
-            setFileTimes(inliningTarget, followSymlinks, file, mtime, atime, errBranch);
-        }
-
-        private static void setFileTimes(Node inliningTarget, boolean followSymlinks, TruffleFile file, FileTime mtime, FileTime atime, InlinedBranchProfile errBranch)
-                        throws PosixException {
-            try {
-                file.setLastAccessTime(atime, getLinkOptions(followSymlinks));
-                file.setLastModifiedTime(mtime, getLinkOptions(followSymlinks));
-            } catch (Exception e) {
-                errBranch.enter(inliningTarget);
-                final ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-                // setLastAccessTime/setLastModifiedTime and NOFOLLOW_LINKS does not work (at least)
-                // on OpenJDK8 on Linux and gives ELOOP error. See some explanation in this thread:
-                // https://stackoverflow.com/questions/17308363/symlink-lastmodifiedtime-in-java-1-7
-                if (errAndMsg.oserror == OSErrorEnum.ELOOP && !followSymlinks) {
-                    throw createUnsupportedFeature("utime with 'follow symlinks' flag");
-                }
-                throw posixException(errAndMsg);
+        try {
+            file.setLastAccessTime(atime, getLinkOptions(followSymlinks));
+            file.setLastModifiedTime(mtime, getLinkOptions(followSymlinks));
+        } catch (Exception e) {
+            final ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+            // setLastAccessTime/setLastModifiedTime and NOFOLLOW_LINKS does not work (at least)
+            // on OpenJDK8 on Linux and gives ELOOP error.
+            if (errAndMsg.oserror == OSErrorEnum.ELOOP && !followSymlinks) {
+                throw createUnsupportedFeature("utime with 'follow symlinks' flag");
             }
+            throw posixException(errAndMsg);
         }
+    }
 
-        private static FileTime toFileTime(long seconds, long nanos) {
-            // JDK allows to set only one "time" per one operation, so
-            // UnixFileAttributeViews#setTimes is setting only one of the mtime/atime but internally
-            // it needs to call POSIX utime providing both, so it takes the other from fstat, but
-            // since JDK's fstat wrapper does not support better granularity than seconds, it
-            // will override nanoseconds component that may have been set by our code already.
-            // To make this less confusing, we intentionally ignore the nanoseconds component, even
-            // thought we could set microseconds for one of the mtime/atime (the one that is set
-            // last)
-            return FileTime.from(seconds, TimeUnit.SECONDS);
-        }
+    private static FileTime toFileTime(long seconds, long nanos) {
+        // JDK allows to set only one time per operation, so setting one may round the other to
+        // seconds. Ignore nanoseconds consistently for both times.
+        return FileTime.from(seconds, TimeUnit.SECONDS);
     }
 
     @ExportMessage

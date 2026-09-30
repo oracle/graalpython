@@ -528,39 +528,39 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.dirEntryGetType(dirEntry);
     }
 
-    @ExportMessage
-    final void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.utimensat(nativePosixSupport, dirFd, pathname, timespec, followSymlinks);
+        nativePosixSupport.utimensat(dirFd, pathname, timespec, followSymlinks);
     }
 
-    @ExportMessage
-    final void futimens(int fd, long[] timespec,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void futimens(int fd, long[] timespec) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.futimens(nativePosixSupport, fd, timespec);
+        nativePosixSupport.futimens(fd, timespec);
     }
 
-    @ExportMessage
-    final void futimes(int fd, Timeval[] timeval,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void futimes(int fd, Timeval[] timeval) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.futimes(nativePosixSupport, fd, timeval);
+        nativePosixSupport.futimes(fd, timeval);
     }
 
-    @ExportMessage
-    final void lutimes(Object filename, Timeval[] timeval,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void lutimes(Object filename, Timeval[] timeval) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.lutimes(nativePosixSupport, filename, timeval);
+        nativePosixSupport.lutimes(filename, timeval);
     }
 
-    @ExportMessage
-    final void utimes(Object filename, Timeval[] timeval,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void utimes(Object filename, Timeval[] timeval) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.utimes(nativePosixSupport, filename, timeval);
+        nativePosixSupport.utimes(filename, timeval);
     }
 
     @ExportMessage

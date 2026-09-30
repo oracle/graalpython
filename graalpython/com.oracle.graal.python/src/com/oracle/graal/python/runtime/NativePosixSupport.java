@@ -1466,7 +1466,8 @@ public final class NativePosixSupport extends PosixSupport {
         return dirEntry.type;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException {
         assert PosixConstants.HAVE_UTIMENSAT.value;
         assert timespec == null || timespec.length == 4;
@@ -1485,7 +1486,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void futimens(int fd, long[] timespec) throws PosixException {
         assert PosixConstants.HAVE_FUTIMENS.value;
         assert timespec == null || timespec.length == 4;
@@ -1500,7 +1502,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void futimes(int fd, Timeval[] timeval) throws PosixException {
         assert timeval == null || timeval.length == 2;
         long timevalPtr = copyTimevalArrayToNativeOrNull(timeval);
@@ -1514,7 +1517,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void lutimes(Object filename, Timeval[] timeval) throws PosixException {
         assert timeval == null || timeval.length == 2;
         long filenamePtr = NULLPTR;
@@ -1532,7 +1536,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void utimes(Object filename, Timeval[] timeval) throws PosixException {
         assert timeval == null || timeval.length == 2;
         long filenamePtr = NULLPTR;

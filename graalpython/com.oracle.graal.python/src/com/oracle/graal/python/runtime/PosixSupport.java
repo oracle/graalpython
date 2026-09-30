@@ -192,5 +192,17 @@ public abstract class PosixSupport {
 
     public abstract int dirEntryGetType(Object dirEntry);
 
+    /** The timespec contains access seconds/nanoseconds, then modification seconds/nanoseconds, or is null for now. */
+    public abstract void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
+
+    public abstract void futimens(int fd, long[] timespec) throws PosixException;
+
+    /** The timeval is null or contains access and modification times. */
+    public abstract void futimes(int fd, Timeval[] timeval) throws PosixException;
+
+    public abstract void lutimes(Object filename, Timeval[] timeval) throws PosixException;
+
+    public abstract void utimes(Object filename, Timeval[] timeval) throws PosixException;
+
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }

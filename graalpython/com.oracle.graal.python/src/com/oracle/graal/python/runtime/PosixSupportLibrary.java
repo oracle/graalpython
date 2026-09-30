@@ -79,29 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    /**
-     * Equivalent of POSIX {@code utimensat()}.
-     *
-     * @param timespec an array of 4 longs in this order:
-     *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
-     *            to set both times to 'now' TODO change long[] timespec to Timespec[] timespec
-     */
-    public abstract void utimensat(Object receiver, int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
-
-    /**
-     * Equivalent of POSIX {@code futimens()}.
-     */
-    public abstract void futimens(Object receiver, int fd, long[] timespec) throws PosixException;
-
-    /**
-     * @param timeval either {@code null} or has two elements: access time and modification time
-     */
-    public abstract void futimes(Object receiver, int fd, Timeval[] timeval) throws PosixException;
-
-    public abstract void lutimes(Object receiver, Object filename, Timeval[] timeval) throws PosixException;
-
-    public abstract void utimes(Object receiver, Object filename, Timeval[] timeval) throws PosixException;
-
     public abstract void renameat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
     public abstract void replaceat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
