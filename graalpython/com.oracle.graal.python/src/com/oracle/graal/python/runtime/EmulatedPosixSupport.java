@@ -4469,30 +4469,32 @@ public final class EmulatedPosixSupport extends PosixResources {
         return Buffer.wrap(utf8StringToBytes((String) path));
     }
 
-    @ExportMessage
-    public Object createCStringFromString(TruffleString string,
-                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return checkEmbeddedNulls(toJavaStringNode.execute(string));
+    @Override
+    @TruffleBoundary
+    public Object createCStringFromString(TruffleString string) {
+        return checkEmbeddedNulls(TruffleString.ToJavaStringNode.getUncached().execute(string));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object createCStringFromBytes(byte[] bytes) {
         return checkEmbeddedNulls(createUTF8String(bytes));
     }
 
-    @ExportMessage
-    public Object createWideStringFromString(TruffleString string,
-                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return checkEmbeddedNulls(toJavaStringNode.execute(string));
+    @Override
+    @TruffleBoundary
+    public Object createWideStringFromString(TruffleString string) {
+        return checkEmbeddedNulls(TruffleString.ToJavaStringNode.getUncached().execute(string));
     }
 
-    @ExportMessage
-    public TruffleString getCStringAsString(Object string,
-                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return fromJavaStringNode.execute((String) string, TS_ENCODING);
+    @Override
+    @TruffleBoundary
+    public TruffleString getCStringAsString(Object string) {
+        return TruffleString.FromJavaStringNode.getUncached().execute((String) string, TS_ENCODING);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Buffer getCStringAsBytes(Object string) {
         return Buffer.wrap(utf8StringToBytes((String) string));
     }

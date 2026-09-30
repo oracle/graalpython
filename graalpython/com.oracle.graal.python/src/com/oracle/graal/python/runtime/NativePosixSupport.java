@@ -3518,33 +3518,32 @@ public final class NativePosixSupport extends PosixSupport {
         };
     }
 
-    @ExportMessage
-    public Object createCStringFromString(TruffleString string,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        return checkCString(getUTF8StringBytes(inliningTarget, string, switchEncodingNode, isValidNode, copyToByteArrayNode));
+    @Override
+    @TruffleBoundary
+    public Object createCStringFromString(TruffleString string) {
+        return checkCString(getUTF8StringBytes(null, string, TruffleString.SwitchEncodingNode.getUncached(), TruffleString.IsValidNode.getUncached(),
+                        TruffleString.CopyToByteArrayNode.getUncached()));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object createCStringFromBytes(byte[] bytes) {
         return checkCString(bytes);
     }
 
-    @ExportMessage
-    public Object createWideStringFromString(TruffleString string,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        TruffleString utf16 = switchEncodingNode.execute(string, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-        byte[] bytes = copyToByteArrayNode.execute(utf16, UTF_16LE);
+    @Override
+    @TruffleBoundary
+    public Object createWideStringFromString(TruffleString string) {
+        TruffleString utf16 = TruffleString.SwitchEncodingNode.getUncached().execute(string, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+        byte[] bytes = TruffleString.CopyToByteArrayNode.getUncached().execute(utf16, UTF_16LE);
         return checkWideString(bytes);
     }
 
-    @ExportMessage
-    public TruffleString getCStringAsString(Object string,
-                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+    @Override
+    @TruffleBoundary
+    public TruffleString getCStringAsString(Object string) {
+        TruffleString.FromByteArrayNode fromByteArrayNode = TruffleString.FromByteArrayNode.getUncached();
+        TruffleString.SwitchEncodingNode switchEncodingNode = TruffleString.SwitchEncodingNode.getUncached();
         if (string instanceof WideString wideString) {
             TruffleString utf16 = fromByteArrayNode.execute(wideString.data, UTF_16LE, true);
             return switchEncodingNode.execute(utf16, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
@@ -3553,7 +3552,8 @@ public final class NativePosixSupport extends PosixSupport {
         return createString(buffer.data, 0, (int) buffer.length, true, fromByteArrayNode, switchEncodingNode);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Buffer getCStringAsBytes(Object string) {
         if (string instanceof WideString wideString) {
             TruffleString utf16 = TruffleString.fromByteArrayUncached(wideString.data, UTF_16LE);

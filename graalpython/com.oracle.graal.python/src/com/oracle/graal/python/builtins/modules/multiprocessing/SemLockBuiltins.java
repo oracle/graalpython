@@ -127,7 +127,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
-            Object posixName = posixLib.createCStringFromString(posixSupport, name);
+            Object posixName = posixSupport.createCStringFromString(name);
             long handle;
             try {
                 handle = posixSupport.semOpen(posixName, O_CREAT.value | O_EXCL.value, 0600, value);
@@ -425,7 +425,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                 return PFactory.createSemLock(cls, getInstanceShape.execute(cls), origHandle, kind, maxValue, null);
             }
             TruffleString posixNameString = (TruffleString) name;
-            Object posixName = posixLib.createCStringFromString(posixSupport, posixNameString);
+            Object posixName = posixSupport.createCStringFromString(posixNameString);
             long handle;
             try {
                 handle = posixSupport.semOpen(posixName);

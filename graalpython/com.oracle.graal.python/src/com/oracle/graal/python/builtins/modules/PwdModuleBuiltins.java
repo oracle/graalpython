@@ -204,7 +204,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object pathEncoded = encodeFSDefault.execute(inliningTarget, name);
             Buffer nameBytes = context.getPosixSupport().getPathAsBytes(pathEncoded);
-            Object nameEncoded = posixLib.createCStringFromBytes(context.getPosixSupport(), nameBytes.data);
+            Object nameEncoded = context.getPosixSupport().createCStringFromBytes(nameBytes.data);
             PwdResult pwd;
             try {
                 gil.release(true);

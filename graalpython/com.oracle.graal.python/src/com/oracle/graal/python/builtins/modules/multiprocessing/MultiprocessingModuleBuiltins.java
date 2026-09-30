@@ -174,7 +174,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixSupport.semUnlink(posixLib.createCStringFromString(posixSupport, name));
+                posixSupport.semUnlink(posixSupport.createCStringFromString(name));
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

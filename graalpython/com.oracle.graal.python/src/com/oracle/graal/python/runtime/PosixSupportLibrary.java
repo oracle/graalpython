@@ -139,19 +139,6 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
-    /** Converts a string to strict UTF-8 for non-filesystem APIs that use CPython's {@code s} conversion. */
-    public abstract Object createCStringFromString(Object receiver, TruffleString string);
-
-    /** Wraps already-encoded bytes for narrow native APIs without applying a filesystem conversion. */
-    public abstract Object createCStringFromBytes(Object receiver, byte[] bytes);
-
-    /** Converts a string to the UTF-16 representation used by Windows wide-character APIs. */
-    public abstract Object createWideStringFromString(Object receiver, TruffleString string);
-
-    public abstract TruffleString getCStringAsString(Object receiver, Object string);
-
-    public abstract Buffer getCStringAsBytes(Object receiver, Object string);
-
     // region Socket addresses
 
     /**

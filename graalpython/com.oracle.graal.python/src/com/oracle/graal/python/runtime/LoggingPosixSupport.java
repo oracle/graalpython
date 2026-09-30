@@ -1698,34 +1698,34 @@ public class LoggingPosixSupport extends PosixSupport {
         return logExit(Level.FINEST, "getPathAsBytes", "%s", delegate.getPathAsBytes(path));
     }
 
-    @ExportMessage
-    final Object createCStringFromString(TruffleString string,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        return lib.createCStringFromString(delegate, string);
+    @Override
+    @TruffleBoundary
+    public final Object createCStringFromString(TruffleString string) {
+        return delegate.createCStringFromString(string);
     }
 
-    @ExportMessage
-    final Object createCStringFromBytes(byte[] bytes,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        return lib.createCStringFromBytes(delegate, bytes);
+    @Override
+    @TruffleBoundary
+    public final Object createCStringFromBytes(byte[] bytes) {
+        return delegate.createCStringFromBytes(bytes);
     }
 
-    @ExportMessage
-    final Object createWideStringFromString(TruffleString string,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        return lib.createWideStringFromString(delegate, string);
+    @Override
+    @TruffleBoundary
+    public final Object createWideStringFromString(TruffleString string) {
+        return delegate.createWideStringFromString(string);
     }
 
-    @ExportMessage
-    final TruffleString getCStringAsString(Object string,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        return lib.getCStringAsString(delegate, string);
+    @Override
+    @TruffleBoundary
+    public final TruffleString getCStringAsString(Object string) {
+        return delegate.getCStringAsString(string);
     }
 
-    @ExportMessage
-    final Buffer getCStringAsBytes(Object string,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        return lib.getCStringAsBytes(delegate, string);
+    @Override
+    @TruffleBoundary
+    public final Buffer getCStringAsBytes(Object string) {
+        return delegate.getCStringAsBytes(string);
     }
 
     @TruffleBoundary

@@ -127,6 +127,19 @@ public abstract class PosixSupport {
 
     public abstract Buffer getPathAsBytes(Object path);
 
+    /** Converts a string to strict UTF-8 for non-filesystem APIs that use CPython's {@code s} conversion. */
+    public abstract Object createCStringFromString(TruffleString string);
+
+    /** Wraps already-encoded bytes for narrow native APIs without applying a filesystem conversion. */
+    public abstract Object createCStringFromBytes(byte[] bytes);
+
+    /** Converts a string to the UTF-16 representation used by Windows wide-character APIs. */
+    public abstract Object createWideStringFromString(TruffleString string);
+
+    public abstract TruffleString getCStringAsString(Object string);
+
+    public abstract Buffer getCStringAsBytes(Object string);
+
     public abstract void raise(int signal) throws PosixException;
 
     public abstract int alarm(int seconds) throws PosixException;

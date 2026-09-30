@@ -152,7 +152,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 Object o = getItemNode.execute(argsStorage, i);
                 Object path = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
                 Buffer bytes = context.getPosixSupport().getPathAsBytes(path);
-                argsArray[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
+                argsArray[i] = context.getPosixSupport().createCStringFromBytes(bytes.data);
             }
             LoopNode.reportLoopCount(inliningTarget, len);
             return argsArray;
@@ -186,7 +186,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < length; ++i) {
                 Object o = getItem.execute(frame, inliningTarget, env, i);
                 byte[] bytes = toBytesNode.execute(frame, o);
-                Object o1 = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes);
+                Object o1 = context.getPosixSupport().createCStringFromBytes(bytes);
                 if (o1 == null) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }
@@ -239,8 +239,8 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return s.getBytes();
         }
 
-        private static Object createCStringFromBytes(Node inliningTarget, byte[] bytes, PosixSupportLibrary posixLib, PRaiseNode raiseNode) {
-            Object o = posixLib.createCStringFromBytes(PosixSupport.get(inliningTarget), bytes);
+        private static Object createCStringFromBytes(Node inliningTarget, byte[] bytes, PRaiseNode raiseNode) {
+            Object o = PosixSupport.get(inliningTarget).createCStringFromBytes(bytes);
             if (o == null) {
                 // TODO reconsider the contract of PosixSupportLibrary#createCStringFromBytes w.r.t.
                 // embedded null checks (we need to review that anyway since PosixSupportLibrary
@@ -299,7 +299,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     }
                     Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
                     for (int j = 0; j < additionalArgs.length; ++j) {
-                        extendedArgs[j] = createCStringFromBytes(inliningTarget, fsEncode(additionalArgs[j].toJavaStringUncached()), posixLib, raiseNode);
+                        extendedArgs[j] = createCStringFromBytes(inliningTarget, fsEncode(additionalArgs[j].toJavaStringUncached()), raiseNode);
                     }
                     if (processArgs.length > 1) {
                         PythonUtils.arraycopy(processArgs, 1, extendedArgs, additionalArgs.length, processArgs.length - 1);
@@ -307,7 +307,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     processArgs = extendedArgs;
                     executables[i] = extendedArgs[0];
                 } else {
-                    executables[i] = createCStringFromBytes(inliningTarget, bytes, posixLib, raiseNode);
+                    executables[i] = createCStringFromBytes(inliningTarget, bytes, raiseNode);
                 }
             }
             LoopNode.reportLoopCount(inliningTarget, length);

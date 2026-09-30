@@ -93,7 +93,7 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object name = posixLib.createCStringFromString(context.getPosixSupport(), path);
+                Object name = context.getPosixSupport().createCStringFromString(path);
                 return context.getPosixSupport().shmOpen(name, flags, mode);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);
@@ -118,7 +118,7 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object name = posixLib.createCStringFromString(context.getPosixSupport(), path);
+                Object name = context.getPosixSupport().createCStringFromString(path);
                 context.getPosixSupport().shmUnlink(name);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);

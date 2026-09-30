@@ -1243,48 +1243,48 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getPathAsBytes(path);
     }
 
-    @ExportMessage
-    final Object createCStringFromString(TruffleString string,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Object createCStringFromString(TruffleString string) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().createCStringFromString(emulatedPosixSupport, string);
+            return emulatedPosixSupport.createCStringFromString(string);
         }
-        return nativeLib.createCStringFromString(nativePosixSupport, string);
+        return nativePosixSupport.createCStringFromString(string);
     }
 
-    @ExportMessage
-    final Object createCStringFromBytes(byte[] bytes,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Object createCStringFromBytes(byte[] bytes) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().createCStringFromBytes(emulatedPosixSupport, bytes);
+            return emulatedPosixSupport.createCStringFromBytes(bytes);
         }
-        return nativeLib.createCStringFromBytes(nativePosixSupport, bytes);
+        return nativePosixSupport.createCStringFromBytes(bytes);
     }
 
-    @ExportMessage
-    final Object createWideStringFromString(TruffleString string,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Object createWideStringFromString(TruffleString string) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().createWideStringFromString(emulatedPosixSupport, string);
+            return emulatedPosixSupport.createWideStringFromString(string);
         }
-        return nativeLib.createWideStringFromString(nativePosixSupport, string);
+        return nativePosixSupport.createWideStringFromString(string);
     }
 
-    @ExportMessage
-    final TruffleString getCStringAsString(Object string,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final TruffleString getCStringAsString(Object string) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().getCStringAsString(emulatedPosixSupport, string);
+            return emulatedPosixSupport.getCStringAsString(string);
         }
-        return nativeLib.getCStringAsString(nativePosixSupport, string);
+        return nativePosixSupport.getCStringAsString(string);
     }
 
-    @ExportMessage
-    final Buffer getCStringAsBytes(Object string,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Buffer getCStringAsBytes(Object string) {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().getCStringAsBytes(emulatedPosixSupport, string);
+            return emulatedPosixSupport.getCStringAsBytes(string);
         }
-        return nativeLib.getCStringAsBytes(nativePosixSupport, string);
+        return nativePosixSupport.getCStringAsBytes(string);
     }
 }
