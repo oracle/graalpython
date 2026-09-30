@@ -1167,15 +1167,15 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
         logEnter("forkExec", "%s, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %b, %b, %b, %d, %s, %b", executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd,
                         stderrReadFd,
                         stderrWriteFd, errPipeReadFd, errPipeWriteFd, closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork);
         try {
-            return logExit("forkExec", "%d", lib.forkExec(delegate, executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd,
+            return logExit("forkExec", "%d", delegate.forkExec(executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd,
                             errPipeWriteFd, closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork));
         } catch (PosixException e) {
             throw logException("forkExec", e);
@@ -1204,12 +1204,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final void execv(Object pathname, Object[] args,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void execv(Object pathname, Object[] args) throws PosixException {
         logEnter("execv", "%s, %s", pathname, args);
         try {
-            lib.execv(delegate, pathname, args);
+            delegate.execv(pathname, args);
         } catch (PosixException e) {
             throw logException("execv", e);
         }
@@ -1287,11 +1287,11 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int system(Object command,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int system(Object command) {
         logEnter("system", "%s", command);
-        return logExit("system", "%d", lib.system(delegate, command));
+        return logExit("system", "%d", delegate.system(command));
     }
 
     @ExportMessage

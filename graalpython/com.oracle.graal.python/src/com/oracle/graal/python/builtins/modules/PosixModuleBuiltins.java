@@ -589,7 +589,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
             gil.release(true);
             try {
-                posixLib.execv(context.getPosixSupport(), path.value, opaqueArgs);
+                context.getPosixSupport().execv(path.value, opaqueArgs);
             } catch (PosixException e) {
                 gil.acquire();
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2854,7 +2854,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 } else {
                     cmdOpaque = posixLib.createCStringFromBytes(context.getPosixSupport(), toBytesNode.execute((PBytes) command));
                 }
-                return posixLib.system(context.getPosixSupport(), cmdOpaque);
+                return context.getPosixSupport().system(cmdOpaque);
             } finally {
                 gil.acquire();
             }

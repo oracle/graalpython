@@ -108,16 +108,6 @@ public abstract class PosixSupportLibrary extends Library {
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 
-    public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
-                    int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep,
-                    boolean allowVFork) throws PosixException;
-
-    // args.length must be > 0
-    public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
-
-    // does not throw, because posix does not exactly define the return value
-    public abstract int system(Object receiver, Object command);
-
     public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException;
 
     public abstract byte mmapReadByte(Object receiver, Object mmap, long index) throws PosixException;

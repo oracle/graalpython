@@ -843,27 +843,27 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.unsetenv(name);
     }
 
-    @ExportMessage
-    final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.forkExec(nativePosixSupport, executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd, errPipeWriteFd,
+        return nativePosixSupport.forkExec(executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd, errPipeWriteFd,
                         closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork);
     }
 
-    @ExportMessage
-    final void execv(Object pathname, Object[] args,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void execv(Object pathname, Object[] args) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.execv(nativePosixSupport, pathname, args);
+        nativePosixSupport.execv(pathname, args);
     }
 
-    @ExportMessage
-    final int system(Object command,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final int system(Object command) {
         checkNotInPreInitialization();
-        return nativeLib.system(nativePosixSupport, command);
+        return nativePosixSupport.system(command);
     }
 
     @ExportMessage

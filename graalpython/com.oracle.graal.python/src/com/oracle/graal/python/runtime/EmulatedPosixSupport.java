@@ -2402,7 +2402,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         environ.remove(nameStr);
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
@@ -2568,7 +2568,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void execv(Object pathname, Object[] args) throws PosixException {
         assert args.length > 0;
         String[] cmd = new String[args.length];
@@ -2617,7 +2618,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw new PythonExitException(null, pr.exitValue());
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public int system(Object commandObj) {
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {

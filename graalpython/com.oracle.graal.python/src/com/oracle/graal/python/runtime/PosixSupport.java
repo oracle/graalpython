@@ -131,6 +131,16 @@ public abstract class PosixSupport {
 
     public abstract void unsetenv(Object name) throws PosixException;
 
+    public abstract int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
+                    int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep,
+                    boolean allowVFork) throws PosixException;
+
+    // args.length must be > 0
+    public abstract void execv(Object pathname, Object[] args) throws PosixException;
+
+    // does not throw, because posix does not exactly define the return value
+    public abstract int system(Object command);
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);
