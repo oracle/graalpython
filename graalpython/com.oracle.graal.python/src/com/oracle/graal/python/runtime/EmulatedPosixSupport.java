@@ -3457,7 +3457,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         return decodeIntOptVal(optval, optlen) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public int inet_addr(Object src) {
         try {
@@ -3467,7 +3468,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public int inet_aton(Object src) throws InvalidAddressException {
@@ -3487,14 +3488,14 @@ public final class EmulatedPosixSupport extends PosixResources {
         };
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object inet_ntoa(int address) {
         return String.format("%d.%d.%d.%d", (address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
@@ -3527,7 +3528,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw posixException(OSErrorEnum.EAFNOSUPPORT);
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object inet_ntop(int family, byte[] src) throws PosixException {

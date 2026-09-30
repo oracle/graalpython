@@ -1448,37 +1448,37 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int inet_addr(Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int inet_addr(Object src) {
         logEnter("inet_addr", "%s", src);
-        return logExit("inet_addr", "%d", lib.inet_addr(delegate, src));
+        return logExit("inet_addr", "%d", delegate.inet_addr(src));
     }
 
-    @ExportMessage
-    final int inet_aton(Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws InvalidAddressException {
+    @Override
+    @TruffleBoundary
+    public final int inet_aton(Object src) throws InvalidAddressException {
         logEnter("inet_aton", "%s", src);
         try {
-            return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+            return logExit("inet_aton", "%d", delegate.inet_aton(src));
         } catch (InvalidAddressException e) {
             throw logException("inet_aton", e);
         }
     }
 
-    @ExportMessage
-    final Object inet_ntoa(int address,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final Object inet_ntoa(int address) {
         logEnter("inet_ntoa", "%d", address);
-        return logExit("inet_ntoa", "%s", lib.inet_ntoa(delegate, address));
+        return logExit("inet_ntoa", "%s", delegate.inet_ntoa(address));
     }
 
-    @ExportMessage
-    final byte[] inet_pton(int family, Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException, InvalidAddressException {
+    @Override
+    @TruffleBoundary
+    public final byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
         logEnter("inet_pton", "%d, %s", family, src);
         try {
-            return logExit("inet_pton", "%s", lib.inet_pton(delegate, family, src));
+            return logExit("inet_pton", "%s", delegate.inet_pton(family, src));
         } catch (PosixException e) {
             throw logException("inet_pton", e);
         } catch (InvalidAddressException e) {
@@ -1486,12 +1486,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Object inet_ntop(int family, byte[] src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object inet_ntop(int family, byte[] src) throws PosixException {
         logEnter("inet_ntop", "%d, %s", family, src);
         try {
-            return logExit("inet_ntop", "%s", lib.inet_ntop(delegate, family, src));
+            return logExit("inet_ntop", "%s", delegate.inet_ntop(family, src));
         } catch (PosixException e) {
             throw logException("inet_ntop", e);
         }

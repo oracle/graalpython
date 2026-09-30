@@ -372,7 +372,7 @@ public abstract class SocketNodes {
             static byte[] doParse(PosixSupportLibrary posixLib, PosixSupport posixSupport, int family, byte[] string) {
                 assert family == AF_INET.value || family == AF_INET6.value;
                 try {
-                    return posixLib.inet_pton(posixSupport, family, posixSupport.createCStringFromBytes(string));
+                    return posixSupport.inet_pton(family, posixSupport.createCStringFromBytes(string));
                 } catch (PosixException | InvalidAddressException e) {
                     return null;
                 }
@@ -414,12 +414,12 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
                     PosixSupport posixSupport = context.getPosixSupport();
-                    TruffleString addressString = posixSupport.getCStringAsString(posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
+                    TruffleString addressString = posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet4SockAddr.getAddressAsBytes()));
                     return PFactory.createTuple(language, new Object[]{addressString, inet4SockAddr.getPort()});
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
                     PosixSupport posixSupport = context.getPosixSupport();
-                    TruffleString addressString = posixSupport.getCStringAsString(posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
+                    TruffleString addressString = posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet6SockAddr.getAddress()));
                     return PFactory.createTuple(language, new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
                 } else if (family == AF_UNIX.value) {
                     UnixSockAddr unixSockAddr = addrLib.asUnixSockAddr(addr);
@@ -471,11 +471,11 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
                     PosixSupport posixSupport = context.getPosixSupport();
-                    return posixSupport.getCStringAsString(posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
+                    return posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet4SockAddr.getAddressAsBytes()));
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
                     PosixSupport posixSupport = context.getPosixSupport();
-                    return posixSupport.getCStringAsString(posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
+                    return posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet6SockAddr.getAddress()));
                 } else {
                     throw raiseNode.raise(inliningTarget, NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }

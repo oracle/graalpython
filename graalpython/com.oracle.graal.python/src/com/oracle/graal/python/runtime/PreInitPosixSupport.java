@@ -1061,39 +1061,39 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.setsockopt(sockfd, level, optname, optval, optlen);
     }
 
-    @ExportMessage
-    final int inet_addr(Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final int inet_addr(Object src) {
         checkNotInPreInitialization();
-        return nativeLib.inet_addr(nativePosixSupport, src);
+        return nativePosixSupport.inet_addr(src);
     }
 
-    @ExportMessage
-    final int inet_aton(Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidAddressException {
+    @Override
+    @TruffleBoundary
+    public final int inet_aton(Object src) throws InvalidAddressException {
         checkNotInPreInitialization();
-        return nativeLib.inet_aton(nativePosixSupport, src);
+        return nativePosixSupport.inet_aton(src);
     }
 
-    @ExportMessage
-    final Object inet_ntoa(int address,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final Object inet_ntoa(int address) {
         checkNotInPreInitialization();
-        return nativeLib.inet_ntoa(nativePosixSupport, address);
+        return nativePosixSupport.inet_ntoa(address);
     }
 
-    @ExportMessage
-    final byte[] inet_pton(int family, Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException, InvalidAddressException {
+    @Override
+    @TruffleBoundary
+    public final byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
         checkNotInPreInitialization();
-        return nativeLib.inet_pton(nativePosixSupport, family, src);
+        return nativePosixSupport.inet_pton(family, src);
     }
 
-    @ExportMessage
-    final Object inet_ntop(int family, byte[] src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object inet_ntop(int family, byte[] src) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.inet_ntop(nativePosixSupport, family, src);
+        return nativePosixSupport.inet_ntop(family, src);
     }
 
     @ExportMessage

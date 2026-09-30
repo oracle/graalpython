@@ -2602,7 +2602,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int inet_addr(Object src) {
         long srcPtr = bufferToNativeCString((Buffer) src);
         try {
@@ -2612,7 +2613,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int inet_aton(Object src) throws InvalidAddressException {
         long srcPtr = bufferToNativeCString((Buffer) src);
         try {
@@ -2626,7 +2628,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object inet_ntoa(int src) {
         Buffer buf = Buffer.allocate(INET_ADDRSTRLEN.value);
         long nativeBuf = NativeMemory.mallocByteArray(INET_ADDRSTRLEN.value);
@@ -2641,7 +2644,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
         byte[] buf = new byte[family == AF_INET.value ? 4 : 16];
         long srcPtr = NULLPTR;
@@ -2667,7 +2671,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object inet_ntop(int family, byte[] src) throws PosixException {
         if ((family == AF_INET.value && src.length < 4) || (family == AF_INET6.value && src.length < 16)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

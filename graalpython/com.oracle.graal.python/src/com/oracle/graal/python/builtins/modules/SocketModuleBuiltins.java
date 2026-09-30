@@ -351,7 +351,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             UniversalSockAddr addr = setIpAddrNode.execute(frame, name, AF_INET.value);
             Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
             try {
-                return context.getPosixSupport().getCStringAsString(posixLib.inet_ntop(context.getPosixSupport(), AF_INET.value, inet4SockAddr.getAddressAsBytes()));
+                return context.getPosixSupport().getCStringAsString(context.getPosixSupport().inet_ntop(AF_INET.value, inet4SockAddr.getAddressAsBytes()));
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -391,7 +391,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 try {
                     TruffleString canonName = posixSupport.getCStringAsString(addrInfoCursorLib.getCanonName(cursor));
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addrInfoCursorLib.getSockAddr(cursor));
-                    TruffleString addr = posixSupport.getCStringAsString(posixLib.inet_ntop(posixSupport, AF_INET.value, inet4SockAddr.getAddressAsBytes()));
+                    TruffleString addr = posixSupport.getCStringAsString(posixSupport.inet_ntop(AF_INET.value, inet4SockAddr.getAddressAsBytes()));
                     // getaddrinfo doesn't support aliases
                     PList aliases = PFactory.createList(context.getLanguage(inliningTarget));
                     // we support just one address for now
@@ -820,7 +820,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
-                int converted = posixLib.inet_aton(posixSupport, posixSupport.createCStringFromString(addr));
+                int converted = posixSupport.inet_aton(posixSupport.createCStringFromString(addr));
                 byte[] bytes = new byte[4];
                 ByteArraySupport.bigEndian().putInt(bytes, 0, converted);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
@@ -855,7 +855,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
                 }
                 PosixSupport posixSupport = context.getPosixSupport();
-                Object result = posixLib.inet_ntoa(posixSupport, ByteArraySupport.bigEndian().getInt(bytes, 0));
+                Object result = posixSupport.inet_ntoa(ByteArraySupport.bigEndian().getInt(bytes, 0));
                 return posixSupport.getCStringAsString(result);
             } finally {
                 bufferLib.release(buffer, frame, callData);
@@ -877,7 +877,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
-                byte[] bytes = posixLib.inet_pton(posixSupport, family, posixSupport.createCStringFromString(addr));
+                byte[] bytes = posixSupport.inet_pton(family, posixSupport.createCStringFromString(addr));
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -923,7 +923,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 }
                 try {
                     PosixSupport posixSupport = context.getPosixSupport();
-                    Object result = posixLib.inet_ntop(posixSupport, family, bytes);
+                    Object result = posixSupport.inet_ntop(family, bytes);
                     return posixSupport.getCStringAsString(result);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

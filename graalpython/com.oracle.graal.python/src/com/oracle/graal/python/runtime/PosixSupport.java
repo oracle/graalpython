@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
@@ -172,6 +173,16 @@ public abstract class PosixSupport {
     public abstract int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
 
     public abstract void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
+
+    public abstract int inet_addr(Object src);
+
+    public abstract int inet_aton(Object src) throws InvalidAddressException;
+
+    public abstract Object inet_ntoa(int address);
+
+    public abstract byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException;
+
+    public abstract Object inet_ntop(int family, byte[] src) throws PosixException;
 
     public abstract void raise(int signal) throws PosixException;
 
