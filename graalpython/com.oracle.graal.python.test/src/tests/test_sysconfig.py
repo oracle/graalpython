@@ -67,6 +67,12 @@ def test_windows_libpython_is_not_exposed():
 
 
 @unittest.skipUnless(sys.platform == "win32", "Windows-specific sysconfig behavior")
+def test_windows_hash_algorithm():
+    import sysconfig
+    assert sysconfig.get_config_var("Py_HASH_ALGORITHM") == 0
+
+
+@unittest.skipUnless(sys.platform == "win32", "Windows-specific sysconfig behavior")
 def test_windows_library_names():
     import sysconfig
     expected = f"python{sys.version_info.major}{sys.version_info.minor}.dll"

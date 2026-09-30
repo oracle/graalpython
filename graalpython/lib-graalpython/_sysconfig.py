@@ -65,6 +65,9 @@ def _update_posix_vars(config_vars=None):
     get_toolchain = __graalpython__.determine_system_toolchain().get
 
     if win32_native:
+        # Windows no longer loads _sysconfigdata, so provide the public hash
+        # algorithm configuration variable here instead of losing it.
+        _setdefault(config_vars, 'Py_HASH_ALGORITHM', 0)
         python_inc = os.path.join(os.path.normpath(sys.base_prefix), 'Include')
     else:
         python_inc = os.path.join(

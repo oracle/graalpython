@@ -312,6 +312,8 @@ def _native():
     kernel32.GetOverlappedResult.restype = wintypes.BOOL
     kernel32.CreateEventW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.BOOL, wintypes.LPCWSTR]
     kernel32.CreateEventW.restype = wintypes.HANDLE
+    kernel32.SetEvent.argtypes = [wintypes.HANDLE]
+    kernel32.SetEvent.restype = wintypes.BOOL
     kernel32.GetLongPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
     kernel32.GetLongPathNameW.restype = wintypes.DWORD
     kernel32.GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
@@ -881,6 +883,9 @@ def ConnectNamedPipe(handle, overlapped=False):
             ov.pending = True
             return ov
         if code == ERROR_PIPE_CONNECTED:
+            # A client connected before this call, so Windows does not signal
+            # the event. Callers still wait on it for connection completion.
+            _raise_if_zero(kernel32.SetEvent(wintypes.HANDLE(ov.event)))
             ov._completed_result = (0, 0)
             return ov
         raise _winerror(code)
@@ -926,8 +931,9 @@ def ReadFile(handle, size, overlapped=False):
             ov.pending = True
             return ov, code
         if code == ERROR_MORE_DATA:
-            ov._completed_result = (transferred.value, code)
-            ov._last_result = ov._completed_result
+            # lpNumberOfBytesRead may be zero for an overlapped partial read,
+            # even though data was consumed. GetOverlappedResult supplies the
+            # actual byte count from the OVERLAPPED structure.
             return ov, code
         raise _winerror(code)
 
@@ -1000,7 +1006,9 @@ def PeekNamedPipe(handle, size=0):
             ctypes.byref(bytes_left),
         )
     )
-    return (buffer.raw[: bytes_read.value] if buffer is not None else b""), total_available.value, bytes_left.value
+    if buffer is None:
+        return total_available.value, bytes_left.value
+    return buffer.raw[: bytes_read.value], total_available.value, bytes_left.value
 
 
 def SetNamedPipeHandleState(named_pipe, mode, max_collection_count, collect_data_timeout):
