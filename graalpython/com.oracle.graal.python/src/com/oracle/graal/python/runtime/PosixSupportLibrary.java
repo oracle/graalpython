@@ -77,7 +77,6 @@ public abstract class PosixSupportLibrary extends Library {
 
     // Constants for accessing the fields of the fstat result:
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
-    public static final int ST_MODE = 0;
     public static final int ST_SIZE = 6;
 
     public abstract TruffleString getBackend(Object recevier);
@@ -133,24 +132,6 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int[] getTerminalSize(Object receiver, int fd) throws PosixException;
 
     public abstract long sysconf(Object receiver, int name) throws PosixException;
-
-    // see stat_struct_to_longs in posix.c for the layout of the array
-    public abstract long[] fstatat(Object receiver, int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
-
-    /**
-     * Performs operation of fstat(fd).
-     *
-     * @param receiver the receiver of the message
-     * @param fd the file descriptor
-     * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array. There are
-     *         constants for some of the indices, e.g., {@link #ST_MODE}.
-     * @throws PosixException if an error occurs
-     */
-    public abstract long[] fstat(Object receiver, int fd) throws PosixException;
-
-    public abstract long[] statvfs(Object receiver, Object path) throws PosixException;
-
-    public abstract long[] fstatvfs(Object receiver, int fd) throws PosixException;
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 

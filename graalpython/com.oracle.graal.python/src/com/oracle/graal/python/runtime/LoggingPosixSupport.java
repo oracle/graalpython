@@ -447,45 +447,45 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException {
         logEnter("fstatAt", "%d, %s, %b", dirFd, pathname, followSymlinks);
         try {
-            return logExit("fstatAt", "%s", lib.fstatat(delegate, dirFd, pathname, followSymlinks));
+            return logExit("fstatAt", "%s", delegate.fstatat(dirFd, pathname, followSymlinks));
         } catch (PosixException e) {
             throw logException("fstatAt", e);
         }
     }
 
-    @ExportMessage
-    final long[] fstat(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] fstat(int fd) throws PosixException {
         logEnter("fstat", "%d", fd);
         try {
-            return logExit("fstat", "%s", lib.fstat(delegate, fd));
+            return logExit("fstat", "%s", delegate.fstat(fd));
         } catch (PosixException e) {
             throw logException("fstat", e);
         }
     }
 
-    @ExportMessage
-    final long[] statvfs(Object path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] statvfs(Object path) throws PosixException {
         logEnter("statvfs", "%s", path);
         try {
-            return logExit("statvfs", "%s", lib.statvfs(delegate, path));
+            return logExit("statvfs", "%s", delegate.statvfs(path));
         } catch (PosixException e) {
             throw logException("statvfs", e);
         }
     }
 
-    @ExportMessage
-    final long[] fstatvfs(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long[] fstatvfs(int fd) throws PosixException {
         logEnter("fstatvfs", "%d", fd);
         try {
-            return logExit("fstatvfs", "%s", lib.fstatvfs(delegate, fd));
+            return logExit("fstatvfs", "%s", delegate.fstatvfs(fd));
         } catch (PosixException e) {
             throw logException("fstatvfs", e);
         }

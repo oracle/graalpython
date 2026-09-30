@@ -1163,33 +1163,26 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw posixException(OSErrorEnum.EINVAL);
     }
 
-    @ExportMessage
-    public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long[] fstatat(int dirFd, Object path, boolean followSymlinks) throws PosixException {
         TruffleFile f = resolvePath(dirFd, pathToJavaString(path));
         LinkOption[] linkOptions = getLinkOptions(followSymlinks);
         try {
             return fstat(f, linkOptions);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
             throw posixException(errAndMsg);
         }
     }
 
-    @ExportMessage
-    public long[] fstat(int fd,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached InlinedBranchProfile nullPathProfile,
-                    @Exclusive @Cached InlinedBranchProfile errorBranch,
-                    @Exclusive @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long[] fstat(int fd) throws PosixException {
         String path = getFilePath(fd);
         if (path == null) {
-            nullPathProfile.enter(inliningTarget);
             Channel fileChannel = getFileChannel(fd);
             if (fileChannel == null) {
-                errorBranch.enter(inliningTarget);
                 throw posixException(OSErrorEnum.EBADF);
             }
             return fstatWithoutPath(fileChannel);
@@ -1198,15 +1191,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             return fstat(f, new LinkOption[0]);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
             throw posixException(errAndMsg);
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public long[] statvfs(Object path) throws PosixException {
         try {
             Env env = PythonContext.get(null).getEnv();
@@ -1243,8 +1234,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public long[] fstatvfs(int fd) throws PosixException {
         String path = getFilePath(fd);
 

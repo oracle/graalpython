@@ -257,7 +257,6 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         static PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @SuppressWarnings("unused") @Cached IsSymlinkNode isSymlinkNode,
                         @SuppressWarnings("unused") @Bind("isSymlinkNode.executeBoolean(frame, self)") boolean isSymlink,
                         @Shared("cachedPosixPathNode") @Cached CachedPosixPathNode cachedPosixPathNode,
@@ -265,14 +264,13 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // There are two caches - one for `follow_symlinks=True` and the other for
             // 'follow_symlinks=False`. They are different only when the dir entry is a symlink.
-            return uncachedLStatWithSymlink(frame, self, followSymlinks, catchNoent, inliningTarget, context, posixLib, cachedPosixPathNode, positiveLongProfile, constructAndRaiseNode);
+            return uncachedLStatWithSymlink(frame, self, followSymlinks, catchNoent, inliningTarget, context, cachedPosixPathNode, positiveLongProfile, constructAndRaiseNode);
         }
 
         @Specialization(guards = {"!followSymlinks", "self.lstatCache == null"})
         static PTuple uncachedLStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("cachedPosixPathNode") @Cached CachedPosixPathNode cachedPosixPathNode,
                         @Shared("positiveLongProfile") @Cached InlinedConditionProfile positiveLongProfile,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -280,7 +278,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
             int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : AT_FDCWD.value;
             PosixPath posixPath = cachedPosixPathNode.execute(frame, inliningTarget, self);
             try {
-                long[] rawStat = posixLib.fstatat(context.getPosixSupport(), dirFd, posixPath.value, followSymlinks);
+                long[] rawStat = context.getPosixSupport().fstatat(dirFd, posixPath.value, followSymlinks);
                 res = PosixModuleBuiltins.createStatResult(inliningTarget, context.getLanguage(inliningTarget), positiveLongProfile, rawStat);
             } catch (PosixException e) {
                 if (catchNoent && e.hasErrno(OSErrorEnum.ENOENT)) {

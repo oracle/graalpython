@@ -1447,11 +1447,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd, boolean followSymlinks,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("positive") @Cached InlinedConditionProfile positiveLongProfile,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                long[] out = posixLib.fstatat(context.getPosixSupport(), dirFd, path.value, followSymlinks);
+                long[] out = context.getPosixSupport().fstatat(dirFd, path.value, followSymlinks);
                 return createStatResult(inliningTarget, context.getLanguage(inliningTarget), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -1476,11 +1475,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("positive") @Cached InlinedConditionProfile positiveLongProfile,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                long[] out = posixLib.fstat(context.getPosixSupport(), fd.fd);
+                long[] out = context.getPosixSupport().fstat(fd.fd);
                 return createStatResult(inliningTarget, context.getLanguage(inliningTarget), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
@@ -1507,12 +1505,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile positiveLongProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 // TODO we used to return all zeros when the filename was equal to sys.executable
-                long[] out = posixLib.fstatat(context.getPosixSupport(), dirFd, path.value, false);
+                long[] out = context.getPosixSupport().fstatat(dirFd, path.value, false);
                 return createStatResult(inliningTarget, context.getLanguage(inliningTarget), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -1534,13 +1531,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple doStatFd(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile positiveLongProfile,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             while (true) {
                 try {
-                    long[] out = posixLib.fstat(context.getPosixSupport(), fd);
+                    long[] out = context.getPosixSupport().fstat(fd);
                     return createStatResult(inliningTarget, context.getLanguage(inliningTarget), positiveLongProfile, out);
                 } catch (PosixException e) {
                     errorProfile.enter(inliningTarget);
@@ -1576,16 +1572,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple doStatvfs(VirtualFrame frame, PosixFileHandle posixFileHandle,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile posixPathProfile,
                         @Cached InlinedConditionProfile positiveLongProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long[] out;
             try {
                 if (posixPathProfile.profile(inliningTarget, posixFileHandle instanceof PosixPath)) {
-                    out = posixLib.statvfs(context.getPosixSupport(), ((PosixPath) posixFileHandle).value);
+                    out = context.getPosixSupport().statvfs(((PosixPath) posixFileHandle).value);
                 } else {
-                    out = posixLib.fstatvfs(context.getPosixSupport(), ((PosixFd) posixFileHandle).fd);
+                    out = context.getPosixSupport().fstatvfs(((PosixFd) posixFileHandle).fd);
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, posixFileHandle.originalObject);
@@ -1603,12 +1598,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PTuple doStatvfs(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile positiveLongProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long[] out;
             try {
-                out = posixLib.fstatvfs(context.getPosixSupport(), fd);
+                out = context.getPosixSupport().fstatvfs(fd);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd);
             }

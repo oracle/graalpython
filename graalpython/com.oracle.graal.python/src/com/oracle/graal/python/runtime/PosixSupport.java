@@ -47,6 +47,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PosixSupport {
 
+    public static final int ST_MODE = 0;
+
     public static abstract class Path {
     }
 
@@ -66,4 +68,21 @@ public abstract class PosixSupport {
     public abstract int getWindowsConsoleType(int fd);
 
     public abstract long writeWindowsConsole(int fd, Buffer data) throws PosixException;
+
+    // see stat_struct_to_longs in posix.c for the layout of the array
+    public abstract long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
+
+    /**
+     * Performs operation of fstat(fd).
+     *
+     * @param fd the file descriptor
+     * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array. There are
+     *         constants for some of the indices, e.g., {@link #ST_MODE}.
+     * @throws PosixException if an error occurs
+     */
+    public abstract long[] fstat(int fd) throws PosixException;
+
+    public abstract long[] statvfs(Object path) throws PosixException;
+
+    public abstract long[] fstatvfs(int fd) throws PosixException;
 }

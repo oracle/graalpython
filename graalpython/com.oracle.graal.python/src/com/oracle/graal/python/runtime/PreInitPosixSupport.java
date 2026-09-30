@@ -377,40 +377,36 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativeLib.sysconf(nativePosixSupport, name);
     }
 
-    @ExportMessage
-    final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().fstatat(emulatedPosixSupport, dirFd, pathname, followSymlinks);
+            return emulatedPosixSupport.fstatat(dirFd, pathname, followSymlinks);
         }
-        return nativeLib.fstatat(nativePosixSupport, dirFd, pathname, followSymlinks);
+        return nativePosixSupport.fstatat(dirFd, pathname, followSymlinks);
     }
 
-    @ExportMessage
-    final long[] fstat(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long[] fstat(int fd) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().fstat(emulatedPosixSupport, fd);
+            return emulatedPosixSupport.fstat(fd);
         }
-        return nativeLib.fstat(nativePosixSupport, fd);
+        return nativePosixSupport.fstat(fd);
     }
 
-    @ExportMessage
-    final long[] statvfs(Object path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long[] statvfs(Object path) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().statvfs(emulatedPosixSupport, path);
+            return emulatedPosixSupport.statvfs(path);
         }
-        return nativeLib.statvfs(nativePosixSupport, path);
+        return nativePosixSupport.statvfs(path);
     }
 
-    @ExportMessage
-    final long[] fstatvfs(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long[] fstatvfs(int fd) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().fstatvfs(emulatedPosixSupport, fd);
+            return emulatedPosixSupport.fstatvfs(fd);
         }
-        return nativeLib.fstatvfs(nativePosixSupport, fd);
+        return nativePosixSupport.fstatvfs(fd);
     }
 
     @ExportMessage

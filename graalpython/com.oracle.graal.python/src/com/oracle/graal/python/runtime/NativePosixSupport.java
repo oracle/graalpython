@@ -1104,7 +1104,8 @@ public final class NativePosixSupport extends PosixSupport {
         return result;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException {
         long[] out = new long[13];
         long nativeOut = NULLPTR;
@@ -1124,7 +1125,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] fstat(int fd) throws PosixException {
         long[] out = new long[13];
         long nativeOut = NativeMemory.mallocLongArray(out.length);
@@ -1140,7 +1142,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] statvfs(Object path) throws PosixException {
         long[] out = new long[11];
         long nativeOut = NULLPTR;
@@ -1160,7 +1163,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] fstatvfs(int fd) throws PosixException {
         long[] out = new long[11];
         long nativeOut = NativeMemory.mallocLongArray(out.length);

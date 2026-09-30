@@ -392,7 +392,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     long[] fstatResult;
                     gil.release(true);
                     try {
-                        fstatResult = posixLib.fstat(context.getPosixSupport(), self.getFD());
+                        fstatResult = context.getPosixSupport().fstat(self.getFD());
                     } finally {
                         gil.acquire();
                     }
@@ -572,7 +572,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             try {
                 PosixSupport posixSupport = PosixSupport.get(inliningTarget);
                 long pos = posixLib.lseek(posixSupport, self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
-                long[] status = posixLib.fstat(posixSupport, self.getFD());
+                long[] status = posixSupport.fstat(self.getFD());
                 long end = status[6]; // TODO: st_size
                 if (end > 0 && end >= pos && pos >= 0 && end - pos < MAX_SIZE) {
                     /*

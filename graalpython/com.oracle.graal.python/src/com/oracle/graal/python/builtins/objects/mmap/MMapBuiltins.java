@@ -75,8 +75,8 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -215,7 +215,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         Object tagname, Object trackFdArg,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
@@ -272,11 +272,11 @@ public final class MMapBuiltins extends PythonBuiltins {
             // For file mappings we use fstat to validate the length or to initialize the length if
             // it is 0 meaning that we should find it out for the user
             long length = lengthIn;
-            PosixSupport posixSupport1 = PosixSupport.get(inliningTarget);
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             if (fd != ANONYMOUS_FD) {
                 long[] fstatResult = null;
                 try {
-                    fstatResult = posixSupport.fstat(posixSupport1, fd);
+                    fstatResult = posixSupport.fstat(fd);
                 } catch (PosixException ignored) {
                 }
                 if (fstatResult != null && length == 0) {
@@ -302,7 +302,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 // MAP_ANONYMOUS, maybe this can be detected and handled by the POSIX layer
             } else if (mmapArgs.trackFd()) {
                 try {
-                    trackedFd = posixSupport.dup(posixSupport1, fd);
+                    trackedFd = posixSupportLib.dup(posixSupport, fd);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
@@ -312,11 +312,11 @@ public final class MMapBuiltins extends PythonBuiltins {
 
             Object mmapHandle;
             try {
-                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, fd, offset, mmapTagname);
+                mmapHandle = posixSupportLib.mmap(posixSupport, length, prot, flags, fd, offset, mmapTagname);
             } catch (PosixException e) {
                 if (trackedFd != ANONYMOUS_FD) {
                     try {
-                        posixSupport.close(posixSupport1, trackedFd);
+                        posixSupportLib.close(posixSupport, trackedFd);
                     } catch (PosixException ignored) {
                     }
                 }
@@ -650,7 +650,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static long size(VirtualFrame frame, PMMap self,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             if (self.isClosed()) {
@@ -660,7 +659,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 return self.getLength();
             }
             try {
-                return posixSupport.fstat(context.getPosixSupport(), self.getFd())[ST_SIZE];
+                return context.getPosixSupport().fstat(self.getFd())[ST_SIZE];
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
