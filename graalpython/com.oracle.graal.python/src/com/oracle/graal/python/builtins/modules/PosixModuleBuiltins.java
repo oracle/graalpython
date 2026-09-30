@@ -1908,13 +1908,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PScandirIterator scandirPath(VirtualFrame frame, PosixPath path,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_SCANDIR, path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return PFactory.createScandirIterator(context.getLanguage(inliningTarget), context, posixLib.opendir(context.getPosixSupport(), path.value), path, false);
+                return PFactory.createScandirIterator(context.getLanguage(inliningTarget), context, context.getPosixSupport().opendir(path.value), path, false);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1923,12 +1922,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PScandirIterator scandirFd(VirtualFrame frame, PosixFd fd,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_SCANDIR, fd.originalObject);
-            Object dirStream = dupAndFdopendir(frame, inliningTarget, posixLib, context.getPosixSupport(), fd, constructAndRaiseNode);
+            Object dirStream = dupAndFdopendir(frame, inliningTarget, context.getPosixSupport(), fd, constructAndRaiseNode);
             return PFactory.createScandirIterator(context.getLanguage(inliningTarget), context, dirStream, fd, true);
         }
     }
@@ -1952,7 +1950,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_LISTDIR, path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return listdir(frame, inliningTarget, posixLib.opendir(context.getPosixSupport(), path.value), path.wasBufferLike, false, posixLib, constructAndRaiseNode,
+                return listdir(frame, inliningTarget, context.getPosixSupport().opendir(path.value), path.wasBufferLike, false, posixLib, constructAndRaiseNode,
                                 context.getLanguage(inliningTarget), context.getPosixSupport());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -1967,7 +1965,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_OS_LISTDIR, fd.originalObject);
-            Object dirStream = dupAndFdopendir(frame, inliningTarget, posixLib, context.getPosixSupport(), fd, constructAndRaiseNode);
+            Object dirStream = dupAndFdopendir(frame, inliningTarget, context.getPosixSupport(), fd, constructAndRaiseNode);
             return listdir(frame, inliningTarget, dirStream, false, true, posixLib, constructAndRaiseNode, context.getLanguage(inliningTarget), context.getPosixSupport());
         }
 
@@ -1976,7 +1974,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             List<Object> list = new ArrayList<>();
             try {
                 while (true) {
-                    Object dirEntry = posixLib.readdir(posixSupport, dirStream);
+                    Object dirEntry = posixSupport.readdir(dirStream);
                     if (dirEntry == null) {
                         return PFactory.createList(language, listToArray(list));
                     }
@@ -1991,10 +1989,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
                 if (needsRewind) {
-                    posixLib.rewinddir(posixSupport, dirStream);
+                    posixSupport.rewinddir(dirStream);
                 }
                 try {
-                    posixLib.closedir(posixSupport, dirStream);
+                    posixSupport.closedir(dirStream);
                 } catch (PosixException e) {
                     // ignored (CPython does not check the return value of closedir)
                 }
@@ -2012,12 +2010,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static Object dupAndFdopendir(VirtualFrame frame, Node inliningTarget, PosixSupportLibrary posixLib, PosixSupport posixSupport, PosixFd fd, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+    static Object dupAndFdopendir(VirtualFrame frame, Node inliningTarget, PosixSupport posixSupport, PosixFd fd, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
         int dupFd = -1;
         try {
             dupFd = posixSupport.dup(fd.fd);
             // when fdopenddir succeeds, we are no longer responsible for closing dupFd
-            return posixLib.fdopendir(posixSupport, dupFd);
+            return posixSupport.fdopendir(dupFd);
         } catch (PosixException e) {
             if (dupFd != -1) {
                 try {

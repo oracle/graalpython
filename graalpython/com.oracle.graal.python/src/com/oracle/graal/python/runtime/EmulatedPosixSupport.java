@@ -1635,31 +1635,24 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object opendir(Object path) throws PosixException {
-        return opendirImpl(pathToJavaString(path), -1);
+        return new EmulatedDirStream(getTruffleFile(pathToJavaString(path)), -1);
     }
 
-    @ExportMessage
-    public Object fdopendir(int fd,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public Object fdopendir(int fd) throws PosixException {
         String path = getFilePath(fd);
         if (path == null) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOENT);
         }
-        return opendirImpl(path, fd);
+        return new EmulatedDirStream(getTruffleFile(path), fd);
     }
 
-    private EmulatedDirStream opendirImpl(String path, int fd) throws PosixException {
-        TruffleFile file = getTruffleFile(path);
-        return new EmulatedDirStream(file, fd);
-    }
-
-    @ExportMessage
+    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public void closedir(Object dirStreamObj) throws PosixException {
         EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
         try {
@@ -1673,9 +1666,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public Object readdir(Object dirStreamObj) throws PosixException {
         EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
         if (dirStream.needsReopen) {
@@ -1692,8 +1684,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public void rewinddir(Object dirStreamObj) {
         EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
         // rewind must not fail => postpone reopen until readdir() is called

@@ -80,31 +80,6 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int ST_SIZE = 6;
 
     /**
-     * Caller is responsible for calling {@link #closedir(Object, Object)} to free the allocated
-     * resources.
-     *
-     * @return an opaque directory stream object to be used in calls to {@code readdir} and
-     *         {@code closedir}
-     */
-    public abstract Object opendir(Object receiver, Object path) throws PosixException;
-
-    public abstract Object fdopendir(Object receiver, int fd) throws PosixException;
-
-    /**
-     * Implementations must deal with this being called more than once.
-     */
-    public abstract void closedir(Object receiver, Object dirStream) throws PosixException;
-
-    /**
-     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods or
-     *         {@code null} when there are no more items or if the stream has been closed by
-     *         {@code closedir}.
-     */
-    public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
-
-    public abstract void rewinddir(Object receiver, Object dirStream);
-
-    /**
      * @return an opaque object representing the dir entry name
      * @see #getPathAsBytes(Object, Object)
      * @see #getPathAsString(Object, Object)

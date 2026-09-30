@@ -1350,7 +1350,8 @@ public final class NativePosixSupport extends PosixSupport {
         return posixNativeFunctionInvoker.call_isatty(fd) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object opendir(Object path) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1364,7 +1365,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object fdopendir(int fd) throws PosixException {
         long ptr = posixNativeFunctionInvoker.call_fdopendir(fd);
         if (ptr == 0) {
@@ -1373,7 +1375,8 @@ public final class NativePosixSupport extends PosixSupport {
         return ptr;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void closedir(Object dirStreamObj) throws PosixException {
         int res = posixNativeFunctionInvoker.call_closedir(((Long) dirStreamObj).longValue());
         if (res != 0) {
@@ -1381,7 +1384,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object readdir(Object dirStreamObj) throws PosixException {
         int nameBufBytes = WINDOWS ? DIRENT_NAME_BUF_LENGTH * 2 : DIRENT_NAME_BUF_LENGTH;
         byte[] name = new byte[nameBufBytes];
@@ -1416,9 +1420,10 @@ public final class NativePosixSupport extends PosixSupport {
         return null;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void rewinddir(Object dirStreamObj) {
-        posixNativeFunctionInvoker.call_rewinddir(((Long) dirStreamObj).longValue());
+        posixNativeFunctionInvoker.call_rewinddir((Long) dirStreamObj);
     }
 
     @ExportMessage

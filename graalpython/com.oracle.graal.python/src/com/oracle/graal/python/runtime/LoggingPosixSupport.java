@@ -567,55 +567,55 @@ public class LoggingPosixSupport extends PosixSupport {
         return logExit("isatty", "%b", delegate.isatty(fd));
     }
 
-    @ExportMessage
-    final Object opendir(Object path,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object opendir(Object path) throws PosixException {
         logEnter("opendir", "%s", path);
         try {
-            return logExit("opendir", "%s", lib.opendir(delegate, path));
+            return logExit("opendir", "%s", delegate.opendir(path));
         } catch (PosixException e) {
             throw logException("opendir", e);
         }
     }
 
-    @ExportMessage
-    final Object fdopendir(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object fdopendir(int fd) throws PosixException {
         logEnter("fdopendir", "%d", fd);
         try {
-            return logExit("fdopendir", "%s", lib.fdopendir(delegate, fd));
+            return logExit("fdopendir", "%s", delegate.fdopendir(fd));
         } catch (PosixException e) {
             throw logException("fdopendir", e);
         }
     }
 
-    @ExportMessage
-    final void closedir(Object dirStream,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void closedir(Object dirStream) throws PosixException {
         logEnter("closedir", "%s", dirStream);
         try {
-            lib.closedir(delegate, dirStream);
+            delegate.closedir(dirStream);
         } catch (PosixException e) {
             throw logException("closedir", e);
         }
     }
 
-    @ExportMessage
-    final Object readdir(Object dirStream,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object readdir(Object dirStream) throws PosixException {
         logEnter("readdir", "%s", dirStream);
         try {
-            return logExit("readdir", "%s", lib.readdir(delegate, dirStream));
+            return logExit("readdir", "%s", delegate.readdir(dirStream));
         } catch (PosixException e) {
             throw logException("readdir", e);
         }
     }
 
-    @ExportMessage
-    final void rewinddir(Object dirStream,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final void rewinddir(Object dirStream) {
         logEnter("rewinddir", "%s", dirStream);
-        lib.rewinddir(delegate, dirStream);
+        delegate.rewinddir(dirStream);
     }
 
     @ExportMessage

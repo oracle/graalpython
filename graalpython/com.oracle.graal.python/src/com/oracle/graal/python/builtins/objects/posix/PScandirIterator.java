@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHan
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
@@ -75,16 +75,16 @@ public final class PScandirIterator extends PythonBuiltinObject {
             return new ScandirIteratorBuiltins.ReleaseCallback(this);
         }
 
-        void rewindAndClose(PosixSupportLibrary posixLib, Object posixSupport) {
+        void rewindAndClose(PosixSupport posixSupport) {
             if (!markReleased()) {
                 return;
             }
             Object dirStream = getReference();
             if (needsRewind) {
-                posixLib.rewinddir(posixSupport, dirStream);
+                posixSupport.rewinddir(dirStream);
             }
             try {
-                posixLib.closedir(posixSupport, dirStream);
+                posixSupport.closedir(dirStream);
             } catch (PosixException e) {
                 // ignored (CPython does not chek the return value of closedir)
             }

@@ -453,48 +453,49 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.isatty(fd);
     }
 
-    @ExportMessage
-    final Object opendir(Object path,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object opendir(Object path) throws PosixException {
         if (inPreInitialization) {
-            return addDirStream(PosixSupportLibrary.getUncached().opendir(emulatedPosixSupport, path));
+            return addDirStream(emulatedPosixSupport.opendir(path));
         }
-        return nativeLib.opendir(nativePosixSupport, path);
+        return nativePosixSupport.opendir(path);
     }
 
-    @ExportMessage
-    final Object fdopendir(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object fdopendir(int fd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.fdopendir(nativePosixSupport, fd);
+        return nativePosixSupport.fdopendir(fd);
     }
 
-    @ExportMessage
-    final void closedir(Object dirStream,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void closedir(Object dirStream) throws PosixException {
         if (inPreInitialization) {
-            PosixSupportLibrary.getUncached().closedir(emulatedPosixSupport, removeDirStream(dirStream));
+            emulatedPosixSupport.closedir(removeDirStream(dirStream));
             return;
         }
-        nativeLib.closedir(nativePosixSupport, dirStream);
+        nativePosixSupport.closedir(dirStream);
     }
 
-    @ExportMessage
-    final Object readdir(Object dirStream,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object readdir(Object dirStream) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().readdir(emulatedPosixSupport, dirStream);
+            return emulatedPosixSupport.readdir(dirStream);
         }
-        return nativeLib.readdir(nativePosixSupport, dirStream);
+        return nativePosixSupport.readdir(dirStream);
     }
 
-    @ExportMessage
-    final void rewinddir(Object dirStream,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final void rewinddir(Object dirStream) {
         if (inPreInitialization) {
-            PosixSupportLibrary.getUncached().rewinddir(emulatedPosixSupport, dirStream);
+            emulatedPosixSupport.rewinddir(dirStream);
+            return;
         }
-        nativeLib.rewinddir(nativePosixSupport, dirStream);
+        nativePosixSupport.rewinddir(dirStream);
     }
 
     @ExportMessage

@@ -169,5 +169,18 @@ public abstract class PosixSupport {
 
     public abstract boolean isatty(int fd);
 
+    /** Caller is responsible for closing the returned directory stream with {@link #closedir(Object)}. */
+    public abstract Object opendir(Object path) throws PosixException;
+
+    public abstract Object fdopendir(int fd) throws PosixException;
+
+    /** Implementations must deal with this being called more than once. */
+    public abstract void closedir(Object dirStream) throws PosixException;
+
+    /** Returns null when there are no more entries or the stream has been closed. */
+    public abstract Object readdir(Object dirStream) throws PosixException;
+
+    public abstract void rewinddir(Object dirStream);
+
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }
