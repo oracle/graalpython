@@ -457,9 +457,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public int openat(int dirFd, Object path, int flags, int mode,
                     @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile file = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         Set<StandardOpenOption> options = flagsToOptions(flags);
         FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
         try {
@@ -1167,9 +1166,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
                     @Bind Node inliningTarget,
-                    @Exclusive @Cached InlinedBranchProfile errorBranch,
-                    @Exclusive @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile f = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+                    @Exclusive @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        TruffleFile f = resolvePath(dirFd, pathToJavaString(path));
         LinkOption[] linkOptions = getLinkOptions(followSymlinks);
         try {
             return fstat(f, linkOptions);
@@ -1553,9 +1551,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void unlinkat(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir,
                     @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile f = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        TruffleFile f = resolvePath(dirFd, pathToJavaString(path));
         if (f.exists(LinkOption.NOFOLLOW_LINKS)) {
             // we cannot check this if the file does not exist
             boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
@@ -1575,10 +1572,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
                     @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile srcFile = resolvePath(inliningTarget, oldFdDir, pathToJavaString(oldPath), defaultDirFdPofile);
-        TruffleFile dstFile = resolvePath(inliningTarget, newFdDir, pathToJavaString(newPath), defaultDirFdPofile);
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        TruffleFile srcFile = resolvePath(oldFdDir, pathToJavaString(oldPath));
+        TruffleFile dstFile = resolvePath(newFdDir, pathToJavaString(newPath));
         try {
             if ((flags & PosixConstants.AT_SYMLINK_FOLLOW.value) != 0) {
                 dstFile = dstFile.getCanonicalFile();
@@ -1593,9 +1589,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void symlinkat(Object target, int linkDirFd, Object link,
                     @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile linkFile = resolvePath(inliningTarget, linkDirFd, pathToJavaString(link), defaultDirFdPofile);
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        TruffleFile linkFile = resolvePath(linkDirFd, pathToJavaString(link));
         TruffleFile targetFile = getTruffleFile(pathToJavaString(target));
         try {
             linkFile.createSymbolicLink(targetFile);
@@ -1608,9 +1603,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void mkdirat(int dirFd, Object path, int mode,
                     @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile linkFile = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        TruffleFile linkFile = resolvePath(dirFd, pathToJavaString(path));
         try {
             linkFile.createDirectory();
         } catch (Exception e) {
@@ -1839,9 +1833,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void utimensat(int dirFd, Object path, long[] timespec, boolean followSymlinks,
                     @Bind Node inliningTarget,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile file = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         setUTimeNode.execute(inliningTarget, file, timespec, followSymlinks);
     }
 
@@ -1945,15 +1938,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @Bind Node inliningTarget,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
+    public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         try {
-            TruffleFile newFile = resolvePath(inliningTarget, newDirFd, pathToJavaString(newPath), defaultDirFdPofile);
+            TruffleFile newFile = resolvePath(newDirFd, pathToJavaString(newPath));
             if (newFile.isDirectory()) {
                 throw posixException(OSErrorEnum.EISDIR);
             }
-            TruffleFile oldFile = resolvePath(inliningTarget, oldDirFd, pathToJavaString(oldPath), defaultDirFdPofile);
+            TruffleFile oldFile = resolvePath(oldDirFd, pathToJavaString(oldPath));
             oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
@@ -1961,15 +1952,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @Bind Node inliningTarget,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
+    public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         try {
-            TruffleFile newFile = resolvePath(inliningTarget, newDirFd, pathToJavaString(newPath), defaultDirFdPofile);
+            TruffleFile newFile = resolvePath(newDirFd, pathToJavaString(newPath));
             if (newFile.isDirectory()) {
                 throw posixException(OSErrorEnum.EISDIR);
             }
-            TruffleFile oldFile = resolvePath(inliningTarget, oldDirFd, pathToJavaString(oldPath), defaultDirFdPofile);
+            TruffleFile oldFile = resolvePath(oldDirFd, pathToJavaString(oldPath));
             oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
@@ -1979,15 +1968,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws UnsupportedPosixFeatureException {
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch) throws UnsupportedPosixFeatureException {
         if (effectiveIds) {
             errBranch.enter(inliningTarget);
             throw createUnsupportedFeature("faccess with effective user IDs");
         }
         TruffleFile file;
         try {
-            file = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+            file = resolvePath(dirFd, pathToJavaString(path));
         } catch (PosixException e) {
             // When the dirFd is invalid descriptor, we just return false, like the real faccessat
             return false;
@@ -2019,10 +2007,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
-                    @Bind Node inliningTarget,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile file = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+    public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         if (getPythonOS() == PLATFORM_WIN32) {
             // cmp cpython's simple chmod implementation
@@ -2065,10 +2051,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public Object readlinkat(int dirFd, Object path,
-                    @Bind Node inliningTarget,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile) throws PosixException {
-        TruffleFile file = resolvePath(inliningTarget, dirFd, pathToJavaString(path), defaultDirFdPofile);
+    public Object readlinkat(int dirFd, Object path) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         try {
             TruffleFile canonicalFile = file.getCanonicalFile();
             if (file.equals(canonicalFile)) {
@@ -4755,24 +4739,23 @@ public final class EmulatedPosixSupport extends PosixResources {
      * Resolves the path relative to the directory given as file descriptor. Honors the
      * {@link PosixConstants#AT_FDCWD}.
      */
-    private TruffleFile resolvePath(Node inliningTarget, int dirFd, String pathname, InlinedConditionProfile defaultDirFdPofile)
-                    throws PosixException {
-        if (defaultDirFdPofile.profile(inliningTarget, dirFd == AT_FDCWD.value)) {
+    private TruffleFile resolvePath(int dirFd, String pathname) throws PosixException {
+        if (dirFd == AT_FDCWD.value) {
             return getTruffleFile(pathname);
-        } else {
-            TruffleFile file = getTruffleFile(pathname);
-            if (file.isAbsolute()) {
-                // Even if the dirFd is non-existing or otherwise wrong, we should not trigger
-                // any error if the file path is already absolute
-                return file;
-            }
-            String dirPath = getFilePathOrDefault(dirFd);
-            if (dirPath == null) {
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            TruffleFile dir = getTruffleFile(dirPath);
-            return dir.resolve(pathname);
         }
+
+        TruffleFile file = getTruffleFile(pathname);
+        if (file.isAbsolute()) {
+            // Even if the dirFd is non-existing or otherwise wrong, we should not trigger
+            // any error if the file path is already absolute
+            return file;
+        }
+        String dirPath = getFilePathOrDefault(dirFd);
+        if (dirPath == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        TruffleFile dir = getTruffleFile(dirPath);
+        return dir.resolve(pathname);
     }
 
     private static String pathToJavaString(Object path) {
