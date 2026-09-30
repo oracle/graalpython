@@ -51,7 +51,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
@@ -64,27 +63,23 @@ import com.oracle.truffle.api.nodes.Node;
 public class SocketUtils {
     @FunctionalInterface
     public interface SocketFunction<T> {
-        /*
-         * NB: The library and support need to be passed as arguments and shouldn't be taken from
-         * the closure. Otherwise, Truffle has trouble inlining the library call.
-         */
-        T run(PosixSupportLibrary posixLib, PosixSupport posixSupport) throws PosixException;
+        T run(PosixSupport posixSupport) throws PosixException;
     }
 
     /**
      * Rough equivalent of CPython's {@code sock_call}. Takes care of calling select for connections
      * with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, PosixSupport posixSupport, GilNode gil,
+    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupport posixSupport, GilNode gil,
                     PSocket socket, SocketFunction<T> function, boolean writing, boolean connect) throws PosixException {
-        return callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket, function, writing, connect, null);
+        return callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixSupport, gil, socket, function, writing, connect, null);
     }
 
     /**
      * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
      * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, PosixSupport posixSupport, GilNode gil,
+    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupport posixSupport, GilNode gil,
                     PSocket socket, SocketFunction<T> function, boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
         TimeoutHelper timeoutHelper = timeoutHelperIn;
         if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
@@ -142,7 +137,7 @@ public class SocketUtils {
                 try {
                     gil.release(true);
                     try {
-                        return function.run(posixLib, posixSupport);
+                        return function.run(posixSupport);
                     } finally {
                         gil.acquire();
                     }

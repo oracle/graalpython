@@ -3265,7 +3265,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3280,7 +3280,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3299,7 +3299,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3314,7 +3314,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3330,7 +3330,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void shutdown(int sockfd, int how) throws PosixException {
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -3341,7 +3341,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3392,7 +3392,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.littleEndian() : ByteArraySupport.bigEndian();
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {

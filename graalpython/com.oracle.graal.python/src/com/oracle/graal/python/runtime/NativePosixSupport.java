@@ -2465,7 +2465,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkBounds(buf, offset, len);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
@@ -2481,7 +2482,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr usa) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl destAddr = (UniversalSockAddrImpl) usa;
@@ -2504,7 +2506,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkBounds(buf, offset, len);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
@@ -2520,7 +2523,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl srcAddr = new UniversalSockAddrImpl(this);
@@ -2545,7 +2549,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void shutdown(int sockfd, int how) throws PosixException {
         int res = posixNativeFunctionInvoker.call_shutdown(sockfd, how);
         if (res != 0) {
@@ -2553,7 +2558,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         assert optlen >= 0 && optval.length >= optlen;
         long nativeOptval = NULLPTR;
@@ -2580,7 +2586,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         assert optlen >= 0 && optval.length >= optlen;
         long nativeOptval = NULLPTR;

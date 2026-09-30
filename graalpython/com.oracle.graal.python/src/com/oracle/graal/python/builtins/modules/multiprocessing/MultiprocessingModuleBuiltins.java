@@ -94,7 +94,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] buffer = new byte[size];
             try {
-                int received = posixLib.recv(context.getPosixSupport(), handle, buffer, 0, size, 0);
+                int received = context.getPosixSupport().recv(handle, buffer, 0, size, 0);
                 if (received == size) {
                     return PFactory.createBytes(language, buffer);
                 }
@@ -127,7 +127,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                return posixLib.send(context.getPosixSupport(), handle, bytes, 0, bufferLib.getBufferLength(buffer), 0);
+                return context.getPosixSupport().send(handle, bytes, 0, bufferLib.getBufferLength(buffer), 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {

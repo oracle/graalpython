@@ -45,6 +45,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
@@ -155,6 +156,22 @@ public abstract class PosixSupport {
     public abstract UniversalSockAddr getpeername(int sockfd) throws PosixException;
 
     public abstract UniversalSockAddr getsockname(int sockfd) throws PosixException;
+
+    public abstract int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
+
+    // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
+    public abstract int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
+
+    public abstract int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
+
+    // For STREAM sockets, the returned address will be AF_UNSPEC
+    public abstract RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
+
+    public abstract void shutdown(int sockfd, int how) throws PosixException;
+
+    public abstract int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
+
+    public abstract void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
 
     public abstract void raise(int signal) throws PosixException;
 

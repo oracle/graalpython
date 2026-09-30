@@ -1012,53 +1012,53 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.getsockname(sockfd);
     }
 
-    @ExportMessage
-    final int send(int sockfd, byte[] buf, int offset, int len, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.send(nativePosixSupport, sockfd, buf, offset, len, flags);
+        return nativePosixSupport.send(sockfd, buf, offset, len, flags);
     }
 
-    @ExportMessage
-    final int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.sendto(nativePosixSupport, sockfd, buf, offset, len, flags, destAddr);
+        return nativePosixSupport.sendto(sockfd, buf, offset, len, flags, destAddr);
     }
 
-    @ExportMessage
-    final int recv(int sockfd, byte[] buf, int offset, int len, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.recv(nativePosixSupport, sockfd, buf, offset, len, flags);
+        return nativePosixSupport.recv(sockfd, buf, offset, len, flags);
     }
 
-    @ExportMessage
-    final RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.recvfrom(nativePosixSupport, sockfd, buf, offset, len, flags);
+        return nativePosixSupport.recvfrom(sockfd, buf, offset, len, flags);
     }
 
-    @ExportMessage
-    final void shutdown(int sockfd, int how,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void shutdown(int sockfd, int how) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.shutdown(nativePosixSupport, sockfd, how);
+        nativePosixSupport.shutdown(sockfd, how);
     }
 
-    @ExportMessage
-    final int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getsockopt(nativePosixSupport, sockfd, level, optname, optval, optlen);
+        return nativePosixSupport.getsockopt(sockfd, level, optname, optval, optlen);
     }
 
-    @ExportMessage
-    final void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.setsockopt(nativePosixSupport, sockfd, level, optname, optval, optlen);
+        nativePosixSupport.setsockopt(sockfd, level, optname, optval, optlen);
     }
 
     @ExportMessage

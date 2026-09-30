@@ -298,24 +298,6 @@ public abstract class PosixSupportLibrary extends Library {
 
     // endregion
 
-    // region socket messages
-
-    /**
-     * Creates a new socket.
-     *
-     * @see "socket(2) man pages"
-     * @see PosixConstants
-     */
-    public abstract int send(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
-
-    // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
-    public abstract int sendto(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
-
-    public abstract int recv(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
-
-    // For STREAM sockets, the returned address will be AF_UNSPEC
-    public abstract RecvfromResult recvfrom(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
-
     public static final class AcceptResult {
         public final int socketFd;
         public final UniversalSockAddr sockAddr;
@@ -347,20 +329,6 @@ public abstract class PosixSupportLibrary extends Library {
             return "RecvfromResult{" + "readBytes=" + readBytes + ", sockAddr=" + sockAddr + '}';
         }
     }
-
-    public abstract void shutdown(Object receiver, int sockfd, int how) throws PosixException;
-
-    /**
-     * @param optval buffer for the option value
-     * @param optlen size of the buffer // TODO use optval.length instead? See also recv,
-     *            mmapReadBytes, read and GR-29856
-     * @return the actual size of the value returned
-     */
-    public abstract int getsockopt(Object receiver, int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
-
-    public abstract void setsockopt(Object receiver, int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
-
-    // endregion
 
     // region Name resolution messages
 
