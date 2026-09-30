@@ -98,6 +98,7 @@ public abstract class ReadBuiltinNode extends PNodeWithContext {
                     @Cached("builtins.getShape()") Shape cachedShape,
                     @Cached(value = "getPropertyGetterWithFinalAssumption(cachedShape, attributeId)", neverDefault = false) PropertyGetter getter,
                     @Bind("getterGet(getter, builtins)") Object value) {
+        // Note: this is inlined in ReadGlobalOrBuiltinNode, keep in sync
         return value;
     }
 

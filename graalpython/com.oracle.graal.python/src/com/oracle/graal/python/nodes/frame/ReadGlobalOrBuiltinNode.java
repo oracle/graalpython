@@ -31,13 +31,18 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyObjectGetItem.PyObjectGetItemOrNull;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -53,10 +58,12 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.PropertyGetter;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -65,7 +72,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(false)       // footprint reduction 48 -> 30
 @Proxyable(storeBytecodeIndex = false, allowUncached = true)
 @ConstantOperand(type = TruffleString.class)
-@ImportStatic(PGuards.class)
+@ImportStatic({PGuards.class, PNodeWithContext.class, PythonUtils.class})
 public abstract class ReadGlobalOrBuiltinNode extends Node {
     public abstract Object execute(VirtualFrame frame, TruffleString name);
 
@@ -85,6 +92,22 @@ public abstract class ReadGlobalOrBuiltinNode extends Node {
 
     public static ReadGlobalOrBuiltinNode getUncached() {
         return ReadGlobalOrBuiltinNodeGen.getUncached();
+    }
+
+    /**
+     * If globals are a dictionary owned by {@link PythonModule}, then using the shape flag
+     * {@link PythonObject#HAS_MATERIALIZED_DICT} as part of shape check, we can detect when the dictionary storage
+     * of that module has changed, and we must invalidate our cache. This allows us to check only identity of
+     * the globals object and its shape and in the runtime guards avoid the pointer chasing done in this method,
+     * which should be used only at specialization time.
+     */
+    public static PythonModule getGlobalsOwner(VirtualFrame frame) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object obj = PArguments.getGlobals(frame);
+        if (obj instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dom && dom.getStore() instanceof PythonModule module) {
+            return module;
+        }
+        return null;
     }
 
     public static Shape getGlobalsStorageShape(VirtualFrame frame) {
@@ -107,9 +130,41 @@ public abstract class ReadGlobalOrBuiltinNode extends Node {
     }
 
     @ForceQuickening
-    @Specialization(guards = {"cachedGlobalsShape != null", "cachedGlobalsShape == getGlobalsStorageShape(frame)"}, //
+    @Specialization(guards = {
+                    /* static: */ "isSingleContext(inliningTarget)", "globalsOwner != null", "globalsShape != null", //
+                    /* static: */ "!hasMaterializedDict(globalsShape)", "builtinGetter != null", //
+                    /* dynamic: */ "getGlobals(frame) == cachedGlobals", "globalsShape == getGlobalsOwnerShape(globalsOwner)", //
+                    /* dynamic: */ "getterAccepts(builtinGetter, builtins)", "!isNoValue(result)"}, //
                     excludeForUncached = true, limit = "1")
     public static Object readBuiltinFastPath(VirtualFrame frame, TruffleString attributeId,
+                    @Bind Node inliningTarget,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached("getGlobalsOwner(frame)") PythonModule globalsOwner,
+                    @Cached("getGlobalsStorageShapeIfPropMissing(frame, attributeId)") Shape globalsShape,
+                    @Cached("getBuiltins(inliningTarget)") PythonModule builtins,
+                    @Cached("getBuiltinGetter(builtins, attributeId)") PropertyGetter builtinGetter,
+                    @Bind("getValue(builtins, builtinGetter)") Object result) {
+        // Note: this is inlined version of ReadBuiltinNode#returnBuiltinFromConstantModule, keep in sync
+        // Both shape checks also guard against replacement of the module-backed dict storages.
+        return result;
+    }
+
+    public static PythonModule getBuiltins(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        PythonContext context = PythonContext.get(node);
+        return context.isInitialized() ? context.getBuiltins() : context.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
+    }
+
+    public static PropertyGetter getBuiltinGetter(PythonModule builtins, TruffleString name) {
+        // The getter retains the shape, so no separate cached builtins shape is needed.
+        Shape shape = builtins.getShape();
+        return PGuards.hasMaterializedDict(shape) ? null : PythonUtils.getPropertyGetterWithFinalAssumption(shape, name);
+    }
+
+    @ForceQuickening
+    @Specialization(guards = {"cachedGlobalsShape != null", "cachedGlobalsShape == getGlobalsStorageShape(frame)"}, //
+                    replaces = "readBuiltinFastPath", excludeForUncached = true, limit = "1")
+    public static Object readBuiltinFromStorage(VirtualFrame frame, TruffleString attributeId,
                     @Cached("getGlobalsStorageShapeIfPropMissing(frame, attributeId)") Shape cachedGlobalsShape,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode) {
         return readFromBuiltinsNode.execute(attributeId);
@@ -123,16 +178,59 @@ public abstract class ReadGlobalOrBuiltinNode extends Node {
         return PNone.NO_VALUE;
     }
 
+    @NonIdempotent
+    public static Object getValue(PythonModule m, PropertyGetter getter) {
+        assert m.checkDictFlags();
+        return getter.get(m);
+    }
+
+    @NonIdempotent
+    public static Object getGlobals(VirtualFrame frame) {
+        return PArguments.getGlobals(frame);
+    }
+
+    @NonIdempotent
+    public static Shape getGlobalsOwnerShape(PythonModule module) {
+        return module.getShape();
+    }
+
+    @NonIdempotent
+    public static boolean getterAccepts(PropertyGetter getter, PythonModule module) {
+        return getter.accepts(module);
+    }
+
     @ForceQuickening
-    @Specialization(guards = "!isNoValue(result)", replaces = "readBuiltinFastPath", excludeForUncached = true, limit = "1")
+    @Specialization(guards = {
+                    /* static: */ "isSingleContext(inliningTarget)", "globalsOwner != null", "!hasMaterializedDict(globalsShape)", "getter != null", //
+                    /* dynamic: */ "getGlobals(frame) == cachedGlobals", "getterAccepts(getter, globalsOwner)", "!isNoValue(result)"}, //
+                    replaces = "readBuiltinFromStorage", excludeForUncached = true, limit = "1")
     public static Object readGlobalFastPath(VirtualFrame frame, TruffleString attributeId,
+                    @Bind Node inliningTarget,
+                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached("getGlobalsOwner(frame)") PythonModule globalsOwner,
+                    @Cached("globalsOwner.getShape()") Shape globalsShape,
+                    @Cached("getPropertyGetterWithFinalAssumption(globalsShape, attributeId)") PropertyGetter getter,
+                    @Bind("getValue(globalsOwner, getter)") Object result) {
+        CompilerAsserts.partialEvaluationConstant(attributeId);
+        // since the shape does not have MATERIALIZED_DICT shape, and we do shape check on the owner,
+        // the dict storage must not have been replaced
+        assert cachedGlobals instanceof PDict d && //
+                        d.getDictStorage() instanceof DynamicObjectStorage s && //
+                        s.getStore() == globalsOwner;
+        return result;
+    }
+
+    @ForceQuickening
+    @Specialization(guards = "!isNoValue(result)", replaces = "readGlobalFastPath", excludeForUncached = true, limit = "1")
+    public static Object readGlobalFromStorage(VirtualFrame frame, TruffleString attributeId,
                     @Cached(inline = false) ReadAttributeFromPythonObjectNode readNode,
                     @Bind("readFastFromGlobalStore(frame, attributeId, readNode)") Object result) {
         return result;
     }
 
+    @ForceQuickening
     @StoreBytecodeIndex
-    @Specialization(replaces = {"readBuiltinFastPath", "readGlobalFastPath"})
+    @Specialization(replaces = "readGlobalFromStorage")
     public static Object readGlobalOrBuiltinGeneric(VirtualFrame frame, TruffleString attributeId,
                     @Bind Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,

@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,10 +37,141 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import builtins
+import types
 import unittest
 
 
 class BasicTests(unittest.TestCase):
+
+    def make_global_reader(self, name="value", **values):
+        module = types.ModuleType("global_read_test")
+        module.__dict__.update(values)
+        exec(f"def read():\n    return {name}\n", module.__dict__)
+        return module, module.read
+
+    def warm_global_reader(self, read, expected):
+        # Exercise the cached interpreter, including its quickened LOAD_GLOBAL.
+        for _ in range(100):
+            self.assertIs(read(), expected)
+
+    def test_cached_global_reassignment(self):
+        module, read = self.make_global_reader(value=object())
+        self.warm_global_reader(read, module.value)
+        for value in (42, 3.5, None, object()):
+            module.value = value
+            self.warm_global_reader(read, value)
+            value = object()
+            module.__dict__["value"] = value
+            self.warm_global_reader(read, value)
+
+    def test_cached_global_delete_and_reinsert(self):
+        module, read = self.make_global_reader(value=object())
+        self.warm_global_reader(read, module.value)
+        del module.value
+        with self.assertRaises(NameError):
+            read()
+        module.value = object()
+        self.warm_global_reader(read, module.value)
+
+    def test_cached_global_storage_replacement(self):
+        for operation in ("clear", "non_string_key", "update_non_string_key"):
+            with self.subTest(operation=operation):
+                module, read = self.make_global_reader(value=object())
+                self.warm_global_reader(read, module.value)
+                namespace = module.__dict__
+                if operation == "clear":
+                    namespace.clear()
+                elif operation == "non_string_key":
+                    namespace[42] = "force general storage"
+                else:
+                    namespace.update({42: "force general storage"})
+                value = object()
+                namespace["value"] = value
+                self.warm_global_reader(read, value)
+                del namespace["value"]
+                with self.assertRaises(NameError):
+                    read()
+
+    def test_cached_global_shared_code_different_globals(self):
+        module, read = self.make_global_reader(value=object())
+        self.warm_global_reader(read, module.value)
+        other = types.ModuleType("other_globals")
+        other.value = object()
+        other_read = types.FunctionType(read.__code__, other.__dict__)
+        plain_value = object()
+        plain_read = types.FunctionType(read.__code__, {"value": plain_value})
+        for _ in range(100):
+            self.assertIs(other_read(), other.value)
+            self.assertIs(read(), module.value)
+            self.assertIs(plain_read(), plain_value)
+
+    def test_cached_builtin_shadow_and_delete(self):
+        module, read = self.make_global_reader("len")
+        self.warm_global_reader(read, builtins.len)
+        module.len = object()
+        self.warm_global_reader(read, module.len)
+        del module.len
+        self.warm_global_reader(read, builtins.len)
+
+    def test_cached_global_falls_back_to_builtin(self):
+        module, read = self.make_global_reader("len", len=object())
+        self.warm_global_reader(read, module.len)
+        del module.len
+        self.warm_global_reader(read, builtins.len)
+
+    def test_cached_builtin_storage_replacement(self):
+        for clear in (False, True):
+            with self.subTest(clear=clear):
+                module, read = self.make_global_reader("len")
+                self.warm_global_reader(read, builtins.len)
+                namespace = module.__dict__
+                if clear:
+                    namespace.clear()
+                else:
+                    namespace[42] = "force general storage"
+                value = object()
+                namespace["len"] = value
+                self.warm_global_reader(read, value)
+
+    def test_cached_builtin_shared_code_different_globals(self):
+        module, read = self.make_global_reader("len")
+        self.warm_global_reader(read, builtins.len)
+        other = types.ModuleType("other_globals")
+        other.len = object()
+        other_read = types.FunctionType(read.__code__, other.__dict__)
+        plain_value = object()
+        plain_read = types.FunctionType(read.__code__, {"len": plain_value})
+        for _ in range(100):
+            self.assertIs(other_read(), other.len)
+            self.assertIs(read(), builtins.len)
+            self.assertIs(plain_read(), plain_value)
+
+    def test_builtin_after_global_deleted_before_first_read(self):
+        module, read = self.make_global_reader("len", len=object())
+        # A deleted property can remain in the shape with a NO_VALUE value.
+        del module.len
+        self.warm_global_reader(read, builtins.len)
+        module.len = object()
+        self.warm_global_reader(read, module.len)
+
+    def test_cached_builtin_reassignment_and_deletion(self):
+        name = "_global_read_test_builtin"
+        self.assertFalse(hasattr(builtins, name))
+        module, read = self.make_global_reader(name)
+        try:
+            for _ in range(2):
+                value = object()
+                setattr(builtins, name, value)
+                self.warm_global_reader(read, value)
+            delattr(builtins, name)
+            with self.assertRaises(NameError):
+                read()
+            module.__dict__[name] = object()
+            self.warm_global_reader(read, module.__dict__[name])
+        finally:
+            if hasattr(builtins, name):
+                delattr(builtins, name)
 
     def test_in_local(self):
         loc = {}
