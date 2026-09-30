@@ -133,8 +133,8 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNodeGen;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -426,6 +426,18 @@ public class PPickler extends PythonBuiltinObject {
     }
 
     // inner nodes
+    @GenerateInline(false)
+    public abstract static class TupleStorageNode extends Node {
+        public abstract SequenceStorage execute(Object tuple);
+
+        @Specialization
+        static SequenceStorage get(Object tuple,
+                        @Bind Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage) {
+            return getTupleStorage.execute(inliningTarget, tuple);
+        }
+    }
+
     public abstract static class SaveNode extends Node {
         private static final int MAX_RECURSION_DEPTH = 3;
         private static final TruffleString T_LOCALS = tsLiteral("<locals>");
@@ -443,7 +455,6 @@ public class PPickler extends PythonBuiltinObject {
         @Child private IntNodes.PyLongNumBits pyLongNumBits;
         @Child private IntNodes.PyLongAsByteArray pyLongAsByteArray;
         @Child private ListNodes.ConstructListNode constructListNode;
-        @Child private IsSubtypeNode isSubTypeNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
         @Child private FlushToFileNode flushToFileNode;
         @Child private CallNode callNode;
@@ -455,6 +466,7 @@ public class PPickler extends PythonBuiltinObject {
         @Child private InlineIsBuiltinClassProfile isBuiltinClassProfile;
         @Child private CachedHashingStorageGetItem getHashingStorageItemNode;
         @Child private SequenceStorageNodes.GetItemScalarNode getSeqStorageItemNode;
+        @Child private TupleStorageNode getTupleStorageNode;
         @Child private PyObjectSizeNode sizeNode;
         @Child private PyIterCheckNode isIteratorObjectNode;
         @Child private GetClassNode getClassNode;
@@ -729,12 +741,16 @@ public class PPickler extends PythonBuiltinObject {
             return getSeqStorageItemNode.executeCached(storage, index);
         }
 
-        public Object getItem(VirtualFrame frame, Object obj, Object key) {
-            return getItemNode.executeCached(frame, obj, key);
+        protected SequenceStorage getTupleStorage(Object tuple) {
+            if (getTupleStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTupleStorageNode = insert(PPicklerFactory.TupleStorageNodeGen.create());
+            }
+            return getTupleStorageNode.execute(tuple);
         }
 
-        public Object getItem(VirtualFrame frame, Object obj, int size, int pos, Object defaultValue) {
-            return size > pos ? getItemNode.executeCached(frame, obj, pos) : defaultValue;
+        public Object getItem(VirtualFrame frame, Object obj, Object key) {
+            return getItemNode.executeCached(frame, obj, key);
         }
 
         public TruffleString asString(Object value) {
@@ -797,11 +813,12 @@ public class PPickler extends PythonBuiltinObject {
             Object key = PFactory.createTuple(PythonLanguage.get(this), new Object[]{moduleName, globalName});
             Object item = getDictItem(frame, nameMapping, key);
             if (item != null) {
-                if (!(item instanceof PTuple) || length(frame, item) != 2) {
+                if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P, nameMappingLabel, "2-tuples", item);
                 }
-                Object mappedModuleName = getItem(frame, item, 0);
-                Object mappedGlobalName = getItem(frame, item, 1);
+                SequenceStorage storage = ((PTuple) item).getSequenceStorage();
+                Object mappedModuleName = getItem(storage, 0);
+                Object mappedGlobalName = getItem(storage, 1);
                 if (!PGuards.isString(mappedModuleName) || !PGuards.isString(mappedGlobalName)) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P_P, nameMappingLabel, "str", mappedModuleName, mappedGlobalName);
                 }
@@ -905,14 +922,6 @@ public class PPickler extends PythonBuiltinObject {
                 constructListNode = insert(ListNodes.ConstructListNode.create());
             }
             return constructListNode.execute(frame, iterable);
-        }
-
-        protected boolean isSubType(Object clsA, Object clsB) {
-            if (isSubTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSubTypeNode = insert(IsSubtypeNode.create());
-            }
-            return isSubTypeNode.execute(clsA, clsB);
         }
 
         public void opcodeBoundary(VirtualFrame frame, PPickler pickler) {
@@ -1441,13 +1450,14 @@ public class PPickler extends PythonBuiltinObject {
         private void saveDictIteratorBatchUnrolled(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIteratorBatchedUnrolled(frame, pickler, iterator, PickleUtils.OPCODE_SETITEM, PickleUtils.OPCODE_SETITEMS,
                             (Object item) -> {
-                                if (!isTuple(item) || length(frame, item) != 2) {
+                                if (!isTuple(item) || getTupleStorage(item).length() != 2) {
                                     throw raise(TypeError, ErrorMessages.MUST_S_ITER_RETURN_2TUPLE, DICT_ITEMS);
                                 }
                             },
                             (Object item) -> {
-                                save(frame, pickler, getItem(frame, item, 0), 0);
-                                save2(frame, pickler, getItem(frame, item, 1), 0);
+                                SequenceStorage storage = getTupleStorage(item);
+                                save(frame, pickler, getItem(storage, 0), 0);
+                                save2(frame, pickler, getItem(storage, 1), 0);
                             });
         }
 
@@ -1481,11 +1491,12 @@ public class PPickler extends PythonBuiltinObject {
         private void saveDictIterator(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIterator(frame, pickler, iterator, PickleUtils.OPCODE_SETITEM,
                             (Object item) -> {
-                                if (!isTuple(item) || length(frame, item) != 2) {
+                                if (!isTuple(item) || getTupleStorage(item).length() != 2) {
                                     throw raise(TypeError, ErrorMessages.MUST_S_ITER_RETURN_2TUPLE, DICT_ITEMS);
                                 }
-                                save(frame, pickler, getItem(frame, item, 0), 0);
-                                save2(frame, pickler, getItem(frame, item, 1), 0);
+                                SequenceStorage storage = getTupleStorage(item);
+                                save(frame, pickler, getItem(storage, 0), 0);
+                                save2(frame, pickler, getItem(storage, 1), 0);
                             });
         }
 
@@ -1583,17 +1594,18 @@ public class PPickler extends PythonBuiltinObject {
             if (!isTuple(arguments)) {
                 throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
-            int size = length(frame, arguments);
+            SequenceStorage argumentsStorage = getTupleStorage(arguments);
+            int size = argumentsStorage.length();
             if (size < 2 || size > 6) {
                 throw raise(PicklingError, ErrorMessages.TUPLE_RET_BY_REDUCE_2_6);
             }
 
-            Object callable = getItem(frame, arguments, 0);
-            Object argtup = getItem(frame, arguments, 1);
-            Object state = getItem(frame, arguments, size, 2, null);
-            Object listitems = getItem(frame, arguments, size, 3, PNone.NONE);
-            Object dictitems = getItem(frame, arguments, size, 4, PNone.NONE);
-            Object stateSetter = getItem(frame, arguments, size, 5, PNone.NONE);
+            Object callable = getItem(argumentsStorage, 0);
+            Object argtup = getItem(argumentsStorage, 1);
+            Object state = size > 2 ? getItem(argumentsStorage, 2) : null;
+            Object listitems = size > 3 ? getItem(argumentsStorage, 3) : PNone.NONE;
+            Object dictitems = size > 4 ? getItem(argumentsStorage, 4) : PNone.NONE;
+            Object stateSetter = size > 5 ? getItem(argumentsStorage, 5) : PNone.NONE;
 
             if (!isCallable(callable)) {
                 throw raise(PicklingError, ErrorMessages.S_ITEM_REDUCE_MUST_BE_S, "first", "callable");
@@ -1638,7 +1650,8 @@ public class PPickler extends PythonBuiltinObject {
                 }
             }
 
-            final int argtupSize = length(frame, argtup);
+            final SequenceStorage argtupStorage = getTupleStorage(argtup);
+            final int argtupSize = argtupStorage.length();
 
             if (useNewobjEx) {
                 profileSeen(SEEN_NEWOBJ_EX);
@@ -1650,17 +1663,17 @@ public class PPickler extends PythonBuiltinObject {
                     throw raise(PicklingError, ErrorMessages.LEN_OF_S_MUST_BE_D_NOT_D, "NEWOBJ_EX", 3, argtupSize);
                 }
 
-                cls = getItem(frame, argtup, 0);
+                cls = getItem(argtupStorage, 0);
                 if (!isType(cls)) {
                     throw raise(PicklingError, ErrorMessages.S_ITEM_FROM_S_MUST_BE_S_NOT_P, "first", "NEWOBJ_EX", "a class", cls);
                 }
 
-                args = getItem(frame, argtup, 1);
+                args = getItem(argtupStorage, 1);
                 if (!isTuple(args)) {
                     throw raise(PicklingError, ErrorMessages.S_ITEM_FROM_S_MUST_BE_S_NOT_P, "second", "NEWOBJ_EX", "a tuple", args);
                 }
 
-                kwargs = getItem(frame, argtup, 2);
+                kwargs = getItem(argtupStorage, 2);
                 if (!(kwargs instanceof PDict)) {
                     throw raise(PicklingError, ErrorMessages.S_ITEM_FROM_S_MUST_BE_S_NOT_P, "third", "NEWOBJ_EX", "a dict", kwargs);
                 }
@@ -1672,7 +1685,8 @@ public class PPickler extends PythonBuiltinObject {
                     write(this, pickler, PickleUtils.OPCODE_NEWOBJ_EX);
                 } else {
                     PickleState st = getGlobalState(ctx.getCore());
-                    final int argsSize = length(frame, args);
+                    final SequenceStorage argsStorage = getTupleStorage(args);
+                    final int argsSize = argsStorage.length();
                     Object[] newargs = new Object[argsSize + 2];
                     Object clsNew;
                     int i;
@@ -1681,7 +1695,7 @@ public class PPickler extends PythonBuiltinObject {
                     newargs[0] = clsNew;
                     newargs[1] = cls;
                     for (i = 0; i < argsSize; i++) {
-                        Object item = getItem(frame, args, i);
+                        Object item = getItem(argsStorage, i);
                         newargs[i + 2] = item;
                     }
                     callable = callStarArgsAndKwArgs(frame, st.partial, newargs, kwargs);
@@ -1702,7 +1716,7 @@ public class PPickler extends PythonBuiltinObject {
                     throw raise(PicklingError, ErrorMessages.IS_EMPTY, "__newobj__ arglist");
                 }
 
-                cls = getItem(frame, argtup, 0);
+                cls = getItem(argtupStorage, 0);
                 if (!isType(cls)) {
                     throw raise(PicklingError, ErrorMessages.ARGS_0_FROM_S_ARGS_S, "__newobj__", "is not a type");
                 }
@@ -1744,7 +1758,11 @@ public class PPickler extends PythonBuiltinObject {
 
                 // Save the class and its __new__ arguments
                 save(frame, pickler, cls, 0);
-                newargtup = getItem(frame, argtup, PFactory.createIntSlice(PythonLanguage.get(this), 1, argtupSize, 1));
+                Object[] newargs = new Object[argtupSize - 1];
+                for (int i = 1; i < argtupSize; i++) {
+                    newargs[i - 1] = getItem(argtupStorage, i);
+                }
+                newargtup = createTuple(newargs);
                 save2(frame, pickler, newargtup, 0);
                 write(this, pickler, PickleUtils.OPCODE_NEWOBJ);
             } else {
@@ -2106,10 +2124,6 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void batchSetExact(VirtualFrame frame, PPickler pickler, PSet set) {
-            saveSetHashingStorageBatched(frame, pickler, set.getDictStorage());
-        }
-
         private void saveSet(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PSet obj) {
             Object reduceValue;
             if (proto < 4) {
@@ -2122,14 +2136,14 @@ public class PPickler extends PythonBuiltinObject {
             write(this, pickler, PickleUtils.OPCODE_EMPTY_SET);
             memoPut(pickler, proto, fastMode, obj);
 
-            final int setSize = length(frame, obj);
-            if (setSize == 0) {
+            HashingStorage storage = obj.getDictStorage();
+            if (getHashingStorageLength(storage) == 0) {
                 // nothing to do
                 return;
             }
 
             // Write in batches of BATCHSIZE.
-            batchSetExact(frame, pickler, obj);
+            saveSetHashingStorageBatched(frame, pickler, storage);
         }
 
         private void saveFrozenset(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PFrozenSet obj) {
@@ -2307,33 +2321,27 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void storeTupleElements(VirtualFrame frame, PPickler pickler, Object obj, SequenceStorage storage, int len) {
+        private void storeTupleElements(VirtualFrame frame, PPickler pickler, SequenceStorage storage, int len) {
             // A helper for save_tuple. Push the len elements in tuple t on the stack
-            if (storage == null) {
-                for (int i = 0; i < len; i++) {
-                    save(frame, pickler, getItem(frame, obj, i), 0);
+            assert storage.length() == len;
+            if (pickler.persFunc == null) {
+                if (storage instanceof IntSequenceStorage intStorage) {
+                    profileSeen(SEEN_INT_STORAGE);
+                    storeIntTupleElements(frame, pickler, intStorage);
+                    return;
+                } else if (storage instanceof LongSequenceStorage longStorage) {
+                    profileSeen(SEEN_LONG_STORAGE);
+                    storeLongTupleElements(frame, pickler, longStorage);
+                    return;
+                } else if (storage instanceof DoubleSequenceStorage doubleStorage) {
+                    profileSeen(SEEN_DOUBLE_STORAGE);
+                    storeDoubleTupleElements(frame, pickler, doubleStorage);
+                    return;
                 }
-            } else {
-                assert storage.length() == len;
-                if (pickler.persFunc == null) {
-                    if (storage instanceof IntSequenceStorage intStorage) {
-                        profileSeen(SEEN_INT_STORAGE);
-                        storeIntTupleElements(frame, pickler, intStorage);
-                        return;
-                    } else if (storage instanceof LongSequenceStorage longStorage) {
-                        profileSeen(SEEN_LONG_STORAGE);
-                        storeLongTupleElements(frame, pickler, longStorage);
-                        return;
-                    } else if (storage instanceof DoubleSequenceStorage doubleStorage) {
-                        profileSeen(SEEN_DOUBLE_STORAGE);
-                        storeDoubleTupleElements(frame, pickler, doubleStorage);
-                        return;
-                    }
-                }
-                profileSeen(SEEN_GENERIC_STORAGE);
-                for (int i = 0; i < len; i++) {
-                    save(frame, pickler, getItem(storage, i), 0);
-                }
+            }
+            profileSeen(SEEN_GENERIC_STORAGE);
+            for (int i = 0; i < len; i++) {
+                save(frame, pickler, getItem(storage, i), 0);
             }
         }
 
@@ -2367,7 +2375,8 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         private void saveNativeTuple(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj) {
-            saveTuple(frame, pickler, proto, fastMode, obj, null, length(frame, obj));
+            SequenceStorage storage = getTupleStorage(obj);
+            saveTuple(frame, pickler, proto, fastMode, obj, storage, storage.length());
         }
 
         private void saveTuple(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, Object obj, SequenceStorage storage, int len) {
@@ -2386,7 +2395,7 @@ public class PPickler extends PythonBuiltinObject {
             // the stack, and fetch its value from the memo.
             if (len <= 3 && proto >= 2) {
                 // Use TUPLE{1,2,3} opcodes.
-                storeTupleElements(frame, pickler, obj, storage, len);
+                storeTupleElements(frame, pickler, storage, len);
 
                 int memoIndex = pickler.memo.get(obj);
                 if (memoIndex != -1) {
@@ -2408,7 +2417,7 @@ public class PPickler extends PythonBuiltinObject {
 
             // proto < 2 and len > 0, or proto >= 2 and len > 3. Generate MARK e1 e2 ... TUPLE
             write(this, pickler, PickleUtils.OPCODE_MARK);
-            storeTupleElements(frame, pickler, obj, storage, len);
+            storeTupleElements(frame, pickler, storage, len);
 
             int memoIndex = pickler.memo.get(obj);
             if (memoIndex != -1) {
@@ -2815,7 +2824,7 @@ public class PPickler extends PythonBuiltinObject {
             if (reduceFunc != null) {
                 profileSeen(SEEN_REGISTERED_REDUCER);
                 reduceValue = callNode.execute(frame, reduceFunc, obj);
-            } else if (isSubType(type, PythonBuiltinClassType.PythonClass)) {
+            } else if (isType(obj)) {
                 profileSeen(SEEN_TYPE);
                 saveGlobal(frame, ctx, pickler, proto, fastMode, obj, null);
                 return;
