@@ -473,10 +473,16 @@ visit_collect_managed_referents(PyObject *op, GraalPyGC_Cycle *cycle)
         return 0;
     }
 
+    /* Even if replication cannot allocate, finish native reachability marking.
+     * No weak candidates will be committed after a replication failure. */
+    if (cycle->failed) {
+        return visit_reachable(op, cycle->reachable);
+    }
     // capture references to objects (to replicate them in Java)
     GraalPyGC_CycleNode *n = (GraalPyGC_CycleNode *)malloc(sizeof(GraalPyGC_CycleNode));
     if (n == NULL) {
-        return -1;
+        cycle->failed = 1;
+        return visit_reachable(op, cycle->reachable);
     }
     n->item = op;
     n->next = cycle->head;
@@ -498,7 +504,7 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
 
     /* An empty traversal must replace an earlier snapshot too. Managed
      * objects are not traversed here; their Java references need no refresh. */
-    if (cycle->n > 0 || !is_managed(op)) {
+    if (!cycle->failed && (cycle->n > 0 || !is_managed(op))) {
         int dead = 0;
         // Some managed handles can be already collected if the GC is already cleaning the cycle
         for (n = cycle->head; n != NULL; n = n->next) {
@@ -511,7 +517,9 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
             }
         }
         if (!dead) {
-            GraalPyPrivate_Object_ReplicateNativeReferences(op, cycle->head, cycle->n);
+            if (GraalPyPrivate_Object_ReplicateNativeReferences(op, cycle->head, cycle->n) < 0) {
+                cycle->failed = 1;
+            }
         }
     }
 
@@ -844,7 +852,7 @@ gc_list_move_with_mask_unreachable(PyGC_Head *prev, PyGC_Head *gc, PyGC_Head *ta
  * But _gc_next in unreachable list has NEXT_MASK_UNREACHABLE flag.
  * So we can not gc_list_* functions for unreachable until we remove the flag.
  */
-static void
+static int
 move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
         PyGC_Head *weak_candidates /* GraalPy change */)
 {
@@ -852,7 +860,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
     PyGC_Head *prev = young;
     PyGC_Head *gc = GC_NEXT(young);
     Py_ssize_t gc_refcnt;
-    GraalPyGC_Cycle cycle = { NULL, 0, young };
+    GraalPyGC_Cycle cycle = { NULL, 0, young, 0 };
 
     assert (young != weak_candidates);
 
@@ -893,7 +901,9 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                  */
                 assert(cycle.reachable == young);
                 /* visit_collect_managed_referents is visit_reachable + capture the references into "cycle" */
-                CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
+                if (call_traverse(traverse, op, (visitproc)visit_collect_managed_referents, &cycle) != 0) {
+                    cycle.failed = 1;
+                }
 
                 /* replicate any native reference to managed objects to Java */
                 push_native_references_to_managed(op, &cycle);
@@ -951,6 +961,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
     UNTAG(unreachable)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
     // the pollution of the weak_candidates list head's next pointer is fixed in
     // 'move_weak_reachable'
+    return cycle.failed ? -1 : 0;
 }
 
 /* GraalPy change: added 'move_weak_reachable' */
@@ -1533,7 +1544,28 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
      */
     gc_list_init(unreachable);
     gc_list_init(&weak_candidates);
-    move_unreachable(base, unreachable, &weak_candidates);  // gc_prev is pointer again
+    int failed = move_unreachable(base, unreachable, &weak_candidates);  // gc_prev is pointer again
+    if (failed) {
+        /* Both lists have valid prev links, but tagged next links. Restore
+         * every object to base before returning: an incomplete traversal must
+         * neither weaken a handle nor allow tp_clear on a supposed isolate. */
+        PyGC_Head *lists[] = {unreachable, &weak_candidates};
+        for (int i = 0; i < 2; i++) {
+            PyGC_Head *head = lists[i];
+            UNTAG(head)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
+            for (PyGC_Head *gc = GC_NEXT(head); gc != head; gc = GC_NEXT(gc)) {
+                UNTAG(gc)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
+                gc_clear_collecting(gc);
+            }
+            gc_list_merge(head, base);
+        }
+        /* A failed replication upcall may have set a Python exception. All
+         * lists are normal again, so reporting it may safely re-enter Python. */
+        if (PyErr_Occurred()) {
+            PyErr_WriteUnraisable(NULL);
+        }
+        return;
+    }
     validate_list(base, collecting_clear_unreachable_clear);
     validate_list(&weak_candidates, collecting_clear_unreachable_set);
     validate_list(unreachable, collecting_set_unreachable_set);

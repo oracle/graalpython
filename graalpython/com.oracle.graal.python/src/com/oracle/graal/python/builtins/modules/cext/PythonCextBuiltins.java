@@ -1150,8 +1150,8 @@ public final class PythonCextBuiltins {
      */
     private static final Level REPLICATE_NATIVE_REFERENCES_LEVEL = Level.FINER;
 
-    @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored, retConversion = void.class, argConversions = {long.class, long.class, int.class})
-    static void GraalPyPrivate_Object_ReplicateNativeReferences(long lPointer, long listHead, int n) {
+    @CApiBuiltin(ret = Int, args = {Pointer, Pointer, Int}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class, int.class})
+    static int GraalPyPrivate_Object_ReplicateNativeReferences(long lPointer, long listHead, int n) {
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
         boolean loggable = GC_LOGGER.isLoggable(REPLICATE_NATIVE_REFERENCES_LEVEL);
@@ -1181,15 +1181,12 @@ public final class PythonCextBuiltins {
                     repr = nativeObject.toStringWithContext();
                 }
                 oldReferents = nativeObject.getReplicatedNativeReferences();
-                nativeObject.setReplicatedNativeReferences(referents);
             } else if (object instanceof PythonModule module) {
                 oldReferents = module.getReplicatedNativeReferences();
-                module.setReplicatedNativeReferences(referents);
             } else {
                 assert isTupleWithNativeStorage(object) || isListWithNativeStorage(object);
                 NativeSequenceStorage nativeSequenceStorage = getNativeSequenceStorage(object);
                 oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
-                nativeSequenceStorage.setReplicatedNativeReferences(referents);
             }
             // Collect referents (traverse native list and resolve pointers)
             long cur = listHead;
@@ -1197,6 +1194,15 @@ public final class PythonCextBuiltins {
             for (int i = 0; i < n; i++) {
                 referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
                 cur = readPtrField(cur, GraalPyGC_CycleNode__next);
+            }
+
+            // Publish only a complete snapshot. On failure the previous graph must stay alive.
+            if (object instanceof PythonAbstractNativeObject nativeObject) {
+                nativeObject.setReplicatedNativeReferences(referents);
+            } else if (object instanceof PythonModule module) {
+                module.setReplicatedNativeReferences(referents);
+            } else {
+                getNativeSequenceStorage(object).setReplicatedNativeReferences(referents);
             }
 
             /*
@@ -1211,6 +1217,7 @@ public final class PythonCextBuiltins {
         } else if (object == null && loggable) {
             GC_LOGGER.log(REPLICATE_NATIVE_REFERENCES_LEVEL, PythonUtils.formatJString("Did not replicate native refs of %s: no wrapper", CApiContext.asHex(lPointer)));
         }
+        return 0;
     }
 
     private static NativeSequenceStorage getNativeSequenceStorage(Object object) {

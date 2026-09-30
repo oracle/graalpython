@@ -121,6 +121,7 @@ typedef struct {
     GraalPyGC_CycleNode *head;
     int32_t n;
     PyGC_Head *reachable;
+    int failed;
 } GraalPyGC_Cycle;
 
 Py_LOCAL_SYMBOL void GraalPyPrivate_DebugTrace(void);
