@@ -529,10 +529,8 @@ const unsigned char _Py_ascii_whitespace[] = {
     0, 0, 0, 0, 0, 0, 0, 0
 };
 
-#if 0 // GraalPy change
 /* forward */
 static PyObject* get_latin1_char(unsigned char ch);
-#endif // GraalPy change
 static int unicode_modifiable(PyObject *unicode);
 
 
@@ -2020,12 +2018,12 @@ unicode_write_cstr(PyObject *unicode, Py_ssize_t index,
         Py_UNREACHABLE();
     }
 }
+#endif // GraalPy change
 
 static PyObject*
 get_latin1_char(Py_UCS1 ch)
 {
-    PyObject *o = LATIN1(ch);
-    return o;
+    return Py_NewRef(PyThreadState_Get()->singletons.unicode_characters[ch]);
 }
 
 static PyObject*
@@ -2038,7 +2036,10 @@ unicode_char(Py_UCS4 ch)
     if (ch < 256) {
         return get_latin1_char(ch);
     }
+    // GraalPy change
+    return GraalPyPrivate_Unicode_FromOrdinal(ch);
 
+#if 0 // GraalPy change
     unicode = PyUnicode_New(1, ch);
     if (unicode == NULL)
         return NULL;
@@ -2052,8 +2053,10 @@ unicode_char(Py_UCS4 ch)
     }
     assert(_PyUnicode_CheckConsistency(unicode, 1));
     return unicode;
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 PyObject *
 PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size)
 {
@@ -3321,6 +3324,7 @@ _PyUnicode_WideCharString_Opt_Converter(PyObject *obj, void *ptr)
                  Py_TYPE(obj)->tp_name);
     return 0;
 }
+#endif // GraalPy change
 
 PyObject *
 PyUnicode_FromOrdinal(int ordinal)
@@ -3334,6 +3338,7 @@ PyUnicode_FromOrdinal(int ordinal)
     return unicode_char((Py_UCS4)ordinal);
 }
 
+#if 0 // GraalPy change
 PyObject *
 PyUnicode_FromObject(PyObject *obj)
 {

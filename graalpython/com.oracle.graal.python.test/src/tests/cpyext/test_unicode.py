@@ -1218,6 +1218,109 @@ class TestPyUnicode(CPyExtTestCase):
 
 
 class TestUnicodeObject(unittest.TestCase):
+    def test_fromordinal_latin1_cache(self):
+        TestOrdinalCache = CPyExtType(
+            "TestOrdinalCache",
+            r'''
+            static PyObject* ordinal_value(PyObject* self, PyObject* ordinal_obj) {
+                long ordinal = PyLong_AsLong(ordinal_obj);
+                if (ordinal == -1 && PyErr_Occurred()) {
+                    return NULL;
+                }
+                return PyUnicode_FromOrdinal((int)ordinal);
+            }
+
+            static PyObject* ordinal_pointer(PyObject* self, PyObject* ordinal_obj) {
+                PyObject* value = ordinal_value(self, ordinal_obj);
+                if (value == NULL) {
+                    return NULL;
+                }
+                PyObject* result = PyLong_FromVoidPtr(value);
+                Py_DECREF(value);
+                return result;
+            }
+
+            static PyObject* interned_a_pointer(PyObject* self, PyObject* unused) {
+                PyObject* value = PyUnicode_InternFromString("A");
+                if (value == NULL) {
+                    return NULL;
+                }
+                PyObject* result = PyLong_FromVoidPtr(value);
+                Py_DECREF(value);
+                return result;
+            }
+            ''',
+            tp_methods='''
+            {"ordinal_value", (PyCFunction)ordinal_value, METH_O, ""},
+            {"ordinal_pointer", (PyCFunction)ordinal_pointer, METH_O, ""},
+            {"interned_a_pointer", (PyCFunction)interned_a_pointer, METH_NOARGS, ""}
+            ''',
+        )
+        tester = TestOrdinalCache()
+        pointers = [tester.ordinal_pointer(i) for i in range(256)]
+        assert len(set(pointers)) == 256
+        assert tester.interned_a_pointer() == pointers[ord("A")]
+        for i, pointer in enumerate(pointers):
+            assert tester.ordinal_value(i) == chr(i)
+            assert tester.ordinal_pointer(i) == pointer
+            for _ in range(10):
+                assert tester.ordinal_pointer(i) == pointer
+        if GRAALPYTHON:
+            TestOrdinalMetadata = CPyExtType(
+                "TestOrdinalMetadata",
+                r'''
+                static PyObject* ordinal_metadata(PyObject* self, PyObject* ordinal_obj) {
+                    long ordinal = PyLong_AsLong(ordinal_obj);
+                    if (ordinal == -1 && PyErr_Occurred()) {
+                        return NULL;
+                    }
+                    PyObject* value = PyUnicode_FromOrdinal((int)ordinal);
+                    if (value == NULL) {
+                        return NULL;
+                    }
+                    (void)PyUnicode_DATA(value);
+                    Py_hash_t hash = PyObject_Hash(value);
+                    if (hash == -1) {
+                        Py_DECREF(value);
+                        return NULL;
+                    }
+                    PyObject* result = Py_BuildValue("(nnn)",
+                                                     (Py_ssize_t)Py_REFCNT(value),
+                                                     (Py_ssize_t)PyUnicode_CHECK_INTERNED(value),
+                                                     (Py_ssize_t)hash);
+                    Py_DECREF(value);
+                    return result;
+                }
+                ''',
+                tp_methods='''
+                {"ordinal_metadata", (PyCFunction)ordinal_metadata, METH_O, ""}
+                ''',
+            )
+            metadata_tester = TestOrdinalMetadata()
+            for i in range(256):
+                refcnt, interned, object_hash = metadata_tester.ordinal_metadata(i)
+                assert refcnt == 0xFFFFFFFF
+                assert interned != 0
+                assert object_hash == hash(chr(i))
+
+        non_latin1_pointer = tester.ordinal_pointer(256)
+        assert non_latin1_pointer not in pointers
+        with self.assertRaises(ValueError):
+            tester.ordinal_value(-1)
+        with self.assertRaises(ValueError):
+            tester.ordinal_value(0x110000)
+
+        import threading
+        worker_pointer = []
+
+        def get_worker_pointer():
+            worker_pointer.append(tester.ordinal_pointer(42))
+
+        worker = threading.Thread(target=get_worker_pointer)
+        worker.start()
+        worker.join()
+        assert worker_pointer == [pointers[42]]
+
     def test_intern(self):
         TestIntern = CPyExtType(
             "TestIntern",
