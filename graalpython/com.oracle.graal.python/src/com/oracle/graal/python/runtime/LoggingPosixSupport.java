@@ -319,34 +319,31 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long lseek(int fd, long offset, int how,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final long lseek(int fd, long offset, int how) throws PosixException {
         logEnter("lseek", "%d, %d, %d", fd, offset, how);
         try {
-            return logExit("lseek", "%d", lib.lseek(delegate, fd, offset, how));
+            return logExit("lseek", "%d", delegate.lseek(fd, offset, how));
         } catch (PosixException e) {
             throw logException("lseek", e);
         }
     }
 
-    @ExportMessage
-    final void ftruncate(int fd, long length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void ftruncate(int fd, long length) throws PosixException {
         logEnter("ftruncate", "%d, %d", fd, length);
         try {
-            lib.ftruncate(delegate, fd, length);
+            delegate.ftruncate(fd, length);
         } catch (PosixException e) {
             throw logException("ftruncate", e);
         }
     }
 
-    @ExportMessage
-    final void truncate(Object path, long length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void truncate(Object path, long length) throws PosixException {
         logEnter("truncate", "%s, %d", path, length);
         try {
-            lib.truncate(delegate, path, length);
+            delegate.truncate(path, length);
         } catch (PosixException e) {
             throw logException("truncate", e);
         }

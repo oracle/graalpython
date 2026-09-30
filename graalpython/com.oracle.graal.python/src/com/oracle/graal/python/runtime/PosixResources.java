@@ -408,7 +408,7 @@ abstract class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public Object ftruncate(int fd, long size) throws IOException {
+    public Object ftruncateResource(int fd, long size) throws IOException {
         Channel channel = getFileChannel(fd);
         if (channel instanceof SeekableByteChannel) {
             return ((SeekableByteChannel) channel).truncate(size);

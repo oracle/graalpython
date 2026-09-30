@@ -256,7 +256,7 @@ import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
@@ -776,8 +776,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         GraalPythonModuleBuiltins gp = (GraalPythonModuleBuiltins) core.lookupBuiltinModule(T___GRAALPYTHON__).getBuiltins();
         TruffleString stdioEncoding = gp.getStdIOEncoding();
         TruffleString stdioError = gp.getStdIOError();
-        Object posixSupport = context.getPosixSupport();
-        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        PosixSupport posixSupport = context.getPosixSupport();
         PythonModule sysModule = core.lookupBuiltinModule(T_SYS);
 
         // Note that stdin is always buffered, this only applies to stdout and stderr
@@ -786,16 +785,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         PFileIO stdinFileIO = PFactory.createFileIO(language);
         FileIOBuiltins.FileIOInit.internalInit(stdinFileIO, toTruffleStringUncached("<stdin>"), 0, IOMode.RB);
         PBuffered stdinBuffer = PFactory.createBufferedReader(language);
-        BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
+        BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport);
         setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, PNone.NONE, stdinBuffer, sysModule, language, true);
 
         PFileIO stdoutFileIO = createStdoutRaw(context, language, toTruffleStringUncached("<stdout>"), 1);
-        Object stdoutBuffer = createBufferedIO(buffering, language, stdoutFileIO, posixSupport, posixLib);
+        Object stdoutBuffer = createBufferedIO(buffering, language, stdoutFileIO, posixSupport);
         TruffleString stdoutEncoding = isWindowsConsoleIO(stdoutFileIO) ? StringLiterals.T_UTF8 : stdioEncoding;
         setWrapper(T_STDOUT, T___STDOUT__, T_W, stdoutEncoding, stdioError, PNone.NONE, stdoutBuffer, sysModule, language, buffering);
 
         PFileIO stderr = createStdoutRaw(context, language, toTruffleStringUncached("<stderr>"), 2);
-        Object stderrBuffer = createBufferedIO(buffering, language, stderr, posixSupport, posixLib);
+        Object stderrBuffer = createBufferedIO(buffering, language, stderr, posixSupport);
         TruffleString stderrEncoding = isWindowsConsoleIO(stderr) ? StringLiterals.T_UTF8 : stdioEncoding;
         setWrapper(T_STDERR, T___STDERR__, T_W, stderrEncoding, T_BACKSLASHREPLACE, PNone.NONE, stderrBuffer, sysModule, language, buffering);
     }
@@ -818,7 +817,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         return getPythonOS() == PLATFORM_WIN32 && fileIO.getPythonClass() == PWindowsConsoleIO;
     }
 
-    private static Object createBufferedIO(boolean buffering, PythonLanguage language, PFileIO fileIo, Object posixSupport, PosixSupportLibrary posixLib) {
+    private static Object createBufferedIO(boolean buffering, PythonLanguage language, PFileIO fileIo, PosixSupport posixSupport) {
         if (!buffering) {
             return fileIo;
         }
@@ -826,7 +825,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         if (isWindowsConsoleIO(fileIo)) {
             BufferedWriterBuiltins.BufferedWriterInit.internalInitConsole(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language);
         } else {
-            BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
+            BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport);
         }
         return writer;
     }

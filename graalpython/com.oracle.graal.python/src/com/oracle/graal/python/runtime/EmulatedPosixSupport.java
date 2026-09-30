@@ -858,17 +858,14 @@ public final class EmulatedPosixSupport extends PosixResources {
         return constant.defined ? constant.getValueIfDefined() : 0;
     }
 
-    @ExportMessage
-    public long lseek(int fd, long offset, int how,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached InlinedBranchProfile errorBranch,
-                    @Exclusive @Cached InlinedConditionProfile noFile,
-                    @Exclusive @Cached InlinedConditionProfile notSeekable) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long lseek(int fd, long offset, int how) throws PosixException {
         Channel channel = getFileChannel(fd);
-        if (noFile.profile(inliningTarget, channel == null)) {
+        if (channel == null) {
             throw posixException(OSErrorEnum.EBADF);
         }
-        if (notSeekable.profile(inliningTarget, !(channel instanceof SeekableByteChannel))) {
+        if (!(channel instanceof SeekableByteChannel)) {
             throw posixException(OSErrorEnum.ESPIPE);
         }
         if (SEEK_DATA.defined && how == SEEK_DATA.getValueIfDefined()) {
@@ -882,7 +879,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             newPos = setPosition(offset, how, fc);
         } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e));
         }
         return newPos;
@@ -910,24 +906,20 @@ public final class EmulatedPosixSupport extends PosixResources {
         return fc.position();
     }
 
-    @ExportMessage(name = "ftruncate")
-    public void ftruncateMessage(int fd, long length,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
-        // TODO: will merge with super.ftruncate once the super class is merged with this class
+    @Override
+    public void ftruncate(int fd, long length) throws PosixException {
         Object ret;
         try {
-            ret = ftruncate(fd, length);
+            ret = ftruncateResource(fd, length);
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
         if (ret == null) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
     }
 
-    @ExportMessage
+    @Override
     public void truncate(Object path, long length) throws PosixException {
         TruffleFile file = getTruffleFile(pathToJavaString(path));
         try {

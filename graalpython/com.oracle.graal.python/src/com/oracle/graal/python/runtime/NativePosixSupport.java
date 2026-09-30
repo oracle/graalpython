@@ -1007,7 +1007,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public long lseek(int fd, long offset, int how) throws PosixException {
         long res = posixNativeFunctionInvoker.call_lseek(fd, offset, how);
         if (res < 0) {
@@ -1016,7 +1016,7 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
     public void ftruncate(int fd, long length) throws PosixException {
         int res = posixNativeFunctionInvoker.call_ftruncate(fd, length);
         if (res != 0) {
@@ -1024,7 +1024,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public void truncate(Object path, long length) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {

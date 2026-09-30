@@ -291,27 +291,24 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.poll(fds, events, revents, timeout);
     }
 
-    @ExportMessage
-    final long lseek(int fd, long offset, int how,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long lseek(int fd, long offset, int how) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().lseek(emulatedPosixSupport, fd, offset, how);
+            return emulatedPosixSupport.lseek(fd, offset, how);
         }
-        return nativeLib.lseek(nativePosixSupport, fd, offset, how);
+        return nativePosixSupport.lseek(fd, offset, how);
     }
 
-    @ExportMessage
-    final void ftruncate(int fd, long length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void ftruncate(int fd, long length) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.ftruncate(nativePosixSupport, fd, length);
+        nativePosixSupport.ftruncate(fd, length);
     }
 
-    @ExportMessage
-    final void truncate(Object path, long length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void truncate(Object path, long length) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.truncate(nativePosixSupport, path, length);
+        nativePosixSupport.truncate(path, length);
     }
 
     @ExportMessage

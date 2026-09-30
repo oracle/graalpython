@@ -89,6 +89,12 @@ public abstract class PosixSupport {
 
     public abstract void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException;
 
+    public abstract long lseek(int fd, long offset, int how) throws PosixException;
+
+    public abstract void ftruncate(int fd, long length) throws PosixException;
+
+    public abstract void truncate(Object path, long length) throws PosixException;
+
     public abstract Buffer read(int fd, long length) throws PosixException;
 
     public abstract long write(int fd, Buffer data) throws PosixException;

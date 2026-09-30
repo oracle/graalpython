@@ -430,7 +430,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     try {
                         gil.release(true);
                         try {
-                            long res = posixLib.lseek(context.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
+                            long res = context.getPosixSupport().lseek(self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
                             self.setSeekable(res >= 0 ? 1 : 0);
                         } finally {
                             gil.acquire();
@@ -562,7 +562,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile readErrorProfile,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile multipleReadsProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -571,7 +570,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             boolean mayBeQuick = false;
             try {
                 PosixSupport posixSupport = PosixSupport.get(inliningTarget);
-                long pos = posixLib.lseek(posixSupport, self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
+                long pos = posixSupport.lseek(self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
                 long[] status = posixSupport.fstat(self.getFD());
                 long end = status[6]; // TODO: st_size
                 if (end > 0 && end >= pos && pos >= 0 && end - pos < MAX_SIZE) {
@@ -762,13 +761,12 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isClosed()")
         Object seek(VirtualFrame frame, PFileIO self, long pos, int whence,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 gil.release(true);
                 try {
-                    return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
+                    return internalSeek(self, pos, whence, getPosixSupport());
                 } finally {
                     gil.acquire();
                 }
@@ -784,10 +782,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         protected static long internalSeek(PFileIO self, long pos, int whence,
-                        Object posixSupport,
-                        PosixSupportLibrary posixLib) throws PosixException {
+                        PosixSupport posixSupport) throws PosixException {
             try {
-                long res = posixLib.lseek(posixSupport, self.getFD(), pos, mapPythonSeekWhenceToPosix(whence));
+                long res = posixSupport.lseek(self.getFD(), pos, mapPythonSeekWhenceToPosix(whence));
                 if (self.getSeekable() < 0) {
                     self.setSeekable(1);
                 }
@@ -810,9 +807,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         static long internalTell(PFileIO self,
-                        Object posixSupport,
-                        PosixSupportLibrary posixLib) throws PosixException {
-            return SeekNode.internalSeek(self, 0, SEEK_CUR, posixSupport, posixLib);
+                        PosixSupport posixSupport) throws PosixException {
+            return SeekNode.internalSeek(self, 0, SEEK_CUR, posixSupport);
         }
     }
 
@@ -871,10 +867,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "isUnknown(self)"})
-        Object unknown(PFileIO self,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+        Object unknown(PFileIO self) {
             try {
-                posixLib.lseek(getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_CUR));
+                getPosixSupport().lseek(self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_CUR));
                 self.setSeekable(1);
                 return true;
             } catch (PosixException e) {

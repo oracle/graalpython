@@ -79,12 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract long lseek(Object receiver, int fd, long offset, int how) throws PosixException;
-
-    public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
-
-    public abstract void truncate(Object receiver, Object path, long length) throws PosixException;
-
     public abstract void fsync(Object receiver, int fd) throws PosixException;
 
     public abstract void flock(Object receiver, int fd, int operation) throws PosixException;
