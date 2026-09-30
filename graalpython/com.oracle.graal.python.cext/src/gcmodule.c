@@ -547,6 +547,15 @@ visit_weak_reachable(PyObject *op, PyGC_Head *reachable)
 
     PyGC_Head *gc = AS_GC(op);
 
+    /* The second pass partitions native roots from the remaining objects.
+     * Move each newly reached object onto the worklist, including native
+     * intermediates. Its collecting bit doubles as the unvisited marker. */
+    if (gc_is_collecting(gc)) {
+        gc_list_move(gc, reachable);
+        gc_clear_collecting(gc);
+        return 0;
+    }
+
     /* 'visit_reachable' tests at this point for 'gc_is_collecting(gc)'.
      * In this case, we don't because for weak candidates, we already
      * cleared the flag to avoid that 'visit_reachable' is moving them
@@ -948,71 +957,36 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
 static void
 move_weak_reachable(PyGC_Head *young, PyGC_Head *weak_candidates)
 {
-    // previous elem in the young list, used for restore gc_prev.
-    PyGC_Head *prev = young;
-    PyGC_Head *gc = GC_NEXT(young);
-
     assert (young != weak_candidates);
-    /* This phase is only necessary if managed objects take part in the Python
-     * GC. The caller must already check this option.
-     */
     assert (GraalPyPrivate_PythonGC());
+    PyGC_Head pending, reachable;
+    gc_list_init(&pending);
+    gc_list_init(&reachable);
 
-    /* Invariants:  all objects "to the left" of us in young are reachable
-     * (directly or indirectly) from outside the young list as it was at entry.
-     *
-     * All other objects from the original young "to the left" of us are in
-     * unreachable now, and have NEXT_MASK_UNREACHABLE.  All objects to the
-     * left of us in 'young' now have been scanned, and no objects here
-     * or to the right have been scanned yet.
-     */
-
+    /* Restore all list links before traversal. Objects not directly rooted
+     * in native retain COLLECTING until reached through a native root. This
+     * permits a linear, allocation-free worklist, independent of list order. */
+    PyGC_Head *gc = GC_NEXT(young);
     while (gc != young) {
+        PyGC_Head *next = GC_NEXT(gc);
         Py_ssize_t gc_refcnt = gc_get_refs(gc);
-
-        /* GraalPy change: unlike CPython's single-phase flow, objects moved to
-         * 'weak_candidates' already had PREV_MASK_COLLECTING cleared in
-         * move_unreachable() before this phase runs. visit_weak_reachable()
-         * depends on that state so it can rescue weak candidates without
-         * moving them through visit_reachable() again, so gc_is_collecting(gc)
-         * is not a valid invariant here.
-         */
-        // assert(gc_is_collecting(gc));
-        /* This phase is done after 'move_unreachable' and so all object
-         * remaining in 'young' must have a non-zero gc_refcnt.
-         */
-        /* GraalPy change: gc_refcnt is also not a stable CPython-style
-         * invariant here. During the weak-candidate flow we reuse '_gc_prev'
-         * for list linkage, so native gc_refs information for rescued objects
-         * is recovered via update_refs()/subtract_refs() and
-         * is_referenced_from_managed(), not by requiring gc_refcnt != 0 for
-         * every object we encounter in this phase.
-         */
-        // assert(gc_refcnt);
-        /* If gc_refcnt s not MANAGED_REFCNT, then we know that this object is
-         * referenced from native (e.g. stored in a global field). In case that
-         * 'gc_refcnt == MANAGED_REFCNT' we don't know if the object is only
-         * referenced from managed or has many referenced from native. We need
-         * to disambiguate by doing an upcall an check if there is a wrapper.
-         * If not, then we also know that there are several references from
-         * native.
-         */
         if (gc_refcnt > 0 && (gc_refcnt > MANAGED_REFCNT || !is_referenced_from_managed(gc))) {
-            PyObject* op = FROM_GC(gc);
-            traverseproc traverse = Py_TYPE(op)->tp_traverse;
-            CALL_TRAVERSE(traverse, op, visit_weak_reachable, (void *)young);
+            gc_clear_collecting(gc);
+            gc_list_append(gc, &reachable);
+        } else {
+            gc_list_append(gc, &pending);
         }
-
-        // relink gc_prev to prev element.
-        _PyGCHead_SET_PREV(gc, prev);
-        // gc is not COLLECTING state after here.
-        gc_clear_collecting(gc);
-
-        prev = gc;
-        gc = (PyGC_Head*)UNTAG(prev)->_gc_next;
+        gc = next;
     }
-    // young->_gc_prev must be last element remained in the list.
-    UNTAG(young)->_gc_prev = (uintptr_t)prev;
+    gc_list_init(young);
+
+    for (gc = GC_NEXT(&reachable); gc != &reachable; gc = GC_NEXT(gc)) {
+        PyObject *op = FROM_GC(gc);
+        CALL_TRAVERSE(Py_TYPE(op)->tp_traverse, op, visit_weak_reachable, &reachable);
+    }
+    gc_list_clear_collecting(&pending);
+    gc_list_merge(&reachable, young);
+    gc_list_merge(&pending, young);
     UNTAG(weak_candidates)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
 }
 
