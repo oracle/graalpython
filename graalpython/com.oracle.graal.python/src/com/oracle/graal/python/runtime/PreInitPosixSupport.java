@@ -249,32 +249,28 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.setInheritable(fd, inheritable);
     }
 
-    @ExportMessage
-    final long getOsfHandle(int fd,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final long getOsfHandle(int fd) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getOsfHandle(nativePosixSupport, fd);
+        return nativePosixSupport.getOsfHandle(fd);
     }
 
-    @ExportMessage
-    final int openOsfHandle(long handle, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int openOsfHandle(long handle, int flags) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.openOsfHandle(nativePosixSupport, handle, flags);
+        return nativePosixSupport.openOsfHandle(handle, flags);
     }
 
-    @ExportMessage
-    final int setMode(int fd, int mode,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int setMode(int fd, int mode) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.setMode(nativePosixSupport, fd, mode);
+        return nativePosixSupport.setMode(fd, mode);
     }
 
-    @ExportMessage
-    final void msvcrtLocking(int fd, int mode, long nbytes,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.msvcrtLocking(nativePosixSupport, fd, mode, nbytes);
+        nativePosixSupport.msvcrtLocking(fd, mode, nbytes);
     }
 
     @ExportMessage

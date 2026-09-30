@@ -79,14 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract long getOsfHandle(Object receiver, int fd) throws PosixException;
-
-    public abstract int openOsfHandle(Object receiver, long handle, int flags) throws PosixException;
-
-    public abstract int setMode(Object receiver, int fd, int mode) throws PosixException;
-
-    public abstract void msvcrtLocking(Object receiver, int fd, int mode, long nbytes) throws PosixException;
-
     public abstract int[] pipe(Object receiver) throws PosixException;
 
     public abstract SelectResult select(Object receiver, int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;

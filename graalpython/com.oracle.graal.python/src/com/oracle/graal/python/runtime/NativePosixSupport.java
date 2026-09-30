@@ -858,7 +858,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public long getOsfHandle(int fd) throws PosixException {
         long nativeOut = NativeMemory.mallocLongArray(1);
         try {
@@ -871,7 +871,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public int openOsfHandle(long handle, int flags) throws PosixException {
         int fd = posixNativeFunctionInvoker.call_open_osfhandle(handle, flags);
         if (fd < 0) {
@@ -880,7 +880,7 @@ public final class NativePosixSupport extends PosixSupport {
         return fd;
     }
 
-    @ExportMessage
+    @Override
     public int setMode(int fd, int mode) throws PosixException {
         int previousMode = posixNativeFunctionInvoker.call_setmode(fd, mode);
         if (previousMode < 0) {
@@ -889,7 +889,7 @@ public final class NativePosixSupport extends PosixSupport {
         return previousMode;
     }
 
-    @ExportMessage
+    @Override
     public void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         if (posixNativeFunctionInvoker.call_msvcrt_locking(fd, mode, nbytes) != 0) {
             throw getErrnoAndThrowPosixException();

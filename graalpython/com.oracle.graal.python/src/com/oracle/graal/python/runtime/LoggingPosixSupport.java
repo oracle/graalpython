@@ -248,45 +248,41 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final long getOsfHandle(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final long getOsfHandle(int fd) throws PosixException {
         logEnter("getOsfHandle", "%d", fd);
         try {
-            return logExit("getOsfHandle", "%d", lib.getOsfHandle(delegate, fd));
+            return logExit("getOsfHandle", "%d", delegate.getOsfHandle(fd));
         } catch (PosixException e) {
             throw logException("getOsfHandle", e);
         }
     }
 
-    @ExportMessage
-    final int openOsfHandle(long handle, int flags,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int openOsfHandle(long handle, int flags) throws PosixException {
         logEnter("openOsfHandle", "%d, %d", handle, flags);
         try {
-            return logExit("openOsfHandle", "%d", lib.openOsfHandle(delegate, handle, flags));
+            return logExit("openOsfHandle", "%d", delegate.openOsfHandle(handle, flags));
         } catch (PosixException e) {
             throw logException("openOsfHandle", e);
         }
     }
 
-    @ExportMessage
-    final int setMode(int fd, int mode,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int setMode(int fd, int mode) throws PosixException {
         logEnter("setMode", "%d, %d", fd, mode);
         try {
-            return logExit("setMode", "%d", lib.setMode(delegate, fd, mode));
+            return logExit("setMode", "%d", delegate.setMode(fd, mode));
         } catch (PosixException e) {
             throw logException("setMode", e);
         }
     }
 
-    @ExportMessage
-    final void msvcrtLocking(int fd, int mode, long nbytes,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         logEnter("msvcrtLocking", "%d, %d, %d", fd, mode, nbytes);
         try {
-            lib.msvcrtLocking(delegate, fd, mode, nbytes);
+            delegate.msvcrtLocking(fd, mode, nbytes);
         } catch (PosixException e) {
             throw logException("msvcrtLocking", e);
         }

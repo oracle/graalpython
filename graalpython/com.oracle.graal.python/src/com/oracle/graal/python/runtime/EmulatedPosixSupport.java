@@ -579,19 +579,19 @@ public final class EmulatedPosixSupport extends PosixResources {
         compatibilityIgnored("setting inheritable '%b' for file descriptor %d in POSIX emulation layer (not supported)", inheritable, fd);
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     public long getOsfHandle(int fd) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("get_osfhandle");
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     public int openOsfHandle(long handle, int flags) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("open_osfhandle");
     }
 
-    @ExportMessage
+    @Override
     public int setMode(int fd, int mode) throws PosixException {
         int binary = PosixConstants.O_BINARY.getValueIfDefined();
         int text = PosixConstants.O_TEXT.getValueIfDefined();
@@ -605,20 +605,16 @@ public final class EmulatedPosixSupport extends PosixResources {
         return previousMode;
     }
 
-    @ExportMessage
-    public void msvcrtLocking(int fd, int mode, long nbytes,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+    @Override
+    public void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
         boolean unlock = mode == PosixConstants._LK_UNLCK.getValueIfDefined();
         boolean blocking = mode == PosixConstants._LK_LOCK.getValueIfDefined() || mode == PosixConstants._LK_RLCK.getValueIfDefined();
         boolean nonBlocking = mode == PosixConstants._LK_NBLCK.getValueIfDefined() || mode == PosixConstants._LK_NBRLCK.getValueIfDefined();
         if (!unlock && !blocking && !nonBlocking) {
-            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EINVAL);
         }
         doLockOperation(fd, channel, unlock, false, blocking, SEEK_CUR.value, 0, nbytes);

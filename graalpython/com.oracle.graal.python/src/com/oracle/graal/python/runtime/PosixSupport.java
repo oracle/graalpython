@@ -73,6 +73,14 @@ public abstract class PosixSupport {
 
     public abstract int close(int fd) throws PosixException;
 
+    public abstract long getOsfHandle(int fd) throws PosixException;
+
+    public abstract int openOsfHandle(long handle, int flags) throws PosixException;
+
+    public abstract int setMode(int fd, int mode) throws PosixException;
+
+    public abstract void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException;
+
     public abstract Buffer read(int fd, long length) throws PosixException;
 
     public abstract long write(int fd, Buffer data) throws PosixException;
