@@ -173,7 +173,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         var context = core.getContext();
-        if (PosixSupportLibrary.getUncached().getBackend(context.getPosixSupport()).equalsUncached(T_JAVA, TS_ENCODING)) {
+        if (context.getPosixSupport().getBackend().equalsUncached(T_JAVA, TS_ENCODING)) {
             for (EmulatedSignal signal : EmulatedSignal.values()) {
                 if (signalModule.getAttribute(signal.name) == PNone.NO_VALUE) {
                     moduleData.signals.put(signal.name(), signal.number);

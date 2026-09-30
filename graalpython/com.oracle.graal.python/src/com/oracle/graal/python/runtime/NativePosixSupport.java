@@ -715,15 +715,13 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     public TruffleString getBackend() {
         return nativeBackend;
     }
 
-    @ExportMessage
-    public TruffleString strerror(int errorCode,
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) {
+    @Override
+    public TruffleString strerror(int errorCode) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
@@ -731,18 +729,20 @@ public final class NativePosixSupport extends PosixSupport {
         try {
             posixNativeFunctionInvoker.call_strerror(errorCode, buf, STRERROR_BUF_LENGTH);
             // TODO PyUnicode_DecodeLocale
-            return zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, buf);
+            TruffleString message = NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(buf);
+            message.toJavaStringUncached();
+            return message;
         } finally {
             NativeMemory.free(buf);
         }
     }
 
-    @ExportMessage
+    @Override
     public long getpid() {
         return posixNativeFunctionInvoker.call_getpid();
     }
 
-    @ExportMessage
+    @Override
     public int umask(int mask) {
         return posixNativeFunctionInvoker.call_umask(mask);
     }
@@ -3724,7 +3724,7 @@ public final class NativePosixSupport extends PosixSupport {
 
     @TruffleBoundary
     private PosixException newPosixException(int errno, Integer winerror) throws PosixException {
-        throw new PosixErrnoException(errno, strerror(errno, null, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()), winerror);
+        throw new PosixErrnoException(errno, strerror(errno), winerror);
     }
 
     // CPython performs this mapping in PC/errmap.h:winerror_to_errno().

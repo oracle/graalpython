@@ -201,7 +201,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         PythonModule module = core.lookupBuiltinModule(T__SOCKET);
         module.setModuleState(-1L);
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ||
-                        PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java")) {
+                        core.getContext().getPosixSupport().getBackend().toJavaStringUncached().equals("java")) {
             module.setAttribute(toTruffleStringUncached(PosixConstants.AF_UNIX.name), PNone.NO_VALUE);
         }
     }

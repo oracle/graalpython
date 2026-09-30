@@ -152,30 +152,28 @@ public class PreInitPosixSupport extends PosixSupport {
         return dirStream;
     }
 
-    @ExportMessage
-    final TruffleString getBackend(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    public final TruffleString getBackend() {
         checkNotInPreInitialization();
-        return nativeLib.getBackend(nativePosixSupport);
+        return nativePosixSupport.getBackend();
     }
 
-    @ExportMessage
-    final TruffleString strerror(int errorCode,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    public final TruffleString strerror(int errorCode) {
         checkNotInPreInitialization();
-        return nativeLib.strerror(nativePosixSupport, errorCode);
+        return nativePosixSupport.strerror(errorCode);
     }
 
-    @ExportMessage
-    final long getpid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    public final long getpid() {
         checkNotInPreInitialization();
-        return nativeLib.getpid(nativePosixSupport);
+        return nativePosixSupport.getpid();
     }
 
-    @ExportMessage
-    final int umask(int mask,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int umask(int mask) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.umask(nativePosixSupport, mask);
+        return nativePosixSupport.umask(mask);
     }
 
     @ExportMessage

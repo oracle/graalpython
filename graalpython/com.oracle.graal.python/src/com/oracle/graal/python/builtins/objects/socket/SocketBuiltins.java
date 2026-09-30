@@ -455,7 +455,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                         p.getsockopt(s, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
                                         int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
-                                            throw new PosixErrnoException(err, p.strerror(s, err));
+                                            throw new PosixErrnoException(err, ((PosixSupport) s).strerror(err));
                                         }
                                         return null;
                                     },

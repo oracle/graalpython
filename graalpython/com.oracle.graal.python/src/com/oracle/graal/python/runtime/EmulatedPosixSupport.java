@@ -352,6 +352,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final TruffleString T_DEV_TTY = tsLiteral("/dev/tty");
 
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
+    private long pid;
+    private boolean pidInitialized;
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
     private final boolean withoutIOSocket;
@@ -380,43 +382,46 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (!env.isPreInitialization()) {
             environ.putAll(env.getEnvironment());
         }
+        pidInitialized = false;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
     public TruffleString getBackend() {
         return T_JAVA;
     }
 
-    @ExportMessage
-    public static class Getpid {
-
-        private static final String T_PROC_SELF_STAT = "/proc/self/stat";
-
-        @Specialization(rewriteOn = Exception.class)
-        @TruffleBoundary
-        static long getPid(EmulatedPosixSupport receiver) throws Exception {
+    @TruffleBoundary
+    private long determinePid() {
+        long pid;
+        try {
             if (ImageInfo.inImageRuntimeCode()) {
-                return ProcessProperties.getProcessID();
-            }
-            TruffleFile statFile = receiver.context.getPublicTruffleFileRelaxed(T_PROC_SELF_STAT);
-            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
-        }
-
-        @Specialization(replaces = "getPid")
-        @TruffleBoundary
-        static long getPidFallback(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
-            if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-                String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-                return Long.parseLong(info.split("@")[0]);
+                pid = ProcessProperties.getProcessID();
             } else {
-                return Long.MAX_VALUE;
+                pid = ProcessHandle.current().pid();
+            }
+        } catch (Exception e) {
+            if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
+                // Java 8 compatibility
+                String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+                pid = Long.parseLong(info.split("@")[0]);
+            } else {
+                pid = Long.MAX_VALUE;
             }
         }
+        this.pid = pid;
+        this.pidInitialized = true;
+        return pid;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    public long getpid() {
+        if (pidInitialized) {
+            return pid;
+        }
+        return determinePid();
+    }
+
+    @Override
     public int umask(int umask) {
         int prev = currentUmask;
         currentUmask = umask & 00777;
@@ -427,14 +432,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         return umask;
     }
 
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public TruffleString strerror(int errorCode,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) {
+    @Override
+    public TruffleString strerror(int errorCode) {
         OSErrorEnum err = OSErrorEnum.fromNumber(errorCode);
         if (err == null) {
-            errorBranch.enter(inliningTarget);
             err = OSErrorEnum.EINVAL;
         }
         return err.getMessage();

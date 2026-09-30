@@ -120,33 +120,29 @@ public class LoggingPosixSupport extends PosixSupport {
         delegate.setEnv(env);
     }
 
-    @ExportMessage
-    final TruffleString getBackend(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    public final TruffleString getBackend() {
         logEnter(Level.FINEST, "getBackend", "");
-        return logExit(Level.FINEST, "getBackend", "%s", lib.getBackend(delegate));
+        return logExit(Level.FINEST, "getBackend", "%s", delegate.getBackend());
     }
 
-    @ExportMessage
-    final TruffleString strerror(int errorCode,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    public final TruffleString strerror(int errorCode) {
         logEnter(Level.FINEST, "strerror", "%d", errorCode);
-        return logExit(Level.FINEST, "strerror", "%s", lib.strerror(delegate, errorCode));
+        return logExit(Level.FINEST, "strerror", "%s", delegate.strerror(errorCode));
     }
 
-    @ExportMessage
-    final long getpid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    public final long getpid() {
         logEnter("getpid", "");
-        return logExit("getpid", "%d", lib.getpid(delegate));
+        return logExit("getpid", "%d", delegate.getpid());
     }
 
-    @ExportMessage
-    final int umask(int mask,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int umask(int mask) throws PosixException {
         logEnter("umask", "0%o", mask);
         try {
-            return logExit("umask", "0%o", lib.umask(delegate, mask));
+            return logExit("umask", "0%o", delegate.umask(mask));
         } catch (PosixException e) {
             throw logException("umask", e);
         }

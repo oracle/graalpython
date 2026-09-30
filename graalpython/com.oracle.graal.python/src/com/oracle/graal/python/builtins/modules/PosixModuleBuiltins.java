@@ -328,7 +328,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
 
         PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
-        Object posixSupport = core.getContext().getPosixSupport();
+        PosixSupport posixSupport = core.getContext().getPosixSupport();
         PythonLanguage language = core.getLanguage();
 
         // fill the environ dictionary with the current environment
@@ -389,7 +389,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         Object environAttr = posix.getAttribute(T_ENVIRON);
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
 
-        if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
+        if (posixSupport.getBackend().toJavaStringUncached().equals("java")) {
             posix.setAttribute(toTruffleStringUncached("geteuid"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
 
@@ -604,9 +604,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
-        static long getPid(@Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.getpid(context.getPosixSupport());
+        static long getPid(@Bind PythonContext context) {
+            return context.getPosixSupport().getpid();
         }
     }
 
@@ -962,14 +961,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PBytes doRead(VirtualFrame frame, int fd, int length,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile1,
                         @Cached InlinedBranchProfile errorProfile2,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, error, posixLib.strerror(context.getPosixSupport(), error));
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, error, context.getPosixSupport().strerror(error));
             }
             try {
                 return read(fd, length, inliningTarget, context.getPosixSupport(), errorProfile1, gil);
@@ -1100,13 +1098,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static int dup2(VirtualFrame frame, int fd, int fd2, boolean inheritable,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (fd < 0 || fd2 < 0) {
                 // CPython does not set errno here and raises a 'random' OSError
                 // (possibly with errno=0 Success)
                 int error = OSErrorEnum.EINVAL.getNumber();
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, error, posixLib.strerror(context.getPosixSupport(), error));
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, error, context.getPosixSupport().strerror(error));
             }
 
             try {
@@ -2634,10 +2631,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString getStrError(int code,
-                        @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.strerror(context.getPosixSupport(), code);
+        static TruffleString getStrError(int code, @Bind PythonContext context) {
+            return context.getPosixSupport().strerror(code);
         }
     }
 
@@ -3025,10 +3020,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static int umask(VirtualFrame frame, int mask,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.umask(context.getPosixSupport(), mask);
+                return context.getPosixSupport().umask(mask);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

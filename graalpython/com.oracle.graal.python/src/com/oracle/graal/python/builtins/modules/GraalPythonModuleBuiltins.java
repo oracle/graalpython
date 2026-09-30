@@ -970,9 +970,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {
         @Specialization
-        TruffleString posixModuleBackend(
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.getBackend(getPosixSupport());
+        TruffleString posixModuleBackend() {
+            return getPosixSupport().getBackend();
         }
     }
 

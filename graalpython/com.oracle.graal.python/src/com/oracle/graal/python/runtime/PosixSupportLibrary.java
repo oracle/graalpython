@@ -79,14 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract TruffleString getBackend(Object recevier);
-
-    public abstract TruffleString strerror(Object receiver, int errorCode);
-
-    public abstract long getpid(Object receiver);
-
-    public abstract int umask(Object receiver, int mask) throws PosixException;
-
     public abstract int openat(Object receiver, int dirFd, Object pathname, int flags, int mode) throws PosixException;
 
     public abstract int close(Object receiver, int fd) throws PosixException;
@@ -1042,7 +1034,7 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Exception that indicates POSIX level error associated with numeric code. If the message is
      * known, it may be included in the exception, otherwise it can be queried using
-     * {@link #strerror(Object, int)}.
+     * {@link PosixSupport#strerror(int)}.
      */
     public static final class PosixErrnoException extends PosixException {
 
