@@ -80,30 +80,6 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int ST_SIZE = 6;
 
     /**
-     * @return an opaque object representing the dir entry name
-     * @see #getPathAsBytes(Object, Object)
-     * @see #getPathAsString(Object, Object)
-     */
-    public abstract Object dirEntryGetName(Object receiver, Object dirEntry) throws PosixException;
-
-    /**
-     * Returns the dir entry path, which is the name of the dir entry joined with the given path.
-     *
-     * @param scandirPath the path originally passed to {@link #opendir(Object, Object)}
-     * @return an opaque object representing the dir entry path
-     * @see #getPathAsBytes(Object, Object)
-     * @see #getPathAsString(Object, Object)
-     */
-    public abstract Object dirEntryGetPath(Object receiver, Object dirEntry, Object scandirPath) throws PosixException;
-
-    public abstract long dirEntryGetInode(Object receiver, Object dirEntry) throws PosixException;
-
-    /**
-     * @return one of the {@code DT_xxx} constants
-     */
-    public abstract int dirEntryGetType(Object receiver, Object dirEntry);
-
-    /**
      * Equivalent of POSIX {@code utimensat()}.
      *
      * @param timespec an array of 4 longs in this order:

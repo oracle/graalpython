@@ -1692,15 +1692,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         dirStream.needsReopen = true;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public Object dirEntryGetName(Object dirEntry) {
         TruffleFile file = (TruffleFile) dirEntry;
         return file.getName();
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public Object dirEntryGetPath(Object dirEntry, Object scandirPath) {
         TruffleFile file = (TruffleFile) dirEntry;
         // Given that scandirPath must have been successfully channeled via opendir, we can assume
@@ -1710,9 +1710,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         return dir.resolve(file.getName()).getPath();
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public long dirEntryGetInode(Object dirEntry) throws PosixException {
         TruffleFile file = (TruffleFile) dirEntry;
         try {
@@ -1725,9 +1724,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public int dirEntryGetType(Object dirEntry) {
         TruffleFile file = (TruffleFile) dirEntry;
         try {

@@ -121,9 +121,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 if (produceBytesProfile.profile(inliningTarget, self.produceBytes())) {
-                    return opaquePathToBytes(posixLib.dirEntryGetName(context.getPosixSupport(), self.dirEntryData), posixLib, context.getPosixSupport(), context.getLanguage(inliningTarget));
+                    return opaquePathToBytes(context.getPosixSupport().dirEntryGetName(self.dirEntryData), posixLib, context.getPosixSupport(), context.getLanguage(inliningTarget));
                 } else {
-                    return posixLib.getPathAsString(context.getPosixSupport(), posixLib.dirEntryGetName(context.getPosixSupport(), self.dirEntryData));
+                    return posixLib.getPathAsString(context.getPosixSupport(), context.getPosixSupport().dirEntryGetName(self.dirEntryData));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -165,9 +165,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
             Object opaquePath;
             try {
                 if (posixPathProfile.profile(inliningTarget, self.scandirPath instanceof PosixPath)) {
-                    opaquePath = posixLib.dirEntryGetPath(context.getPosixSupport(), self.dirEntryData, ((PosixPath) self.scandirPath).value);
+                    opaquePath = context.getPosixSupport().dirEntryGetPath(self.dirEntryData, ((PosixPath) self.scandirPath).value);
                 } else {
-                    opaquePath = posixLib.dirEntryGetName(context.getPosixSupport(), self.dirEntryData);
+                    opaquePath = context.getPosixSupport().dirEntryGetName(self.dirEntryData);
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -208,10 +208,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         @Specialization
         long inode(VirtualFrame frame, PDirEntry self,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.dirEntryGetInode(getPosixSupport(), self.dirEntryData);
+                return getPosixSupport().dirEntryGetInode(self.dirEntryData);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -343,9 +342,8 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         boolean useTypeIfKnown(VirtualFrame frame, PDirEntry self, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind Node inliningTarget,
                         @Shared @Cached StatHelperNode statHelperNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
-            int entryType = posixLib.dirEntryGetType(PosixSupport.get(this), self.dirEntryData);
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
+            int entryType = PosixSupport.get(this).dirEntryGetType(self.dirEntryData);
             if (entryType != DT_UNKNOWN.value) {
                 return entryType == expectedDirEntryType;
             }

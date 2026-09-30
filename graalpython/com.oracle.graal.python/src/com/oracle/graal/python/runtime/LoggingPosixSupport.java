@@ -618,44 +618,44 @@ public class LoggingPosixSupport extends PosixSupport {
         delegate.rewinddir(dirStream);
     }
 
-    @ExportMessage
-    final Object dirEntryGetName(Object dirEntry,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object dirEntryGetName(Object dirEntry) throws PosixException {
         logEnter("dirEntryGetName", "%s", dirEntry);
         try {
-            return logExit("dirEntryGetName", "%s", lib.dirEntryGetName(delegate, dirEntry));
+            return logExit("dirEntryGetName", "%s", delegate.dirEntryGetName(dirEntry));
         } catch (PosixException e) {
             throw logException("dirEntryGetName", e);
         }
     }
 
-    @ExportMessage
-    final Object dirEntryGetPath(Object dirEntry, Object scandirPath,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object dirEntryGetPath(Object dirEntry, Object scandirPath) throws PosixException {
         logEnter("dirEntryGetPath", "%s, %s", dirEntry, scandirPath);
         try {
-            return logExit("dirEntryGetPath", "%s", lib.dirEntryGetPath(delegate, dirEntry, scandirPath));
+            return logExit("dirEntryGetPath", "%s", delegate.dirEntryGetPath(dirEntry, scandirPath));
         } catch (PosixException e) {
             throw logException("dirEntryGetPath", e);
         }
     }
 
-    @ExportMessage
-    final long dirEntryGetInode(Object dirEntry,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long dirEntryGetInode(Object dirEntry) throws PosixException {
         logEnter("dirEntryGetInode", "%s", dirEntry);
         try {
-            return logExit("dirEntryGetInode", "%d", lib.dirEntryGetInode(delegate, dirEntry));
+            return logExit("dirEntryGetInode", "%d", delegate.dirEntryGetInode(dirEntry));
         } catch (PosixException e) {
             throw logException("dirEntryGetInode", e);
         }
     }
 
-    @ExportMessage
-    final int dirEntryGetType(Object dirEntry,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int dirEntryGetType(Object dirEntry) {
         logEnter("dirEntryGetType", "%s", dirEntry);
-        return logExit("dirEntryGetType", "%d", lib.dirEntryGetType(delegate, dirEntry));
+        return logExit("dirEntryGetType", "%d", delegate.dirEntryGetType(dirEntry));
     }
 
     @ExportMessage

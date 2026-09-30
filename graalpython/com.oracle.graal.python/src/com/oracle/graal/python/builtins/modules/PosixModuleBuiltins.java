@@ -1978,7 +1978,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                     if (dirEntry == null) {
                         return PFactory.createList(language, listToArray(list));
                     }
-                    Object name = posixLib.dirEntryGetName(posixSupport, dirEntry);
+                    Object name = posixSupport.dirEntryGetName(dirEntry);
                     if (produceBytes) {
                         addToList(list, opaquePathToBytes(name, posixLib, posixSupport, language));
                     } else {

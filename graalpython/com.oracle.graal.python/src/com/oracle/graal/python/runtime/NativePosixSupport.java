@@ -142,7 +142,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -1426,59 +1425,42 @@ public final class NativePosixSupport extends PosixSupport {
         posixNativeFunctionInvoker.call_rewinddir((Long) dirStreamObj);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public Object dirEntryGetName(Object dirEntryObj) {
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         return dirEntry.name;
     }
 
-    @ExportMessage
-    public static class DirEntryGetPath {
-        @Specialization(guards = "endsWithSlash(scandirPath)")
-        static NativePath withSlash(@SuppressWarnings("unused") NativePosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
-            NativePath scandirPathBuffer = (NativePath) scandirPath;
-            int pathLen = scandirPathBuffer.data.length;
-            int nameLen = dirEntry.name.data.length;
-            byte[] buf = new byte[pathLen + nameLen];
-            PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen, nameLen);
-            return createLike(scandirPathBuffer, buf);
+    @Override
+    @TruffleBoundary
+    public Object dirEntryGetPath(Object dirEntryObj, Object scandirPath) {
+        DirEntry dirEntry = (DirEntry) dirEntryObj;
+        NativePath path = (NativePath) scandirPath;
+        int pathLen = path.data.length;
+        int nameLen = dirEntry.name.data.length;
+        boolean wide = path instanceof WidePath;
+        byte last = path.data[pathLen - (wide ? 2 : 1)];
+        boolean hasSlash = last == '/' || last == '\\';
+        int separatorBytes = hasSlash ? 0 : wide ? 2 : 1;
+        byte[] buf = new byte[pathLen + separatorBytes + nameLen];
+        PythonUtils.arraycopy(path.data, 0, buf, 0, pathLen);
+        if (!hasSlash) {
+            buf[pathLen] = (byte) (wide ? '\\' : '/');
         }
-
-        @Specialization(guards = "!endsWithSlash(scandirPath)")
-        static NativePath withoutSlash(@SuppressWarnings("unused") NativePosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
-            NativePath scandirPathBuffer = (NativePath) scandirPath;
-            int pathLen = scandirPathBuffer.data.length;
-            int nameLen = dirEntry.name.data.length;
-            int separatorBytes = scandirPathBuffer instanceof WidePath ? 2 : 1;
-            byte[] buf = new byte[pathLen + separatorBytes + nameLen];
-            PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            buf[pathLen] = (byte) (scandirPathBuffer instanceof WidePath ? '\\' : '/');
-            PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + separatorBytes, nameLen);
-            return createLike(scandirPathBuffer, buf);
-        }
-
-        protected static boolean endsWithSlash(Object path) {
-            NativePath b = (NativePath) path;
-            byte last = b.data[b.data.length - (b instanceof WidePath ? 2 : 1)];
-            return last == '/' || last == '\\';
-        }
-
-        private static NativePath createLike(NativePath path, byte[] data) {
-            return path instanceof WidePath ? new WidePath(data) : new NarrowPath(data);
-        }
+        PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + separatorBytes, nameLen);
+        return wide ? new WidePath(buf) : new NarrowPath(buf);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public long dirEntryGetInode(Object dirEntry) {
         DirEntry entry = (DirEntry) dirEntry;
         return entry.ino;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public int dirEntryGetType(Object dirEntryObj) {
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         return dirEntry.type;

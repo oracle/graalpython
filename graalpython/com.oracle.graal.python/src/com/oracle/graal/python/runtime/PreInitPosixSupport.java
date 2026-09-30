@@ -498,34 +498,34 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.rewinddir(dirStream);
     }
 
-    @ExportMessage
-    final Object dirEntryGetName(Object dirEntry,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object dirEntryGetName(Object dirEntry) throws PosixException {
         if (inPreInitialization) {
-            return PosixSupportLibrary.getUncached().dirEntryGetName(emulatedPosixSupport, dirEntry);
+            return emulatedPosixSupport.dirEntryGetName(dirEntry);
         }
-        return nativeLib.dirEntryGetName(nativePosixSupport, dirEntry);
+        return nativePosixSupport.dirEntryGetName(dirEntry);
     }
 
-    @ExportMessage
-    final Object dirEntryGetPath(Object dirEntry, Object scandirPath,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object dirEntryGetPath(Object dirEntry, Object scandirPath) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.dirEntryGetPath(nativePosixSupport, dirEntry, scandirPath);
+        return nativePosixSupport.dirEntryGetPath(dirEntry, scandirPath);
     }
 
-    @ExportMessage
-    final long dirEntryGetInode(Object dirEntry,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long dirEntryGetInode(Object dirEntry) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.dirEntryGetInode(nativePosixSupport, dirEntry);
+        return nativePosixSupport.dirEntryGetInode(dirEntry);
     }
 
-    @ExportMessage
-    final int dirEntryGetType(Object dirEntry,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    @Override
+    @TruffleBoundary
+    public final int dirEntryGetType(Object dirEntry) {
         checkNotInPreInitialization();
-        return nativeLib.dirEntryGetType(nativePosixSupport, dirEntry);
+        return nativePosixSupport.dirEntryGetType(dirEntry);
     }
 
     @ExportMessage

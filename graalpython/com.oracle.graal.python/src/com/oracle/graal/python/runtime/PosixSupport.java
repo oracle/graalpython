@@ -182,5 +182,15 @@ public abstract class PosixSupport {
 
     public abstract void rewinddir(Object dirStream);
 
+    /** Returns an opaque directory-entry name suitable for path conversion. */
+    public abstract Object dirEntryGetName(Object dirEntry) throws PosixException;
+
+    /** Returns the entry name joined to the path originally passed to {@link #opendir(Object)}. */
+    public abstract Object dirEntryGetPath(Object dirEntry, Object scandirPath) throws PosixException;
+
+    public abstract long dirEntryGetInode(Object dirEntry) throws PosixException;
+
+    public abstract int dirEntryGetType(Object dirEntry);
+
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }
