@@ -412,7 +412,6 @@ static void
 validate_list(PyGC_Head *head, enum flagstates flags)
 {
     assert((UNTAG(head)->_gc_prev & PREV_MASK_COLLECTING) == 0);
-    assert((UNTAG(head)->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
     uintptr_t prev_value = 0, next_value = 0;
     switch (flags) {
         case collecting_clear_unreachable_clear:
@@ -430,8 +429,11 @@ validate_list(PyGC_Head *head, enum flagstates flags)
         default:
             assert(! "bad internal flags argument");
     }
+    /* Weak candidates also tag the sentinel's next link until the rescue
+     * phase finishes. Accept that representation only for a tagged list. */
+    assert((UNTAG(head)->_gc_next & NEXT_MASK_UNREACHABLE) == 0 || next_value != 0);
     PyGC_Head *prev = head;
-    PyGC_Head *gc = GC_NEXT(head);
+    PyGC_Head *gc = (PyGC_Head *)(UNTAG(head)->_gc_next & ~NEXT_MASK_UNREACHABLE);
     while (gc != head) {
         PyGC_Head *trueprev = GC_PREV(gc);
         PyGC_Head *truenext = (PyGC_Head *)(UNTAG(gc)->_gc_next  & ~NEXT_MASK_UNREACHABLE);
@@ -1558,7 +1560,7 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
     gc_list_init(&weak_candidates);
     move_unreachable(base, unreachable, &weak_candidates);  // gc_prev is pointer again
     validate_list(base, collecting_clear_unreachable_clear);
-    validate_list(&weak_candidates, collecting_clear_unreachable_clear);
+    validate_list(&weak_candidates, collecting_clear_unreachable_set);
     validate_list(unreachable, collecting_set_unreachable_set);
 
     /* GraalPy change: process weak_candidates to break reference cycles with
