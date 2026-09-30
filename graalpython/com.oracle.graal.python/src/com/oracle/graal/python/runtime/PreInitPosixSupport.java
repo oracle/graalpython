@@ -273,24 +273,22 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.msvcrtLocking(fd, mode, nbytes);
     }
 
-    @ExportMessage
-    final int[] pipe(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final int[] pipe() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.pipe(nativePosixSupport);
+        return nativePosixSupport.pipe();
     }
 
-    @ExportMessage
-    final SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.select(nativePosixSupport, readfds, writefds, errorfds, timeout);
+        return nativePosixSupport.select(readfds, writefds, errorfds, timeout);
     }
 
-    @ExportMessage
-    final void poll(int[] fds, int[] events, int[] revents, int timeout,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    public final void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.poll(nativePosixSupport, fds, events, revents, timeout);
+        nativePosixSupport.poll(fds, events, revents, timeout);
     }
 
     @ExportMessage

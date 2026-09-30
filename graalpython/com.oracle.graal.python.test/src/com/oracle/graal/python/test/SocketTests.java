@@ -647,7 +647,7 @@ public class SocketTests {
 
         // A completed connect does not guarantee that the connection is already visible to a
         // non-blocking accept(). Wait until the listening socket reports that it is readable.
-        SelectResult res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(1, 0));
+        SelectResult res = posixSupport.select(new int[]{srv.fd}, new int[0], new int[0], new Timeval(1, 0));
         assertTrue(res.getReadFds()[0]);
         srv.accept(cli.address());
     }
@@ -657,12 +657,12 @@ public class SocketTests {
         UdpServer srv = new UdpServer(AF_INET.value);
         UdpClient cli = new UdpClient(AF_INET.value);
 
-        SelectResult res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        SelectResult res = posixSupport.select(new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
         assertFalse(res.getReadFds()[0]);
 
         cli.sendto(DATA, 0, srv.usa());
 
-        res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        res = posixSupport.select(new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
         assertTrue(res.getReadFds()[0]);
 
         checkUsa(cli.address(), srv.recvfrom(DATA, 0));
@@ -677,12 +677,12 @@ public class SocketTests {
         TcpServer srv = new TcpServer(AF_INET.value);
         TcpClient cli = new TcpClient(AF_INET.value);
 
-        SelectResult res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        SelectResult res = posixSupport.select(new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
         assertFalse(res.getReadFds()[0]);
 
         cli.connect(srv.usa());
 
-        res = lib.select(posixSupport, new int[]{srv.fd, cli.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        res = posixSupport.select(new int[]{srv.fd, cli.fd}, new int[0], new int[0], new Timeval(0, 100000));
         assertTrue(res.getReadFds()[0]);
         assertFalse(res.getReadFds()[1]);
 
@@ -695,7 +695,7 @@ public class SocketTests {
 
         c.send(DATA, 0);
 
-        res = lib.select(posixSupport, new int[]{srv.fd, cli.fd, c.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        res = posixSupport.select(new int[]{srv.fd, cli.fd, c.fd}, new int[0], new int[0], new Timeval(0, 100000));
         assertFalse(res.getReadFds()[0]);
 
         // c is readable immediately after shutdown(SHUT_RD), while the data sent to cli may arrive
@@ -704,12 +704,12 @@ public class SocketTests {
         boolean cliReadable = res.getReadFds()[1];
         boolean cReadable = res.getReadFds()[2];
         if (!cliReadable) {
-            SelectResult cliRes = lib.select(posixSupport, new int[]{cli.fd}, new int[0], new int[0],
+            SelectResult cliRes = posixSupport.select(new int[]{cli.fd}, new int[0], new int[0],
                             new Timeval(1, 0));
             cliReadable = cliRes.getReadFds()[0];
         }
         if (!cReadable) {
-            SelectResult cRes = lib.select(posixSupport, new int[]{c.fd}, new int[0], new int[0], new Timeval(1, 0));
+            SelectResult cRes = posixSupport.select(new int[]{c.fd}, new int[0], new int[0], new Timeval(1, 0));
             cReadable = cRes.getReadFds()[0];
         }
         assertTrue(cliReadable);

@@ -135,7 +135,6 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
         static PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
                         @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile isNotNoneTimeout,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
@@ -167,7 +166,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 try {
                     gil.release(true);
                     try {
-                        result = posixLib.select(PosixSupport.get(inliningTarget), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                        result = PosixSupport.get(inliningTarget).select(readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
                     } finally {
                         gil.acquire();
                     }

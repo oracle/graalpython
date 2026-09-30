@@ -1170,12 +1170,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GilNode gil,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int[] pipe;
             gil.release(true);
             try {
-                pipe = posixLib.pipe(context.getPosixSupport());
+                pipe = context.getPosixSupport().pipe();
             } catch (PosixException e) {
                 gil.acquire(); // need to acquire the gil to construct the OSError object
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

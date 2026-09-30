@@ -430,7 +430,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        static void doConnect(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket self,
+        static void doConnect(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, PosixSupport posixSupport, GilNode gil, PSocket self,
                         UniversalSockAddr connectAddr) throws PosixException {
             try {
                 gil.release(true);
@@ -454,7 +454,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                         p.getsockopt(s, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
                                         int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
-                                            throw new PosixErrnoException(err, ((PosixSupport) s).strerror(err));
+                                            throw new PosixErrnoException(err, s.strerror(err));
                                         }
                                         return null;
                                     },

@@ -288,35 +288,31 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int[] pipe(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final int[] pipe() throws PosixException {
         logEnter("pipe", "");
         try {
-            return logExit("pipe", "%s", lib.pipe(delegate));
+            return logExit("pipe", "%s", delegate.pipe());
         } catch (PosixException e) {
             throw logException("pipe", e);
         }
     }
 
-    @SuppressWarnings("all")
-    @ExportMessage
-    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         logEnter("select", "%s %s %s %s", readfds, writefds, errorfds, timeout);
         try {
-            return logExit("select", "%s", lib.select(delegate, readfds, writefds, errorfds, timeout));
+            return logExit("select", "%s", delegate.select(readfds, writefds, errorfds, timeout));
         } catch (PosixException e) {
             throw logException("select", e);
         }
     }
 
-    @ExportMessage
-    public void poll(int[] fds, int[] events, int[] revents, int timeout,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    public final void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         logEnter("poll", "%s %s %s", fds, events, timeout);
         try {
-            lib.poll(delegate, fds, events, revents, timeout);
+            delegate.poll(fds, events, revents, timeout);
             logExit("poll", "%s", revents);
         } catch (PosixException e) {
             throw logException("poll", e);

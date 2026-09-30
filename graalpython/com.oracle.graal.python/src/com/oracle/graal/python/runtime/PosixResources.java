@@ -417,7 +417,7 @@ abstract class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public int[] pipe() throws IOException {
+    public int[] pipeResource() throws IOException {
         synchronized (files) {
             Pipe pipe = Pipe.open();
             int readFD = nextFreeFd();

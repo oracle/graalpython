@@ -620,17 +620,16 @@ public final class EmulatedPosixSupport extends PosixResources {
         doLockOperation(fd, channel, unlock, false, blocking, SEEK_CUR.value, 0, nbytes);
     }
 
-    @ExportMessage(name = "pipe")
-    public int[] pipeMessage() throws PosixException {
-        // TODO: will merge with super.pipe once the super class is merged with this class
+    @Override
+    public int[] pipe() throws PosixException {
         try {
-            return super.pipe();
+            return super.pipeResource();
         } catch (IOException ex) {
             throw posixException(OSErrorEnum.fromException(ex));
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -791,7 +790,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw ChannelNotSelectableException.INSTANCE;
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         assert fds.length == events.length && fds.length == revents.length;

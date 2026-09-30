@@ -79,12 +79,6 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_SIZE = 6;
 
-    public abstract int[] pipe(Object receiver) throws PosixException;
-
-    public abstract SelectResult select(Object receiver, int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
-
-    public abstract void poll(Object receiver, int[] fds, int[] events, int[] revents, int timeout) throws PosixException;
-
     public abstract long lseek(Object receiver, int fd, long offset, int how) throws PosixException;
 
     public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;

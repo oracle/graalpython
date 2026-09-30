@@ -158,7 +158,6 @@ public final class PollBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PyTimeFromObjectNode fromTime,
                         @Cached IsBuiltinObjectProfile typeErrorProfile,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -193,7 +192,7 @@ public final class PollBuiltins extends PythonBuiltins {
                     try {
                         gil.release(true);
                         try {
-                            posixLib.poll(PosixSupport.get(inliningTarget), pollFds, pollEvents, pollRevents, timeoutMs);
+                            PosixSupport.get(inliningTarget).poll(pollFds, pollEvents, pollRevents, timeoutMs);
                         } finally {
                             gil.acquire();
                         }

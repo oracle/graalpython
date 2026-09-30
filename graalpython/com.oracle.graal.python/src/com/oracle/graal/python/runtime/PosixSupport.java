@@ -42,6 +42,8 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -80,6 +82,12 @@ public abstract class PosixSupport {
     public abstract int setMode(int fd, int mode) throws PosixException;
 
     public abstract void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException;
+
+    public abstract int[] pipe() throws PosixException;
+
+    public abstract SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
+
+    public abstract void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException;
 
     public abstract Buffer read(int fd, long length) throws PosixException;
 
