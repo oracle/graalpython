@@ -212,6 +212,10 @@ public class PPickler extends PythonBuiltinObject {
     private Object bufferCallback;
 
     public PPickler(Object cls, Shape instanceShape) {
+        this(cls, instanceShape, PickleUtils.WRITE_BUF_SIZE, MemoTable.INITIAL_CAPACITY);
+    }
+
+    public PPickler(Object cls, Shape instanceShape, int outputCapacity, int memoCapacity) {
         super(cls, instanceShape);
         persFunc = null;
         dispatchTable = null;
@@ -224,11 +228,11 @@ public class PPickler extends PythonBuiltinObject {
         fast = 0;
         fastNesting = 0;
         fixImports = false;
-        maxOutputLen = PickleUtils.WRITE_BUF_SIZE;
+        maxOutputLen = outputCapacity;
         outputLen = 0;
         reducerOverride = null;
 
-        memo = new MemoTable();
+        memo = new MemoTable(memoCapacity);
         outputBuffer = new byte[maxOutputLen];
     }
 
@@ -283,6 +287,10 @@ public class PPickler extends PythonBuiltinObject {
 
     public MemoTable getMemo() {
         return memo;
+    }
+
+    public int getMaxOutputLen() {
+        return maxOutputLen;
     }
 
     public void setMemo(MemoTable memo) {

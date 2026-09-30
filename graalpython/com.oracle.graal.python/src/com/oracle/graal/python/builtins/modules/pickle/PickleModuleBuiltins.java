@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -80,6 +82,59 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         return PickleModuleBuiltinsFactory.getFactories();
     }
 
+    /** Learns the capacities reached by successful calls at one builtin node. */
+    private static final class PicklerSizeProfile {
+        private static final int SHIFT = 3;
+
+        @CompilationFinal private long outputEstimate = (long) PickleUtils.WRITE_BUF_SIZE << SHIFT;
+        @CompilationFinal private long memoEstimate = (long) MemoTable.INITIAL_CAPACITY << SHIFT;
+
+        int outputCapacity() {
+            return (int) (outputEstimate >> SHIFT);
+        }
+
+        int memoCapacity() {
+            int estimate = (int) (memoEstimate >> SHIFT);
+            return estimate <= MemoTable.INITIAL_CAPACITY ? MemoTable.INITIAL_CAPACITY : Integer.highestOneBit(estimate - 1) << 1;
+        }
+
+        void report(PPickler pickler) {
+            if (CompilerDirectives.inInterpreter()) {
+                if (pickler.getMaxOutputLen() > outputCapacity()) {
+                    outputEstimate = update(outputEstimate, pickler.getMaxOutputLen());
+                }
+                int memoCapacity = pickler.getMemo().capacity();
+                if (memoCapacity > (memoEstimate >> SHIFT)) {
+                    memoEstimate = update(memoEstimate, memoCapacity);
+                }
+            }
+        }
+
+        private static long update(long shiftedEstimate, int capacity) {
+            long estimate = shiftedEstimate >> SHIFT;
+            return shiftedEstimate + capacity - estimate;
+        }
+    }
+
+    abstract static class ProfiledPickleDumpNode extends PythonClinicBuiltinNode {
+        @CompilationFinal private PicklerSizeProfile sizes = new PicklerSizeProfile();
+
+        final PPickler createPickler(PythonLanguage language) {
+            return PFactory.createPickler(language, sizes.outputCapacity(), sizes.memoCapacity());
+        }
+
+        final void reportSizes(PPickler pickler) {
+            sizes.report(pickler);
+        }
+
+        @Override
+        public Node copy() {
+            ProfiledPickleDumpNode copy = (ProfiledPickleDumpNode) super.copy();
+            copy.sizes = new PicklerSizeProfile();
+            return copy;
+        }
+    }
+
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
@@ -95,26 +150,27 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = J_DEFAULT_PICKLE_PROTOCOL, useDefaultForNone = true)
     @ArgumentClinic(name = "fix_imports", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
-    abstract static class PickleDumpNode extends PythonClinicBuiltinNode {
+    abstract static class PickleDumpNode extends ProfiledPickleDumpNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PickleModuleBuiltinsClinicProviders.PickleDumpNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        static Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, Object file, int protocol, boolean fixImports, Object bufferCallback,
+        Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, Object file, int protocol, boolean fixImports, Object bufferCallback,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PPickler.FlushToFileNode flushToFileNode,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PRaiseNode raiseNode) {
-            PPickler pickler = PFactory.createPickler(language);
+            PPickler pickler = createPickler(language);
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setOutputStream(frame, inliningTarget, raiseNode, lookup, file);
             pickler.setBufferCallback(inliningTarget, raiseNode, bufferCallback);
             dumpNode.execute(frame, pickler, obj);
             flushToFileNode.execute(frame, pickler);
+            reportSizes(pickler);
             return PNone.NONE;
         }
     }
@@ -125,23 +181,25 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = J_DEFAULT_PICKLE_PROTOCOL, useDefaultForNone = true)
     @ArgumentClinic(name = "fix_imports", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
-    abstract static class PickleDumpsNode extends PythonClinicBuiltinNode {
+    abstract static class PickleDumpsNode extends ProfiledPickleDumpNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PickleModuleBuiltinsClinicProviders.PickleDumpsNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        static Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, int protocol, boolean fixImports, Object bufferCallback,
+        Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, int protocol, boolean fixImports, Object bufferCallback,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PRaiseNode raiseNode) {
-            PPickler pickler = PFactory.createPickler(language);
+            PPickler pickler = createPickler(language);
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setBufferCallback(inliningTarget, raiseNode, bufferCallback);
             dumpNode.execute(frame, pickler, obj);
-            return pickler.getString(language);
+            Object result = pickler.getString(language);
+            reportSizes(pickler);
+            return result;
         }
     }
 

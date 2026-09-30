@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.PicklingError;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -50,7 +52,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class MemoTable {
 
-    private static final int INITIAL_CAPACITY = 8;
+    static final int INITIAL_CAPACITY = 8;
     private static final int OCCUPANCY_EXPONENT = 1; // 2^X relation between capacity and size
     private static final int CAPACITY_INC_EXPONENT = 2; // 2^X increase in capacity when resizing
 
@@ -60,7 +62,12 @@ public final class MemoTable {
     private int size;
 
     public MemoTable() {
-        initArrays(INITIAL_CAPACITY);
+        this(INITIAL_CAPACITY);
+    }
+
+    public MemoTable(int initialCapacity) {
+        assert initialCapacity >= INITIAL_CAPACITY && Integer.bitCount(initialCapacity) == 1;
+        initArrays(initialCapacity);
     }
 
     private MemoTable(MemoTable map) {
@@ -79,7 +86,8 @@ public final class MemoTable {
     }
 
     public void clear() {
-        initArrays(INITIAL_CAPACITY);
+        Arrays.fill(keys, null);
+        Arrays.fill(values, 0);
         this.size = 0;
     }
 

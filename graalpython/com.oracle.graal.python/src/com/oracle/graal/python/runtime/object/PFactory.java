@@ -1579,8 +1579,8 @@ public final class PFactory {
         return new PPickleBuffer(cls, shape, view);
     }
 
-    public static PPickler createPickler(PythonLanguage language) {
-        return createPickler(PythonBuiltinClassType.Pickler, PythonBuiltinClassType.Pickler.getInstanceShape(language));
+    public static PPickler createPickler(PythonLanguage language, int outputCapacity, int memoCapacity) {
+        return new PPickler(PythonBuiltinClassType.Pickler, PythonBuiltinClassType.Pickler.getInstanceShape(language), outputCapacity, memoCapacity);
     }
 
     public static PPickler createPickler(Object cls, Shape shape) {
