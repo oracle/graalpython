@@ -1096,24 +1096,25 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.inet_ntop(family, src);
     }
 
-    @ExportMessage
-    final Object gethostname(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object gethostname() throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.gethostname(nativePosixSupport);
+        return nativePosixSupport.gethostname();
     }
 
-    @ExportMessage
-    final Object[] getnameinfo(UniversalSockAddr addr, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public final Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         checkNotInPreInitialization();
-        return nativeLib.getnameinfo(nativePosixSupport, addr, flags);
+        return nativePosixSupport.getnameinfo(addr, flags);
     }
 
-    @ExportMessage
-    final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         checkNotInPreInitialization();
-        return nativeLib.getaddrinfo(nativePosixSupport, node, service, family, sockType, protocol, flags);
+        return nativePosixSupport.getaddrinfo(node, service, family, sockType, protocol, flags);
     }
 
     @Override

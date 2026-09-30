@@ -105,7 +105,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
@@ -2696,7 +2695,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object gethostname() throws PosixException {
         int maxLen = (HOST_NAME_MAX.defined ? HOST_NAME_MAX.getValueIfDefined() : _POSIX_HOST_NAME_MAX.value) + 1;
         if (maxLen <= 1) {
@@ -2719,10 +2719,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object[] getnameinfo(UniversalSockAddr usa, int flags,
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public Object[] getnameinfo(UniversalSockAddr usa, int flags) throws GetAddrInfoException {
         Buffer host = Buffer.allocate(NI_MAXHOST.value);
         Buffer serv = Buffer.allocate(NI_MAXSERV.value);
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
@@ -2735,7 +2734,7 @@ public final class NativePosixSupport extends PosixSupport {
             nativeServ = NativeMemory.mallocByteArray(NI_MAXSERV.value);
             int res = posixNativeFunctionInvoker.call_getnameinfo(nativeAddr, addr.getLen(), nativeHost, NI_MAXHOST.value, nativeServ, NI_MAXSERV.value, flags);
             if (res != 0) {
-                throw new GetAddrInfoException(res, gai_strerror(inliningTarget, res, zeroTerminatedUtf8ToTruffleStringNode));
+                throw new GetAddrInfoException(res, gai_strerror(null, res, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()));
             }
             NativeMemory.readByteArrayElements(nativeHost, 0, host.data, 0, host.data.length);
             NativeMemory.readByteArrayElements(nativeServ, 0, serv.data, 0, serv.data.length);
@@ -2750,10 +2749,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
         long nodePtr = NULLPTR;
         long servicePtr = NULLPTR;
         long nativePtr = NULLPTR;
@@ -2763,7 +2761,7 @@ public final class NativePosixSupport extends PosixSupport {
             nativePtr = NativeMemory.mallocLongArray(1);
             int res = posixNativeFunctionInvoker.call_getaddrinfo(nodePtr, servicePtr, family, sockType, protocol, flags, nativePtr);
             if (res != 0) {
-                throw new GetAddrInfoException(res, gai_strerror(inliningTarget, res, zeroTerminatedUtf8ToTruffleStringNode));
+                throw new GetAddrInfoException(res, gai_strerror(null, res, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()));
             }
             long head = NativeMemory.readLong(nativePtr);
             assert head != 0;     // getaddrinfo should return at least one result
@@ -2887,7 +2885,6 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportLibrary(AddrInfoCursorLibrary.class)
     protected static class AddrInfoCursorImpl implements AddrInfoCursor {
 
         private final NativePosixSupport nativePosixSupport;
@@ -2901,15 +2898,17 @@ public final class NativePosixSupport extends PosixSupport {
             info.update(head, nativePosixSupport);
         }
 
-        @ExportMessage
-        void release() {
+        @Override
+        @TruffleBoundary
+        public void release() {
             checkReleased();
             nativePosixSupport.posixNativeFunctionInvoker.call_freeaddrinfo(head);
             head = 0;
         }
 
-        @ExportMessage
-        boolean next() {
+        @Override
+        @TruffleBoundary
+        public boolean next() {
             checkReleased();
             long nextPtr = info.getNextPtr();
             if (nextPtr == 0) {
@@ -2919,32 +2918,37 @@ public final class NativePosixSupport extends PosixSupport {
             return true;
         }
 
-        @ExportMessage
-        int getFlags() {
+        @Override
+        @TruffleBoundary
+        public int getFlags() {
             checkReleased();
             return info.getFlags();
         }
 
-        @ExportMessage
-        int getFamily() {
+        @Override
+        @TruffleBoundary
+        public int getFamily() {
             checkReleased();
             return info.getFamily();
         }
 
-        @ExportMessage
-        int getSockType() {
+        @Override
+        @TruffleBoundary
+        public int getSockType() {
             checkReleased();
             return info.getSockType();
         }
 
-        @ExportMessage
-        int getProtocol() {
+        @Override
+        @TruffleBoundary
+        public int getProtocol() {
             checkReleased();
             return info.getProtocol();
         }
 
-        @ExportMessage
-        Object getCanonName() {
+        @Override
+        @TruffleBoundary
+        public Object getCanonName() {
             checkReleased();
             long namePtr = info.getCanonNamePtr();
             if (namePtr == 0) {
@@ -2956,8 +2960,9 @@ public final class NativePosixSupport extends PosixSupport {
             return Buffer.wrap(buf);
         }
 
-        @ExportMessage
-        UniversalSockAddr getSockAddr() {
+        @Override
+        @TruffleBoundary
+        public UniversalSockAddr getSockAddr() {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nativePosixSupport);
             PythonUtils.arraycopy(info.socketAddress, 0, addr.data, 0, info.getAddrLen());
             addr.setFamily(info.getAddrFamily());

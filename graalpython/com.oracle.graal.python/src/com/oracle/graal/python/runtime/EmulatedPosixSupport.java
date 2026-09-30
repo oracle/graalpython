@@ -231,7 +231,6 @@ import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
@@ -3551,13 +3550,14 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public Object gethostname() throws PosixException {
         return getHostName(withoutIOSocket);
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
@@ -3608,7 +3608,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return null;
     }
 
-    @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
@@ -3710,7 +3710,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         return new EmulatedAddrInfoCursorImpl(items.iterator(), canonName, protocol, flags);
     }
 
-    @ExportLibrary(AddrInfoCursorLibrary.class)
     protected static class EmulatedAddrInfoCursorImpl implements AddrInfoCursor {
         final Iterator<Item> iterator;
         final String canonName;
@@ -3726,15 +3725,16 @@ public final class EmulatedPosixSupport extends PosixResources {
             item = iterator.next();
         }
 
-        @ExportMessage
-        final void release() {
+        @Override
+        @TruffleBoundary
+        public final void release() {
             checkReleased();
             item = null;
         }
 
-        @ExportMessage
+        @Override
         @TruffleBoundary
-        final boolean next() {
+        public final boolean next() {
             if (!iterator.hasNext()) {
                 return false;
             }
@@ -3742,36 +3742,42 @@ public final class EmulatedPosixSupport extends PosixResources {
             return true;
         }
 
-        @ExportMessage
-        final int getFlags() {
+        @Override
+        @TruffleBoundary
+        public final int getFlags() {
             return flags;
         }
 
-        @ExportMessage
-        final int getFamily() {
+        @Override
+        @TruffleBoundary
+        public final int getFamily() {
             return item.address.getFamily();
         }
 
-        @ExportMessage
-        final int getSockType() {
+        @Override
+        @TruffleBoundary
+        public final int getSockType() {
             return item.socketType;
         }
 
-        @ExportMessage
-        final int getProtocol() {
+        @Override
+        @TruffleBoundary
+        public final int getProtocol() {
             if (protocol != 0) {
                 return protocol;
             }
             return item.socketType == SOCK_DGRAM.value ? IPPROTO_UDP.value : IPPROTO_TCP.value;
         }
 
-        @ExportMessage
-        final Object getCanonName() {
+        @Override
+        @TruffleBoundary
+        public final Object getCanonName() {
             return canonName;
         }
 
-        @ExportMessage
-        final UniversalSockAddr getSockAddr() {
+        @Override
+        @TruffleBoundary
+        public final UniversalSockAddr getSockAddr() {
             return item.address;
         }
 

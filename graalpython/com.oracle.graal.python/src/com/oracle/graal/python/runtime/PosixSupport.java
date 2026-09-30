@@ -41,7 +41,9 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -183,6 +185,14 @@ public abstract class PosixSupport {
     public abstract byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException;
 
     public abstract Object inet_ntop(int family, byte[] src) throws PosixException;
+
+    public abstract Object gethostname() throws PosixException;
+
+    public abstract Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException;
+
+    /** The caller must release the returned cursor exactly once. */
+    public abstract AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags)
+                    throws UnsupportedPosixFeatureException, GetAddrInfoException;
 
     public abstract void raise(int signal) throws PosixException;
 

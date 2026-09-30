@@ -1497,22 +1497,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final Object gethostname(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Object gethostname() throws PosixException {
         logEnter("gethostname", "");
         try {
-            return logExit("gethostname", "%s", lib.gethostname(delegate));
+            return logExit("gethostname", "%s", delegate.gethostname());
         } catch (PosixException e) {
             throw logException("gethostname", e);
         }
     }
 
-    @ExportMessage
-    final Object[] getnameinfo(UniversalSockAddr addr, int flags,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public final Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         logEnter("getnameinfo", "%s, %d", addr, flags);
         try {
-            return logExit("getnameinfo", "%s", lib.getnameinfo(delegate, addr, flags));
+            return logExit("getnameinfo", "%s", delegate.getnameinfo(addr, flags));
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("getnameinfo", e);
         } catch (GetAddrInfoException e) {
@@ -1520,12 +1521,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         logEnter("getaddrinfo", "%s, %s, %d, %d, %d, %d", node, service, family, sockType, protocol, flags);
         try {
-            return logExit("getaddrinfo", "%s", lib.getaddrinfo(delegate, node, service, family, sockType, protocol, flags));
+            return logExit("getaddrinfo", "%s", delegate.getaddrinfo(node, service, family, sockType, protocol, flags));
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("getaddrinfo", e);
         } catch (GetAddrInfoException e) {

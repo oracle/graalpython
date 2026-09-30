@@ -88,7 +88,6 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
@@ -280,7 +279,6 @@ public abstract class SocketNodes {
         static UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
                         @Cached InetPtoNCachedPNode inetPtoNCachedPNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GilNode gil,
@@ -292,15 +290,15 @@ public abstract class SocketNodes {
                     gil.release(true);
                     try {
                         // TODO getaddrinfo lock?
-                        AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, null, posixSupport.createCStringFromString(T_ZERO),
+                        AddrInfoCursor cursor = posixSupport.getaddrinfo(null, posixSupport.createCStringFromString(T_ZERO),
                                         family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
                         try {
-                            if (addrInfoLib.next(cursor)) {
+                            if (cursor.next()) {
                                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.WILD_CARD_RESOLVED_TO_MULTIPLE_ADDRESS);
                             }
-                            return addrInfoLib.getSockAddr(cursor);
+                            return cursor.getSockAddr();
                         } finally {
-                            addrInfoLib.release(cursor);
+                            cursor.release();
                         }
                     } finally {
                         gil.acquire();
@@ -336,12 +334,12 @@ public abstract class SocketNodes {
                 gil.release(true);
                 try {
                     // TODO getaddrinfo lock?
-                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixSupport.createCStringFromBytes(name), null,
+                    AddrInfoCursor cursor = posixSupport.getaddrinfo(posixSupport.createCStringFromBytes(name), null,
                                     family, 0, 0, 0);
                     try {
-                        return addrInfoLib.getSockAddr(cursor);
+                        return cursor.getSockAddr();
                     } finally {
-                        addrInfoLib.release(cursor);
+                        cursor.release();
                     }
                 } finally {
                     gil.acquire();

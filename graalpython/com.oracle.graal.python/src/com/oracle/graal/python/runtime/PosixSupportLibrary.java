@@ -333,61 +333,29 @@ public abstract class PosixSupportLibrary extends Library {
     // region Name resolution messages
 
     /**
-     * @return an opaque string to be converted using {@link #getCStringAsString(Object, Object)} or
-     *         {@link #getCStringAsBytes(Object, Object)}
-     */
-    public abstract Object gethostname(Object receiver) throws PosixException;
-
-    /**
-     * Corresponds to POSIX {@code getnameinfo(3)}, except it always retrieves both host and service
-     * names.
-     *
-     * @param addr socket address to convert
-     * @param flags a combination of {@code NI_xxx} flags
-     * @return an array of two (host, service) opaque strings to be converted using
-     *         {@link #getCStringAsString(Object, Object)} or
-     *         {@link #getCStringAsBytes(Object, Object)}
-     * @throws GetAddrInfoException when an error occurs (PosixException is not thrown because
-     *             getnameinfo uses its own error codes and gai_strerror instead of the usual errno
-     *             and strerror)
-     */
-    public abstract Object[] getnameinfo(Object receiver, UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException;
-
-    /**
-     * Corresponds to POSIX {@code getaddrinfo(3)}, except it always passes a non-null value for the
-     * {@code hints} parameter.
-     *
-     * @param node {@code null} or the host name converted using
-     *            {@link #createCStringFromBytes(Object, byte[])} or
-     *            {@link #createCStringFromString(Object, TruffleString)}
-     * @param service {@code null} or the service name converted using
-     *            {@link #createCStringFromBytes(Object, byte[])} or
-     *            {@link #createCStringFromString(Object, TruffleString)}
-     * @param family one of the {@code AF_xxx} constants, or {@link PosixConstants#AF_UNSPEC} to get
-     *            addresses of any family
-     * @param sockType one of the {@code SOCK_xxx} constants, or 0 to get addresses of any type
-     * @param protocol 0 to get addresses with any protocol
-     * @param flags bitwise OR of {@code AI_xxx} constants
-     * @return an object representing one or more {@code struct addrinfo}s, which must be explicitly
-     *         released by the caller
-     * @throws GetAddrInfoException when an error occurs (PosixException is not thrown because
-     *             getaddrinfo uses its own error codes and gai_strerror instead of the usual errno
-     *             and strerror)
-     */
-    public abstract AddrInfoCursor getaddrinfo(Object receiver, Object node, Object service, int family, int sockType, int protocol, int flags)
-                    throws UnsupportedPosixFeatureException, GetAddrInfoException;
-
-    /**
      * Represents one or more addrinfos returned by {@code getaddrinfo()}.
      *
-     * Must be explicitly released using {@link AddrInfoCursorLibrary#release(AddrInfoCursor)}.
+     * Must be explicitly released using {@link #release()}.
      * Behaves like a cursor which points to a {@code struct addrinfo} structure (initially pointing
      * at the first address info). The cursor can only move forward using the
-     * {@link AddrInfoCursorLibrary#next(AddrInfoCursor)} message.
-     *
-     * @see AddrInfoCursorLibrary
+     * {@link #next()} method.
      */
     public interface AddrInfoCursor {
+        void release();
+
+        boolean next();
+
+        int getFlags();
+
+        int getFamily();
+
+        int getSockType();
+
+        int getProtocol();
+
+        Object getCanonName();
+
+        UniversalSockAddr getSockAddr();
     }
 
     public abstract int ioctlBytes(Object receiver, int fd, long request, byte[] arg) throws PosixException;
@@ -395,62 +363,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int ioctlInt(Object receiver, int fd, long request, int arg) throws PosixException;
 
     /**
-     * Provides messages for manipulating {@link AddrInfoCursor}.
-     */
-    @GenerateLibrary
-    public abstract static class AddrInfoCursorLibrary extends Library {
-
-        protected AddrInfoCursorLibrary() {
-        }
-
-        /**
-         * Releases resources associated with the results of {@code getaddrinfo()}.
-         *
-         * This must be called exactly once on all instances returned from
-         * {@link #getaddrinfo(Object, Object, Object, int, int, int, int)}. Released instances can
-         * no longer be used for any purpose.
-         */
-        public abstract void release(AddrInfoCursor receiver);
-
-        /**
-         * Moves the cursor to the next address info.
-         *
-         * @return false if there are no more address infos in which case the cursor keeps pointing
-         *         to the last item
-         */
-        public abstract boolean next(AddrInfoCursor receiver);
-
-        public abstract int getFlags(AddrInfoCursor receiver);
-
-        public abstract int getFamily(AddrInfoCursor receiver);
-
-        public abstract int getSockType(AddrInfoCursor receiver);
-
-        public abstract int getProtocol(AddrInfoCursor receiver);
-
-        /**
-         * @return {@code null} or opaque name to be converted using
-         *         {@link PosixSupportLibrary#getPathAsString(Object, Object)} or
-         *         {@link PosixSupportLibrary#getPathAsBytes(Object, Object)}
-         */
-        public abstract Object getCanonName(AddrInfoCursor receiver);
-
-        public abstract UniversalSockAddr getSockAddr(AddrInfoCursor receiver);
-
-        static final LibraryFactory<AddrInfoCursorLibrary> FACTORY = LibraryFactory.resolve(AddrInfoCursorLibrary.class);
-
-        public static LibraryFactory<AddrInfoCursorLibrary> getFactory() {
-            return FACTORY;
-        }
-
-        public static AddrInfoCursorLibrary getUncached() {
-            return FACTORY.getUncached();
-        }
-    }
-
-    /**
      * Exception that indicates and error while executing
-     * {@link #getaddrinfo(Object, Object, Object, int, int, int, int)}.
+     * {@link PosixSupport#getaddrinfo(Object, Object, int, int, int, int)}.
      */
     public static final class GetAddrInfoException extends Exception {
 
