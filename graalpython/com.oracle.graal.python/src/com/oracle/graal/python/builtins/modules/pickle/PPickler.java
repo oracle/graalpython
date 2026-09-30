@@ -2450,8 +2450,9 @@ public class PPickler extends PythonBuiltinObject {
 
             // Our sizes are ints, but the protocol expects 8 bytes
             ensureBufferSpace(this, pickler, 9);
-            writeIntOp(this, pickler, PickleUtils.OPCODE_BYTEARRAY8, size);
-            pickler.outputLen += 4;
+            pickler.outputBuffer[pickler.outputLen++] = PickleUtils.OPCODE_BYTEARRAY8;
+            PickleUtils.writeSize64(pickler.outputBuffer, pickler.outputLen, size);
+            pickler.outputLen += 8;
 
             if (bypassBuffer && pickler.write != null) {
                 flushToFile(frame, pickler);
