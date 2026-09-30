@@ -1182,23 +1182,23 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public void mmapFlush(Object mmap, long offset, long length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void mmapFlush(Object mmap, long offset, long length) throws PosixException {
         logEnter("mmapFlush", "%s, %d, %d", mmap, offset, length);
         try {
-            lib.mmapFlush(delegate, mmap, offset, length);
+            delegate.mmapFlush(mmap, offset, length);
         } catch (PosixException e) {
             throw logException("mmapFlush", e);
         }
     }
 
-    @ExportMessage
-    public long mmapGetPointer(Object mmap,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public long mmapGetPointer(Object mmap) throws UnsupportedPosixFeatureException {
         logEnter("mmapGetPointer", "%s", mmap);
         try {
-            return lib.mmapGetPointer(delegate, mmap);
+            return delegate.mmapGetPointer(mmap);
         } catch (UnsupportedPosixFeatureException e) {
             throw logException("mmapGetPointer", e);
         }
@@ -1215,12 +1215,12 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public void mmapUnmap(Object mmap, long length,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void mmapUnmap(Object mmap, long length) throws PosixException {
         logEnter("mmapUnmap", "%s %d", mmap, length);
         try {
-            lib.mmapUnmap(delegate, mmap, length);
+            delegate.mmapUnmap(mmap, length);
         } catch (PosixException e) {
             throw logException("mmapUnmap", e);
         }

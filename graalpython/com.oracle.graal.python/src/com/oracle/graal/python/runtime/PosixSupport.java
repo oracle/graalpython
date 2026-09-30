@@ -151,6 +151,12 @@ public abstract class PosixSupport {
 
     public abstract void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException;
 
+    public abstract void mmapFlush(Object mmap, long offset, long length) throws PosixException;
+
+    public abstract void mmapUnmap(Object mmap, long length) throws PosixException;
+
+    public abstract long mmapGetPointer(Object mmap) throws UnsupportedPosixFeatureException;
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

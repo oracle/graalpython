@@ -134,7 +134,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
@@ -618,9 +617,8 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone close(PMMap self,
-                        @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib) {
-            self.close(posixSupportLib, context.getPosixSupport());
+                        @Bind PythonContext context) {
+            self.close(context.getPosixSupport());
             return PNone.NONE;
         }
     }
@@ -1004,7 +1002,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached LongIndexConverterNode sizeConversion,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             long size;
@@ -1022,7 +1019,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
 
             try {
-                posixLib.mmapFlush(context.getPosixSupport(), self.getPosixSupportHandle(), offset, self.getLength());
+                context.getPosixSupport().mmapFlush(self.getPosixSupportHandle(), offset, self.getLength());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1050,8 +1047,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         private static class ReleaserRootNode extends RootNode {
-            @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
-
             ReleaserRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
@@ -1059,7 +1054,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 PMMap.MMapRef ref = (PMMap.MMapRef) frame.getArguments()[0];
-                ref.close(posixSupportLibrary, PythonContext.get(this).getPosixSupport());
+                ref.close(PythonContext.get(this).getPosixSupport());
                 return null;
             }
         }

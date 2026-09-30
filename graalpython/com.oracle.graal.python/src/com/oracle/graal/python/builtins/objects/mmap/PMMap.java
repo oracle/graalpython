@@ -57,7 +57,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -86,8 +85,8 @@ public final class PMMap extends PythonObject {
         return ref.getReference();
     }
 
-    void close(PosixSupportLibrary lib, PosixSupport posix) {
-        ref.close(lib, posix);
+    void close(PosixSupport posix) {
+        ref.close(posix);
     }
 
     boolean isClosed() {
@@ -195,7 +194,7 @@ public final class PMMap extends PythonObject {
             return new MMapBuiltins.ReleaseCallback(this);
         }
 
-        void close(PosixSupportLibrary posixLib, PosixSupport posixSupport) {
+        void close(PosixSupport posixSupport) {
             if (!markReleased()) {
                 return;
             }
@@ -209,7 +208,7 @@ public final class PMMap extends PythonObject {
                 }
             }
             try {
-                posixLib.mmapUnmap(posixSupport, handle, length);
+                posixSupport.mmapUnmap(handle, length);
             } catch (PosixException e) {
                 // ignored (CPython does not check the return value)
             }
@@ -223,11 +222,9 @@ public final class PMMap extends PythonObject {
     }
 
     @ExportMessage
-    long getNativePointer(
-                    @Bind Node inliningTarget,
-                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+    long getNativePointer(@Bind Node inliningTarget) {
         try {
-            return posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), getPosixSupportHandle());
+            return PythonContext.get(inliningTarget).getPosixSupport().mmapGetPointer(getPosixSupportHandle());
         } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
             return NULLPTR;
         }

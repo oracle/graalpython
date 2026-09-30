@@ -2308,14 +2308,16 @@ public final class NativePosixSupport extends PosixSupport {
         UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, handle.pointer + index, length);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void mmapFlush(Object mmap, long offset, long length) {
         MMapHandle handle = (MMapHandle) mmap;
         checkIndexAndLen(handle, offset, length);
         posixNativeFunctionInvoker.call_msync(handle.pointer, offset, length);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void mmapUnmap(Object mmap, long length) throws PosixException {
         MMapHandle handle = (MMapHandle) mmap;
         if (length != handle.length) {
@@ -2328,7 +2330,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long mmapGetPointer(Object mmap) {
         MMapHandle handle = (MMapHandle) mmap;

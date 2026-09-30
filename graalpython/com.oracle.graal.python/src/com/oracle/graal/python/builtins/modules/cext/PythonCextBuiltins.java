@@ -1587,7 +1587,7 @@ public final class PythonCextBuiltins {
         PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
         PythonContext context = PythonContext.get(null);
         try {
-            return PosixSupportLibrary.getUncached().mmapGetPointer(context.getPosixSupport(), object.getPosixSupportHandle());
+            return context.getPosixSupport().mmapGetPointer(object.getPosixSupportHandle());
         } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
             throw PConstructAndRaiseNode.getUncached().raiseOSErrorUnsupported(null, e);
         }

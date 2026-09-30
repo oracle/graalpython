@@ -2915,7 +2915,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         return channel.write(ByteBuffer.wrap(bytes, 0, length));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings({"static-method", "unused"})
     public void mmapFlush(Object mmap, long offset, long length) {
         // Intentionally noop
@@ -2925,7 +2926,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         // different implementation of mmap in emulated posix)
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2942,7 +2944,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("obtaining mmap pointer");

@@ -108,12 +108,6 @@ public abstract class PosixSupportLibrary extends Library {
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 
-    public abstract void mmapFlush(Object receiver, Object mmap, long offset, long length) throws PosixException;
-
-    public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
-
-    public abstract long mmapGetPointer(Object receiver, Object mmap) throws UnsupportedPosixFeatureException;
-
     public abstract long semOpen(Object receiver, Object name, int openFlags, int mode, int value) throws PosixException;
 
     public final long semOpen(Object receiver, Object name) throws PosixException {

@@ -901,26 +901,25 @@ public class PreInitPosixSupport extends PosixSupport {
         nativePosixSupport.mmapWriteBytes(mmap, index, bytes, length);
     }
 
-    @ExportMessage
-    final void mmapFlush(Object mmap, long offset, long length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void mmapFlush(Object mmap, long offset, long length) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.mmapFlush(nativePosixSupport, mmap, offset, length);
+        nativePosixSupport.mmapFlush(mmap, offset, length);
     }
 
-    @ExportMessage
-    final void mmapUnmap(Object mmap, long length,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void mmapUnmap(Object mmap, long length) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.mmapUnmap(nativePosixSupport, mmap, length);
+        nativePosixSupport.mmapUnmap(mmap, length);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    final long mmapGetPointer(Object mmap,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
+    @Override
+    @TruffleBoundary
+    public final long mmapGetPointer(Object mmap) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
-        return nativeLib.mmapGetPointer(nativePosixSupport, mmap);
+        return nativePosixSupport.mmapGetPointer(mmap);
     }
 
     @ExportMessage
