@@ -618,53 +618,53 @@ public class PreInitPosixSupport extends PosixSupport {
         return nativePosixSupport.readlinkat(dirFd, path);
     }
 
-    @ExportMessage
-    final void raise(int signal,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void raise(int signal) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.raise(nativePosixSupport, signal);
+        nativePosixSupport.raise(signal);
     }
 
-    @ExportMessage
-    final int alarm(int seconds,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int alarm(int seconds) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.alarm(nativePosixSupport, seconds);
+        return nativePosixSupport.alarm(seconds);
     }
 
-    @ExportMessage
-    final Timeval[] getitimer(int which,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Timeval[] getitimer(int which) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.getitimer(nativePosixSupport, which);
+        return nativePosixSupport.getitimer(which);
     }
 
-    @ExportMessage
-    final Timeval[] setitimer(int which, Timeval delay, Timeval interval,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.setitimer(nativePosixSupport, which, delay, interval);
+        return nativePosixSupport.setitimer(which, delay, interval);
     }
 
-    @ExportMessage
-    final void signalSelf(int signal,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void signalSelf(int signal) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.signalSelf(nativePosixSupport, signal);
+        nativePosixSupport.signalSelf(signal);
     }
 
-    @ExportMessage
-    final void kill(long pid, int signal,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void kill(long pid, int signal) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.kill(nativePosixSupport, pid, signal);
+        nativePosixSupport.kill(pid, signal);
     }
 
-    @ExportMessage
-    final void killpg(long pgid, int signal,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void killpg(long pgid, int signal) throws PosixException {
         checkNotInPreInitialization();
-        nativeLib.killpg(nativePosixSupport, pgid, signal);
+        nativePosixSupport.killpg(pgid, signal);
     }
 
     @ExportMessage

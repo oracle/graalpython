@@ -3022,11 +3022,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_KILL, pid, signal);
             try {
-                posixLib.kill(context.getPosixSupport(), pid, signal);
+                context.getPosixSupport().kill(pid, signal);
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -3049,11 +3048,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_KILLPG, pid, signal);
             try {
-                posixLib.killpg(context.getPosixSupport(), pid, signal);
+                context.getPosixSupport().killpg(pid, signal);
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

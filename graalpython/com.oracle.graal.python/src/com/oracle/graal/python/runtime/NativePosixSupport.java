@@ -1677,7 +1677,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void kill(long pid, int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_kill(pid, signal);
         if (res == -1) {
@@ -1685,7 +1686,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void raise(int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_raise(signal);
         if (res != 0) {
@@ -1693,12 +1695,14 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int alarm(int seconds) {
         return posixNativeFunctionInvoker.call_alarm(seconds);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Timeval[] getitimer(int which) throws PosixException {
         long nativeCurrentValue = NativeMemory.mallocLongArray(4);
         try {
@@ -1712,7 +1716,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException {
         long nativeNewValue = NULLPTR;
         long nativeOldValue = NULLPTR;
@@ -1730,7 +1735,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void signalSelf(int signal) throws PosixException {
         if (!ImageInfo.inImageRuntimeCode()) {
             throw new UnsupportedPosixFeatureException("self-signals are only supported in native standalone");
@@ -1741,7 +1747,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void killpg(long pgid, int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_killpg(pgid, signal);
         if (res == -1) {

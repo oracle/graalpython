@@ -64,6 +64,20 @@ public abstract class PosixSupport {
         return PythonContext.get(node).getPosixSupport();
     }
 
+    public abstract void raise(int signal) throws PosixException;
+
+    public abstract int alarm(int seconds) throws PosixException;
+
+    public abstract Timeval[] getitimer(int which) throws PosixException;
+
+    public abstract Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException;
+
+    public abstract void signalSelf(int signal) throws PosixException;
+
+    public abstract void kill(long pid, int signal) throws PosixException;
+
+    public abstract void killpg(long pid, int signal) throws PosixException;
+
     public abstract TruffleString getBackend();
 
     public abstract TruffleString strerror(int errorCode);

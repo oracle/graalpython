@@ -800,78 +800,78 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final void kill(long pid, int signal,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void kill(long pid, int signal) throws PosixException {
         logEnter("kill", "%d, %d", pid, signal);
         try {
-            lib.kill(delegate, pid, signal);
+            delegate.kill(pid, signal);
         } catch (PosixException e) {
             throw logException("kill", e);
         }
     }
 
-    @ExportMessage
-    final void raise(int signal,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void raise(int signal) throws PosixException {
         logEnter("raise", "%d", signal);
         try {
-            lib.raise(delegate, signal);
+            delegate.raise(signal);
         } catch (PosixException e) {
             throw logException("raise", e);
         }
     }
 
-    @ExportMessage
-    final int alarm(int seconds,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final int alarm(int seconds) throws PosixException {
         logEnter("alarm", "%d", seconds);
         try {
-            return logExit("alarm", "%d", lib.alarm(delegate, seconds));
+            return logExit("alarm", "%d", delegate.alarm(seconds));
         } catch (PosixException e) {
             throw logException("alarm", e);
         }
     }
 
-    @ExportMessage
-    final Timeval[] getitimer(int which,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Timeval[] getitimer(int which) throws PosixException {
         logEnter("getitimer", "%d", which);
         try {
-            return logExit("getitimer", "%s", lib.getitimer(delegate, which));
+            return logExit("getitimer", "%s", delegate.getitimer(which));
         } catch (PosixException e) {
             throw logException("getitimer", e);
         }
     }
 
-    @ExportMessage
-    final Timeval[] setitimer(int which, Timeval delay, Timeval interval,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException {
         logEnter("setitimer", "%d, %s, %s", which, delay, interval);
         try {
-            return logExit("setitimer", "%s", lib.setitimer(delegate, which, delay, interval));
+            return logExit("setitimer", "%s", delegate.setitimer(which, delay, interval));
         } catch (PosixException e) {
             throw logException("setitimer", e);
         }
     }
 
-    @ExportMessage
-    final void signalSelf(int signal,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void signalSelf(int signal) throws PosixException {
         logEnter("signalSelf", "%d", signal);
         try {
-            lib.signalSelf(delegate, signal);
+            delegate.signalSelf(signal);
         } catch (PosixException e) {
             throw logException("signalSelf", e);
         }
     }
 
-    @ExportMessage
-    final void killpg(long pgid, int signal,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final void killpg(long pgid, int signal) throws PosixException {
         logEnter("killpg", "%d, %d", pgid, signal);
         try {
-            lib.killpg(delegate, pgid, signal);
+            delegate.killpg(pgid, signal);
         } catch (PosixException e) {
             throw logException("killpg", e);
         }

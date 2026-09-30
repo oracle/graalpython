@@ -1946,10 +1946,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    public void kill(long pid, int signal,
-                    @Bind Node inliningTarget) throws PosixException {
-        PythonContext context = PythonContext.get(inliningTarget);
+    @Override
+    @TruffleBoundary
+    public void kill(long pid, int signal) throws PosixException {
+        PythonContext context = this.context;
         try {
             if (signal == signalFromName(context, "KILL")) {
                 sigkill((int) pid);
@@ -1965,13 +1965,14 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void raise(int signal) throws PosixException {
         throw createUnsupportedFeature("raise");
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public synchronized int alarm(int seconds) {
         int remaining = 0;
@@ -1991,7 +1992,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return remaining;
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public synchronized Timeval[] getitimer(int which) throws PosixException {
         if (which != 0) {
@@ -2000,7 +2001,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return currentItimer();
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public synchronized Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException {
         if (which != 0 || delay.getSeconds() < 0 || delay.getMicroseconds() < 0 || interval.getSeconds() < 0 || interval.getMicroseconds() < 0) {
@@ -2097,15 +2098,17 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void signalSelf(int signal) throws PosixException {
         throw createUnsupportedFeature("signalSelf");
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public long killpg(long pgid, int signal) throws PosixException {
+    public void killpg(long pgid, int signal) throws PosixException {
         throw createUnsupportedFeature("killpg");
     }
 
