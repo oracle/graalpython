@@ -146,6 +146,7 @@ import com.oracle.truffle.api.strings.TranscodingErrorHandler;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PPickler extends PythonBuiltinObject {
+    private static final byte NEW_LINE_BYTE = '\n';
     // Memo table, keep track of the seen objects to support self-referential objects pickling
     private MemoTable memo;
     // persistent_id() method, can be NULL
@@ -399,6 +400,168 @@ public class PPickler extends PythonBuiltinObject {
         return PFactory.createBytes(language, outputBuffer, outputLen);
     }
 
+    private void writeASCII(Node node, TruffleString string, TruffleString.SwitchEncodingNode switchEncodingNode,
+                    TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        assert string.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
+        TruffleString encoded = switchEncodingNode.execute(string, TruffleString.Encoding.US_ASCII);
+        int length = encoded.byteLength(TruffleString.Encoding.US_ASCII);
+        ensureBufferSpace(node, length);
+        copyToByteArrayNode.execute(encoded, 0, outputBuffer, outputLen, length, TruffleString.Encoding.US_ASCII);
+        outputLen += length;
+    }
+
+    private void writeUtf8(Node node, TruffleString string, TruffleString.SwitchEncodingNode switchEncodingNode,
+                    TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        TruffleString encoded = switchEncodingNode.execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+        writeUtf8Converted(node, encoded, copyToByteArrayNode);
+    }
+
+    private void writeUtf8Converted(Node node, TruffleString encoded, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        int length = encoded.byteLength(TruffleString.Encoding.UTF_8);
+        ensureBufferSpace(node, length);
+        copyToByteArrayNode.execute(encoded, 0, outputBuffer, outputLen, length, TruffleString.Encoding.UTF_8);
+        outputLen += length;
+    }
+
+    private void writeLongAsString(Node node, byte opcode, long value, TruffleString.FromLongNode fromLongNode,
+                    TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        TruffleString string = fromLongNode.execute(value, TruffleString.Encoding.US_ASCII, true);
+        TruffleString.Encoding encoding = TruffleString.Encoding.US_ASCII;
+        int length = string.byteLength(encoding);
+        ensureBufferSpace(node, length + 2);
+        outputBuffer[outputLen++] = opcode;
+        copyToByteArrayNode.execute(string, 0, outputBuffer, outputLen, length, encoding);
+        outputLen += length;
+        outputBuffer[outputLen++] = NEW_LINE_BYTE;
+    }
+
+    private void write(Node node, byte b) {
+        ensureBufferSpace(node, 1);
+        outputBuffer[outputLen++] = b;
+    }
+
+    private void write(Node node, byte b1, byte b2) {
+        ensureBufferSpace(node, 2);
+        outputBuffer[outputLen++] = b1;
+        outputBuffer[outputLen++] = b2;
+    }
+
+    private void writeBuffer(Node node, Object buffer, int size, PythonBufferAccessLibrary bufferLib) {
+        ensureBufferSpace(node, size);
+        bufferLib.readIntoByteArray(buffer, 0, outputBuffer, outputLen, size);
+        outputLen += size;
+    }
+
+    private static byte intByte1(long value) {
+        return (byte) (value & 0xff);
+    }
+
+    private static byte intByte2(long value) {
+        return (byte) ((value >> 8) & 0xff);
+    }
+
+    private static byte intByte3(long value) {
+        return (byte) ((value >> 16) & 0xff);
+    }
+
+    private static byte intByte4(long value) {
+        return (byte) ((value >> 24) & 0xff);
+    }
+
+    private void writeByteOp(Node node, byte opcode, long value) {
+        ensureBufferSpace(node, 2);
+        outputBuffer[outputLen++] = opcode;
+        outputBuffer[outputLen++] = intByte1(value);
+    }
+
+    private void writeShortOp(Node node, byte opcode, long value) {
+        ensureBufferSpace(node, 3);
+        outputBuffer[outputLen++] = opcode;
+        outputBuffer[outputLen++] = intByte1(value);
+        outputBuffer[outputLen++] = intByte2(value);
+    }
+
+    private void writeIntOp(Node node, byte opcode, long value) {
+        ensureBufferSpace(node, 5);
+        outputBuffer[outputLen++] = opcode;
+        outputBuffer[outputLen++] = intByte1(value);
+        outputBuffer[outputLen++] = intByte2(value);
+        outputBuffer[outputLen++] = intByte3(value);
+        outputBuffer[outputLen++] = intByte4(value);
+    }
+
+    private void write(Node node, byte[] bytes, int dataLen) {
+        ensureBufferSpace(node, dataLen);
+        PythonUtils.arraycopy(bytes, 0, outputBuffer, outputLen, dataLen);
+        outputLen += dataLen;
+    }
+
+    private void ensureBufferSpace(Node node, int dataLen) {
+        boolean needNewFrame = isFraming() && frameStart == -1;
+        int n = CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame) ? dataLen + PickleUtils.FRAME_HEADER_SIZE : dataLen;
+        int required = outputLen + n;
+
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, required > maxOutputLen)) {
+            // Make place in buffer for the pickle chunk
+            // TODO: when GR-24978 is completed we should use PY_SSIZE_T_MAX
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, outputLen >= Integer.MAX_VALUE / 2 - n)) {
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.MemoryError);
+            }
+            maxOutputLen = (outputLen + n) / 2 * 3;
+            outputBuffer = PythonUtils.arrayCopyOf(outputBuffer, maxOutputLen);
+        }
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame)) {
+            frameStart = outputLen;
+            outputLen += PickleUtils.FRAME_HEADER_SIZE;
+        }
+    }
+
+    private boolean bypassBuffer(int dataSize) {
+        boolean bypassBuffer = dataSize >= PickleUtils.FRAME_SIZE_TARGET;
+
+        if (bypassBuffer) {
+            assert outputBuffer != null;
+            // Commit the previous frame.
+            commitFrame();
+            // Disable framing temporarily
+            framing = false;
+        }
+        return bypassBuffer;
+    }
+
+    private void writeRawUnicodeEscape(Node node, TruffleString string,
+                    TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
+        int codePointLength = codePointLengthNode.execute(string, TS_ENCODING);
+        long escapedLength = 0;
+        for (int i = 0; i < codePointLength; i++) {
+            int ch = codePointAtIndexNode.execute(string, i);
+            escapedLength += ch >= 0x10000 ? 10 : ch >= 256 || ch == '\\' || ch == 0 || ch == '\n' || ch == '\r' || ch == 0x1a ? 6 : 1;
+        }
+        if (escapedLength > Integer.MAX_VALUE) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.MemoryError);
+        }
+        ensureBufferSpace(node, (int) escapedLength);
+        for (int i = 0; i < codePointLength; i++) {
+            int ch = codePointAtIndexNode.execute(string, i);
+            if (ch >= 0x10000) {
+                outputBuffer[outputLen++] = '\\';
+                outputBuffer[outputLen++] = 'U';
+                for (int shift = 28; shift >= 0; shift -= 4) {
+                    outputBuffer[outputLen++] = BytesUtils.HEXDIGITS[(ch >> shift) & 0xf];
+                }
+            } else if (ch >= 256 || ch == '\\' || ch == 0 || ch == '\n' || ch == '\r' || ch == 0x1a) {
+                outputBuffer[outputLen++] = '\\';
+                outputBuffer[outputLen++] = 'u';
+                for (int shift = 12; shift >= 0; shift -= 4) {
+                    outputBuffer[outputLen++] = BytesUtils.HEXDIGITS[(ch >> shift) & 0xf];
+                }
+            } else {
+                outputBuffer[outputLen++] = (byte) ch;
+            }
+        }
+    }
+
     // inner nodes
     @GenerateInline(false)
     public abstract static class TupleStorageNode extends Node {
@@ -417,7 +580,6 @@ public class PPickler extends PythonBuiltinObject {
         private static final TruffleString T_SYS_MODULES = tsLiteral("sys.modules");
 
         static final byte[] TUPLE_LEN_2_OPCODE = new byte[]{PickleUtils.OPCODE_EMPTY_TUPLE, PickleUtils.OPCODE_TUPLE1, PickleUtils.OPCODE_TUPLE2, PickleUtils.OPCODE_TUPLE3};
-        static final byte NEW_LINE_BYTE = '\n';
         static final TruffleString DICT_ITEMS = tsLiteral("dict items");
         static final TruffleString LATIN1 = tsLiteral("latin1");
         static final TruffleString T_L_NEW_LINE = tsLiteral("L\n");
@@ -660,141 +822,6 @@ public class PPickler extends PythonBuiltinObject {
             pickler.reducerOverride = null;
         }
 
-        protected static void writeASCII(Node node, PPickler pickler, TruffleString string, TruffleString.SwitchEncodingNode switchEncodingNode,
-                        TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            assert string.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
-            TruffleString encoded = switchEncodingNode.execute(string, TruffleString.Encoding.US_ASCII);
-            int length = encoded.byteLength(TruffleString.Encoding.US_ASCII);
-            ensureBufferSpace(node, pickler, length);
-            copyToByteArrayNode.execute(encoded, 0, pickler.outputBuffer, pickler.outputLen, length, TruffleString.Encoding.US_ASCII);
-            pickler.outputLen += length;
-        }
-
-        protected static void writeUtf8(Node node, PPickler pickler, TruffleString string, TruffleString.SwitchEncodingNode switchEncodingNode,
-                        TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            TruffleString encoded = switchEncodingNode.execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-            writeUtf8Converted(node, pickler, encoded, copyToByteArrayNode);
-        }
-
-        public static void writeUtf8Converted(Node node, PPickler pickler, TruffleString encoded, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            int length = encoded.byteLength(TruffleString.Encoding.UTF_8);
-            ensureBufferSpace(node, pickler, length);
-            copyToByteArrayNode.execute(encoded, 0, pickler.outputBuffer, pickler.outputLen, length, TruffleString.Encoding.UTF_8);
-            pickler.outputLen += length;
-        }
-
-        protected static void writeLongAsString(Node node, PPickler pickler, byte opcode, long value, TruffleString.FromLongNode fromLongNode,
-                        TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            TruffleString string = fromLongNode.execute(value, TruffleString.Encoding.US_ASCII, true);
-            TruffleString.Encoding encoding = TruffleString.Encoding.US_ASCII;
-            int length = string.byteLength(encoding);
-            ensureBufferSpace(node, pickler, length + 2);
-            pickler.outputBuffer[pickler.outputLen++] = opcode;
-            copyToByteArrayNode.execute(string, 0, pickler.outputBuffer, pickler.outputLen, length, encoding);
-            pickler.outputLen += length;
-            pickler.outputBuffer[pickler.outputLen++] = NEW_LINE_BYTE;
-        }
-
-        protected static void write(Node node, PPickler pickler, byte b) {
-            ensureBufferSpace(node, pickler, 1);
-            pickler.outputBuffer[pickler.outputLen++] = b;
-        }
-
-        protected static void write(Node node, PPickler pickler, byte b1, byte b2) {
-            ensureBufferSpace(node, pickler, 2);
-            pickler.outputBuffer[pickler.outputLen++] = b1;
-            pickler.outputBuffer[pickler.outputLen++] = b2;
-        }
-
-        protected static void writeBuffer(Node node, PPickler pickler, Object buffer, int size, PythonBufferAccessLibrary bufferLib) {
-            ensureBufferSpace(node, pickler, size);
-            bufferLib.readIntoByteArray(buffer, 0, pickler.outputBuffer, pickler.outputLen, size);
-            pickler.outputLen += size;
-        }
-
-        protected static byte intByte1(long value) {
-            return (byte) (value & 0xff);
-        }
-
-        protected static byte intByte2(long value) {
-            return (byte) ((value >> 8) & 0xff);
-        }
-
-        protected static byte intByte3(long value) {
-            return (byte) ((value >> 16) & 0xff);
-        }
-
-        protected static byte intByte4(long value) {
-            return (byte) ((value >> 24) & 0xff);
-        }
-
-        protected static void writeByteOp(Node node, PPickler pickler, byte opcode, long value) {
-            ensureBufferSpace(node, pickler, 2);
-            pickler.outputBuffer[pickler.outputLen++] = opcode;
-            pickler.outputBuffer[pickler.outputLen++] = intByte1(value);
-        }
-
-        protected static void writeShortOp(Node node, PPickler pickler, byte opcode, long value) {
-            ensureBufferSpace(node, pickler, 3);
-            pickler.outputBuffer[pickler.outputLen++] = opcode;
-            pickler.outputBuffer[pickler.outputLen++] = intByte1(value);
-            pickler.outputBuffer[pickler.outputLen++] = intByte2(value);
-        }
-
-        protected static void writeIntOp(Node node, PPickler pickler, byte opcode, long value) {
-            ensureBufferSpace(node, pickler, 5);
-            pickler.outputBuffer[pickler.outputLen++] = opcode;
-            pickler.outputBuffer[pickler.outputLen++] = intByte1(value);
-            pickler.outputBuffer[pickler.outputLen++] = intByte2(value);
-            pickler.outputBuffer[pickler.outputLen++] = intByte3(value);
-            pickler.outputBuffer[pickler.outputLen++] = intByte4(value);
-        }
-
-        protected static void write(Node node, PPickler pickler, byte[] bytes) {
-            write(node, pickler, bytes, bytes.length);
-        }
-
-        protected static void write(Node node, PPickler pickler, byte[] bytes, int dataLen) {
-            ensureBufferSpace(node, pickler, dataLen);
-            PythonUtils.arraycopy(bytes, 0, pickler.outputBuffer, pickler.outputLen, dataLen);
-            pickler.outputLen += dataLen;
-        }
-
-        public static void ensureBufferSpace(Node node, PPickler pickler, int dataLen) {
-            boolean needNewFrame = pickler.isFraming() && pickler.frameStart == -1;
-            int n = CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame) ? dataLen + PickleUtils.FRAME_HEADER_SIZE : dataLen;
-            int required = pickler.outputLen + n;
-
-            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, required > pickler.maxOutputLen)) {
-                // Make place in buffer for the pickle chunk
-                // TODO: when GR-24978 is completed we should use PY_SSIZE_T_MAX
-                if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, pickler.outputLen >= Integer.MAX_VALUE / 2 - n)) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.MemoryError);
-                }
-                pickler.maxOutputLen = (pickler.outputLen + n) / 2 * 3;
-                pickler.outputBuffer = PythonUtils.arrayCopyOf(pickler.outputBuffer, pickler.maxOutputLen);
-            }
-            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame)) {
-                pickler.frameStart = pickler.outputLen;
-                pickler.outputLen += PickleUtils.FRAME_HEADER_SIZE;
-            }
-        }
-
-        protected boolean bypassBuffer(PPickler pickler, int dataSize) {
-            boolean bypassBuffer = dataSize >= PickleUtils.FRAME_SIZE_TARGET;
-
-            if (bypassBuffer) {
-                profileSeen(SEEN_BYPASS_BUFFER);
-                assert pickler.outputBuffer != null;
-                // Commit the previous frame.
-                pickler.commitFrame();
-                // Disable framing temporarily
-                pickler.framing = false;
-            }
-            return bypassBuffer;
-        }
-
         protected PTuple createTuple(Object... items) {
             if (items.length == 0) {
                 return PFactory.createEmptyTuple(PythonLanguage.get(this));
@@ -1012,7 +1039,7 @@ public class PPickler extends PythonBuiltinObject {
             int i;
             do {
                 i = 0;
-                write(this, pickler, PickleUtils.OPCODE_MARK);
+                pickler.write(this, PickleUtils.OPCODE_MARK);
                 while (nextNode.executeCached(storage, it)) {
                     save(frame, pickler, getKeyNode.executeCached(storage, it), 0);
                     if (saveValues) {
@@ -1022,7 +1049,7 @@ public class PPickler extends PythonBuiltinObject {
                         break;
                     }
                 }
-                write(this, pickler, opcodeBatch);
+                pickler.write(this, opcodeBatch);
                 if (getHashingStorageLength(storage) != initialSize) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
                 }
@@ -1068,12 +1095,12 @@ public class PPickler extends PythonBuiltinObject {
                 } catch (IteratorExhausted e) {
                     // Only one item to write
                     saveItem.accept(firstItem);
-                    write(this, pickler, opcodeOneItem);
+                    pickler.write(this, opcodeOneItem);
                     break;
                 }
                 // More than one item to write
                 // Pump out MARK, items, APPENDS.
-                write(this, pickler, PickleUtils.OPCODE_MARK);
+                pickler.write(this, PickleUtils.OPCODE_MARK);
                 saveItem.accept(firstItem);
                 n = 1;
                 while (true) {
@@ -1092,7 +1119,7 @@ public class PPickler extends PythonBuiltinObject {
                         break;
                     }
                 }
-                write(this, pickler, opcodeMultipleItems);
+                pickler.write(this, opcodeMultipleItems);
 
             } while (n == PickleUtils.BATCHSIZE);
         }
@@ -1128,7 +1155,7 @@ public class PPickler extends PythonBuiltinObject {
                 }
                 itemConsumer.accept(item);
                 if (opcode != PickleUtils.NO_OPCODE) {
-                    write(this, pickler, opcode);
+                    pickler.write(this, opcode);
                 }
             }
         }
@@ -1162,16 +1189,16 @@ public class PPickler extends PythonBuiltinObject {
             if (pid != PNone.NONE) {
                 if (isBin(proto)) {
                     save(frame, pickler, pid, 1);
-                    write(this, pickler, PickleUtils.OPCODE_BINPERSID);
+                    pickler.write(this, PickleUtils.OPCODE_BINPERSID);
                 } else {
                     final TruffleString pidStr = asString(convertToStr(frame, pid));
                     // XXX: Should it check whether the pid contains embedded newlines?
                     if (!PythonUtils.isAscii(pidStr, ensureTsGetCodeRangeNode())) {
                         throw raise(PythonBuiltinClassType.PicklingError, ErrorMessages.PIDS_MUST_BE_ASCII_STRS);
                     }
-                    write(this, pickler, PickleUtils.OPCODE_PERSID);
-                    writeASCII(this, pickler, pidStr, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
-                    writeASCII(this, pickler, T_NEWLINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                    pickler.write(this, PickleUtils.OPCODE_PERSID);
+                    pickler.writeASCII(this, pidStr, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                    pickler.writeASCII(this, T_NEWLINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
                 }
                 return true;
             }
@@ -1182,15 +1209,15 @@ public class PPickler extends PythonBuiltinObject {
         private void memoGet(PPickler pickler, int proto, int value) {
             if (isBin(proto)) {
                 if (value < 256) {
-                    writeByteOp(this, pickler, PickleUtils.OPCODE_BINGET, value);
+                    pickler.writeByteOp(this, PickleUtils.OPCODE_BINGET, value);
                 } else if (Long.compareUnsigned(value, 0xffffffffL) <= 0) {
-                    writeIntOp(this, pickler, PickleUtils.OPCODE_LONG_BINGET, value);
+                    pickler.writeIntOp(this, PickleUtils.OPCODE_LONG_BINGET, value);
                 } else {
                     // unlikely
                     throw raise(PicklingError, ErrorMessages.MEMO_ID_TOO_LARGE_FOR_S, "LONG_BINGET");
                 }
             } else {
-                writeLongAsString(this, pickler, PickleUtils.OPCODE_GET, value, ensureTsFromLongNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeLongAsString(this, PickleUtils.OPCODE_GET, value, ensureTsFromLongNode(), ensureTsCopyToByteArrayNode());
             }
 
         }
@@ -1204,15 +1231,15 @@ public class PPickler extends PythonBuiltinObject {
             pickler.memo.set(obj, idx);
 
             if (proto >= 4) {
-                write(this, pickler, PickleUtils.OPCODE_MEMOIZE);
+                pickler.write(this, PickleUtils.OPCODE_MEMOIZE);
             } else {
                 if (!isBin(proto)) {
-                    writeLongAsString(this, pickler, PickleUtils.OPCODE_PUT, idx, ensureTsFromLongNode(), ensureTsCopyToByteArrayNode());
+                    pickler.writeLongAsString(this, PickleUtils.OPCODE_PUT, idx, ensureTsFromLongNode(), ensureTsCopyToByteArrayNode());
                 } else {
                     if (idx < 256) {
-                        writeByteOp(this, pickler, PickleUtils.OPCODE_BINPUT, idx);
+                        pickler.writeByteOp(this, PickleUtils.OPCODE_BINPUT, idx);
                     } else if (Long.compareUnsigned(idx, 0xffffffffL) <= 0) {
-                        writeIntOp(this, pickler, PickleUtils.OPCODE_LONG_BINPUT, idx);
+                        pickler.writeIntOp(this, PickleUtils.OPCODE_LONG_BINPUT, idx);
                     } else {
                         // unlikely
                         throw raise(PicklingError, ErrorMessages.MEMO_ID_TOO_LARGE_FOR_S, "LONG_BINPUT");
@@ -1332,7 +1359,7 @@ public class PPickler extends PythonBuiltinObject {
                     save(frame, pickler, cls, 0);
                     save2(frame, pickler, args, 0);
                     save3(frame, pickler, kwargs, 0);
-                    write(this, pickler, PickleUtils.OPCODE_NEWOBJ_EX);
+                    pickler.write(this, PickleUtils.OPCODE_NEWOBJ_EX);
                 } else {
                     PickleState st = getGlobalState(ctx.getCore());
                     final SequenceStorage argsStorage = getTupleStorage(args);
@@ -1352,7 +1379,7 @@ public class PPickler extends PythonBuiltinObject {
 
                     save(frame, pickler, callable, 0);
                     save2(frame, pickler, PFactory.createEmptyTuple(PythonLanguage.get(this)), 0);
-                    write(this, pickler, PickleUtils.OPCODE_REDUCE);
+                    pickler.write(this, PickleUtils.OPCODE_REDUCE);
                 }
             } else if (useNewobj) {
                 profileSeen(SEEN_NEWOBJ);
@@ -1414,13 +1441,13 @@ public class PPickler extends PythonBuiltinObject {
                 }
                 newargtup = createTuple(newargs);
                 save2(frame, pickler, newargtup, 0);
-                write(this, pickler, PickleUtils.OPCODE_NEWOBJ);
+                pickler.write(this, PickleUtils.OPCODE_NEWOBJ);
             } else {
                 profileSeen(SEEN_PLAIN_REDUCE);
                 // Not using NEWOBJ
                 save(frame, pickler, callable, 0);
                 save2(frame, pickler, argtup, 0);
-                write(this, pickler, PickleUtils.OPCODE_REDUCE);
+                pickler.write(this, PickleUtils.OPCODE_REDUCE);
             }
 
             // obj can be NULL when save_reduce() is used directly. A NULL obj means the caller do
@@ -1432,7 +1459,7 @@ public class PPickler extends PythonBuiltinObject {
                 // memo
                 int memoIndex = pickler.memo.get(obj);
                 if (memoIndex != -1) {
-                    write(this, pickler, PickleUtils.OPCODE_POP);
+                    pickler.write(this, PickleUtils.OPCODE_POP);
                     memoGet(pickler, proto, memoIndex);
                 } else {
                     memoPut(pickler, proto, fastMode, obj);
@@ -1453,7 +1480,7 @@ public class PPickler extends PythonBuiltinObject {
                 profileSeen(SEEN_REDUCE_STATE);
                 if (stateSetter == null) {
                     save(frame, pickler, state, 0);
-                    write(this, pickler, PickleUtils.OPCODE_BUILD);
+                    pickler.write(this, PickleUtils.OPCODE_BUILD);
                 } else {
                     // If a state_setter is specified, call it instead of load_build to update obj's
                     // with its previous state. The first 4 save/write instructions push
@@ -1465,40 +1492,40 @@ public class PPickler extends PythonBuiltinObject {
                     save(frame, pickler, stateSetter, 0);
                     save2(frame, pickler, obj, 0);
                     save3(frame, pickler, state, 0);
-                    write(this, pickler, PickleUtils.OPCODE_TUPLE2);
-                    write(this, pickler, PickleUtils.OPCODE_REDUCE);
-                    write(this, pickler, PickleUtils.OPCODE_POP);
+                    pickler.write(this, PickleUtils.OPCODE_TUPLE2);
+                    pickler.write(this, PickleUtils.OPCODE_REDUCE);
+                    pickler.write(this, PickleUtils.OPCODE_POP);
                 }
             }
         }
 
         private void saveNone(PPickler pickler) {
-            write(this, pickler, PickleUtils.OPCODE_NONE);
+            pickler.write(this, PickleUtils.OPCODE_NONE);
         }
 
         private void saveBool(PPickler pickler, int proto, boolean value) {
             if (proto >= 2) {
-                write(this, pickler, value ? PickleUtils.OPCODE_NEWTRUE : PickleUtils.OPCODE_NEWFALSE);
+                pickler.write(this, value ? PickleUtils.OPCODE_NEWTRUE : PickleUtils.OPCODE_NEWFALSE);
             } else {
                 // These aren't opcodes -- they're ways to pickle bools before protocol 2 so that
                 // unpicklers written before bools were introduced unpickle them as ints, but
                 // unpicklers after can recognize that bools were intended. Note that protocol 2
                 // added direct ways to pickle bools.
-                writeASCII(this, pickler, value ? PickleUtils.T_PROTO_LE2_TRUE : PickleUtils.T_PROTO_LE2_FALSE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeASCII(this, value ? PickleUtils.T_PROTO_LE2_TRUE : PickleUtils.T_PROTO_LE2_FALSE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
             }
         }
 
         private void saveLong(PPickler pickler, int proto, int value) {
             if (isBin(proto)) {
                 if (value >= 0 && value < (1 << 8)) {
-                    writeByteOp(this, pickler, PickleUtils.OPCODE_BININT1, value);
+                    pickler.writeByteOp(this, PickleUtils.OPCODE_BININT1, value);
                 } else if (value >= 0 && value < (1 << 16)) {
-                    writeShortOp(this, pickler, PickleUtils.OPCODE_BININT2, value);
+                    pickler.writeShortOp(this, PickleUtils.OPCODE_BININT2, value);
                 } else {
-                    writeIntOp(this, pickler, PickleUtils.OPCODE_BININT, value);
+                    pickler.writeIntOp(this, PickleUtils.OPCODE_BININT, value);
                 }
             } else {
-                writeLongAsString(this, pickler, PickleUtils.OPCODE_INT, value, ensureTsFromLongNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeLongAsString(this, PickleUtils.OPCODE_INT, value, ensureTsFromLongNode(), ensureTsCopyToByteArrayNode());
             }
         }
 
@@ -1546,32 +1573,32 @@ public class PPickler extends PythonBuiltinObject {
                     nbytes--;
                 }
                 if (nbytes < 256) {
-                    writeByteOp(this, pickler, PickleUtils.OPCODE_LONG1, nbytes);
+                    pickler.writeByteOp(this, PickleUtils.OPCODE_LONG1, nbytes);
                 } else {
-                    writeIntOp(this, pickler, PickleUtils.OPCODE_LONG4, nbytes);
+                    pickler.writeIntOp(this, PickleUtils.OPCODE_LONG4, nbytes);
                 }
 
-                write(this, pickler, pdata, nbytes);
+                pickler.write(this, pdata, nbytes);
 
             } else {
                 TruffleString repr = repr(frame, obj);
-                write(this, pickler, PickleUtils.OPCODE_LONG);
-                writeASCII(this, pickler, asStringStrict(repr), ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
-                writeASCII(this, pickler, T_L_NEW_LINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.write(this, PickleUtils.OPCODE_LONG);
+                pickler.writeASCII(this, asStringStrict(repr), ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeASCII(this, T_L_NEW_LINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
             }
         }
 
         private void saveFloat(PPickler pickler, int proto, double value) {
             if (isBin(proto)) {
-                write(this, pickler, PickleUtils.OPCODE_BINFLOAT);
-                ensureBufferSpace(this, pickler, 8);
+                pickler.write(this, PickleUtils.OPCODE_BINFLOAT);
+                pickler.ensureBufferSpace(this, 8);
                 NumericSupport.bigEndian().putDouble(pickler.outputBuffer, pickler.outputLen, value);
                 pickler.outputLen += 8;
             } else {
-                write(this, pickler, PickleUtils.OPCODE_FLOAT);
+                pickler.write(this, PickleUtils.OPCODE_FLOAT);
                 TruffleString repr = PickleUtils.doubleToAsciiString(value);
-                writeASCII(this, pickler, repr, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
-                writeASCII(this, pickler, T_NEWLINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeASCII(this, repr, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeASCII(this, T_NEWLINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
             }
         }
 
@@ -1613,12 +1640,15 @@ public class PPickler extends PythonBuiltinObject {
             assert proto >= 3;
             int size = bufferLib.getBufferLength(buffer);
             boolean wasFraming = pickler.framing;
-            boolean bypassBuffer = bypassBuffer(pickler, size);
+            boolean bypassBuffer = pickler.bypassBuffer(size);
+            if (bypassBuffer) {
+                profileSeen(SEEN_BYPASS_BUFFER);
+            }
 
             if (size <= 0xff) {
-                writeByteOp(this, pickler, PickleUtils.OPCODE_SHORT_BINBYTES, size);
+                pickler.writeByteOp(this, PickleUtils.OPCODE_SHORT_BINBYTES, size);
             } else {
-                writeIntOp(this, pickler, PickleUtils.OPCODE_BINBYTES, size);
+                pickler.writeIntOp(this, PickleUtils.OPCODE_BINBYTES, size);
             }
 
             if (bypassBuffer && pickler.write != null) {
@@ -1626,7 +1656,7 @@ public class PPickler extends PythonBuiltinObject {
                 ensureCallNode().execute(frame, pickler.write, obj);
                 pickler.clearBuffer();
             } else {
-                writeBuffer(this, pickler, buffer, size, bufferLib);
+                pickler.writeBuffer(this, buffer, size, bufferLib);
             }
 
             if (bypassBuffer && wasFraming) {
@@ -1641,10 +1671,13 @@ public class PPickler extends PythonBuiltinObject {
             TruffleString utf8 = switchEncodingNode.execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             int size = utf8.byteLength(TruffleString.Encoding.UTF_8);
             boolean wasFraming = pickler.framing;
-            boolean bypassBuffer = bypassBuffer(pickler, size);
+            boolean bypassBuffer = pickler.bypassBuffer(size);
+            if (bypassBuffer) {
+                profileSeen(SEEN_BYPASS_BUFFER);
+            }
 
             if (bypassBuffer && pickler.write != null) {
-                writeIntOp(node, pickler, PickleUtils.OPCODE_BINUNICODE, size);
+                pickler.writeIntOp(node, PickleUtils.OPCODE_BINUNICODE, size);
                 byte[] data = new byte[size];
                 copyToByteArrayNode.execute(utf8, 0, data, 0, size, TruffleString.Encoding.UTF_8);
                 flushToFileNode.execute(frame, pickler);
@@ -1652,11 +1685,11 @@ public class PPickler extends PythonBuiltinObject {
                 pickler.clearBuffer();
             } else {
                 if (size <= 0xff && proto >= 4) {
-                    writeByteOp(node, pickler, PickleUtils.OPCODE_SHORT_BINUNICODE, size);
+                    pickler.writeByteOp(node, PickleUtils.OPCODE_SHORT_BINUNICODE, size);
                 } else {
-                    writeIntOp(node, pickler, PickleUtils.OPCODE_BINUNICODE, size);
+                    pickler.writeIntOp(node, PickleUtils.OPCODE_BINUNICODE, size);
                 }
-                writeUtf8Converted(node, pickler, utf8, copyToByteArrayNode);
+                pickler.writeUtf8Converted(node, utf8, copyToByteArrayNode);
             }
 
             if (bypassBuffer && wasFraming) {
@@ -1676,43 +1709,11 @@ public class PPickler extends PythonBuiltinObject {
             if (isBin(proto)) {
                 writeUnicodeBinary(this, frame, pickler, proto, string, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode(), ensureFlushToFileNode(), ensureCallNode());
             } else {
-                write(this, pickler, PickleUtils.OPCODE_UNICODE);
-                writeRawUnicodeEscape(this, pickler, string, ensureTsCodePointLengthNode(), ensureTsCodePointAtIndexUTF32Node());
-                writeASCII(this, pickler, T_NEWLINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.write(this, PickleUtils.OPCODE_UNICODE);
+                pickler.writeRawUnicodeEscape(this, string, ensureTsCodePointLengthNode(), ensureTsCodePointAtIndexUTF32Node());
+                pickler.writeASCII(this, T_NEWLINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
             }
             memoPut(pickler, proto, fastMode, obj);
-        }
-
-        private static void writeRawUnicodeEscape(Node node, PPickler pickler, TruffleString string,
-                        TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
-            int codePointLength = codePointLengthNode.execute(string, TS_ENCODING);
-            long escapedLength = 0;
-            for (int i = 0; i < codePointLength; i++) {
-                int ch = codePointAtIndexNode.execute(string, i);
-                escapedLength += ch >= 0x10000 ? 10 : ch >= 256 || ch == '\\' || ch == 0 || ch == '\n' || ch == '\r' || ch == 0x1a ? 6 : 1;
-            }
-            if (escapedLength > Integer.MAX_VALUE) {
-                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.MemoryError);
-            }
-            ensureBufferSpace(node, pickler, (int) escapedLength);
-            for (int i = 0; i < codePointLength; i++) {
-                int ch = codePointAtIndexNode.execute(string, i);
-                if (ch >= 0x10000) {
-                    pickler.outputBuffer[pickler.outputLen++] = '\\';
-                    pickler.outputBuffer[pickler.outputLen++] = 'U';
-                    for (int shift = 28; shift >= 0; shift -= 4) {
-                        pickler.outputBuffer[pickler.outputLen++] = BytesUtils.HEXDIGITS[(ch >> shift) & 0xf];
-                    }
-                } else if (ch >= 256 || ch == '\\' || ch == 0 || ch == '\n' || ch == '\r' || ch == 0x1a) {
-                    pickler.outputBuffer[pickler.outputLen++] = '\\';
-                    pickler.outputBuffer[pickler.outputLen++] = 'u';
-                    for (int shift = 12; shift >= 0; shift -= 4) {
-                        pickler.outputBuffer[pickler.outputLen++] = BytesUtils.HEXDIGITS[(ch >> shift) & 0xf];
-                    }
-                } else {
-                    pickler.outputBuffer[pickler.outputLen++] = (byte) ch;
-                }
-            }
         }
 
         private void batchDictExact(VirtualFrame frame, PPickler pickler, PDict dict) {
@@ -1728,7 +1729,7 @@ public class PPickler extends PythonBuiltinObject {
                 HashingStorageIteratorValue getValueNode = ensureHashingStorageIteratorValue();
                 save(frame, pickler, getKeyNode.executeCached(storage, it), 0);
                 save(frame, pickler, getValueNode.executeCached(storage, it), 0);
-                write(this, pickler, PickleUtils.OPCODE_SETITEM);
+                pickler.write(this, PickleUtils.OPCODE_SETITEM);
             } else {
                 // Write in batches of BATCHSIZE.
                 saveDictHashingStorageBatched(frame, pickler, storage);
@@ -1753,9 +1754,9 @@ public class PPickler extends PythonBuiltinObject {
 
             // Create an empty dict.
             if (isBin(proto)) {
-                write(this, pickler, PickleUtils.OPCODE_EMPTY_DICT);
+                pickler.write(this, PickleUtils.OPCODE_EMPTY_DICT);
             } else {
-                write(this, pickler, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_DICT);
+                pickler.write(this, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_DICT);
             }
 
             memoPut(pickler, proto, fastMode, obj);
@@ -1783,7 +1784,7 @@ public class PPickler extends PythonBuiltinObject {
                 return;
             }
 
-            write(this, pickler, PickleUtils.OPCODE_EMPTY_SET);
+            pickler.write(this, PickleUtils.OPCODE_EMPTY_SET);
             memoPut(pickler, proto, fastMode, obj);
 
             HashingStorage storage = obj.getDictStorage();
@@ -1808,7 +1809,7 @@ public class PPickler extends PythonBuiltinObject {
                 return;
             }
 
-            write(this, pickler, PickleUtils.OPCODE_MARK);
+            pickler.write(this, PickleUtils.OPCODE_MARK);
 
             saveSetHashingStorage(frame, pickler, obj.getDictStorage());
 
@@ -1816,12 +1817,12 @@ public class PPickler extends PythonBuiltinObject {
             // away everything we put on the stack, and fetch the object back from the memo.
             int memoIndex = pickler.memo.get(obj);
             if (memoIndex != -1) {
-                write(this, pickler, PickleUtils.OPCODE_POP_MARK);
+                pickler.write(this, PickleUtils.OPCODE_POP_MARK);
                 memoGet(pickler, proto, memoIndex);
                 return;
             }
 
-            write(this, pickler, PickleUtils.OPCODE_FROZENSET);
+            pickler.write(this, PickleUtils.OPCODE_FROZENSET);
             memoPut(pickler, proto, fastMode, obj);
         }
 
@@ -1847,7 +1848,7 @@ public class PPickler extends PythonBuiltinObject {
             if (storage.length() == 1) {
                 item = getItem(storage, 0);
                 save(frame, pickler, item, 0);
-                write(this, pickler, PickleUtils.OPCODE_APPEND);
+                pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
@@ -1856,7 +1857,7 @@ public class PPickler extends PythonBuiltinObject {
             int thisBatch;
             do {
                 thisBatch = 0;
-                write(this, pickler, PickleUtils.OPCODE_MARK);
+                pickler.write(this, PickleUtils.OPCODE_MARK);
                 while (total < storage.length()) {
                     item = getItem(storage, total);
                     save(frame, pickler, item, 0);
@@ -1865,7 +1866,7 @@ public class PPickler extends PythonBuiltinObject {
                         break;
                     }
                 }
-                write(this, pickler, PickleUtils.OPCODE_APPENDS);
+                pickler.write(this, PickleUtils.OPCODE_APPENDS);
             } while (total < storage.length());
         }
 
@@ -1874,19 +1875,19 @@ public class PPickler extends PythonBuiltinObject {
             if (storage.length() == 1) {
                 opcodeBoundary(frame, pickler);
                 saveLong(pickler, proto, storage.getIntItemNormalized(0));
-                write(this, pickler, PickleUtils.OPCODE_APPEND);
+                pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
             int length = storage.length();
             for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
                 int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
-                write(this, pickler, PickleUtils.OPCODE_MARK);
+                pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
                     opcodeBoundary(frame, pickler);
                     saveLong(pickler, proto, storage.getIntItemNormalized(i));
                 }
-                write(this, pickler, PickleUtils.OPCODE_APPENDS);
+                pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
         }
 
@@ -1895,19 +1896,19 @@ public class PPickler extends PythonBuiltinObject {
             if (storage.length() == 1) {
                 opcodeBoundary(frame, pickler);
                 saveLong(frame, pickler, proto, storage.getLongItemNormalized(0));
-                write(this, pickler, PickleUtils.OPCODE_APPEND);
+                pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
             int length = storage.length();
             for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
                 int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
-                write(this, pickler, PickleUtils.OPCODE_MARK);
+                pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
                     opcodeBoundary(frame, pickler);
                     saveLong(frame, pickler, proto, storage.getLongItemNormalized(i));
                 }
-                write(this, pickler, PickleUtils.OPCODE_APPENDS);
+                pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
         }
 
@@ -1916,19 +1917,19 @@ public class PPickler extends PythonBuiltinObject {
             if (storage.length() == 1) {
                 opcodeBoundary(frame, pickler);
                 saveFloat(pickler, proto, storage.getDoubleItemNormalized(0));
-                write(this, pickler, PickleUtils.OPCODE_APPEND);
+                pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
             int length = storage.length();
             for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
                 int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
-                write(this, pickler, PickleUtils.OPCODE_MARK);
+                pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
                     opcodeBoundary(frame, pickler);
                     saveFloat(pickler, proto, storage.getDoubleItemNormalized(i));
                 }
-                write(this, pickler, PickleUtils.OPCODE_APPENDS);
+                pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
         }
 
@@ -1950,9 +1951,9 @@ public class PPickler extends PythonBuiltinObject {
 
             // Create an empty list.
             if (isBin(proto)) {
-                write(this, pickler, PickleUtils.OPCODE_EMPTY_LIST);
+                pickler.write(this, PickleUtils.OPCODE_EMPTY_LIST);
             } else {
-                write(this, pickler, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_LIST);
+                pickler.write(this, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_LIST);
             }
 
             int len = obj.getSequenceStorage().length();
@@ -2033,9 +2034,9 @@ public class PPickler extends PythonBuiltinObject {
 
             if (len == 0) {
                 if (proto != 0) {
-                    write(this, pickler, PickleUtils.OPCODE_EMPTY_TUPLE);
+                    pickler.write(this, PickleUtils.OPCODE_EMPTY_TUPLE);
                 } else {
-                    write(this, pickler, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_TUPLE);
+                    pickler.write(this, PickleUtils.OPCODE_MARK, PickleUtils.OPCODE_TUPLE);
                 }
                 return;
             }
@@ -2051,14 +2052,14 @@ public class PPickler extends PythonBuiltinObject {
                 if (memoIndex != -1) {
                     // pop the len elements
                     for (int i = 0; i < len; i++) {
-                        write(this, pickler, PickleUtils.OPCODE_POP);
+                        pickler.write(this, PickleUtils.OPCODE_POP);
                     }
                     // fetch from memo
                     memoGet(pickler, proto, memoIndex);
                     return;
                 } else {
                     // Not recursive.
-                    write(this, pickler, TUPLE_LEN_2_OPCODE[len]);
+                    pickler.write(this, TUPLE_LEN_2_OPCODE[len]);
                 }
 
                 memoPut(pickler, proto, fastMode, obj);
@@ -2066,18 +2067,18 @@ public class PPickler extends PythonBuiltinObject {
             }
 
             // proto < 2 and len > 0, or proto >= 2 and len > 3. Generate MARK e1 e2 ... TUPLE
-            write(this, pickler, PickleUtils.OPCODE_MARK);
+            pickler.write(this, PickleUtils.OPCODE_MARK);
             storeTupleElements(frame, pickler, storage, len);
 
             int memoIndex = pickler.memo.get(obj);
             if (memoIndex != -1) {
                 // pop the stack stuff we pushed
                 if (isBin(proto)) {
-                    write(this, pickler, PickleUtils.OPCODE_POP_MARK);
+                    pickler.write(this, PickleUtils.OPCODE_POP_MARK);
                 } else {
                     // Note that we pop one more than len, to remove the MARK too.
                     for (int i = 0; i <= len; i++) {
-                        write(this, pickler, PickleUtils.OPCODE_POP);
+                        pickler.write(this, PickleUtils.OPCODE_POP);
                     }
                 }
                 // fetch from memo
@@ -2085,7 +2086,7 @@ public class PPickler extends PythonBuiltinObject {
                 return;
             } else {
                 // Not recursive.
-                write(this, pickler, PickleUtils.OPCODE_TUPLE);
+                pickler.write(this, PickleUtils.OPCODE_TUPLE);
             }
 
             memoPut(pickler, proto, fastMode, obj);
@@ -2096,10 +2097,13 @@ public class PPickler extends PythonBuiltinObject {
 
             int size = bufferLib.getBufferLength(buffer);
             boolean wasFraming = pickler.framing;
-            boolean bypassBuffer = bypassBuffer(pickler, size);
+            boolean bypassBuffer = pickler.bypassBuffer(size);
+            if (bypassBuffer) {
+                profileSeen(SEEN_BYPASS_BUFFER);
+            }
 
             // Our sizes are ints, but the protocol expects 8 bytes
-            ensureBufferSpace(this, pickler, 9);
+            pickler.ensureBufferSpace(this, 9);
             pickler.outputBuffer[pickler.outputLen++] = PickleUtils.OPCODE_BYTEARRAY8;
             PickleUtils.writeSize64(pickler.outputBuffer, pickler.outputLen, size);
             pickler.outputLen += 8;
@@ -2109,7 +2113,7 @@ public class PPickler extends PythonBuiltinObject {
                 ensureCallNode().execute(frame, pickler.write, obj);
                 pickler.clearBuffer();
             } else {
-                writeBuffer(this, pickler, buffer, size, bufferLib);
+                pickler.writeBuffer(this, buffer, size, bufferLib);
             }
 
             if (bypassBuffer && wasFraming) {
@@ -2168,9 +2172,9 @@ public class PPickler extends PythonBuiltinObject {
                 }
             } else {
                 // Write data out-of-band
-                write(this, pickler, PickleUtils.OPCODE_NEXT_BUFFER);
+                pickler.write(this, PickleUtils.OPCODE_NEXT_BUFFER);
                 if (readOnly) {
-                    write(this, pickler, PickleUtils.OPCODE_READONLY_BUFFER);
+                    pickler.write(this, PickleUtils.OPCODE_READONLY_BUFFER);
                 }
             }
         }
@@ -2250,11 +2254,11 @@ public class PPickler extends PythonBuiltinObject {
 
                     // Generate an EXT opcode
                     if (code <= 0xff) {
-                        writeByteOp(this, pickler, PickleUtils.OPCODE_EXT1, code);
+                        pickler.writeByteOp(this, PickleUtils.OPCODE_EXT1, code);
                     } else if (code <= 0xffff) {
-                        writeShortOp(this, pickler, PickleUtils.OPCODE_EXT2, code);
+                        pickler.writeShortOp(this, PickleUtils.OPCODE_EXT2, code);
                     } else {
-                        writeIntOp(this, pickler, PickleUtils.OPCODE_EXT4, code);
+                        pickler.writeIntOp(this, PickleUtils.OPCODE_EXT4, code);
                     }
                 }
             } else {
@@ -2271,14 +2275,14 @@ public class PPickler extends PythonBuiltinObject {
                 if (proto >= 4) {
                     save(frame, pickler, moduleName, 0);
                     save(frame, pickler, globalName, 0);
-                    write(this, pickler, PickleUtils.OPCODE_STACK_GLOBAL);
+                    pickler.write(this, PickleUtils.OPCODE_STACK_GLOBAL);
                 } else if (parent != module) {
                     Object reduceValue = createTuple(st.getattr, createTuple(parent, lastname));
                     saveReduce(frame, ctx, pickler, proto, fastMode, reduceValue, null);
                 } else {
                     // Generate a normal global opcode if we are using a pickle protocol < 4, or if
                     // the object is not registered in the extension registry
-                    write(this, pickler, PickleUtils.OPCODE_GLOBAL);
+                    pickler.write(this, PickleUtils.OPCODE_GLOBAL);
                     // For protocol < 3 and if the user didn't request against doing so, we convert
                     // module names to the old 2.x module names.
                     if (proto < 3 && pickler.fixImports) {
@@ -2296,19 +2300,19 @@ public class PPickler extends PythonBuiltinObject {
                                         TS_ENCODING) == TruffleString.CodeRange.BROKEN) {
                             throw raise(PicklingError, ErrorMessages.CANT_PICKLE_MODULE_S_USING_PROTO_D, moduleName, proto);
                         }
-                        writeUtf8(this, pickler, moduleName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
-                        write(this, pickler, (byte) '\n');
-                        writeUtf8(this, pickler, globalName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                        pickler.writeUtf8(this, moduleName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                        pickler.write(this, (byte) '\n');
+                        pickler.writeUtf8(this, globalName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
                     } else {
                         if (ensureTsGetCodeRangeNode().execute(moduleName, TS_ENCODING) != TruffleString.CodeRange.ASCII || ensureTsGetCodeRangeNode().execute(globalName,
                                         TS_ENCODING) != TruffleString.CodeRange.ASCII) {
                             throw raise(PicklingError, ErrorMessages.CANT_PICKLE_MODULE_S_USING_PROTO_D, moduleName, proto);
                         }
-                        writeASCII(this, pickler, moduleName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
-                        write(this, pickler, (byte) '\n');
-                        writeASCII(this, pickler, globalName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                        pickler.writeASCII(this, moduleName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                        pickler.write(this, (byte) '\n');
+                        pickler.writeASCII(this, globalName, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
                     }
-                    write(this, pickler, (byte) '\n');
+                    pickler.write(this, (byte) '\n');
                 }
                 // Memoize the object
                 memoPut(pickler, proto, fastMode, obj);
@@ -2544,7 +2548,7 @@ public class PPickler extends PythonBuiltinObject {
                     assert pickler.proto <= 256;
 
                     try {
-                        SaveNode.write(this, pickler, PickleUtils.OPCODE_PROTO, (byte) pickler.proto);
+                        pickler.write(this, PickleUtils.OPCODE_PROTO, (byte) pickler.proto);
                     } catch (Exception e) {
                         SaveNode.handleError(pickler);
                         throw e;
@@ -2556,7 +2560,7 @@ public class PPickler extends PythonBuiltinObject {
                 }
 
                 saveNode.execute(frame, pickler, obj, 0);
-                SaveNode.write(this, pickler, PickleUtils.OPCODE_STOP);
+                pickler.write(this, PickleUtils.OPCODE_STOP);
                 pickler.commitFrame();
             } finally {
                 pickler.framing = false;
