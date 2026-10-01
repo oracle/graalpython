@@ -280,6 +280,19 @@ import com.sun.security.auth.module.UnixSystem;
  */
 public final class EmulatedPosixSupport extends PosixResources {
 
+    public static final class EmulatedPwdResult extends PwdResult {
+        public final String name;
+        public final String dir;
+        public final String shell;
+
+        public EmulatedPwdResult(String name, long uid, long gid, String dir, String shell) {
+            super(uid, gid);
+            this.name = name;
+            this.dir = dir;
+            this.shell = shell;
+        }
+    }
+
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
     private static final PosixFilePermission[][] otherBitsToPermission = new PosixFilePermission[][]{
@@ -312,8 +325,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE},
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
     };
-    private static final TruffleString T_BIN_SH = tsLiteral("/bin/sh");
-    private static final TruffleString T_DEV_TTY = tsLiteral("/dev/tty");
+    private static final String T_DEV_TTY = "/dev/tty";
     private static final LinkOption[] NO_LINK_OPTIONS = new LinkOption[0];
 
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
@@ -2358,7 +2370,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @Override
     @TruffleBoundary
     @SuppressWarnings("static-method")
-    public TruffleString ctermid() {
+    public String ctermid() {
         return T_DEV_TTY;
     }
 
@@ -2982,7 +2994,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    public PwdResult getpwuid(long uid) throws PosixException {
+    public EmulatedPwdResult getpwuid(long uid) throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
@@ -3002,7 +3014,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    public PwdResult getpwnam(Object name) throws PosixException {
+    public EmulatedPwdResult getpwnam(Object name) throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
@@ -3028,13 +3040,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    public PwdResult[] getpwentries() throws PosixException {
+    public EmulatedPwdResult[] getpwentries() throws PosixException {
         throw createUnsupportedFeature("getpwent");
     }
 
-    private static PwdResult createPwdResult(UnixSystem unix) {
-        TruffleString homeDir = toTruffleStringUncached(System.getProperty("user.home"));
-        return new PwdResult(toTruffleStringUncached(unix.getUsername()), unix.getUid(), unix.getGid(), homeDir, T_BIN_SH);
+    private static EmulatedPwdResult createPwdResult(UnixSystem unix) {
+        return new EmulatedPwdResult(unix.getUsername(), unix.getUid(), unix.getGid(), System.getProperty("user.home"), "/bin/sh");
     }
 
     @Override
@@ -4364,40 +4375,20 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     // ------------------
-    // Path conversions
+    // Raw Java representations used by PosixSupportNodes.
 
-    @Override
     @TruffleBoundary
-    public Object createPathFromString(TruffleString path) {
-        String javaPath = getPythonOS() == PLATFORM_WIN32 ? path.toJavaStringUncached() : new String(PyUnicodeEncodeFSDefaultNode.executeUncached(path), StandardCharsets.UTF_8);
-        return checkEmbeddedNulls(javaPath);
+    public Object createRawPath(String path) {
+        return checkEmbeddedNulls(path);
     }
 
-    @Override
-    @TruffleBoundary
-    @SuppressWarnings("static-method")
-    public Object createPathFromBytes(byte[] path) {
-        return checkEmbeddedNulls(new String(path, StandardCharsets.UTF_8));
+    public String getRawPath(Object path) {
+        return (String) path;
     }
 
-    @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
-    public TruffleString getPathAsString(Object path) {
-        return TruffleString.fromJavaStringUncached((String) path, TS_ENCODING);
-    }
-
-    @Override
-    @TruffleBoundary
-    @SuppressWarnings("static-method")
-    public Buffer getPathAsBytes(Object path) {
-        return Buffer.wrap(((String) path).getBytes(StandardCharsets.UTF_8));
-    }
-
-    @Override
-    @TruffleBoundary
-    public Object createCStringFromString(TruffleString string) {
-        return checkEmbeddedNulls(string.toJavaStringUncached());
+    public Object createRawCString(String string) {
+        return checkEmbeddedNulls(string);
     }
 
     @Override
@@ -4406,22 +4397,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         return checkEmbeddedNulls(new String(bytes, StandardCharsets.UTF_8));
     }
 
-    @Override
     @TruffleBoundary
-    public Object createWideStringFromString(TruffleString string) {
-        return checkEmbeddedNulls(string.toJavaStringUncached());
+    public Object createRawWideString(String string) {
+        return checkEmbeddedNulls(string);
     }
 
-    @Override
-    @TruffleBoundary
-    public TruffleString getCStringAsString(Object string) {
-        return TruffleString.fromJavaStringUncached((String) string, TS_ENCODING);
-    }
-
-    @Override
-    @TruffleBoundary
-    public Buffer getCStringAsBytes(Object string) {
-        return Buffer.wrap(((String) string).getBytes(StandardCharsets.UTF_8));
+    public String getRawCString(Object string) {
+        return (String) string;
     }
 
     private static String checkEmbeddedNulls(String s) {

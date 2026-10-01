@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -88,9 +89,10 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         static int shmOpen(VirtualFrame frame, TruffleString path, int flags, int mode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object name = context.getPosixSupport().createCStringFromString(path);
+                Object name = createCStringFromStringNode.execute(inliningTarget, context.getPosixSupport(), path);
                 return context.getPosixSupport().shmOpen(name, flags, mode);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);
@@ -112,9 +114,10 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         static PNone shmUnlink(VirtualFrame frame, TruffleString path,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object name = context.getPosixSupport().createCStringFromString(path);
+                Object name = createCStringFromStringNode.execute(inliningTarget, context.getPosixSupport(), path);
                 context.getPosixSupport().shmUnlink(name);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);

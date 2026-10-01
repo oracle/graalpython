@@ -50,9 +50,9 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class PreInitPosixSupport extends PosixSupport {
+public final class PreInitPosixSupport extends PosixSupport {
 
-    protected final NativePosixSupport nativePosixSupport;
+    private final NativePosixSupport nativePosixSupport;
     private EmulatedPosixSupport emulatedPosixSupport;
     private HashSet<Integer> emulatedFds;
     private IdentityHashMap<Object, Object> emulatedDirStreams;
@@ -66,6 +66,11 @@ public class PreInitPosixSupport extends PosixSupport {
             emulatedFds = new HashSet<>();
             emulatedDirStreams = new IdentityHashMap<>();
         }
+    }
+
+    /** Returns the backend appropriate for the current execution phase. */
+    public PosixSupport getCurrentBackend() {
+        return inPreInitialization && emulatedPosixSupport != null ? emulatedPosixSupport : nativePosixSupport;
     }
 
     @Override
@@ -837,7 +842,7 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final TruffleString ctermid() throws PosixException {
+    public final Object ctermid() throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.ctermid();
     }
@@ -1224,82 +1229,7 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final Object createPathFromString(TruffleString path) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.createPathFromString(path);
-        }
-        return nativePosixSupport.createPathFromString(path);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Object createPathFromBytes(byte[] path) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.createPathFromBytes(path);
-        }
-        return nativePosixSupport.createPathFromBytes(path);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final TruffleString getPathAsString(Object path) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.getPathAsString(path);
-        }
-        return nativePosixSupport.getPathAsString(path);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Buffer getPathAsBytes(Object path) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.getPathAsBytes(path);
-        }
-        return nativePosixSupport.getPathAsBytes(path);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Object createCStringFromString(TruffleString string) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.createCStringFromString(string);
-        }
-        return nativePosixSupport.createCStringFromString(string);
-    }
-
-    @Override
-    @TruffleBoundary
     public final Object createCStringFromBytes(byte[] bytes) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.createCStringFromBytes(bytes);
-        }
-        return nativePosixSupport.createCStringFromBytes(bytes);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Object createWideStringFromString(TruffleString string) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.createWideStringFromString(string);
-        }
-        return nativePosixSupport.createWideStringFromString(string);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final TruffleString getCStringAsString(Object string) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.getCStringAsString(string);
-        }
-        return nativePosixSupport.getCStringAsString(string);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Buffer getCStringAsBytes(Object string) {
-        if (inPreInitialization) {
-            return emulatedPosixSupport.getCStringAsBytes(string);
-        }
-        return nativePosixSupport.getCStringAsBytes(string);
+        return getCurrentBackend().createCStringFromBytes(bytes);
     }
 }

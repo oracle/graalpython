@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -272,6 +273,7 @@ public abstract class SocketNodes {
         static UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
                         @Bind Node inliningTarget,
                         @Cached InetPtoNCachedPNode inetPtoNCachedPNode,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GilNode gil,
                         @Cached PRaiseNode raiseNode) {
@@ -279,10 +281,11 @@ public abstract class SocketNodes {
             PosixSupport posixSupport = context.getPosixSupport();
             try {
                 if (name.length == 0) {
+                    Object zero = createCStringFromStringNode.execute(inliningTarget, posixSupport, T_ZERO);
                     gil.release(true);
                     try {
                         // TODO getaddrinfo lock?
-                        AddrInfoCursor cursor = posixSupport.getaddrinfo(null, posixSupport.createCStringFromString(T_ZERO),
+                        AddrInfoCursor cursor = posixSupport.getaddrinfo(null, zero,
                                         family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
                         try {
                             if (cursor.next()) {
@@ -394,6 +397,7 @@ public abstract class SocketNodes {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PosixSupportNodes.GetCStringAsStringNode getCStringAsStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
@@ -402,12 +406,12 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addr.asInet4SockAddr();
                     PosixSupport posixSupport = context.getPosixSupport();
-                    TruffleString addressString = posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet4SockAddr.getAddressAsBytes()));
+                    TruffleString addressString = getCStringAsStringNode.execute(inliningTarget, posixSupport, posixSupport.inet_ntop(family, inet4SockAddr.getAddressAsBytes()));
                     return PFactory.createTuple(language, new Object[]{addressString, inet4SockAddr.getPort()});
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addr.asInet6SockAddr();
                     PosixSupport posixSupport = context.getPosixSupport();
-                    TruffleString addressString = posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet6SockAddr.getAddress()));
+                    TruffleString addressString = getCStringAsStringNode.execute(inliningTarget, posixSupport, posixSupport.inet_ntop(family, inet6SockAddr.getAddress()));
                     return PFactory.createTuple(language, new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
                 } else if (family == AF_UNIX.value) {
                     UnixSockAddr unixSockAddr = addr.asUnixSockAddr();
@@ -450,6 +454,7 @@ public abstract class SocketNodes {
         @Specialization
         static Object makeAddr(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PosixSupportNodes.GetCStringAsStringNode getCStringAsStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
@@ -457,11 +462,11 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addr.asInet4SockAddr();
                     PosixSupport posixSupport = context.getPosixSupport();
-                    return posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet4SockAddr.getAddressAsBytes()));
+                    return getCStringAsStringNode.execute(inliningTarget, posixSupport, posixSupport.inet_ntop(family, inet4SockAddr.getAddressAsBytes()));
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addr.asInet6SockAddr();
                     PosixSupport posixSupport = context.getPosixSupport();
-                    return posixSupport.getCStringAsString(posixSupport.inet_ntop(family, inet6SockAddr.getAddress()));
+                    return getCStringAsStringNode.execute(inliningTarget, posixSupport, posixSupport.inet_ntop(family, inet6SockAddr.getAddress()));
                 } else {
                     throw raiseNode.raise(inliningTarget, NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }

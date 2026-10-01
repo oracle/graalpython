@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -120,11 +121,13 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     abstract static class PathSplitRootNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object splitroot(PosixPath path) {
+        Object splitroot(PosixPath path,
+                        @Bind Node inliningTarget,
+                        @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode) {
             // TODO should call WINAPI PathCchSkipRoot
 
             PythonLanguage language = PythonLanguage.get(null);
-            TruffleString pathString = getPosixSupport().getPathAsString(path.value);
+            TruffleString pathString = getPathAsStringNode.execute(inliningTarget, getPosixSupport(), path.value);
             int len = pathString.codePointLengthUncached(TS_ENCODING);
             int index = pathString.indexOfCodePointUncached(':', 0, len, TS_ENCODING);
             if (index <= 0) {

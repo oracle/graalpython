@@ -83,6 +83,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.Buffer;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -127,6 +128,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
+                        @Cached PosixSupportNodes.GetPathAsBytesNode getPathAsBytesNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
             PList argsList;
@@ -148,7 +150,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 Object o = getItemNode.execute(argsStorage, i);
                 Object path = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
-                Buffer bytes = context.getPosixSupport().getPathAsBytes(path);
+                Buffer bytes = getPathAsBytesNode.execute(inliningTarget, context.getPosixSupport(), path);
                 argsArray[i] = context.getPosixSupport().createCStringFromBytes(bytes.data);
             }
             LoopNode.reportLoopCount(inliningTarget, len);

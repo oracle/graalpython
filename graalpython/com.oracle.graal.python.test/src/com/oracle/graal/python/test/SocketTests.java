@@ -112,6 +112,7 @@ import org.junit.runners.Parameterized.Parameters;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.AcceptResult;
@@ -1069,11 +1070,11 @@ public class SocketTests {
     }
 
     private Object s2p(String s) {
-        return posixSupport.createCStringFromString(toTruffleStringUncached(s));
+        return PosixSupportNodes.createCStringFromString(posixSupport, toTruffleStringUncached(s));
     }
 
     private String p2s(Object p) {
-        return posixSupport.getCStringAsString(p).toJavaStringUncached();
+        return PosixSupportNodes.getCStringAsString(posixSupport, p).toJavaStringUncached();
     }
 
     private static void expectErrno(ThrowingRunnable runnable, OSErrorEnum... expectedErrorCodes) {

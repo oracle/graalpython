@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Function;
@@ -92,7 +93,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
         org.junit.Assume.assumeTrue(backendName.equals("java") || !IS_WINDOWS);
         PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
         PosixSupport posixSupport = PythonContext.get(null).getPosixSupport();
-        pathToString = p -> posixSupport.getPathAsString(p.value).toJavaStringUncached();
+        pathToString = p -> PosixSupportNodes.getPathAsString(null, posixSupport, p.value).toJavaStringUncached();
     }
 
     @After

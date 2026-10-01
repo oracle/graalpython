@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
-import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.opaquePathToBytes;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FSPATH__;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
@@ -67,12 +66,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFd;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.OpaquePathToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -115,12 +116,14 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached InlinedConditionProfile produceBytesProfile,
+                        @Cached OpaquePathToBytesNode opaquePathToBytesNode,
+                        @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 if (produceBytesProfile.profile(inliningTarget, self.produceBytes())) {
-                    return opaquePathToBytes(context.getPosixSupport().dirEntryGetName(self.dirEntryData), context.getPosixSupport(), context.getLanguage(inliningTarget));
+                    return opaquePathToBytesNode.execute(inliningTarget, context.getPosixSupport(), context.getPosixSupport().dirEntryGetName(self.dirEntryData), context.getLanguage(inliningTarget));
                 } else {
-                    return context.getPosixSupport().getPathAsString(context.getPosixSupport().dirEntryGetName(self.dirEntryData));
+                    return getPathAsStringNode.execute(inliningTarget, context.getPosixSupport(), context.getPosixSupport().dirEntryGetName(self.dirEntryData));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -157,6 +160,8 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached InlinedConditionProfile produceBytesProfile,
                         @Cached InlinedConditionProfile posixPathProfile,
+                        @Cached OpaquePathToBytesNode opaquePathToBytesNode,
+                        @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object opaquePath;
             try {
@@ -169,9 +174,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (produceBytesProfile.profile(inliningTarget, self.produceBytes())) {
-                self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, context.getPosixSupport(), context.getLanguage(inliningTarget)), opaquePath, true);
+                self.pathCache = new PosixPath(opaquePathToBytesNode.execute(inliningTarget, context.getPosixSupport(), opaquePath, context.getLanguage(inliningTarget)), opaquePath, true);
             } else {
-                self.pathCache = new PosixPath(context.getPosixSupport().getPathAsString(opaquePath), opaquePath, false);
+                self.pathCache = new PosixPath(getPathAsStringNode.execute(inliningTarget, context.getPosixSupport(), opaquePath), opaquePath, false);
             }
             return self.pathCache;
         }

@@ -46,6 +46,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -83,8 +84,27 @@ public class LoggingPosixSupport extends PosixSupport {
     protected final PosixSupport delegate;
 
     public LoggingPosixSupport(PosixSupport delegate) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (delegate instanceof LoggingPosixSupport) {
+            throw new IllegalArgumentException();
+        }
         this.delegate = delegate;
         LOGGER.log(Level.INFO, "Using " + delegate.getClass());
+    }
+
+    public PosixSupport getDelegate() {
+        assert !(delegate instanceof LoggingPosixSupport);
+        return delegate;
+    }
+
+    @TruffleBoundary
+    public void logConversionEnter(String name, Object argument) {
+        logEnter(Level.FINEST, name, "%s", argument);
+    }
+
+    @TruffleBoundary
+    public <T> T logConversionExit(String name, T result) {
+        return logExit(Level.FINEST, name, "%s", result);
     }
 
     public static boolean isEnabled() {
@@ -1133,7 +1153,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final TruffleString ctermid() throws PosixException {
+    public final Object ctermid() throws PosixException {
         logEnter("ctermid", "");
         try {
             return logExit("ctermid", "%s", delegate.ctermid());
@@ -1682,60 +1702,8 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final Object createPathFromString(TruffleString path) {
-        logEnter(Level.FINEST, "createPathFromString", "%s", path);
-        return logExit(Level.FINEST, "createPathFromString", "%s", delegate.createPathFromString(path));
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Object createPathFromBytes(byte[] path) {
-        logEnter(Level.FINEST, "createPathFromBytes", "%s", path);
-        return logExit(Level.FINEST, "createPathFromBytes", "%s", delegate.createPathFromBytes(path));
-    }
-
-    @Override
-    @TruffleBoundary
-    public final TruffleString getPathAsString(Object path) {
-        logEnter(Level.FINEST, "getPathAsString", "%s", path);
-        return logExit(Level.FINEST, "getPathAsString", "%s", delegate.getPathAsString(path));
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Buffer getPathAsBytes(Object path) {
-        logEnter(Level.FINEST, "getPathAsBytes", "%s", path);
-        return logExit(Level.FINEST, "getPathAsBytes", "%s", delegate.getPathAsBytes(path));
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Object createCStringFromString(TruffleString string) {
-        return delegate.createCStringFromString(string);
-    }
-
-    @Override
-    @TruffleBoundary
     public final Object createCStringFromBytes(byte[] bytes) {
         return delegate.createCStringFromBytes(bytes);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Object createWideStringFromString(TruffleString string) {
-        return delegate.createWideStringFromString(string);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final TruffleString getCStringAsString(Object string) {
-        return delegate.getCStringAsString(string);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final Buffer getCStringAsBytes(Object string) {
-        return delegate.getCStringAsBytes(string);
     }
 
     @TruffleBoundary

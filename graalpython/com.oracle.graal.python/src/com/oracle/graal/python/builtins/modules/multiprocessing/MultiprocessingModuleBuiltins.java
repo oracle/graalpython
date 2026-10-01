@@ -61,6 +61,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -168,9 +169,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         PNone doit(VirtualFrame frame, TruffleString name,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @Bind Node inliningTarget,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixSupport.semUnlink(posixSupport.createCStringFromString(name));
+                posixSupport.semUnlink(createCStringFromStringNode.execute(inliningTarget, posixSupport, name));
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

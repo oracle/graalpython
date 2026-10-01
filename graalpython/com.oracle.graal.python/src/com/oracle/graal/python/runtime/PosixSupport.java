@@ -102,8 +102,7 @@ public abstract class PosixSupport {
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 
-    public static final class PwdResult {
-        public final TruffleString name;
+    public abstract static class PwdResult {
         /**
          * This value represents unsigned 64 bit integer.
          */
@@ -112,24 +111,9 @@ public abstract class PosixSupport {
          * This value represents unsigned 64 bit integer.
          */
         public final long gid;
-        public final TruffleString dir;
-        public final TruffleString shell;
-
-        public PwdResult(TruffleString name, long uid, long gid, TruffleString dir, TruffleString shell) {
-            this.name = name;
+        protected PwdResult(long uid, long gid) {
             this.uid = uid;
             this.gid = gid;
-            this.dir = dir;
-            this.shell = shell;
-        }
-
-        @Override
-        public String toString() {
-            return "PwdResult{name='" + name + '\'' +
-                            ", uid=" + uid +
-                            ", gid=" + gid +
-                            ", dir='" + dir + '\'' +
-                            ", shell='" + shell + "'}";
         }
     }
 
@@ -714,28 +698,9 @@ public abstract class PosixSupport {
      */
     public abstract PwdResult[] getpwentries() throws PosixException;
 
-    /** Returns null if the converted path contains embedded null characters. */
-    public abstract Object createPathFromString(TruffleString path);
-
-    /** Returns null if the converted path contains embedded null characters. */
-    public abstract Object createPathFromBytes(byte[] path);
-
-    public abstract TruffleString getPathAsString(Object path);
-
-    public abstract Buffer getPathAsBytes(Object path);
-
-    /** Converts a string to strict UTF-8 for non-filesystem APIs that use CPython's {@code s} conversion. */
-    public abstract Object createCStringFromString(TruffleString string);
 
     /** Wraps already-encoded bytes for narrow native APIs without applying a filesystem conversion. */
     public abstract Object createCStringFromBytes(byte[] bytes);
-
-    /** Converts a string to the UTF-16 representation used by Windows wide-character APIs. */
-    public abstract Object createWideStringFromString(TruffleString string);
-
-    public abstract TruffleString getCStringAsString(Object string);
-
-    public abstract Buffer getCStringAsBytes(Object string);
 
     public abstract int socket(int domain, int type, int protocol) throws PosixException;
 
@@ -853,7 +818,7 @@ public abstract class PosixSupport {
 
     public abstract OpenPtyResult openpty() throws PosixException;
 
-    public abstract TruffleString ctermid() throws PosixException;
+    public abstract Object ctermid() throws PosixException;
 
     // note: this leaks memory in native backend and is not synchronized
     public abstract void setenv(Object name, Object value, boolean overwrite) throws PosixException;

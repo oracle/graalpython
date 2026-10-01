@@ -79,6 +79,7 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PosixSupport.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -118,13 +119,14 @@ public class SemLockBuiltins extends PythonBuiltins {
         static PSemLock construct(VirtualFrame frame, Object cls, int kind, int value, int maxValue, TruffleString name, boolean unlink,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
-            Object posixName = posixSupport.createCStringFromString(name);
+            Object posixName = createCStringFromStringNode.execute(inliningTarget, posixSupport, name);
             long handle;
             try {
                 handle = posixSupport.semOpen(posixName, O_CREAT.value | O_EXCL.value, 0600, value);
@@ -415,13 +417,14 @@ public class SemLockBuiltins extends PythonBuiltins {
         static Object rebuild(VirtualFrame frame, Object cls, long origHandle, int kind, int maxValue, Object name,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 return PFactory.createSemLock(cls, getInstanceShape.execute(cls), origHandle, kind, maxValue, null);
             }
             TruffleString posixNameString = (TruffleString) name;
-            Object posixName = posixSupport.createCStringFromString(posixNameString);
+            Object posixName = createCStringFromStringNode.execute(inliningTarget, posixSupport, posixNameString);
             long handle;
             try {
                 handle = posixSupport.semOpen(posixName);

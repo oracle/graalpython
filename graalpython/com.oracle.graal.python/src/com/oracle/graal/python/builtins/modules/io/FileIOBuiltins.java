@@ -141,6 +141,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -236,10 +237,11 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         PythonContext ctxt,
                         Node inliningTarget,
                         GilNode gil,
+                        PosixSupportNodes.CreatePathFromStringNode createPathFromStringNode,
                         InlinedBranchProfile errorProfile,
                         PRaiseNode raiseNode,
                         PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            Object path = ctxt.getPosixSupport().createPathFromString(name);
+            Object path = createPathFromStringNode.execute(frame, inliningTarget, ctxt.getPosixSupport(), name);
             if (path == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, EMBEDDED_NULL_BYTE);
             }
@@ -325,6 +327,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile exceptionProfile3,
                         @Cached InlinedConditionProfile errorProfile,
                         @Cached(inline = false) GilNode gil,
+                        @Cached PosixSupportNodes.CreatePathFromStringNode createPathFromStringNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -360,7 +363,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     }
 
                     if (opener instanceof PNone) {
-                        self.setFD(open(frame, name, flags, 0666, context, inliningTarget, gil, exceptionProfile, raiseNode, constructAndRaiseNode), context);
+                        self.setFD(open(frame, name, flags, 0666, context, inliningTarget, gil, createPathFromStringNode, exceptionProfile, raiseNode, constructAndRaiseNode), context);
                     } else {
                         Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
                         if (!indexCheckNode.execute(inliningTarget, fdobj)) {
