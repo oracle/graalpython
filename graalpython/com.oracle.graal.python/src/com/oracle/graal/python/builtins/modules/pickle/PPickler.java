@@ -164,8 +164,6 @@ public class PPickler extends PythonBuiltinObject {
     private byte[] outputBuffer;
     // Length of output_buffer
     private int outputLen;
-    // Allocation size of output_buffer
-    private int maxOutputLen;
     // Pickle protocol number, >= 0
     private int proto;
     // true if proto > 0
@@ -203,12 +201,11 @@ public class PPickler extends PythonBuiltinObject {
         fast = 0;
         fastNesting = 0;
         fixImports = false;
-        maxOutputLen = outputCapacity;
         outputLen = 0;
         reducerOverride = null;
 
         memo = new MemoTable(memoCapacity);
-        outputBuffer = new byte[maxOutputLen];
+        outputBuffer = new byte[outputCapacity];
     }
 
     @TruffleBoundary
@@ -265,7 +262,7 @@ public class PPickler extends PythonBuiltinObject {
     }
 
     public int getMaxOutputLen() {
-        return maxOutputLen;
+        return outputBuffer.length;
     }
 
     public void setMemo(MemoTable memo) {
@@ -350,8 +347,7 @@ public class PPickler extends PythonBuiltinObject {
 
         this.outputLen = 0;
         if (this.outputBuffer == null) {
-            this.maxOutputLen = PickleUtils.WRITE_BUF_SIZE;
-            this.outputBuffer = new byte[this.maxOutputLen];
+            this.outputBuffer = new byte[PickleUtils.WRITE_BUF_SIZE];
         }
 
         this.fast = 0;
@@ -372,7 +368,7 @@ public class PPickler extends PythonBuiltinObject {
     }
 
     public void clearBuffer() {
-        this.outputBuffer = new byte[this.maxOutputLen];
+        this.outputBuffer = new byte[this.outputBuffer.length];
         this.outputLen = 0;
         this.frameStart = -1;
     }
@@ -501,15 +497,15 @@ public class PPickler extends PythonBuiltinObject {
         int n = CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame) ? dataLen + PickleUtils.FRAME_HEADER_SIZE : dataLen;
         int required = outputLen + n;
 
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, required > maxOutputLen)) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, required > outputBuffer.length)) {
             // Make place in buffer for the pickle chunk
             // TODO: when GR-24978 is completed we should use PY_SSIZE_T_MAX
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, outputLen >= Integer.MAX_VALUE / 2 - n)) {
                 CompilerDirectives.transferToInterpreter();
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.MemoryError);
             }
-            maxOutputLen = (outputLen + n) / 2 * 3;
-            outputBuffer = PythonUtils.arrayCopyOf(outputBuffer, maxOutputLen);
+            int newCapacity = (required) / 2 * 3;
+            outputBuffer = PythonUtils.arrayCopyOf(outputBuffer, newCapacity);
         }
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, needNewFrame)) {
             frameStart = outputLen;
