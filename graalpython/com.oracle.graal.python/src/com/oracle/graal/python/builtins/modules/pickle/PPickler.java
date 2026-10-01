@@ -424,6 +424,53 @@ public class PPickler extends PythonBuiltinObject {
         static final TruffleString T_SET = tsLiteral("set");
         static final TruffleString T_DICTIONARY = tsLiteral("dictionary");
 
+        private static final long SEEN_NONE = 1;
+        private static final long SEEN_BOOLEAN = 1 << 1;
+        private static final long SEEN_INTEGER = 1 << 2;
+        private static final long SEEN_LONG = 1 << 3;
+        private static final long SEEN_PINT = 1 << 4;
+        private static final long SEEN_DOUBLE = 1 << 5;
+        private static final long SEEN_PFLOAT = 1 << 6;
+        private static final long SEEN_BUILTIN_CLASS_TYPE = 1 << 7;
+        private static final long SEEN_BYTES = 1 << 8;
+        private static final long SEEN_TRUFFLE_STRING = 1 << 9;
+        private static final long SEEN_PSTRING = 1 << 10;
+        private static final long SEEN_DICT = 1 << 11;
+        private static final long SEEN_SET = 1 << 12;
+        private static final long SEEN_FROZENSET = 1 << 13;
+        private static final long SEEN_LIST = 1 << 14;
+        private static final long SEEN_TUPLE = 1 << 15;
+        private static final long SEEN_NATIVE_TUPLE = 1 << 16;
+        private static final long SEEN_BYTE_ARRAY = 1 << 17;
+        private static final long SEEN_PICKLE_BUFFER = 1 << 18;
+        private static final long SEEN_MANAGED_CLASS = 1 << 19;
+        private static final long SEEN_NATIVE_CLASS = 1 << 20;
+        private static final long SEEN_FUNCTION = 1 << 21;
+        private static final long SEEN_TYPE = 1 << 22;
+        private static final long SEEN_OBJECT = 1 << 23;
+        private static final long SEEN_INT_STORAGE = 1 << 24;
+        private static final long SEEN_LONG_STORAGE = 1 << 25;
+        private static final long SEEN_DOUBLE_STORAGE = 1 << 26;
+        private static final long SEEN_GENERIC_STORAGE = 1 << 27;
+        private static final long SEEN_CUSTOM_DISPATCH = 1 << 28;
+        private static final long SEEN_REGISTERED_REDUCER = 1 << 29;
+        private static final long SEEN_REDUCE_EX = 1 << 30;
+        private static final long SEEN_REDUCE = 1L << 31;
+        private static final long SEEN_NEWOBJ_EX = 1L << 32;
+        private static final long SEEN_NEWOBJ = 1L << 33;
+        private static final long SEEN_PLAIN_REDUCE = 1L << 34;
+        private static final long SEEN_REDUCE_LISTITEMS = 1L << 35;
+        private static final long SEEN_REDUCE_DICTITEMS = 1L << 36;
+        private static final long SEEN_REDUCE_STATE = 1L << 37;
+        private static final long SEEN_BYPASS_BUFFER = 1L << 38;
+
+        @CompilationFinal private long seenTypes;
+
+        private final int depth;
+        @Child private SaveNode recursiveSaveNode1;
+        @Child private SaveNode recursiveSaveNode2;
+        @Child private SaveNode recursiveSaveNode3;
+
         @Child private IntNodes.PyLongSign pyLongSign;
         @Child private IntNodes.PyLongNumBits pyLongNumBits;
         @Child private IntNodes.PyLongAsByteArray pyLongAsByteArray;
@@ -435,6 +482,22 @@ public class PPickler extends PythonBuiltinObject {
         @Child private TruffleString.FromLongNode tsFromLongNode;
         @Child private TruffleString.CopyToByteArrayNode tsCopyToByteArrayNode;
         @Child private TruffleString.GetCodeRangeNode tsGetCodeRangeNode;
+        @Child private BoundaryCallData boundaryCallData;
+        @Child private PyLongAsLongNode pyLongAsLongNode;
+        @Child private PyObjectStrAsObjectNode pyObjectStrAsObjectNode;
+        @Child private PyObjectIsTrueNode isTrueNode;
+        @Child private IsNode isNode;
+        @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
+        @Child private PythonBufferAccessLibrary bufferLibrary;
+        @Child private PyCallableCheckNode callableCheckNode;
+        @Child private PyObjectReprAsTruffleStringNode reprNode;
+        @Child private PyObjectGetIter getIterNode;
+        @Child private HashingStorageLen hashingStorageLenNode;
+        @Child private PyTupleCheckNode.CachedNode tupleCheckNode;
+
+        protected SaveNode(int depth) {
+            this.depth = depth;
+        }
 
         protected SequenceStorage getTupleStorage(Object tuple) {
             if (getTupleStorageNode == null) {
@@ -754,69 +817,6 @@ public class PPickler extends PythonBuiltinObject {
             if (pickler.fastNesting-- >= PickleUtils.FAST_NESTING_LIMIT) {
                 pickler.fastMemoRemove(obj);
             }
-        }
-
-        private static final int SEEN_NONE = 1 << 0;
-        private static final int SEEN_BOOLEAN = 1 << 1;
-        private static final int SEEN_INTEGER = 1 << 2;
-        private static final int SEEN_LONG = 1 << 3;
-        private static final int SEEN_PINT = 1 << 4;
-        private static final int SEEN_DOUBLE = 1 << 5;
-        private static final int SEEN_PFLOAT = 1 << 6;
-        private static final int SEEN_BUILTIN_CLASS_TYPE = 1 << 7;
-        private static final int SEEN_BYTES = 1 << 8;
-        private static final int SEEN_TRUFFLE_STRING = 1 << 9;
-        private static final int SEEN_PSTRING = 1 << 10;
-        private static final int SEEN_DICT = 1 << 11;
-        private static final int SEEN_SET = 1 << 12;
-        private static final int SEEN_FROZENSET = 1 << 13;
-        private static final int SEEN_LIST = 1 << 14;
-        private static final int SEEN_TUPLE = 1 << 15;
-        private static final int SEEN_NATIVE_TUPLE = 1 << 16;
-        private static final int SEEN_BYTE_ARRAY = 1 << 17;
-        private static final int SEEN_PICKLE_BUFFER = 1 << 18;
-        private static final int SEEN_MANAGED_CLASS = 1 << 19;
-        private static final int SEEN_NATIVE_CLASS = 1 << 20;
-        private static final int SEEN_FUNCTION = 1 << 21;
-        private static final int SEEN_TYPE = 1 << 22;
-        private static final int SEEN_OBJECT = 1 << 23;
-        private static final int SEEN_INT_STORAGE = 1 << 24;
-        private static final int SEEN_LONG_STORAGE = 1 << 25;
-        private static final int SEEN_DOUBLE_STORAGE = 1 << 26;
-        private static final int SEEN_GENERIC_STORAGE = 1 << 27;
-        private static final int SEEN_CUSTOM_DISPATCH = 1 << 28;
-        private static final int SEEN_REGISTERED_REDUCER = 1 << 29;
-        private static final int SEEN_REDUCE_EX = 1 << 30;
-        private static final int SEEN_REDUCE = 1 << 31;
-        private static final long SEEN_NEWOBJ_EX = 1L << 32;
-        private static final long SEEN_NEWOBJ = 1L << 33;
-        private static final long SEEN_PLAIN_REDUCE = 1L << 34;
-        private static final long SEEN_REDUCE_LISTITEMS = 1L << 35;
-        private static final long SEEN_REDUCE_DICTITEMS = 1L << 36;
-        private static final long SEEN_REDUCE_STATE = 1L << 37;
-        private static final long SEEN_BYPASS_BUFFER = 1L << 38;
-
-        @CompilationFinal private long seenTypes;
-
-        private final int depth;
-        @Child private SaveNode recursiveSaveNode1;
-        @Child private SaveNode recursiveSaveNode2;
-        @Child private SaveNode recursiveSaveNode3;
-        @Child private BoundaryCallData boundaryCallData;
-        @Child private PyLongAsLongNode pyLongAsLongNode;
-        @Child private PyObjectStrAsObjectNode pyObjectStrAsObjectNode;
-        @Child private PyObjectIsTrueNode isTrueNode;
-        @Child private IsNode isNode;
-        @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
-        @Child private PythonBufferAccessLibrary bufferLibrary;
-        @Child private PyCallableCheckNode callableCheckNode;
-        @Child private PyObjectReprAsTruffleStringNode reprNode;
-        @Child private PyObjectGetIter getIterNode;
-        @Child private HashingStorageLen hashingStorageLenNode;
-        @Child private PyTupleCheckNode.CachedNode tupleCheckNode;
-
-        protected SaveNode(int depth) {
-            this.depth = depth;
         }
 
         private void profileSeen(long seen) {
