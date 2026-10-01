@@ -111,12 +111,15 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.OPCODE
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.PICKLE_PROTOCOL_HIGHEST;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.PREFETCH;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.READ_WHOLE_LINE;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_IMPORT_MAPPING;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_PEEK;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_PERSISTENT_LOAD;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_READ;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_READINTO;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_READLINE;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.getValidIntString;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ADD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXTEND;
@@ -126,11 +129,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ASCII_UPPERCASE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -155,6 +162,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -166,6 +174,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
@@ -174,6 +183,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
+import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -396,6 +408,9 @@ public class PUnpickler extends PythonBuiltinObject {
 
     // inner nodes
     public abstract static class BasePickleReadNode extends PicklerNodes.BasePickleNode {
+        @Child private CastToTruffleStringNode castToTruffleStringNode;
+        @Child private ImportName importNameNode;
+        @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private PyMemoryViewFromObject memoryViewNode;
         @Child private MemoryViewBuiltins.ToReadonlyNode toReadonlyNode;
         @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
@@ -409,7 +424,80 @@ public class PUnpickler extends PythonBuiltinObject {
 
         // we only need the reference, doesn't matter that the object may not yet be fully
         // constructed
-        @SuppressWarnings("this-escape") private InteropCallData interopCallData = InteropCallData.createFor(this);
+        @SuppressWarnings("this-escape") private final InteropCallData interopCallData = InteropCallData.createFor(this);
+
+        protected TruffleString castToString(Object value) {
+            if (castToTruffleStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToTruffleStringNode = insert(CastToTruffleStringNode.create());
+            }
+            return castToTruffleStringNode.executeCached(value);
+        }
+
+        private PyObjectReprAsTruffleStringNode getReprNode() {
+            if (reprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reprNode = insert(PyObjectReprAsTruffleStringNode.create());
+            }
+            return reprNode;
+        }
+
+        public Object getattribute(VirtualFrame frame, Object obj, TruffleString name, boolean allowQualname) {
+            if (allowQualname) {
+                TruffleString[] dottedPath = getDottedPath(obj, name);
+                Pair<Object, Object> result = getDeepAttribute(frame, getLookupGlobalAttrNode(), obj, dottedPath);
+                if (result != null) {
+                    return result.getLeft();
+                } else {
+                    throw raise(AttributeError, ErrorMessages.CANT_GET_ATTRIBUTE_S_ON_S, name, getReprNode().execute(frame, null, obj));
+                }
+            } else {
+                Object attr = getLookupGlobalAttrNode().execute(frame, obj, name);
+                if (attr == NO_VALUE) {
+                    throw raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
+                }
+                return attr;
+            }
+        }
+
+        protected Pair<TruffleString, TruffleString> get2To3Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
+            PickleState state = getGlobalState(core);
+            return getMapping(frame, state.nameMapping2To3, state.importMapping2To3, T_CP_NAME_MAPPING, T_CP_IMPORT_MAPPING, moduleName, globalName);
+        }
+
+        public Object findClass(VirtualFrame frame, Python3Core core, PUnpickler self, Object moduleName, Object globalName) {
+            return findClass(frame, core, self, castToString(moduleName), castToString(globalName));
+        }
+
+        public Object findClass(VirtualFrame frame, Python3Core core, PUnpickler self, TruffleString moduleName, TruffleString globalName) {
+            // Try to map the old names used in Python 2.x to the new ones used in Python 3.x. We do
+            // this only with old pickle protocols and when the user has not disabled the feature.
+            TruffleString mName = moduleName;
+            TruffleString gName = globalName;
+            if (self.getProto() < 3 && self.isFixImports()) {
+                final Pair<TruffleString, TruffleString> to3Mapping = get2To3Mapping(frame, core, mName, gName);
+                mName = to3Mapping.getLeft();
+                gName = to3Mapping.getRight();
+            }
+
+            if (importNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                importNameNode = insert(ImportNameNodeGen.create());
+            }
+            // ImportName checks initialization for cached modules and honors custom import hooks.
+            // With an empty fromlist, a dotted import returns the top-level package, so look up
+            // the requested module by its full name after importing for side effects.
+            importNameNode.execute(frame, PythonContext.get(this), core.getBuiltins(), mName, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
+            Object module = getDictItem(frame, core.getSysModules(), mName);
+            if (module == null) {
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, KeyError, new Object[]{mName});
+            }
+            if (!(module instanceof PythonModule)) {
+                throw raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED);
+            }
+            return getattribute(frame, module, gName, self.getProto() >= 4);
+        }
 
         protected TruffleString.ParseLongNode ensureTsParseLongNode() {
             if (tsParseLongNode == null) {

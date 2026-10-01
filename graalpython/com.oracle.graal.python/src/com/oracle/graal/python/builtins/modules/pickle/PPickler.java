@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.pickle;
 
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_IMPORT_MAPPING;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_STR_NOT_P;
@@ -68,6 +70,7 @@ import java.util.WeakHashMap;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -479,12 +482,6 @@ public class PPickler extends PythonBuiltinObject {
         outputBuffer[outputLen++] = intByte2(value);
         outputBuffer[outputLen++] = intByte3(value);
         outputBuffer[outputLen++] = intByte4(value);
-    }
-
-    private void write(Node node, byte[] bytes, int dataLen) {
-        ensureBufferSpace(node, dataLen);
-        PythonUtils.arraycopy(bytes, 0, outputBuffer, outputLen, dataLen);
-        outputLen += dataLen;
     }
 
     private void ensureBufferSpace(Node node, int dataLen) {
@@ -2158,6 +2155,11 @@ public class PPickler extends PythonBuiltinObject {
             } else {
                 saveGlobal(frame, ctx, pickler, proto, fastMode, obj, null);
             }
+        }
+
+        protected Pair<TruffleString, TruffleString> get3to2Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
+            PickleState state = getGlobalState(core);
+            return getMapping(frame, state.nameMapping3To2, state.importMapping3To2, T_CP_REVERSE_NAME_MAPPING, T_CP_REVERSE_IMPORT_MAPPING, moduleName, globalName);
         }
 
         private void saveGlobal(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, Object obj, Object name) {
