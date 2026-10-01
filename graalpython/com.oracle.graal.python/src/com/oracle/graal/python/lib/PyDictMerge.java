@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 /** Equivalent to {@code PyDict_Merge(target, mapping, 1)}. */
@@ -116,6 +118,7 @@ public abstract class PyDictMerge extends PNodeWithContext {
                         @Cached HashingStorageGetIterator getMappingIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageLen mappingLenNode,
+                        @Cached InlinedConditionProfile targetIsMapProfile,
                         @Cached PRaiseNode raiseNode) {
             if (target == mapping) {
                 return;
@@ -123,6 +126,10 @@ public abstract class PyDictMerge extends PNodeWithContext {
             HashingStorage targetStorage = getStorageNode.execute(inliningTarget, target);
             HashingStorage mappingStorage = mapping.getDictStorage();
             int initialSize = mappingLenNode.execute(inliningTarget, mappingStorage);
+            if (targetIsMapProfile.profile(inliningTarget, targetStorage instanceof EconomicMapStorage)) {
+                EconomicMapStorage map = (EconomicMapStorage) targetStorage;
+                map.ensureCapacity((long) map.size() + initialSize);
+            }
             HashingStorageIterator iterator = getMappingIter.execute(inliningTarget, mappingStorage);
             HashingStorage newStorage = targetStorage;
             while (iterNext.execute(inliningTarget, mappingStorage, iterator)) {

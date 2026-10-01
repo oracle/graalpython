@@ -130,6 +130,121 @@ def test_set_attr_builtins():
     assert mlst.a == 10
 
 
+def test_dir_many_attributes():
+    class Meta(type):
+        pass
+
+    cls = object
+    for depth in range(4):
+        cls = Meta(f"Level{depth}", (cls,), {f"attr_{depth}_{i}": i for i in range(200)})
+    obj = cls()
+    for i in range(200):
+        setattr(obj, f"instance_{i}", i)
+    obj.attr_0_0 = "shadowed"
+    del obj.instance_5
+    del cls.attr_3_5
+    before = obj.__dict__.copy()
+    expected = set(before)
+    for base in cls.__mro__:
+        expected.update(base.__dict__)
+    names = object.__dir__(obj)
+    assert len(names) == len(expected)
+    assert set(names) == expected
+    assert dir(obj) == sorted(expected)
+    assert obj.__dict__ == before
+
+
+def test_dir_replaced_dict():
+    class C:
+        class_attr = 1
+
+    obj = C()
+    obj.old = 1
+    assert "old" in object.__dir__(obj)
+    obj.__dict__ = {"new": 2, 42: "non-string key", "class_attr": 3}
+    expected = set(obj.__dict__) | set(C.__dict__) | set(object.__dict__)
+    names = object.__dir__(obj)
+    assert len(names) == len(expected)
+    assert set(names) == expected
+    assert obj.__dict__ == {"new": 2, 42: "non-string key", "class_attr": 3}
+    assert_raises(TypeError, dir, obj)
+
+
+def test_dir_dict_subclass():
+    class Dict(dict):
+        def keys(self):
+            raise AssertionError("must copy the dict, not call keys")
+
+    class C:
+        @property
+        def __dict__(self):
+            return Dict(instance_attr=1)
+
+    assert set(object.__dir__(C())) == {"instance_attr"} | set(C.__dict__) | set(object.__dict__)
+
+
+def test_dir_custom_attribute_lookup():
+    class FakeClass:
+        def __init__(self, namespace, bases):
+            self.namespace = namespace
+            self.__bases__ = bases
+
+        @property
+        def __dict__(self):
+            return self.namespace
+
+    fake_base = FakeClass({"base_attr": 1}, ())
+    fake_class = FakeClass({"class_attr": 1}, (fake_base,))
+    lookups = []
+
+    class C:
+        def __getattribute__(self, name):
+            lookups.append(name)
+            if name == "__dict__":
+                return {"instance_attr": 1, "class_attr": 2}
+            if name == "__class__":
+                return fake_class
+            raise AssertionError(name)
+
+    assert set(object.__dir__(C())) == {"instance_attr", "class_attr", "base_attr"}
+    assert lookups == ["__dict__", "__class__"]
+
+
+def test_dir_missing_or_invalid_attributes():
+    from types import MappingProxyType
+
+    class C:
+        def __getattribute__(self, name):
+            if name == "__dict__":
+                return namespace
+            raise AttributeError(name)
+
+    for namespace in (None, {"present": 1}, MappingProxyType({"ignored": 1}), ["ignored"]):
+        assert object.__dir__(C()) == (["present"] if isinstance(namespace, dict) else [])
+
+    class Missing:
+        def __getattribute__(self, name):
+            raise AttributeError(name)
+
+    assert object.__dir__(Missing()) == []
+
+    class Slots:
+        __slots__ = ("slot",)
+
+    assert set(object.__dir__(Slots())) == set(Slots.__dict__) | set(object.__dict__)
+
+
+def test_dir_propagates_lookup_errors():
+    for failing_name in ("__dict__", "__class__"):
+        class C:
+            def __getattribute__(self, name):
+                if name == failing_name:
+                    raise RuntimeError(name)
+                return object.__getattribute__(self, name)
+
+        assert_raises(RuntimeError, object.__dir__, C())
+
+
 def test_set_dict_attr_with_getattr_defined():
     class MyOtherClass(object):
         def __getattribute__(self, item):

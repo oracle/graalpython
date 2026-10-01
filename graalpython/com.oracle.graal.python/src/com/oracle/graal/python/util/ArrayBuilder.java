@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.util;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 
 /**
@@ -94,6 +95,15 @@ public final class ArrayBuilder<T> {
         return (T) data[size - 1];
     }
 
+    public boolean containsIdentical(Object o) {
+        for (int i = 0; i < size; i++) {
+            if (data[i] == o) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @SuppressWarnings("unchecked")
     public T[] toArray(T[] newArray) {
         return (T[]) arrayCopyOf(data, size, newArray.getClass());
@@ -102,6 +112,13 @@ public final class ArrayBuilder<T> {
     public Object[] toObjectArray() {
         Object[] newArray = new Object[size];
         return arrayCopyOf(data, size, newArray.getClass());
+    }
+
+    /**
+     * The backing array may be overallocated!
+     */
+    public ObjectSequenceStorage toObjectSequenceStorage() {
+        return new ObjectSequenceStorage(data, size);
     }
 
     public int size() {

@@ -97,6 +97,44 @@ public class ObjectHashMapTests {
     }
 
     @Test
+    public void testEnsureCapacity() {
+        ObjectHashMap map = new ObjectHashMap();
+        LinkedHashMap<Long, Object> expected = new LinkedHashMap<>();
+        map.ensureCapacity(0);
+        assertEqual("empty reservation", expected, map);
+
+        map.ensureCapacity(32);
+        for (long key = 0; key < 32; key++) {
+            Object value = newValue();
+            put(map, key, getKeyHash(key), value);
+            expected.put(key, value);
+        }
+        map.ensureCapacity(map.size());
+        map.ensureCapacity(33);
+        assertEqual("reservation within existing capacity", expected, map);
+
+        removeValues(map, expected, new Random(42), 4);
+        map.ensureCapacity(map.size());
+        map.ensureCapacity(map.size() + 20);
+        assertEqual("reservation after deletion", expected, map);
+        for (long key = 32; key < 52; key++) {
+            Object value = newValue();
+            put(map, key, getKeyHash(key), value);
+            expected.put(key, value);
+        }
+        assertEqual("insertions after reservation", expected, map);
+
+        ObjectHashMap fullMap = new ObjectHashMap();
+        Object value = newValue();
+        put(fullMap, 0L, getKeyHash(0L), value);
+        LinkedHashMap<Long, Object> singleEntry = new LinkedHashMap<>();
+        singleEntry.put(0L, value);
+        // Clamp speculative capacity, including requests exceeding Integer.MAX_VALUE.
+        fullMap.ensureCapacity((long) fullMap.size() + Integer.MAX_VALUE);
+        assertEqual("bounded reservation", singleEntry, fullMap);
+    }
+
+    @Test
     public void testCollisionsByPuttingManyKeysWithSameHash() {
         ObjectHashMap map = new ObjectHashMap();
         LinkedHashMap<DictKey, Object> expected = new LinkedHashMap<>();
