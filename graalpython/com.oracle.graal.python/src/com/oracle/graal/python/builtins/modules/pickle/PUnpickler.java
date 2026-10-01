@@ -362,7 +362,7 @@ public class PUnpickler extends PythonBuiltinObject {
     }
 
     public void memoPut(int idx, Object value) {
-        if (idx >= memo.length) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, idx >= memo.length)) {
             resizeMemoList(idx * 2);
             assert idx < memo.length;
         }
@@ -540,7 +540,7 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         protected int read(VirtualFrame frame, PUnpickler self, int n) {
-            if (n <= self.inputLen - self.nextReadIdx) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.FASTPATH_PROBABILITY, n <= self.inputLen - self.nextReadIdx)) {
                 int offset = self.nextReadIdx;
                 self.nextReadIdx += n;
                 return offset;
