@@ -406,6 +406,8 @@ public class PUnpickler extends PythonBuiltinObject {
 
         @Child private TruffleString.ParseIntNode tsParseIntNode;
 
+        @CompilationFinal private boolean seenFileRead;
+
         // we only need the reference, doesn't matter that the object may not yet be fully
         // constructed
         @SuppressWarnings("this-escape") private InteropCallData interopCallData = InteropCallData.createFor(this);
@@ -544,6 +546,10 @@ public class PUnpickler extends PythonBuiltinObject {
                 int offset = self.nextReadIdx;
                 self.nextReadIdx += n;
                 return offset;
+            }
+            if (!seenFileRead) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenFileRead = true;
             }
             return readImpl(frame, self, n);
         }
