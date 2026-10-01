@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_R
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -74,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
@@ -150,7 +148,7 @@ public final class PicklerNodes {
         @Child private TruffleString.FromByteArrayNode tsFromByteArrayNode;
         @Child private TruffleString.FromByteArrayWithCompactionUTF32Node tsFromByteArrayWithCompactionNode;
         @Child private TruffleString.CodePointLengthNode tsCodePointLengthNode;
-        @Child private TruffleString.IndexOfStringNode tsIndexOfStringNode;
+        @Child private TruffleString.IndexOfCodePointNode tsIndexOfCodePointNode;
         @Child private TruffleString.SubstringNode tsSubstringNode;
         @Child private TruffleString.EqualNode tsEqualNode;
         @Child private TruffleString.SwitchEncodingNode tsSwitchEncodingNode;
@@ -200,12 +198,12 @@ public final class PicklerNodes {
             return tsCodePointLengthNode;
         }
 
-        protected TruffleString.IndexOfStringNode ensureTsIndexOfStringNode() {
-            if (tsIndexOfStringNode == null) {
+        protected TruffleString.IndexOfCodePointNode ensureTsIndexOfCodePointNode() {
+            if (tsIndexOfCodePointNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsIndexOfStringNode = insert(TruffleString.IndexOfStringNode.create());
+                tsIndexOfCodePointNode = insert(TruffleString.IndexOfCodePointNode.create());
             }
-            return tsIndexOfStringNode;
+            return tsIndexOfCodePointNode;
         }
 
         protected TruffleString.SubstringNode ensureTsSubstringNode() {
@@ -574,9 +572,39 @@ public final class PicklerNodes {
             return Pair.create(object, parent);
         }
 
+        private TruffleString[] splitDottedPath(TruffleString name) {
+            int length = ensureTsCodePointLengthNode().execute(name, TS_ENCODING);
+            TruffleString.IndexOfCodePointNode indexOf = ensureTsIndexOfCodePointNode();
+            int firstDot = length == 0 ? -1 : indexOf.execute(name, '.', 0, length, TS_ENCODING);
+            if (firstDot < 0) {
+                return new TruffleString[]{name};
+            }
+
+            // Count the components so that we can allocate the result without growing or copying it.
+            int parts = 2;
+            int start = firstDot + 1;
+            while (start < length) {
+                int dot = indexOf.execute(name, '.', start, length, TS_ENCODING);
+                if (dot < 0) {
+                    break;
+                }
+                parts++;
+                start = dot + 1;
+            }
+            TruffleString[] dottedPath = new TruffleString[parts];
+            TruffleString.SubstringNode substring = ensureTsSubstringNode();
+            start = 0;
+            int part = 0;
+            for (int dot = firstDot; dot >= 0; dot = start < length ? indexOf.execute(name, '.', start, length, TS_ENCODING) : -1) {
+                dottedPath[part++] = substring.execute(name, start, dot - start, TS_ENCODING, false);
+                start = dot + 1;
+            }
+            dottedPath[part] = substring.execute(name, start, length - start, TS_ENCODING, false);
+            return dottedPath;
+        }
+
         public TruffleString[] getDottedPath(Object obj, TruffleString name) {
-            TruffleString[] dottedPath = StringUtils.split(name, T_DOT, ensureTsCodePointLengthNode(), ensureTsIndexOfStringNode(), ensureTsSubstringNode(), ensureTsEqualNode());
-            assert dottedPath.length > 0;
+            TruffleString[] dottedPath = splitDottedPath(name);
             for (int i = 0; i < dottedPath.length; i++) {
                 if (ensureTsEqualNode().execute(dottedPath[i], T_LOCALS, TS_ENCODING)) {
                     if (obj == null) {
