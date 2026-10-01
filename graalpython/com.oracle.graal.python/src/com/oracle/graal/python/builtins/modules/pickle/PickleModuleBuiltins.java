@@ -256,8 +256,8 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter) {
             try {
                 PUnpickler unpickler = PFactory.createUnpickler(language);
-                byte[] data = bufferLib.getCopiedByteArray(buffer);
-                unpickler.setStringInput(data, data.length);
+                byte[] data = bufferLib.getInternalOrCopiedByteArray(buffer);
+                unpickler.setStringInput(data, bufferLib.getBufferLength(buffer));
                 unpickler.setInputEncoding(encoding, errors);
                 unpickler.setBuffers(frame, inliningTarget, getIter, buffers);
                 unpickler.setFixImports(fixImports);
