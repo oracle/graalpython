@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -214,15 +213,15 @@ public final class PickleUtils {
     public static final TruffleString T_PROTO_LE2_TRUE = tsLiteral("I01\n");
     public static final TruffleString T_PROTO_LE2_FALSE = tsLiteral("I00\n");
 
-    @ExplodeLoop
     public static void writeSize64(byte[] out, int start, int value) {
-        final int sizeofSizeT = Integer.BYTES;
-        for (int i = 0; i < sizeofSizeT; i++) {
-            out[start + i] = (byte) ((value >> (8 * i)) & 0xff);
-        }
-        for (int i = sizeofSizeT; i < 8; i++) {
-            out[start + i] = 0;
-        }
+        out[start] = (byte) value;
+        out[start + 1] = (byte) (value >> 8);
+        out[start + 2] = (byte) (value >> 16);
+        out[start + 3] = (byte) (value >> 24);
+        out[start + 4] = 0;
+        out[start + 5] = 0;
+        out[start + 6] = 0;
+        out[start + 7] = 0;
     }
 
     public static int getStringSize(byte[] bytes) {

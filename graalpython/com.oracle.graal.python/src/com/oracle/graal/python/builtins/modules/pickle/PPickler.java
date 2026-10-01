@@ -379,13 +379,11 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         int frameLen = outputLen - frameStart - PickleUtils.FRAME_HEADER_SIZE;
-        ByteArrayView qdata = new ByteArrayView(outputBuffer, frameStart);
         if (frameLen >= PickleUtils.FRAME_SIZE_MIN) {
-            qdata.put(0, PickleUtils.OPCODE_FRAME);
-            qdata.add(1);
-            qdata.writeSize64(frameLen);
+            outputBuffer[frameStart] = PickleUtils.OPCODE_FRAME;
+            PickleUtils.writeSize64(outputBuffer, frameStart + 1, frameLen);
         } else {
-            qdata.memmove(PickleUtils.FRAME_HEADER_SIZE, frameLen);
+            PythonUtils.arraycopy(outputBuffer, frameStart + PickleUtils.FRAME_HEADER_SIZE, outputBuffer, frameStart, frameLen);
             outputLen -= PickleUtils.FRAME_HEADER_SIZE;
         }
         frameStart = -1;

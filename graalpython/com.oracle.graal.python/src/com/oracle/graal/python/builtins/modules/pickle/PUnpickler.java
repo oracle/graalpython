@@ -534,19 +534,20 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         protected byte read(VirtualFrame frame, PUnpickler self) {
-            return read(frame, self, 1).get(0);
+            int offset = read(frame, self, 1);
+            return self.inputBuffer[offset];
         }
 
-        protected ByteArrayView read(VirtualFrame frame, PUnpickler self, int n) {
+        protected int read(VirtualFrame frame, PUnpickler self, int n) {
             if (n <= self.inputLen - self.nextReadIdx) {
-                ByteArrayView bytesView = new ByteArrayView(self.inputBuffer, self.nextReadIdx);
+                int offset = self.nextReadIdx;
                 self.nextReadIdx += n;
-                return bytesView;
+                return offset;
             }
             return readImpl(frame, self, n);
         }
 
-        private ByteArrayView readImpl(VirtualFrame frame, PUnpickler self, int n) {
+        private int readImpl(VirtualFrame frame, PUnpickler self, int n) {
             int numRead;
             // TODO: when GR-24978 is completed we should use PY_SSIZE_T_MAX
             if (self.nextReadIdx > Integer.MAX_VALUE - 1) {
@@ -563,7 +564,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 throw badReadLine();
             }
             self.nextReadIdx = n;
-            return new ByteArrayView(self.inputBuffer);
+            return 0;
         }
 
         protected int readInto(VirtualFrame frame, PUnpickler self, byte[] buffer) {
@@ -722,12 +723,12 @@ public class PUnpickler extends PythonBuiltinObject {
             return tupleCheck.execute(object);
         }
 
-        protected Object longFromBytes(byte[] data, boolean littleEndian) {
+        protected Object longFromBytes(byte[] data, int offset, int length, boolean littleEndian) {
             if (pyLongFromByteArray == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 pyLongFromByteArray = insert(IntNodesFactory.PyLongFromByteArrayNodeGen.create());
             }
-            return pyLongFromByteArray.executeCached(data, littleEndian, true);
+            return pyLongFromByteArray.executeCached(data, offset, length, littleEndian, true);
         }
 
         protected void setAttribute(VirtualFrame frame, Object object, Object key, Object value) {
@@ -809,11 +810,11 @@ public class PUnpickler extends PythonBuiltinObject {
             pDataPush(self, PNone.NONE);
         }
 
-        private static long calcBinInt(ByteArrayView s, int nBytes) {
+        private static long calcBinInt(byte[] s, int offset, int nBytes) {
             long x = 0;
 
             for (int i = 0; i < nBytes; i++) {
-                x |= (long) s.getUnsigned(i) << (8 * i);
+                x |= (long) (s[offset + i] & 0xff) << (8 * i);
             }
 
             // Unlike BININT1 and BININT2, BININT (more accurately BININT4) is signed, so on a box
@@ -826,7 +827,7 @@ public class PUnpickler extends PythonBuiltinObject {
             return x;
         }
 
-        private int calcBinSize(ByteArrayView s, int nbytes) {
+        private int calcBinSize(byte[] s, int offset, int nbytes) {
             int i;
             int x = 0;
             int n = nbytes;
@@ -836,7 +837,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 // Check for integer overflow. BINBYTES8 and BINUNICODE8 opcodes have 64-bit size
                 // that can't be represented on 32-bit platform.
                 for (i = Integer.BYTES; i < n; i++) {
-                    if (s.get(i) != 0) {
+                    if (s[offset + i] != 0) {
                         throw raise(PythonBuiltinClassType.OverflowError);
                     }
                 }
@@ -844,7 +845,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             for (i = 0; i < n; i++) {
-                x |= s.getUnsigned(i) << (8 * i);
+                x |= (s[offset + i] & 0xff) << (8 * i);
             }
 
             // TODO: GR-24978 check for PY_SSIZE_T_MAX (see: _cpickle.c:calc_binsize)
@@ -855,24 +856,24 @@ public class PUnpickler extends PythonBuiltinObject {
             return x;
         }
 
-        private void loadBinIntX(PUnpickler self, ByteArrayView s, int size) {
-            long x = calcBinInt(s, size);
+        private void loadBinIntX(PUnpickler self, int offset, int size) {
+            long x = calcBinInt(self.inputBuffer, offset, size);
             pDataPush(self, x);
         }
 
         private void loadBinInt(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 4);
-            loadBinIntX(self, s, 4);
+            int offset = read(frame, self, 4);
+            loadBinIntX(self, offset, 4);
         }
 
         private void loadBinInt1(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 1);
-            loadBinIntX(self, s, 1);
+            int offset = read(frame, self, 1);
+            loadBinIntX(self, offset, 1);
         }
 
         private void loadBinInt2(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 2);
-            loadBinIntX(self, s, 2);
+            int offset = read(frame, self, 2);
+            loadBinIntX(self, offset, 2);
         }
 
         private void loadInt(VirtualFrame frame, PUnpickler self) {
@@ -922,8 +923,8 @@ public class PUnpickler extends PythonBuiltinObject {
         private void loadCountedLong(VirtualFrame frame, PUnpickler self, int n) {
             assert n == 1 || n == 4;
             int size = n;
-            final ByteArrayView nbytes = read(frame, self, size);
-            size = (int) calcBinInt(nbytes, size);
+            int sizeOffset = read(frame, self, size);
+            size = (int) calcBinInt(self.inputBuffer, sizeOffset, size);
 
             Object value;
 
@@ -935,8 +936,8 @@ public class PUnpickler extends PythonBuiltinObject {
                 value = 0L;
             } else {
                 // Read the raw little-endian bytes and convert.
-                final ByteArrayView pdata = read(frame, self, size);
-                value = longFromBytes(pdata.getBytes(size), true);
+                int dataOffset = read(frame, self, size);
+                value = longFromBytes(self.inputBuffer, dataOffset, size, true);
             }
             pDataPush(self, value);
         }
@@ -956,15 +957,15 @@ public class PUnpickler extends PythonBuiltinObject {
 
         private void loadBinFloat(VirtualFrame frame, PUnpickler self) {
             Object value;
-            ByteArrayView s = read(frame, self, 8);
+            int offset = read(frame, self, 8);
 
-            value = NumericSupport.bigEndian().getDouble(s.getBytes(Double.BYTES), 0);
+            value = NumericSupport.bigEndian().getDouble(self.inputBuffer, offset);
             pDataPush(self, value);
         }
 
         private void loadCountedBinBytes(VirtualFrame frame, PUnpickler self, int nbytes) {
-            final ByteArrayView s = read(frame, self, nbytes);
-            int size = calcBinSize(s, nbytes);
+            int offset = read(frame, self, nbytes);
+            int size = calcBinSize(self.inputBuffer, offset, nbytes);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BINBYTES", Integer.MAX_VALUE);
             }
@@ -977,8 +978,8 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadCountedByteArray(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 8);
-            int size = calcBinSize(s, 8);
+            int offset = read(frame, self, 8);
+            int size = calcBinSize(self.inputBuffer, offset, 8);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BYTEARRAY8", Integer.MAX_VALUE);
             }
@@ -1025,18 +1026,18 @@ public class PUnpickler extends PythonBuiltinObject {
 
         private void loadCountedBinString(VirtualFrame frame, PUnpickler self, int nbytes) {
             Object obj;
-            ByteArrayView s = read(frame, self, nbytes);
+            int offset = read(frame, self, nbytes);
 
-            int size = calcBinSize(s, nbytes);
+            int size = calcBinSize(self.inputBuffer, offset, nbytes);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BINSTRING", Integer.MAX_VALUE);
             }
 
-            s = read(frame, self, size);
+            offset = read(frame, self, size);
 
             // Convert Python 2.x strings to bytes if the *encoding* given to the Unpickler was
             // 'bytes'. Otherwise, convert them to unicode.
-            final PBytes bytes = PFactory.createBytes(PythonLanguage.get(this), s.getBytes(size), size);
+            final PBytes bytes = PFactory.createBytes(PythonLanguage.get(this), PythonUtils.arrayCopyOfRange(self.inputBuffer, offset, offset + size));
             if (ensureTsEqualNode().execute(self.encoding, T_CODEC_BYTES, TS_ENCODING)) {
                 obj = bytes;
             } else {
@@ -1095,16 +1096,16 @@ public class PUnpickler extends PythonBuiltinObject {
 
         private void loadBinCountedUnicode(VirtualFrame frame, PUnpickler self, int nbytes) {
             Object str;
-            ByteArrayView s = read(frame, self, nbytes);
+            int offset = read(frame, self, nbytes);
 
-            int size = calcBinSize(s, nbytes);
+            int size = calcBinSize(self.inputBuffer, offset, nbytes);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BINUNICODE", Integer.MAX_VALUE);
             }
 
-            s = read(frame, self, size);
+            offset = read(frame, self, size);
 
-            str = decodeUTF8(frame, s, size, T_ERRORS_SURROGATEPASS);
+            str = decodeUTF8(frame, self.inputBuffer, offset, size, T_ERRORS_SURROGATEPASS);
             pDataPush(self, str);
         }
 
@@ -1499,8 +1500,8 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadLongBinGet(VirtualFrame frame, PUnpickler self) {
-            ByteArrayView s = read(frame, self, 4);
-            int idx = calcBinSize(s, 4);
+            int offset = read(frame, self, 4);
+            int idx = calcBinSize(self.inputBuffer, offset, 4);
 
             Object value = self.memoGet(idx);
             if (value == null) {
@@ -1559,13 +1560,13 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadLongBinPut(VirtualFrame frame, PUnpickler self) {
-            ByteArrayView s = read(frame, self, 4);
+            int offset = read(frame, self, 4);
             if (self.stack.size <= self.stack.fence) {
                 throw pDataStackRaiseUnderflow(self);
             }
 
             Object value = self.stack.data[self.stack.size - 1];
-            int idx = calcBinSize(s, 4);
+            int idx = calcBinSize(self.inputBuffer, offset, 4);
             if (idx < 0) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.NEG_S_ARG, "LONG_BINPUT");
             }
@@ -1717,9 +1718,9 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadProto(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 1);
+            int offset = read(frame, self, 1);
 
-            int i = s.getUnsigned(0);
+            int i = self.inputBuffer[offset] & 0xff;
             if (i <= PICKLE_PROTOCOL_HIGHEST) {
                 self.proto = i;
                 return;
@@ -1729,14 +1730,14 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadFrame(VirtualFrame frame, PUnpickler self) {
-            ByteArrayView s = read(frame, self, 8);
+            int offset = read(frame, self, 8);
 
-            int frameLen = calcBinSize(s, 8);
+            int frameLen = calcBinSize(self.inputBuffer, offset, 8);
             if (frameLen < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "FRAME", Integer.MAX_VALUE);
             }
 
-            s = read(frame, self, frameLen);
+            read(frame, self, frameLen);
 
             // Rewind to start of frame
             self.nextReadIdx -= frameLen;
@@ -1745,9 +1746,9 @@ public class PUnpickler extends PythonBuiltinObject {
         private void loadExtension(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self, int nbytes) {
             assert (nbytes == 1 || nbytes == 2 || nbytes == 4);
             // the nbytes bytes after the opcode
-            ByteArrayView codebytes = read(frame, self, nbytes);
+            int codeOffset = read(frame, self, nbytes);
             // calc_binint returns long
-            long code = calcBinInt(codebytes, nbytes);
+            long code = calcBinInt(self.inputBuffer, codeOffset, nbytes);
 
             if (code <= 0) {
                 // note that 0 is forbidden

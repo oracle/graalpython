@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -181,10 +181,14 @@ public final class IntNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateUncached
     public abstract static class PyLongFromByteArray extends Node {
-        public abstract Object execute(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed);
+        public abstract Object execute(Node inliningTarget, byte[] data, int offset, int length, boolean littleEndian, boolean signed);
 
-        public final Object executeCached(byte[] data, boolean littleEndian, boolean signed) {
-            return execute(this, data, littleEndian, signed);
+        public final Object execute(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed) {
+            return execute(inliningTarget, data, 0, data.length, littleEndian, signed);
+        }
+
+        public final Object executeCached(byte[] data, int offset, int length, boolean littleEndian, boolean signed) {
+            return execute(this, data, offset, length, littleEndian, signed);
         }
 
         public static Object executeUncached(byte[] data, boolean littleEndian, boolean signed) {
@@ -192,7 +196,7 @@ public final class IntNodes {
         }
 
         @Specialization
-        static Object doOther(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed,
+        static Object doOther(Node inliningTarget, byte[] data, int offset, int length, boolean littleEndian, boolean signed,
                         @Cached InlinedBranchProfile fastPath1,
                         @Cached InlinedBranchProfile fastPath2,
                         @Cached InlinedBranchProfile fastPath4,
@@ -201,28 +205,28 @@ public final class IntNodes {
                         @Cached PRaiseNode raiseNode) {
             NumericSupport support = littleEndian ? NumericSupport.littleEndian() : NumericSupport.bigEndian();
             if (signed) {
-                switch (data.length) {
+                switch (length) {
                     case 1 -> {
                         fastPath1.enter(inliningTarget);
-                        return (int) support.getByte(data, 0);
+                        return (int) support.getByte(data, offset);
                     }
                     case 2 -> {
                         fastPath2.enter(inliningTarget);
-                        return (int) support.getShort(data, 0);
+                        return (int) support.getShort(data, offset);
                     }
                     case 4 -> {
                         fastPath4.enter(inliningTarget);
-                        return support.getInt(data, 0);
+                        return support.getInt(data, offset);
                     }
                     case 8 -> {
                         fastPath8.enter(inliningTarget);
-                        return support.getLong(data, 0);
+                        return support.getLong(data, offset);
                     }
                 }
             }
             generic.enter(inliningTarget);
             try {
-                BigInteger integer = support.getBigInteger(data, signed);
+                BigInteger integer = support.getBigInteger(data, offset, length, signed);
                 if (PInt.bigIntegerFitsInLong(integer)) {
                     long longValue = PInt.longValue(integer);
                     return PInt.isIntRange(longValue) ? (int) longValue : longValue;

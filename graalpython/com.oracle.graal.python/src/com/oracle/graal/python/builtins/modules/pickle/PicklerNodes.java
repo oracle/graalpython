@@ -102,6 +102,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -326,8 +327,8 @@ public final class PicklerNodes {
             return decode(frame, PFactory.createBytes(PythonLanguage.get(this), bytes, len), T_CODEC_ASCII, errors);
         }
 
-        protected Object decodeUTF8(VirtualFrame frame, ByteArrayView bytes, int len, TruffleString errors) {
-            return decode(frame, PFactory.createBytes(PythonLanguage.get(this), bytes.getBytes(len), len), T_UTF8, errors);
+        protected Object decodeUTF8(VirtualFrame frame, byte[] bytes, int offset, int len, TruffleString errors) {
+            return decode(frame, PFactory.createBytes(PythonLanguage.get(this), PythonUtils.arrayCopyOfRange(bytes, offset, offset + len)), T_UTF8, errors);
         }
 
         protected Object decode(VirtualFrame frame, Object value, TruffleString encoding) {
