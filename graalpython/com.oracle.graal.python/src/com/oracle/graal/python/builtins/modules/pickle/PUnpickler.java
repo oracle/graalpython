@@ -183,6 +183,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -684,6 +685,78 @@ public class PUnpickler extends PythonBuiltinObject {
     }
 
     public abstract static class LoadNode extends BasePickleReadNode {
+        private static final int SEEN_NONE = 0;
+        private static final int SEEN_BININT = 1;
+        private static final int SEEN_BININT1 = 2;
+        private static final int SEEN_BININT2 = 3;
+        private static final int SEEN_INT = 4;
+        private static final int SEEN_LONG = 5;
+        private static final int SEEN_LONG1 = 6;
+        private static final int SEEN_LONG4 = 7;
+        private static final int SEEN_FLOAT = 8;
+        private static final int SEEN_BINFLOAT = 9;
+        private static final int SEEN_SHORT_BINBYTES = 10;
+        private static final int SEEN_BINBYTES = 11;
+        private static final int SEEN_BINBYTES8 = 12;
+        private static final int SEEN_BYTEARRAY8 = 13;
+        private static final int SEEN_NEXT_BUFFER = 14;
+        private static final int SEEN_READONLY_BUFFER = 15;
+        private static final int SEEN_SHORT_BINSTRING = 16;
+        private static final int SEEN_BINSTRING = 17;
+        private static final int SEEN_STRING = 18;
+        private static final int SEEN_UNICODE = 19;
+        private static final int SEEN_SHORT_BINUNICODE = 20;
+        private static final int SEEN_BINUNICODE = 21;
+        private static final int SEEN_BINUNICODE8 = 22;
+        private static final int SEEN_EMPTY_TUPLE = 23;
+        private static final int SEEN_TUPLE1 = 24;
+        private static final int SEEN_TUPLE2 = 25;
+        private static final int SEEN_TUPLE3 = 26;
+        private static final int SEEN_TUPLE = 27;
+        private static final int SEEN_EMPTY_LIST = 28;
+        private static final int SEEN_LIST = 29;
+        private static final int SEEN_EMPTY_DICT = 30;
+        private static final int SEEN_DICT = 31;
+        private static final int SEEN_EMPTY_SET = 32;
+        private static final int SEEN_ADDITEMS = 33;
+        private static final int SEEN_FROZENSET = 34;
+        private static final int SEEN_OBJ = 35;
+        private static final int SEEN_INST = 36;
+        private static final int SEEN_NEWOBJ = 37;
+        private static final int SEEN_NEWOBJ_EX = 38;
+        private static final int SEEN_GLOBAL = 39;
+        private static final int SEEN_STACK_GLOBAL = 40;
+        private static final int SEEN_APPEND = 41;
+        private static final int SEEN_APPENDS = 42;
+        private static final int SEEN_BUILD = 43;
+        private static final int SEEN_DUP = 44;
+        private static final int SEEN_BINGET = 45;
+        private static final int SEEN_LONG_BINGET = 46;
+        private static final int SEEN_GET = 47;
+        private static final int SEEN_MARK = 48;
+        private static final int SEEN_BINPUT = 49;
+        private static final int SEEN_LONG_BINPUT = 50;
+        private static final int SEEN_PUT = 51;
+        private static final int SEEN_MEMOIZE = 52;
+        private static final int SEEN_POP = 53;
+        private static final int SEEN_POP_MARK = 54;
+        private static final int SEEN_SETITEM = 55;
+        private static final int SEEN_SETITEMS = 56;
+        private static final int SEEN_PERSID = 57;
+        private static final int SEEN_BINPERSID = 58;
+        private static final int SEEN_REDUCE = 59;
+        private static final int SEEN_PROTO = 60;
+        private static final int SEEN_FRAME = 61;
+        private static final int SEEN_EXT1 = 62;
+        private static final int SEEN_EXT2 = 63;
+        private static final int SEEN_EXT4 = 64;
+        private static final int SEEN_NEWTRUE = 65;
+        private static final int SEEN_NEWFALSE = 66;
+        private static final int SEEN_STOP = 67;
+
+        @CompilationFinal private long seenOpcodes0;
+        @CompilationFinal private long seenOpcodes1;
+
         @Child private PData.PDataPushNode pDataPushNode;
         @Child private PData.PDataPopNode pDataPopNode;
         @Child private PData.PDataPopTupleNode pDataPopTupleNode;
@@ -698,6 +771,22 @@ public class PUnpickler extends PythonBuiltinObject {
         @Child private PyTupleCheckNode.CachedNode tupleCheck;
 
         public abstract Object execute(VirtualFrame frame, PUnpickler self);
+
+        private void profileSeen(int seen) {
+            if (seen < Long.SIZE) {
+                long mask = 1L << seen;
+                if ((seenOpcodes0 & mask) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    seenOpcodes0 |= mask;
+                }
+            } else {
+                long mask = 1L << (seen - Long.SIZE);
+                if ((seenOpcodes1 & mask) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    seenOpcodes1 |= mask;
+                }
+            }
+        }
 
         protected HashingStorageCopy ensureHashingStorageCopy() {
             if (hashCopy == null) {
@@ -1829,207 +1918,275 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
                 switch (s) {
                     case OPCODE_NONE:
+                        profileSeen(SEEN_NONE);
                         loadNone(self);
                         continue;
                     case OPCODE_BININT:
+                        profileSeen(SEEN_BININT);
                         loadBinInt(frame, self);
                         continue;
                     case OPCODE_BININT1:
+                        profileSeen(SEEN_BININT1);
                         loadBinInt1(frame, self);
                         continue;
                     case OPCODE_BININT2:
+                        profileSeen(SEEN_BININT2);
                         loadBinInt2(frame, self);
                         continue;
                     case OPCODE_INT:
+                        profileSeen(SEEN_INT);
                         loadInt(frame, self);
                         continue;
                     case OPCODE_LONG:
+                        profileSeen(SEEN_LONG);
                         loadLong(frame, self);
                         continue;
                     case OPCODE_LONG1:
+                        profileSeen(SEEN_LONG1);
                         loadCountedLong(frame, self, 1);
                         continue;
                     case OPCODE_LONG4:
+                        profileSeen(SEEN_LONG4);
                         loadCountedLong(frame, self, 4);
                         continue;
                     case OPCODE_FLOAT:
+                        profileSeen(SEEN_FLOAT);
                         loadFloat(frame, self);
                         continue;
                     case OPCODE_BINFLOAT:
+                        profileSeen(SEEN_BINFLOAT);
                         loadBinFloat(frame, self);
                         continue;
                     case OPCODE_SHORT_BINBYTES:
+                        profileSeen(SEEN_SHORT_BINBYTES);
                         loadCountedBinBytes(frame, self, 1);
                         continue;
                     case OPCODE_BINBYTES:
+                        profileSeen(SEEN_BINBYTES);
                         loadCountedBinBytes(frame, self, 4);
                         continue;
                     case OPCODE_BINBYTES8:
+                        profileSeen(SEEN_BINBYTES8);
                         loadCountedBinBytes(frame, self, 8);
                         continue;
                     case OPCODE_BYTEARRAY8:
+                        profileSeen(SEEN_BYTEARRAY8);
                         loadCountedByteArray(frame, self);
                         continue;
                     case OPCODE_NEXT_BUFFER:
+                        profileSeen(SEEN_NEXT_BUFFER);
                         loadNextBuffer(frame, self);
                         continue;
                     case OPCODE_READONLY_BUFFER:
+                        profileSeen(SEEN_READONLY_BUFFER);
                         loadReadOnlyBuffer(frame, self);
                         continue;
                     case OPCODE_SHORT_BINSTRING:
+                        profileSeen(SEEN_SHORT_BINSTRING);
                         loadCountedBinString(frame, self, 1);
                         continue;
                     case OPCODE_BINSTRING:
+                        profileSeen(SEEN_BINSTRING);
                         loadCountedBinString(frame, self, 4);
                         continue;
                     case OPCODE_STRING:
+                        profileSeen(SEEN_STRING);
                         loadString(frame, self);
                         continue;
                     case OPCODE_UNICODE:
+                        profileSeen(SEEN_UNICODE);
                         loadUnicode(frame, self);
                         continue;
                     case OPCODE_SHORT_BINUNICODE:
+                        profileSeen(SEEN_SHORT_BINUNICODE);
                         loadBinCountedUnicode(frame, self, 1);
                         continue;
                     case OPCODE_BINUNICODE:
+                        profileSeen(SEEN_BINUNICODE);
                         loadBinCountedUnicode(frame, self, 4);
                         continue;
                     case OPCODE_BINUNICODE8:
+                        profileSeen(SEEN_BINUNICODE8);
                         loadBinCountedUnicode(frame, self, 8);
                         continue;
                     case OPCODE_EMPTY_TUPLE:
+                        profileSeen(SEEN_EMPTY_TUPLE);
                         loadCountedTuple(self, 0);
                         continue;
                     case OPCODE_TUPLE1:
+                        profileSeen(SEEN_TUPLE1);
                         loadCountedTuple(self, 1);
                         continue;
                     case OPCODE_TUPLE2:
+                        profileSeen(SEEN_TUPLE2);
                         loadCountedTuple(self, 2);
                         continue;
                     case OPCODE_TUPLE3:
+                        profileSeen(SEEN_TUPLE3);
                         loadCountedTuple(self, 3);
                         continue;
                     case OPCODE_TUPLE:
+                        profileSeen(SEEN_TUPLE);
                         loadTuple(self);
                         continue;
                     case OPCODE_EMPTY_LIST:
+                        profileSeen(SEEN_EMPTY_LIST);
                         loadEmptyList(self);
                         continue;
                     case OPCODE_LIST:
+                        profileSeen(SEEN_LIST);
                         loadList(self);
                         continue;
                     case OPCODE_EMPTY_DICT:
+                        profileSeen(SEEN_EMPTY_DICT);
                         loadEmptyDict(self);
                         continue;
                     case OPCODE_DICT:
+                        profileSeen(SEEN_DICT);
                         loadDict(frame, self);
                         continue;
                     case OPCODE_EMPTY_SET:
+                        profileSeen(SEEN_EMPTY_SET);
                         loadEmptySet(self);
                         continue;
                     case OPCODE_ADDITEMS:
+                        profileSeen(SEEN_ADDITEMS);
                         loadAddItems(frame, self);
                         continue;
                     case OPCODE_FROZENSET:
+                        profileSeen(SEEN_FROZENSET);
                         loadFrozenSet(frame, self);
                         continue;
                     case OPCODE_OBJ:
+                        profileSeen(SEEN_OBJ);
                         loadObj(frame, inliningTarget, self, callMethod);
                         continue;
                     case OPCODE_INST:
+                        profileSeen(SEEN_INST);
                         loadInst(frame, inliningTarget, boundaryCallData, ctx, self, callMethod);
                         continue;
                     case OPCODE_NEWOBJ:
+                        profileSeen(SEEN_NEWOBJ);
                         loadNewObj(frame, inliningTarget, self, getSlots, callNew, expandArgs);
                         continue;
                     case OPCODE_NEWOBJ_EX:
+                        profileSeen(SEEN_NEWOBJ_EX);
                         loadNewObjEx(frame, inliningTarget, self, getSlots, callNew, expandArgs, expandKwargs);
                         continue;
                     case OPCODE_GLOBAL:
+                        profileSeen(SEEN_GLOBAL);
                         loadGlobal(frame, boundaryCallData, ctx, self);
                         continue;
                     case OPCODE_STACK_GLOBAL:
+                        profileSeen(SEEN_STACK_GLOBAL);
                         loadStackGlobal(frame, boundaryCallData, ctx, self);
                         continue;
                     case OPCODE_APPEND:
+                        profileSeen(SEEN_APPEND);
                         loadAppend(frame, self);
                         continue;
                     case OPCODE_APPENDS:
+                        profileSeen(SEEN_APPENDS);
                         loadAppends(frame, self);
                         continue;
                     case OPCODE_BUILD:
+                        profileSeen(SEEN_BUILD);
                         loadBuild(frame, self);
                         continue;
                     case OPCODE_DUP:
+                        profileSeen(SEEN_DUP);
                         loadDup(self);
                         continue;
                     case OPCODE_BINGET:
+                        profileSeen(SEEN_BINGET);
                         loadBinGet(frame, self);
                         continue;
                     case OPCODE_LONG_BINGET:
+                        profileSeen(SEEN_LONG_BINGET);
                         loadLongBinGet(frame, self);
                         continue;
                     case OPCODE_GET:
+                        profileSeen(SEEN_GET);
                         loadGet(frame, self);
                         continue;
                     case OPCODE_MARK:
+                        profileSeen(SEEN_MARK);
                         loadMark(self);
                         continue;
                     case OPCODE_BINPUT:
+                        profileSeen(SEEN_BINPUT);
                         loadBinPut(frame, self);
                         continue;
                     case OPCODE_LONG_BINPUT:
+                        profileSeen(SEEN_LONG_BINPUT);
                         loadLongBinPut(frame, self);
                         continue;
                     case OPCODE_PUT:
+                        profileSeen(SEEN_PUT);
                         loadPut(frame, self);
                         continue;
                     case OPCODE_MEMOIZE:
+                        profileSeen(SEEN_MEMOIZE);
                         loadMemoize(self);
                         continue;
                     case OPCODE_POP:
+                        profileSeen(SEEN_POP);
                         loadPop(self);
                         continue;
                     case OPCODE_POP_MARK:
+                        profileSeen(SEEN_POP_MARK);
                         loadPopMark(self);
                         continue;
                     case OPCODE_SETITEM:
+                        profileSeen(SEEN_SETITEM);
                         loadSetItem(frame, self);
                         continue;
                     case OPCODE_SETITEMS:
+                        profileSeen(SEEN_SETITEMS);
                         loadSetItems(frame, self);
                         continue;
                     case OPCODE_PERSID:
+                        profileSeen(SEEN_PERSID);
                         loadPersId(frame, self);
                         continue;
                     case OPCODE_BINPERSID:
+                        profileSeen(SEEN_BINPERSID);
                         loadBinPersId(frame, self);
                         continue;
                     case OPCODE_REDUCE:
+                        profileSeen(SEEN_REDUCE);
                         loadReduce(frame, self);
                         continue;
                     case OPCODE_PROTO:
+                        profileSeen(SEEN_PROTO);
                         loadProto(frame, self);
                         continue;
                     case OPCODE_FRAME:
+                        profileSeen(SEEN_FRAME);
                         loadFrame(frame, self);
                         continue;
                     case OPCODE_EXT1:
+                        profileSeen(SEEN_EXT1);
                         loadExtension(frame, boundaryCallData, ctx, self, 1);
                         continue;
                     case OPCODE_EXT2:
+                        profileSeen(SEEN_EXT2);
                         loadExtension(frame, boundaryCallData, ctx, self, 2);
                         continue;
                     case OPCODE_EXT4:
+                        profileSeen(SEEN_EXT4);
                         loadExtension(frame, boundaryCallData, ctx, self, 4);
                         continue;
                     case OPCODE_NEWTRUE:
+                        profileSeen(SEEN_NEWTRUE);
                         loadBool(self, true);
                         continue;
                     case OPCODE_NEWFALSE:
+                        profileSeen(SEEN_NEWFALSE);
                         loadBool(self, false);
                         continue;
                     case OPCODE_STOP:
+                        profileSeen(SEEN_STOP);
                         break;
                     default:
                         if (0x20 <= s && s <= 0x7e && s != '\'' && s != '\\') {
