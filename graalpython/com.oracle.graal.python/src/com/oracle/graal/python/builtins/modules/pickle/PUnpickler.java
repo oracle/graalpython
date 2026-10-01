@@ -1239,7 +1239,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.ODD_NR_ITEMS_FOR_S, "DICT");
             }
 
-            HashingStorage storage = EmptyStorage.INSTANCE;
+            HashingStorage storage = PDict.createNewStorage((j - i) / 2);
             for (k = i + 1; k < j; k += 2) {
                 key = self.stack.data[k - 1];
                 value = self.stack.data[k];
@@ -1736,6 +1736,9 @@ public class PUnpickler extends PythonBuiltinObject {
 
             Object dict = self.stack.data[x - 1];
             final boolean isBuiltinDict = dict instanceof PDict pDict && PGuards.isBuiltinDict(pDict);
+            if (isBuiltinDict && ((PDict) dict).getDictStorage() == EmptyStorage.INSTANCE) {
+                ((PDict) dict).setDictStorage(PDict.createNewStorage((len - x) / 2));
+            }
             for (i = x + 1; i < len; i += 2) {
                 key = self.stack.data[i - 1];
                 value = self.stack.data[i];
