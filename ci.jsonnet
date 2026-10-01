@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "acd356580b18f9d67b0213c12da04076e6a4d493",
+    overlay: "3b59b9262eafc3b513fb258297ca791a17108027",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -327,6 +327,29 @@
         }),
         "tox-example": gpgate_ee + $.cpython_runtime + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3 + $.ol8,
+        }),
+        "python-graalos-resources": gpgate + internet_access_env + task_spec({
+            run: [["mx", "--java-home=lookup:default", "python-graalos-resources", "pd-layouts-linux-amd64-musl-swcfi.tgz"]],
+            environment+: {
+                GRAALPY_GRAALOS_ARTIFACT_BASE_URL: $.overlay_imports.GRAALPY_GRAALOS_ARTIFACT_BASE_URL,
+            },
+            publishArtifacts+: [{
+                name: "graalpy-graalos-resources",
+                patterns: ["pd-layouts-linux-amd64-musl-swcfi.tgz"],
+            }],
+        }) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest": tier3 + $.ol8,
+        }),
+        "python-resource-variants": gpgate + task_spec({
+            requireArtifacts+: [{name: "graalpy-graalos-resources", autoExtract: true}],
+            run: [
+                ["mx", "--java-home=lookup:default", "python-jvm"],
+                ["mx", "--java-home=lookup:default", "restore-pd-layouts", "pd-layouts-linux-amd64-musl-swcfi.tgz"],
+                ["mx", "--java-home=lookup:default", "--multi-platform-layout-directories=linux-amd64,linux-amd64-musl-swcfi", "build", "--targets=GRAALPYTHON_RESOURCES,GRAALPYTHON_INTEGRATION_UNIT_TESTS"],
+                ["mx", "--java-home=lookup:default", "python-resource-variant-tests"],
+            ],
+        }) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest": tier3 + $.ol8,
         }),
         "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({

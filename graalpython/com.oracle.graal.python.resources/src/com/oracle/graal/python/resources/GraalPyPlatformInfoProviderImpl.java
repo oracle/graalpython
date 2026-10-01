@@ -73,7 +73,7 @@ public final class GraalPyPlatformInfoProviderImpl implements GraalPyPlatformInf
     }
 
     static VersionsInfo readVersionsInfo(OS os, CPUArchitecture cpuArchitecture) {
-        String resource = "/META-INF/resources/" + os + "/" + cpuArchitecture + "/graalpy_versions";
+        String resource = "/META-INF/resources/" + PythonResourcePlatform.resourceDirectory(os, cpuArchitecture) + "/graalpy_versions";
         try (InputStream stream = GraalPyPlatformInfoProviderImpl.class.getResourceAsStream(resource)) {
             if (stream == null) {
                 throw new IllegalStateException("Missing GraalPy platform metadata resource: " + resource);

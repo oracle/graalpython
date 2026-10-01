@@ -6,7 +6,7 @@ The main operating system is Oracle Linux, the CPU architectures are AMD64 and A
 As macOS and other platforms are not prioritized, some GraalPy features may not work on these platforms.
 See [Test Tiers](../user/Test-Tiers.md) for a detailed breakdown.
 
-## Windows
+#### Windows
 
 GraalPy standalone builds on Windows use a native OS backend by default.
 The backend maps Python's OS interface to the Windows CRT, Win32, and Winsock APIs instead of relying on the Java-based backend.
@@ -14,3 +14,10 @@ It provides native or emulated Windows implementations for files and paths, sock
 
 Filesystem paths are passed to wide-character Windows APIs as UTF-16, while other native interfaces continue to use narrow strings where required.
 Errors from the CRT, Win32, and Winsock APIs are translated to Python `OSError` instances using CPython-compatible error mappings, with the original Windows error retained as `OSError.winerror`.
+
+#### GraalOS
+
+GraalPy supports the GraalOS execution sandbox.
+This sandbox requires separate builds of native resources, shipped alongside the host platform resources with a separate libc prefix.
+As of this writing, that is `linux/amd64/musl-swcfi`.
+Selection of the correct resources can be done via the system property `org.graalvm.python.resources.variant=default|musl-swcfi`.

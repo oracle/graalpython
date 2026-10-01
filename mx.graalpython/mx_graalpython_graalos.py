@@ -302,6 +302,87 @@ def _upload_graalos_standalone_artifact(standalone_home: Path, work_dir: Path):
     run(upload_cmd)
 
 
+def _prepare_graalos_toolchain(work_dir: Path, artifact_name, on_fail=mx.abort):
+    work_dir.mkdir(parents=True, exist_ok=True)
+    tarball = work_dir / "graalvm.tar.gz"
+    graalvm_home = work_dir / "graalvm"
+    _download_graalos_standalone_artifact(artifact_name, tarball, on_fail=on_fail)
+    _extract_tarball(tarball, graalvm_home, strip_components=1, on_fail=on_fail)
+    musl_toolchain = graalvm_home / "lib" / "toolchains" / "musl-swcfi"
+    if not (graalvm_home / "bin" / mx.exe_suffix("java")).is_file():
+        on_fail(f"Extracted GraalOS toolchain artifact does not contain bin/java: {graalvm_home}")
+    if not musl_toolchain.is_dir():
+        on_fail(f"Extracted GraalOS toolchain artifact does not contain musl-swcfi toolchain: {musl_toolchain}")
+    return graalvm_home, musl_toolchain
+
+
+@mx.command('graalpython', 'python-graalos-resources', '<archive-path>')
+def graalpy_graalos_resources(args):
+    """Build a strict, resource-only Maven input in a separate single-target mx invocation."""
+    if len(args) != 1:
+        mx.abort('Usage: mx python-graalos-resources <archive-path>')
+    if (mx.get_os(), mx.get_arch()) != ('linux', 'amd64'):
+        mx.abort('GraalOS resources must be built on linux-amd64')
+    from mx_graalpython import extend_os_env, run_mx
+    versions = load_graalos_versions()
+    work_dir = Path(SUITE.dir) / 'mxbuild' / 'graalos-resources-ci'
+    graalvm_home, musl_toolchain = _prepare_graalos_toolchain(work_dir, versions['toolchain'])
+    env = extend_os_env(
+        BOOTSTRAP_GRAALVM=str(graalvm_home),
+        MUSL_TOOLCHAIN=str(musl_toolchain),
+        GRAALOS_TOOLCHAIN_PATH=str(musl_toolchain),
+    )
+    # Isolation is intentional: substitutions/toolchain registration depend on startup options.
+    run_mx(['-p', SUITE.dir, '--java-home=lookup:default', '--multitarget=linux-amd64-musl-swcfi',
+            'python-graalos-resources-build', str(Path(args[0]).resolve())], env=env)
+
+
+@mx.command('graalpython', 'python-resource-variant-tests', '[--default-only]')
+def graalpy_resource_variant_tests(args):
+    """Check extraction and ABI metadata in fresh, launcher-less JVMs using the resource JAR."""
+    if args not in ([], ['--default-only']):
+        mx.abort('Usage: mx python-resource-variant-tests [--default-only]')
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_RESOURCES', 'GRAALPYTHON_INTEGRATION_UNIT_TESTS'], force_cp=True)
+    main = 'com.oracle.graal.python.test.integration.advanced.ResourceVariantProbe'
+    env = dict(os.environ)
+    env.pop('GRAAL_PYTHONHOME', None)
+    cases = [
+        ('default', None, None),
+        ('default', '', None),
+        ('default', 'default', None),
+        ('default', 'invalid', 'Unsupported org.graalvm.python.resources.variant'),
+        ('musl-swcfi', 'musl-swcfi', 'musl-swcfi' if args else None),
+    ]
+    for expected, prop, error in cases:
+        with tempfile.TemporaryDirectory(prefix='graalpy-resource-variant-') as directory:
+            output = mx.OutputCapture()
+            options = ['-Dpolyglot.engine.WarnInterpreterOnly=false', '-Dpolyglot.engine.userResourceCache=' + directory]
+            if prop is not None:
+                options.append('-Dorg.graalvm.python.resources.variant=' + prop)
+            result = mx.run_java(vm_args + options + [main, expected, str(Path(directory) / 'copied')],
+                                 env=env, out=output, err=output, nonZeroIsFatal=False)
+            if (error is None and result != 0) or (error is not None and (result == 0 or error not in output.data)):
+                mx.abort(f'Resource variant probe failed ({expected=}, {prop=}):\n{output.data}')
+            mx.log(f'Resource variant probe passed: {expected=}, {prop=}')
+
+
+@mx.command('graalpython', 'python-graalos-resources-build', '<archive-path>')
+def graalpy_graalos_resources_build(args):
+    """Build/export with an already configured GraalOS bootstrap toolchain."""
+    from mx_graalpython import PYTHON_NATIVE_PROJECTS, graalpy_resource_platform
+    if len(args) != 1 or graalpy_resource_platform() != 'linux/amd64/musl-swcfi':
+        mx.abort('Expected one archive path and --multitarget=linux-amd64-musl-swcfi')
+    target = 'linux-amd64-musl-swcfi'
+    # mx can silently fall back to default toolchains. Never publish such a build as GraalOS.
+    for name in PYTHON_NATIVE_PROJECTS + ['graalpy-versions', 'graalpy-pyconfig']:
+        toolchains = mx.project(name).toolchains
+        if len(toolchains) != 1 or toolchains[0].spec.target.name != target:
+            mx.abort(f'{name} did not select exactly the {target} toolchain')
+    distributions = 'GRAALPYTHON_NATIVE_RESOURCES,GRAALPYTHON_VERSIONS_RES'
+    mx.command_function('build')(['--targets=' + distributions])
+    mx.command_function('archive-pd-layouts')(['--platform-id=' + target, '--only=' + distributions, args[0]])
+
+
 def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     artifact_base_url = os.environ.get("GRAALPY_GRAALOS_ARTIFACT_BASE_URL")
     if not artifact_base_url:
@@ -314,18 +395,9 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
         shutil.rmtree(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    graalvm_tarball = work_dir / "graalvm.tar.gz"
     runtime_tarball = work_dir / "graalos-runtime.tar.gz"
-    graalvm_home = work_dir / "graalvm"
     runtime_root = work_dir / "runtime"
-
-    _download_graalos_standalone_artifact(versions["toolchain"], graalvm_tarball, on_fail=on_fail)
-    _extract_tarball(graalvm_tarball, graalvm_home, strip_components=1, on_fail=on_fail)
-    musl_toolchain = graalvm_home / "lib" / "toolchains" / "musl-swcfi"
-    if not (graalvm_home / "bin" / mx.exe_suffix("java")).is_file():
-        on_fail(f"Extracted GraalOS toolchain artifact does not contain bin/java: {graalvm_home}")
-    if not musl_toolchain.is_dir():
-        on_fail(f"Extracted GraalOS toolchain artifact does not contain musl-swcfi toolchain: {musl_toolchain}")
+    graalvm_home, musl_toolchain = _prepare_graalos_toolchain(work_dir, versions["toolchain"], on_fail=on_fail)
 
     _download_graalos_standalone_artifact(versions["runtime"], runtime_tarball, on_fail=on_fail)
     _extract_tarball(runtime_tarball, runtime_root, on_fail=on_fail)
@@ -336,6 +408,7 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     from mx_graalpython import extend_os_env, run_mx, run_python_unittests, _graalpy_launcher
     env = extend_os_env(
         JAVA_HOME=str(graalvm_home),
+        BOOTSTRAP_GRAALVM=str(graalvm_home),
         MUSL_TOOLCHAIN=str(musl_toolchain),
         GRAALOS_TOOLCHAIN_PATH=str(musl_toolchain),
         GRAALOS_RUNTIME_HOME=str(graalos_runtime_home),
