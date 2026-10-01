@@ -697,7 +697,7 @@ public class PPickler extends PythonBuiltinObject {
             return string;
         }
 
-        private static boolean checkModule(VirtualFrame frame, PyObjectLookupAttr lookup, Object moduleName, Object module, Object global, TruffleString[] dottedPath) {
+        private static boolean checkModule(VirtualFrame frame, PicklerNodes.LookupGlobalAttributeNode lookup, Object moduleName, Object module, Object global, TruffleString[] dottedPath) {
             if (module == PNone.NONE) {
                 return false;
             }
@@ -728,7 +728,7 @@ public class PPickler extends PythonBuiltinObject {
             while (nextNode.executeCached(storage, it)) {
                 Object value = getValueNode.executeCached(storage, it);
                 Object key = getKeyNode.executeCached(storage, it);
-                if (checkModule(frame, getLookupAttrNode(), moduleName, value, global, dottedPath)) {
+                if (checkModule(frame, getLookupGlobalAttrNode(), moduleName, value, global, dottedPath)) {
                     return asStringStrict(key);
                 }
             }
@@ -2182,7 +2182,7 @@ public class PPickler extends PythonBuiltinObject {
             } catch (PException e) {
                 throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED, obj, moduleName);
             }
-            final Pair<Object, Object> pair = getDeepAttribute(frame, getLookupAttrNode(), module, dottedPath);
+            final Pair<Object, Object> pair = getDeepAttribute(frame, getLookupGlobalAttrNode(), module, dottedPath);
             if (pair == null) {
                 throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_ATTR_LOOKUP_FAIL_S_S, obj, globalName, moduleName);
             }

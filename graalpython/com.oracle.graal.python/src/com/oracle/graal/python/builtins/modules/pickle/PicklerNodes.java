@@ -102,6 +102,11 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -110,6 +115,28 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PicklerNodes {
+    @GenerateInline(false)
+    @ImportStatic(PythonUtils.class)
+    abstract static class LookupGlobalAttributeNode extends Node {
+        abstract Object execute(VirtualFrame frame, Object receiver, TruffleString name);
+
+        // Unpickling decodes fresh strings. Give attribute lookup a stable name identity without
+        // caching the attribute value or interning arbitrary pickle contents.
+        @Specialization(guards = "equal.execute(name, cachedName, TS_ENCODING)", limit = "3")
+        static Object cached(VirtualFrame frame, Object receiver, TruffleString name,
+                        @Cached("name") TruffleString cachedName,
+                        @Cached TruffleString.EqualNode equal,
+                        @Exclusive @Cached(inline = false) PyObjectLookupAttr lookup) {
+            return lookup.executeCached(frame, receiver, cachedName);
+        }
+
+        @Specialization(replaces = "cached")
+        static Object generic(VirtualFrame frame, Object receiver, TruffleString name,
+                        @Exclusive @Cached(inline = false) PyObjectLookupAttr lookup) {
+            return lookup.executeCached(frame, receiver, name);
+        }
+    }
+
     abstract static class BasePickleNode extends Node {
         private static final TruffleString T_LOCALS = tsLiteral("<locals>");
         public static final TruffleString T_CODEC_RAW_UNICODE_ESCAPE = tsLiteral("raw_unicode_escape");
@@ -143,6 +170,7 @@ public final class PicklerNodes {
         @Child private GetClassNode getClassNode;
         @Child private PyObjectSizeNode sizeNode;
         @Child private PyObjectLookupAttr lookupAttrNode;
+        @Child private LookupGlobalAttributeNode lookupGlobalAttrNode;
         @Child private BytesNodes.ToBytesNode toBytesNode;
         @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private TruffleString.FromByteArrayNode tsFromByteArrayNode;
@@ -398,6 +426,14 @@ public final class PicklerNodes {
             return lookupAttrNode;
         }
 
+        protected LookupGlobalAttributeNode getLookupGlobalAttrNode() {
+            if (lookupGlobalAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupGlobalAttrNode = insert(PicklerNodesFactory.LookupGlobalAttributeNodeGen.create());
+            }
+            return lookupGlobalAttrNode;
+        }
+
         protected Object lookupAttribute(Frame frame, Object receiver, TruffleString name) {
             return getLookupAttrNode().executeCached(frame, receiver, name);
         }
@@ -557,12 +593,12 @@ public final class PicklerNodes {
             }
         }
 
-        public static Pair<Object, Object> getDeepAttribute(VirtualFrame frame, PyObjectLookupAttr lookup, Object obj, TruffleString[] names) {
+        public static Pair<Object, Object> getDeepAttribute(VirtualFrame frame, LookupGlobalAttributeNode lookup, Object obj, TruffleString[] names) {
             Object parent = null;
             Object object = obj;
             for (int i = 0; i < names.length; i++) {
                 parent = object;
-                object = lookup.executeCached(frame, parent, names[i]);
+                object = lookup.execute(frame, parent, names[i]);
                 if (object == NO_VALUE) {
                     LoopNode.reportLoopCount(lookup, i);
                     return null;
@@ -621,14 +657,18 @@ public final class PicklerNodes {
         public Object getattribute(VirtualFrame frame, Object obj, TruffleString name, boolean allowQualname) {
             if (allowQualname) {
                 TruffleString[] dottedPath = getDottedPath(obj, name);
-                Pair<Object, Object> result = getDeepAttribute(frame, getLookupAttrNode(), obj, dottedPath);
+                Pair<Object, Object> result = getDeepAttribute(frame, getLookupGlobalAttrNode(), obj, dottedPath);
                 if (result != null) {
                     return result.getLeft();
                 } else {
                     throw raise(AttributeError, ErrorMessages.CANT_GET_ATTRIBUTE_S_ON_S, name, getReprNode().execute(frame, null, obj));
                 }
             } else {
-                return lookupAttributeStrict(frame, obj, name);
+                Object attr = getLookupGlobalAttrNode().execute(frame, obj, name);
+                if (attr == NO_VALUE) {
+                    throw raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
+                }
+                return attr;
             }
         }
 
