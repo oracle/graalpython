@@ -154,6 +154,7 @@ public final class PicklerNodes {
         @Child private TruffleString.SubstringNode tsSubstringNode;
         @Child private TruffleString.EqualNode tsEqualNode;
         @Child private TruffleString.SwitchEncodingNode tsSwitchEncodingNode;
+        @Child private TruffleString.IsValidNode tsIsValidNode;
         @Child private HashingStorageGetIterator getHashingStorageIteratorNode;
         @Child private HashingStorageIteratorNext hashingStorageItNext;
         @Child private HashingStorageIteratorKey hashingStorageItKey;
@@ -229,6 +230,14 @@ public final class PicklerNodes {
                 tsSwitchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
             }
             return tsSwitchEncodingNode;
+        }
+
+        protected TruffleString.IsValidNode ensureTsIsValidNode() {
+            if (tsIsValidNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tsIsValidNode = insert(TruffleString.IsValidNode.create());
+            }
+            return tsIsValidNode;
         }
 
         protected byte[] toBytes(VirtualFrame frame, Object obj) {
@@ -328,6 +337,10 @@ public final class PicklerNodes {
         }
 
         protected Object decodeUTF8(VirtualFrame frame, byte[] bytes, int offset, int len, TruffleString errors) {
+            TruffleString utf8 = ensureTsFromByteArray().execute(bytes, offset, len, TruffleString.Encoding.UTF_8, true);
+            if (ensureTsIsValidNode().execute(utf8, TruffleString.Encoding.UTF_8)) {
+                return ensureTsSwitchEncodingNode().execute(utf8, TS_ENCODING);
+            }
             return decode(frame, PFactory.createBytes(PythonLanguage.get(this), PythonUtils.arrayCopyOfRange(bytes, offset, offset + len)), T_UTF8, errors);
         }
 
