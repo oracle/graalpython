@@ -201,6 +201,9 @@ public final class IntNodes {
                         @Cached InlinedBranchProfile fastPath2,
                         @Cached InlinedBranchProfile fastPath4,
                         @Cached InlinedBranchProfile fastPath8,
+                        @Cached InlinedBranchProfile variablePath,
+                        @Cached InlinedBranchProfile fastPathVariable,
+                        @Cached InlinedBranchProfile overlong,
                         @Cached InlinedBranchProfile generic,
                         @Cached PRaiseNode raiseNode) {
             NumericSupport support = littleEndian ? NumericSupport.littleEndian() : NumericSupport.bigEndian();
@@ -223,6 +226,31 @@ public final class IntNodes {
                         return support.getLong(data, offset);
                     }
                 }
+            }
+            variablePath.enter(inliningTarget);
+            int remaining = length;
+            int index = littleEndian ? offset + length - 1 : offset;
+            int step = littleEndian ? -1 : 1;
+            boolean negative = signed && length > 0 && data[index] < 0;
+            if (remaining > Long.BYTES) {
+                overlong.enter(inliningTarget);
+                // Ignore redundant sign or zero extension beyond the width of a long.
+                byte padding = (byte) (negative ? -1 : 0);
+                while (remaining > Long.BYTES && data[index] == padding) {
+                    index += step;
+                    remaining--;
+                }
+            }
+            // For eight bytes, the remaining sign bit must agree with the original sign.
+            // This also excludes unsigned values greater than Long.MAX_VALUE.
+            if (remaining < Long.BYTES || (remaining == Long.BYTES && (data[index] < 0) == negative)) {
+                fastPathVariable.enter(inliningTarget);
+                long value = negative ? -1L : 0L;
+                for (int i = 0; i < remaining; i++) {
+                    value = (value << Byte.SIZE) | (data[index] & 0xffL);
+                    index += step;
+                }
+                return value;
             }
             generic.enter(inliningTarget);
             try {

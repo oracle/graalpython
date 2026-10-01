@@ -55,7 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.PicklingError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -88,8 +87,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.ints.IntNodes;
-import com.oracle.graal.python.builtins.objects.ints.IntNodesFactory;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -627,9 +624,6 @@ public class PPickler extends PythonBuiltinObject {
         @Child private SaveNode recursiveSaveNode2;
         @Child private SaveNode recursiveSaveNode3;
 
-        @Child private IntNodes.PyLongSign pyLongSign;
-        @Child private IntNodes.PyLongNumBits pyLongNumBits;
-        @Child private IntNodes.PyLongAsByteArray pyLongAsByteArray;
         @Child private ListNodes.ConstructListNode constructListNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
         @Child private FlushToFileNode flushToFileNode;
@@ -759,30 +753,6 @@ public class PPickler extends PythonBuiltinObject {
                 flushToFileNode = insert(PPicklerFactory.FlushToFileNodeGen.create());
             }
             return flushToFileNode;
-        }
-
-        protected int getSign(Object value) {
-            if (pyLongSign == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyLongSign = insert(IntNodesFactory.PyLongSignNodeGen.create());
-            }
-            return pyLongSign.execute(value);
-        }
-
-        protected int getNumBits(Object value) {
-            if (pyLongNumBits == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyLongNumBits = insert(IntNodesFactory.PyLongNumBitsNodeGen.create());
-            }
-            return pyLongNumBits.execute(value);
-        }
-
-        protected byte[] longAsBytes(Object value, int size, boolean bigEndian) {
-            if (pyLongAsByteArray == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyLongAsByteArray = insert(IntNodesFactory.PyLongAsByteArrayNodeGen.create());
-            }
-            return pyLongAsByteArray.executeCached(value, size, bigEndian);
         }
 
         protected Object createList(VirtualFrame frame, Object iterable) {
@@ -1523,61 +1493,61 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveLong(VirtualFrame frame, PPickler pickler, int proto, long value) {
+        private void saveLong(PPickler pickler, int proto, long value) {
             int intValue = (int) value;
             if (intValue == value) {
                 saveLong(pickler, proto, intValue);
             } else {
-                saveLongLarge(frame, pickler, proto, value);
+                saveLongLarge(pickler, proto, value);
             }
         }
 
         private void saveLong(VirtualFrame frame, PPickler pickler, int proto, PInt value) {
             try {
-                saveLong(frame, pickler, proto, value.longValueExact());
+                saveLong(pickler, proto, value.longValueExact());
             } catch (OverflowException e) {
                 saveLongLarge(frame, pickler, proto, value);
             }
         }
 
-        private void saveLongLarge(VirtualFrame frame, PPickler pickler, int proto, Object obj) {
+        private void saveLongLarge(PPickler pickler, int proto, long value) {
             if (proto >= 2) {
-                // Linear-time pickling.
-                final int sign = getSign(obj);
-                assert sign != 0; // Zero was handled by the int code above
-
-                final int nbits = getNumBits(obj);
-                // How many bytes do we need? There are nbits >> 3 full bytes of data, and nbits & 7
-                // leftover bits. If there are any leftover bits, then we clearly need another byte.
-                // What's not so obvious is that we *probably* need another byte even if there
-                // aren't any leftovers: the most-significant bit of the most-significant byte acts
-                // like a sign bit, and it's usually got a sense opposite of the one we need. The
-                // exception is ints of the form -(2**(8*j-1)) for j > 0. Such an int is its own
-                // 256's-complement, so has the right sign bit even without the extra byte. That's a
-                // pain to check for in advance, though, so we always grab an extra byte at the
-                // start, and cut it back later if possible.
+                // Count the significant bits excluding the sign extension, then add a sign bit.
+                int nbits = Long.SIZE - Long.numberOfLeadingZeros(value < 0 ? ~value : value);
                 int nbytes = (nbits >> 3) + 1;
-                if (Long.compareUnsigned(nbytes, 0x7fffffffL) > 0) {
-                    throw raise(OverflowError, ErrorMessages.S_TO_LARGE_TO_PICKLE, "int");
+                pickler.writeByteOp(this, PickleUtils.OPCODE_LONG1, nbytes);
+                pickler.ensureBufferSpace(this, nbytes);
+                for (int i = 0; i < nbytes; i++) {
+                    pickler.outputBuffer[pickler.outputLen++] = (byte) value;
+                    value >>= Byte.SIZE;
                 }
-                byte[] pdata = longAsBytes(obj, nbytes, false);
-                // If the int is negative, this may be a byte more than needed. This is so iff the
-                // MSB is all redundant sign bits.
-                if (sign < 0 && nbytes > 1 && pdata[nbytes - 1] == (byte) 0xff && (pdata[nbytes - 2] & 0x80) != 0) {
-                    nbytes--;
-                }
+            } else {
+                TruffleString repr = ensureTsFromLongNode().execute(value, TS_ENCODING, true);
+                pickler.write(this, PickleUtils.OPCODE_LONG);
+                pickler.writeASCII(this, repr, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeASCII(this, T_L_NEW_LINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+            }
+        }
+
+        private void saveLongLarge(VirtualFrame frame, PPickler pickler, int proto, PInt value) {
+            if (proto >= 2) {
+                // BigInteger already provides the minimal signed two's-complement representation.
+                byte[] data = value.toByteArray();
+                int nbytes = data.length;
                 if (nbytes < 256) {
                     pickler.writeByteOp(this, PickleUtils.OPCODE_LONG1, nbytes);
                 } else {
                     pickler.writeIntOp(this, PickleUtils.OPCODE_LONG4, nbytes);
                 }
-
-                pickler.write(this, pdata, nbytes);
-
+                pickler.ensureBufferSpace(this, nbytes);
+                // BigInteger's bytes are big endian; pickle requires little endian.
+                for (int i = nbytes - 1; i >= 0; i--) {
+                    pickler.outputBuffer[pickler.outputLen++] = data[i];
+                }
             } else {
-                TruffleString repr = repr(frame, obj);
+                TruffleString repr = repr(frame, value);
                 pickler.write(this, PickleUtils.OPCODE_LONG);
-                pickler.writeASCII(this, asStringStrict(repr), ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
+                pickler.writeASCII(this, repr, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
                 pickler.writeASCII(this, T_L_NEW_LINE, ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode());
             }
         }
@@ -1889,7 +1859,7 @@ public class PPickler extends PythonBuiltinObject {
             int proto = pickler.getProto();
             if (storage.length() == 1) {
                 opcodeBoundary(frame, pickler);
-                saveLong(frame, pickler, proto, storage.getLongItemNormalized(0));
+                saveLong(pickler, proto, storage.getLongItemNormalized(0));
                 pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
@@ -1900,7 +1870,7 @@ public class PPickler extends PythonBuiltinObject {
                 pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
                     opcodeBoundary(frame, pickler);
-                    saveLong(frame, pickler, proto, storage.getLongItemNormalized(i));
+                    saveLong(pickler, proto, storage.getLongItemNormalized(i));
                 }
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
@@ -2002,7 +1972,7 @@ public class PPickler extends PythonBuiltinObject {
             int proto = pickler.getProto();
             for (int i = 0; i < storage.length(); i++) {
                 opcodeBoundary(frame, pickler);
-                saveLong(frame, pickler, proto, storage.getLongItemNormalized(i));
+                saveLong(pickler, proto, storage.getLongItemNormalized(i));
             }
         }
 
@@ -2348,7 +2318,7 @@ public class PPickler extends PythonBuiltinObject {
                 return;
             } else if (obj instanceof Long value) {
                 profileSeen(SEEN_LONG);
-                saveLong(frame, pickler, proto, value);
+                saveLong(pickler, proto, value);
                 return;
             } else if (obj instanceof PInt value && PGuards.isBuiltinPInt(value)) {
                 profileSeen(SEEN_PINT);
