@@ -98,7 +98,7 @@ import com.oracle.graal.python.annotations.DowncallSignature;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -1604,7 +1604,7 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(pathPtr);
         }
         if (ret != 0 && LOGGER.isLoggable(Level.FINE)) {
-            log(Level.FINE, "faccessat return value: %d, errno: %d", ret, getErrno());
+            LOGGER.fine(String.format("faccessat return value: %d, errno: %d", ret, getErrno()));
         }
         return ret == 0;
     }
@@ -3362,11 +3362,6 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(nativeOutput);
             NativeMemory.free(nativeBufferSize);
         }
-        return toPwdResultArray(result);
-    }
-
-    @TruffleBoundary
-    private static PwdResult[] toPwdResultArray(ArrayList<PwdResult> result) {
         return result.toArray(new PwdResult[0]);
     }
 
@@ -3487,10 +3482,10 @@ public final class NativePosixSupport extends PosixSupport {
     @SuppressWarnings("static-method")
     public Object createPathFromString(TruffleString path) {
         if (WINDOWS) {
-            TruffleString utf16 = TruffleString.SwitchEncodingNode.getUncached().execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-            return checkWidePath(TruffleString.CopyToByteArrayNode.getUncached().execute(utf16, UTF_16LE));
+            TruffleString utf16 = path.switchEncodingUncached(UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            return checkWidePath(utf16.copyToByteArrayUncached(UTF_16LE));
         }
-        return checkNarrowPath(PyUnicodeEncodeFSDefaultNodeGen.getUncached().execute(null, null, path));
+        return checkNarrowPath(PyUnicodeEncodeFSDefaultNode.executeUncached(path));
     }
 
     @Override
@@ -3498,9 +3493,9 @@ public final class NativePosixSupport extends PosixSupport {
     @SuppressWarnings("static-method")
     public Object createPathFromBytes(byte[] path) {
         if (WINDOWS) {
-            TruffleString utf8 = TruffleString.FromByteArrayNode.getUncached().execute(path, UTF_8, true);
-            TruffleString utf16 = TruffleString.SwitchEncodingNode.getUncached().execute(utf8, UTF_16LE, windowsPathDecodeErrorHandler(null, path));
-            return checkWidePath(TruffleString.CopyToByteArrayNode.getUncached().execute(utf16, UTF_16LE));
+            TruffleString utf8 = TruffleString.fromByteArrayUncached(path, UTF_8);
+            TruffleString utf16 = utf8.switchEncodingUncached(UTF_16LE, windowsPathDecodeErrorHandler(null, path));
+            return checkWidePath(utf16.copyToByteArrayUncached(UTF_16LE));
         }
         return checkNarrowPath(path);
     }
@@ -3510,18 +3505,18 @@ public final class NativePosixSupport extends PosixSupport {
     @SuppressWarnings("static-method")
     public TruffleString getPathAsString(Object path) {
         NativePath result = (NativePath) path;
-        TruffleString encoded = TruffleString.FromByteArrayNode.getUncached().execute(result.data, 0, result.data.length, result.encoding(), true);
+        TruffleString encoded = TruffleString.fromByteArrayUncached(result.data, result.encoding());
         if (result instanceof WidePath) {
-            return TruffleString.SwitchEncodingNode.getUncached().execute(encoded, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            return encoded.switchEncodingUncached(TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
         }
         TruffleString utf8 = encoded;
         if (TruffleString.IsValidNode.getUncached().execute(utf8, UTF_8)) {
-            return TruffleString.SwitchEncodingNode.getUncached().execute(utf8, TS_ENCODING);
+            return utf8.switchEncodingUncached(TS_ENCODING);
         }
         TranscodingErrorHandler errorHandler = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32
                         ? TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8
                         : PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER;
-        return TruffleString.SwitchEncodingNode.getUncached().execute(utf8, TS_ENCODING, errorHandler);
+        return utf8.switchEncodingUncached(TS_ENCODING, errorHandler);
     }
 
     @Override
@@ -3570,22 +3565,21 @@ public final class NativePosixSupport extends PosixSupport {
     @Override
     @TruffleBoundary
     public Object createWideStringFromString(TruffleString string) {
-        TruffleString utf16 = TruffleString.SwitchEncodingNode.getUncached().execute(string, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-        byte[] bytes = TruffleString.CopyToByteArrayNode.getUncached().execute(utf16, UTF_16LE);
+        TruffleString utf16 = string.switchEncodingUncached(UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+        byte[] bytes = utf16.copyToByteArrayUncached(UTF_16LE);
         return checkWideString(bytes);
     }
 
     @Override
     @TruffleBoundary
     public TruffleString getCStringAsString(Object string) {
-        TruffleString.FromByteArrayNode fromByteArrayNode = TruffleString.FromByteArrayNode.getUncached();
-        TruffleString.SwitchEncodingNode switchEncodingNode = TruffleString.SwitchEncodingNode.getUncached();
         if (string instanceof WideString wideString) {
-            TruffleString utf16 = fromByteArrayNode.execute(wideString.data, UTF_16LE, true);
-            return switchEncodingNode.execute(utf16, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            TruffleString utf16 = TruffleString.fromByteArrayUncached(wideString.data, UTF_16LE);
+            return utf16.switchEncodingUncached(TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
         }
         Buffer buffer = (Buffer) string;
-        return createString(buffer.data, 0, (int) buffer.length, true, fromByteArrayNode, switchEncodingNode);
+        TruffleString utf8 = TruffleString.fromByteArrayUncached(buffer.data, 0, (int) buffer.length, UTF_8, true);
+        return utf8.switchEncodingUncached(TS_ENCODING);
     }
 
     @Override
@@ -4027,13 +4021,6 @@ public final class NativePosixSupport extends PosixSupport {
         if (offset < 0 || offset + length > buf.length) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
-        }
-    }
-
-    @TruffleBoundary
-    private static void log(Level level, String fmt, Object... args) {
-        if (LOGGER.isLoggable(level)) {
-            LOGGER.log(level, String.format(fmt, args));
         }
     }
 

@@ -227,7 +227,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
-import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNodeGen;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
@@ -278,7 +278,6 @@ import com.sun.security.auth.module.UnixSystem;
  * <li>{@code select} supports only network sockets, but not regular files.</li>
  * </ul>
  */
-@SuppressWarnings("unused")
 public final class EmulatedPosixSupport extends PosixResources {
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
@@ -315,6 +314,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     };
     private static final TruffleString T_BIN_SH = tsLiteral("/bin/sh");
     private static final TruffleString T_DEV_TTY = tsLiteral("/dev/tty");
+    private static final LinkOption[] NO_LINK_OPTIONS = new LinkOption[0];
 
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private long pid;
@@ -428,7 +428,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     public int openat(int dirFd, Object path, int flags, int mode) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToJavaString(path));
         Set<StandardOpenOption> options = flagsToOptions(flags);
-        FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
+        FileAttribute<Set<PosixFilePermission>> attributes = PosixFilePermissions.asFileAttribute(modeToPosixFilePermissions(mode & ~currentUmask));
         try {
             return openTruffleFile(file, options, attributes);
         } catch (Exception e) {
@@ -462,11 +462,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public long write(int fd, Buffer data) throws PosixException {
         Channel channel = getFileChannel(fd);
-        if (!(channel instanceof WritableByteChannel)) {
+        if (!(channel instanceof WritableByteChannel writableChannel)) {
             throw posixException(OSErrorEnum.EBADF);
         }
         try {
-            return doWriteOp(data.getByteBuffer(), (WritableByteChannel) channel);
+            return writableChannel.write(data.getByteBuffer());
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
@@ -484,20 +484,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         return write(fd, data);
     }
 
-    @TruffleBoundary(allowInlining = true)
-    private static int doWriteOp(ByteBuffer data, WritableByteChannel channel) throws IOException {
-        return channel.write(data);
-    }
-
     @Override
     @TruffleBoundary
     public Buffer read(int fd, long length) throws PosixException {
         Channel channel = getFileChannel(fd);
-        if (!(channel instanceof ReadableByteChannel)) {
+        if (!(channel instanceof ReadableByteChannel readableChannel)) {
             throw posixException(OSErrorEnum.EBADF);
         }
         try {
-            return readBytesFromChannel((ReadableByteChannel) channel, length);
+            return readBytesFromChannel(readableChannel, length);
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
@@ -758,8 +753,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             return (SelectableChannel) ch;
         } else if (ch instanceof EmulatedDatagramSocket) {
             return ((EmulatedDatagramSocket) ch).channel;
-        } else if (ch instanceof EmulatedStreamSocket) {
-            EmulatedStreamSocket streamSocket = (EmulatedStreamSocket) ch;
+        } else if (ch instanceof EmulatedStreamSocket streamSocket) {
             synchronized (streamSocket) {
                 if (streamSocket.clientChannel != null) {
                     return streamSocket.clientChannel;
@@ -846,7 +840,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (channel == null) {
             throw posixException(OSErrorEnum.EBADF);
         }
-        if (!(channel instanceof SeekableByteChannel)) {
+        if (!(channel instanceof SeekableByteChannel fc)) {
             throw posixException(OSErrorEnum.ESPIPE);
         }
         if (SEEK_DATA.defined && how == SEEK_DATA.getValueIfDefined()) {
@@ -855,7 +849,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (SEEK_HOLE.defined && how == SEEK_HOLE.getValueIfDefined()) {
             throw createUnsupportedFeature("SEEK_HOLE");
         }
-        SeekableByteChannel fc = (SeekableByteChannel) channel;
         long newPos;
         try {
             newPos = setPosition(offset, how, fc);
@@ -1126,7 +1119,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         TruffleFile f = getTruffleFile(path);
         try {
-            return fstat(f, new LinkOption[0]);
+            return fstat(f, NO_LINK_OPTIONS);
         } catch (Exception e) {
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
             throw posixException(errAndMsg);
@@ -1332,9 +1325,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         FileTime atime = attributes.get(LAST_ACCESS_TIME);
         FileTime mtime = attributes.get(LAST_MODIFIED_TIME);
         FileTime ctime = attributes.get(ctimeDescriptor);
-        statResult[7] = fileTimeToSeconds(atime);
-        statResult[8] = fileTimeToSeconds(mtime);
-        statResult[9] = fileTimeToSeconds(ctime);
+        assert atime != null;
+        assert mtime != null;
+        assert ctime != null;
+
+        statResult[7] = atime.to(TimeUnit.SECONDS);
+        statResult[8] = mtime.to(TimeUnit.SECONDS);
+        statResult[9] = ctime.to(TimeUnit.SECONDS);
         statResult[10] = fileTimeNanoSecondsPart(atime);
         statResult[11] = fileTimeNanoSecondsPart(mtime);
         statResult[12] = fileTimeNanoSecondsPart(ctime);
@@ -1419,7 +1416,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         return new Object[]{
                         toTruffleStringUncached(getPythonOS().getUname()),
                         toTruffleStringUncached(getHostName(withoutIOSocket)),
-                        toTruffleStringUncached(getOsVersion()),
+                        toTruffleStringUncached(System.getProperty("os.version", "")),
                         T_EMPTY_STRING,
                         PythonUtils.getPythonArch()
         };
@@ -1454,11 +1451,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
         }
         return new WindowsVersion(major, minor, build, 2, T_EMPTY_STRING, 0, 0, 0, 1, major, minor, build);
-    }
-
-    @TruffleBoundary
-    private static String getOsVersion() {
-        return System.getProperty("os.version", "");
     }
 
     @TruffleBoundary
@@ -1799,7 +1791,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    private static FileTime toFileTime(long seconds, long nanos) {
+    private static FileTime toFileTime(long seconds, @SuppressWarnings("unused") long nanos) {
         // JDK allows to set only one time per operation, so setting one may round the other to
         // seconds. Ignore nanoseconds consistently for both times.
         return FileTime.from(seconds, TimeUnit.SECONDS);
@@ -1862,7 +1854,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         boolean result = true;
         if ((mode & X_OK.value) != 0) {
-            result = result && isExecutable(file);
+            result = isExecutable(file);
         }
         if ((mode & R_OK.value) != 0) {
             result = result && isReadable(file);
@@ -2132,13 +2124,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @TruffleBoundary
-    private static void interruptThread() {
-        Thread.currentThread().interrupt();
-    }
-
     // TODO the implementation of the following builtins is taken from posix.py,
-    // do they really make sense for the emulated backend? Is the handling of exist status correct?
+    // do they really make sense for the emulated backend? Is the handling of exit status correct?
 
     @Override
     @TruffleBoundary(allowInlining = true)
@@ -2731,31 +2718,31 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             open = false;
         }
 
         @Override
-        public int read(ByteBuffer dst) throws IOException {
+        public int read(ByteBuffer dst) {
             int nread = Math.min(dst.remaining(), data.length - cur);
             dst.put(data, cur, nread);
             return nread;
         }
 
         @Override
-        public int write(ByteBuffer src) throws IOException {
+        public int write(ByteBuffer src) {
             int nwrite = Math.min(src.remaining(), data.length - cur);
             src.get(data, cur, nwrite);
             return nwrite;
         }
 
         @Override
-        public long position() throws IOException {
+        public long position() {
             return cur;
         }
 
         @Override
-        public SeekableByteChannel position(long newPosition) throws IOException {
+        public SeekableByteChannel position(long newPosition) {
             if (newPosition < 0 || newPosition >= data.length) {
                 throw new IllegalArgumentException();
             }
@@ -2764,12 +2751,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        public long size() throws IOException {
+        public long size() {
             return data.length;
         }
 
         @Override
-        public SeekableByteChannel truncate(long size) throws IOException {
+        public SeekableByteChannel truncate(long size) {
             for (int i = 0; i < size; i++) {
                 data[i] = 0;
             }
@@ -2799,8 +2786,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         // we create a new channel, the file may be closed but the mmap object should still work
         SeekableByteChannel fileChannel;
         try {
-            fileChannel = newByteChannel(file, options);
-            position(fileChannel, offset);
+            fileChannel = file.newByteChannel(options);
+            fileChannel.position(offset);
             return new MMapHandle(fileChannel, offset);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e));
@@ -2822,60 +2809,48 @@ public final class EmulatedPosixSupport extends PosixResources {
         return options;
     }
 
-    @TruffleBoundary
-    private static SeekableByteChannel newByteChannel(TruffleFile file, Set<StandardOpenOption> options) throws IOException {
-        return file.newByteChannel(options);
-    }
-
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public byte mmapReadByte(Object mmap, long index) throws PosixException {
         if (mmap == MMapHandle.NONE) {
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
-        ByteBuffer readingBuffer = allocateByteBuffer(1);
+        ByteBuffer readingBuffer = ByteBuffer.allocate(1);
         int readSize = readBytes(handle, index, readingBuffer);
         if (readSize == 0) {
             throw posixException(OSErrorEnum.ENODATA);
         }
-        return getByte(readingBuffer);
+        readingBuffer.flip();
+        return readingBuffer.get();
     }
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public void mmapWriteByte(Object mmap, long index, byte value) throws PosixException {
         mmapWriteBytes(mmap, index, new byte[]{value}, 1);
     }
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
-        int sz;
-        try {
-            sz = PythonUtils.toIntExact(length);
-        } catch (OverflowException e) {
-            throw posixException(OSErrorEnum.EOVERFLOW);
-        }
-        ByteBuffer readingBuffer = allocateByteBuffer(sz);
+        ByteBuffer readingBuffer = ByteBuffer.allocate(length);
         int readSize = readBytes(handle, index, readingBuffer);
         if (readSize > 0) {
-            getByteBufferArray(readingBuffer, bytes, readSize);
+            readingBuffer.flip();
+            readingBuffer.get(bytes, 0, readSize);
         }
         return readSize;
     }
 
     private static int readBytes(MMapHandle handle, long index, ByteBuffer readingBuffer) throws PosixException {
         try {
-            position(handle.channel, index + handle.offset);
-            return readChannel(handle.channel, readingBuffer);
+            handle.channel.position(index + handle.offset);
+            return handle.channel.read(readingBuffer);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
@@ -2883,7 +2858,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
             throw posixException(OSErrorEnum.EACCES);
@@ -2891,8 +2865,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         MMapHandle handle = (MMapHandle) mmap;
         try {
             SeekableByteChannel channel = handle.channel;
-            position(channel, handle.offset + index);
-            int written = writeChannel(channel, bytes, length);
+            channel.position(handle.offset + index);
+            int written = channel.write(ByteBuffer.wrap(bytes, 0, length));
             if (written != length) {
                 throw posixException(OSErrorEnum.EIO);
             }
@@ -2902,14 +2876,9 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @TruffleBoundary
-    private static int writeChannel(SeekableByteChannel channel, byte[] bytes, int length) throws IOException {
-        return channel.write(ByteBuffer.wrap(bytes, 0, length));
-    }
-
     @Override
     @TruffleBoundary
-    @SuppressWarnings({"static-method", "unused"})
+    @SuppressWarnings("unused")
     public void mmapFlush(Object mmap, long offset, long length) {
         // Intentionally noop
         // If we had access to the underlying NIO FileChannel, we could explicitly set force(true)
@@ -2920,7 +2889,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
             return;
@@ -2928,7 +2896,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         MMapHandle handle = (MMapHandle) mmap;
         if (handle.channel != null) {
             try {
-                closeChannel(handle.channel);
+                handle.channel.close();
             } catch (IOException e) {
                 throw posixException(OSErrorEnum.fromException(e));
             }
@@ -2938,41 +2906,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("obtaining mmap pointer");
-    }
-
-    @TruffleBoundary
-    private static void closeChannel(Channel ch) throws IOException {
-        ch.close();
-    }
-
-    @TruffleBoundary
-    private static void position(SeekableByteChannel ch, long offset) throws IOException {
-        ch.position(offset);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static ByteBuffer allocateByteBuffer(int n) {
-        return ByteBuffer.allocate(n);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static void getByteBufferArray(ByteBuffer src, byte[] dst, int readSize) {
-        src.flip();
-        src.get(dst, 0, readSize);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static byte getByte(ByteBuffer src) {
-        src.flip();
-        return src.get();
-    }
-
-    @TruffleBoundary
-    private static int readChannel(Object readableChannel, ByteBuffer dst) throws IOException {
-        return ((ReadableByteChannel) readableChannel).read(dst);
     }
 
     @Override
@@ -3047,7 +2982,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonLanguage.getPythonOS()) {
@@ -3068,7 +3002,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonLanguage.getPythonOS()) {
@@ -3088,15 +3021,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @TruffleBoundary
-    @SuppressWarnings("static-method")
+    @TruffleBoundary(allowInlining = true)
     public boolean hasGetpwentries() {
         return false;
     }
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public PwdResult[] getpwentries() throws PosixException {
         throw createUnsupportedFeature("getpwent");
     }
@@ -3453,7 +3384,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public int inet_addr(Object src) {
         try {
             return inet_aton(src);
@@ -3463,7 +3393,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @SuppressWarnings("static-method")
     @TruffleBoundary
     public int inet_aton(Object src) throws InvalidAddressException {
         String s = (String) src;
@@ -3483,14 +3412,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object inet_ntoa(int address) {
         return String.format("%d.%d.%d.%d", (address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
     }
 
     @Override
-    @SuppressWarnings("static-method")
     @TruffleBoundary
     public byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
         byte[] bytes;
@@ -3523,7 +3450,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object inet_ntop(int family, byte[] src) throws PosixException {
         if (family != AF_INET.value && family != AF_INET6.value) {
@@ -3547,13 +3473,11 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public Object gethostname() throws PosixException {
         return getHostName(withoutIOSocket);
     }
 
     @Override
-    @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3587,7 +3511,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         return new Object[]{host, service};
     }
 
-    @TruffleBoundary
     private String searchServicesForPort(TruffleLanguage.Env env, int port, String protocol) {
         Map<String, List<Service>> services = getServices();
         Set<String> servicesNames = services.keySet();
@@ -3604,7 +3527,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    @SuppressWarnings("static-method")
     @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
@@ -3984,7 +3906,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        EmulatedSocket accept() throws IOException {
+        EmulatedSocket accept() {
             throw new UnsupportedOperationException();
         }
 
@@ -4001,7 +3923,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        void listen(int backlog) throws IOException {
+        void listen(int backlog) {
             throw new UnsupportedOperationException();
         }
 
@@ -4057,7 +3979,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        void shutdown(int how) throws IOException {
+        void shutdown(int how) {
             // TODO what does native SOCK_DGRAM shutdown do?
         }
 
@@ -4198,7 +4120,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        synchronized void bind(SocketAddress socketAddress) throws IOException {
+        synchronized void bind(SocketAddress socketAddress) {
             neverPartOfCompilation();
             if (clientChannel != null || serverChannel != null || bindAddress != null) {
                 // already bound
@@ -4317,7 +4239,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         @Override
-        int sendto(ByteBuffer bb, int flags, SocketAddress destAddr) throws IOException {
+        int sendto(ByteBuffer bb, int flags, SocketAddress destAddr) {
             neverPartOfCompilation();
             // sendto() makes sense only for DGRAM sockets
             throw new AlreadyConnectedException();
@@ -4446,11 +4368,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    @SuppressWarnings("static-method")
     public Object createPathFromString(TruffleString path) {
-        String javaPath = getPythonOS() == PLATFORM_WIN32
-                        ? TruffleString.ToJavaStringNode.getUncached().execute(path)
-                        : createUTF8String(PyUnicodeEncodeFSDefaultNodeGen.getUncached().execute(null, null, path));
+        String javaPath = getPythonOS() == PLATFORM_WIN32 ? path.toJavaStringUncached() : new String(PyUnicodeEncodeFSDefaultNode.executeUncached(path), StandardCharsets.UTF_8);
         return checkEmbeddedNulls(javaPath);
     }
 
@@ -4458,61 +4377,51 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public Object createPathFromBytes(byte[] path) {
-        return checkEmbeddedNulls(createUTF8String(path));
+        return checkEmbeddedNulls(new String(path, StandardCharsets.UTF_8));
     }
 
     @Override
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public TruffleString getPathAsString(Object path) {
-        return TruffleString.FromJavaStringNode.getUncached().execute((String) path, TS_ENCODING);
+        return TruffleString.fromJavaStringUncached((String) path, TS_ENCODING);
     }
 
     @Override
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public Buffer getPathAsBytes(Object path) {
-        return Buffer.wrap(utf8StringToBytes((String) path));
+        return Buffer.wrap(((String) path).getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
     @TruffleBoundary
     public Object createCStringFromString(TruffleString string) {
-        return checkEmbeddedNulls(TruffleString.ToJavaStringNode.getUncached().execute(string));
+        return checkEmbeddedNulls(string.toJavaStringUncached());
     }
 
     @Override
     @TruffleBoundary
     public Object createCStringFromBytes(byte[] bytes) {
-        return checkEmbeddedNulls(createUTF8String(bytes));
+        return checkEmbeddedNulls(new String(bytes, StandardCharsets.UTF_8));
     }
 
     @Override
     @TruffleBoundary
     public Object createWideStringFromString(TruffleString string) {
-        return checkEmbeddedNulls(TruffleString.ToJavaStringNode.getUncached().execute(string));
+        return checkEmbeddedNulls(string.toJavaStringUncached());
     }
 
     @Override
     @TruffleBoundary
     public TruffleString getCStringAsString(Object string) {
-        return TruffleString.FromJavaStringNode.getUncached().execute((String) string, TS_ENCODING);
+        return TruffleString.fromJavaStringUncached((String) string, TS_ENCODING);
     }
 
     @Override
     @TruffleBoundary
     public Buffer getCStringAsBytes(Object string) {
-        return Buffer.wrap(utf8StringToBytes((String) string));
-    }
-
-    @TruffleBoundary
-    private static String createUTF8String(byte[] retbuf) {
-        return new String(retbuf, StandardCharsets.UTF_8);
-    }
-
-    @TruffleBoundary
-    private static byte[] utf8StringToBytes(String str) {
-        return str.getBytes(StandardCharsets.UTF_8);
+        return Buffer.wrap(((String) string).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String checkEmbeddedNulls(String s) {
@@ -4626,13 +4535,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw new PosixErrnoException(pair.oserror.getNumber(), pair.message);
     }
 
-    @TruffleBoundary
-    static long fileTimeToSeconds(FileTime t) {
-        return t.to(TimeUnit.SECONDS);
-    }
-
-    @TruffleBoundary
-    static long fileTimeNanoSecondsPart(FileTime t) {
+    private static long fileTimeNanoSecondsPart(FileTime t) {
         return t.toInstant().getNano();
     }
 
@@ -4661,7 +4564,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             // any error if the file path is already absolute
             return file;
         }
-        String dirPath = getFilePathOrDefault(dirFd);
+        String dirPath = filePaths.get(dirFd);
         if (dirPath == null) {
             throw posixException(OSErrorEnum.EBADF);
         }
@@ -4673,18 +4576,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         return (String) path;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    private String getFilePathOrDefault(int fd) {
-        return filePaths.getOrDefault(fd, null);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static FileAttribute<Set<PosixFilePermission>> modeToAttributes(int fileMode) {
-        Set<PosixFilePermission> perms = modeToPosixFilePermissions(fileMode);
-        return PosixFilePermissions.asFileAttribute(perms);
-    }
-
-    @TruffleBoundary(allowInlining = true)
     private static Set<PosixFilePermission> modeToPosixFilePermissions(int fileMode) {
         HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7]));
         perms.addAll(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7]));
@@ -4692,7 +4583,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         return perms;
     }
 
-    @TruffleBoundary(allowInlining = true)
     private static Set<StandardOpenOption> flagsToOptions(int flags) {
         Set<StandardOpenOption> options = new HashSet<>();
         int maskedFlags = flags & (O_RDONLY.value | O_WRONLY.value | O_RDWR.value);
@@ -4743,7 +4633,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     public static LinkOption[] getLinkOptions(boolean followSymlinks) {
-        return followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+        return followSymlinks ? NO_LINK_OPTIONS : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     }
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(EmulatedPosixSupport.class);
