@@ -174,7 +174,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -684,9 +683,8 @@ public class PUnpickler extends PythonBuiltinObject {
         public abstract Object execute(VirtualFrame frame, PUnpickler unpickler, TruffleString module, TruffleString name);
 
         @Specialization
-        Object find(VirtualFrame frame, PUnpickler unpickler, TruffleString module, TruffleString name,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            return findClass(frame, boundaryCallData, PythonContext.get(this).getCore(), unpickler, module, name);
+        Object find(VirtualFrame frame, PUnpickler unpickler, TruffleString module, TruffleString name) {
+            return findClass(frame, PythonContext.get(this).getCore(), unpickler, module, name);
         }
     }
 
@@ -1331,7 +1329,7 @@ public class PUnpickler extends PythonBuiltinObject {
             pDataPush(self, obj);
         }
 
-        private void loadInst(VirtualFrame frame, Node inliningTarget, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self, PyObjectCallMethodObjArgs callMethod) {
+        private void loadInst(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PUnpickler self, PyObjectCallMethodObjArgs callMethod) {
             Object cls = null;
             Object obj = null;
             int i = marker(self);
@@ -1351,7 +1349,7 @@ public class PUnpickler extends PythonBuiltinObject {
                     throw badReadLine();
                 }
                 Object className = decodeASCII(frame, s, s.length - 1, T_ERRORS_STRICT);
-                cls = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, className);
+                cls = findClass(frame, ctx.getCore(), self, moduleName, className);
             }
 
             assert cls != null;
@@ -1451,7 +1449,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
         }
 
-        private void loadGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self) {
+        private void loadGlobal(VirtualFrame frame, PythonContext ctx, PUnpickler self) {
             Object global = null;
             TruffleString globalName;
             byte[] s = readLine(frame, self);
@@ -1467,14 +1465,14 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
                 globalName = PickleUtils.decodeUTF8Strict(s, s.length - 1, ensureTsFromByteArray(), ensureTsSwitchEncodingNode());
                 if (globalName != null) {
-                    global = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, globalName);
+                    global = findClass(frame, ctx.getCore(), self, moduleName, globalName);
                 }
             }
 
             pDataPush(self, global);
         }
 
-        private void loadStackGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self) {
+        private void loadStackGlobal(VirtualFrame frame, PythonContext ctx, PUnpickler self) {
             Object globalName = null;
             Object moduleName = null;
             try {
@@ -1486,7 +1484,7 @@ public class PUnpickler extends PythonBuiltinObject {
             if (!PGuards.isString(moduleName) || !PGuards.isString(globalName)) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_REQ_STR, "STACK_GLOBAL");
             }
-            Object global = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, globalName);
+            Object global = findClass(frame, ctx.getCore(), self, moduleName, globalName);
             pDataPush(self, global);
         }
 
@@ -1841,7 +1839,7 @@ public class PUnpickler extends PythonBuiltinObject {
             self.nextReadIdx -= frameLen;
         }
 
-        private void loadExtension(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self, int nbytes) {
+        private void loadExtension(VirtualFrame frame, PythonContext ctx, PUnpickler self, int nbytes) {
             assert (nbytes == 1 || nbytes == 2 || nbytes == 4);
             // the nbytes bytes after the opcode
             int codeOffset = read(frame, self, nbytes);
@@ -1887,7 +1885,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             // Load the object.
-            obj = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, className);
+            obj = findClass(frame, ctx.getCore(), self, moduleName, className);
 
             // Cache code -> obj.
             setDictItem(frame, st.extensionCache, code, obj);
@@ -1901,7 +1899,6 @@ public class PUnpickler extends PythonBuiltinObject {
         @Specialization
         public Object load(VirtualFrame frame, PUnpickler self,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached CallSlotTpNewNode callNew,
                         @Cached ExecutePositionalStarargsNode expandArgs,
@@ -2072,7 +2069,7 @@ public class PUnpickler extends PythonBuiltinObject {
                         continue;
                     case OPCODE_INST:
                         profileSeen(SEEN_INST);
-                        loadInst(frame, inliningTarget, boundaryCallData, ctx, self, callMethod);
+                        loadInst(frame, inliningTarget, ctx, self, callMethod);
                         continue;
                     case OPCODE_NEWOBJ:
                         profileSeen(SEEN_NEWOBJ);
@@ -2084,11 +2081,11 @@ public class PUnpickler extends PythonBuiltinObject {
                         continue;
                     case OPCODE_GLOBAL:
                         profileSeen(SEEN_GLOBAL);
-                        loadGlobal(frame, boundaryCallData, ctx, self);
+                        loadGlobal(frame, ctx, self);
                         continue;
                     case OPCODE_STACK_GLOBAL:
                         profileSeen(SEEN_STACK_GLOBAL);
-                        loadStackGlobal(frame, boundaryCallData, ctx, self);
+                        loadStackGlobal(frame, ctx, self);
                         continue;
                     case OPCODE_APPEND:
                         profileSeen(SEEN_APPEND);
@@ -2176,15 +2173,15 @@ public class PUnpickler extends PythonBuiltinObject {
                         continue;
                     case OPCODE_EXT1:
                         profileSeen(SEEN_EXT1);
-                        loadExtension(frame, boundaryCallData, ctx, self, 1);
+                        loadExtension(frame, ctx, self, 1);
                         continue;
                     case OPCODE_EXT2:
                         profileSeen(SEEN_EXT2);
-                        loadExtension(frame, boundaryCallData, ctx, self, 2);
+                        loadExtension(frame, ctx, self, 2);
                         continue;
                     case OPCODE_EXT4:
                         profileSeen(SEEN_EXT4);
-                        loadExtension(frame, boundaryCallData, ctx, self, 4);
+                        loadExtension(frame, ctx, self, 4);
                         continue;
                     case OPCODE_NEWTRUE:
                         profileSeen(SEEN_NEWTRUE);
