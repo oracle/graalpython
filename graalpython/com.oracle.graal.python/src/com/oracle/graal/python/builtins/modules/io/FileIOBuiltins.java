@@ -42,33 +42,24 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PRawIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.mapPythonSeekWhenceToPosix;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.BUFSIZ;
 import static com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSEFD;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FILENO;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ISATTY;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_MODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READALL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEK;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEKABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TRUNCATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J__BLKSIZE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J__DEALLOC_WARN;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J__FINALIZING;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_NAME;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
@@ -127,10 +118,8 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -159,7 +148,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -877,74 +865,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_CLOSE, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class CloseNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "!self.isCloseFD()")
-        static Object simple(VirtualFrame frame, PFileIO self,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
-            try {
-                callClose.execute(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
-            } catch (PException e) {
-                self.setClosed();
-                throw e;
-            }
-            self.setClosed();
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"self.isCloseFD()", "!self.isFinalizing()"})
-        static Object common(VirtualFrame frame, PFileIO self,
-                        @Bind Node inliningTarget,
-                        @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
-                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
-                        @Shared @Cached PyErrChainExceptions chainExceptions) {
-            try {
-                callSuperClose.execute(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
-            } catch (PException e) {
-                try {
-                    internalClose(frame, self, posixClose);
-                } catch (PException ee) {
-                    throw chainExceptions.execute(inliningTarget, ee, e);
-                }
-                throw e;
-            }
-            internalClose(frame, self, posixClose);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"self.isCloseFD()", "self.isFinalizing()"})
-        static Object slow(VirtualFrame frame, PFileIO self,
-                        @Bind Node inliningTarget,
-                        @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
-                        @Shared @Cached PyErrChainExceptions chainExceptions) {
-            PException rawIOException = null;
-            PythonContext context = PythonContext.get(inliningTarget);
-            try {
-                callSuperClose.execute(frame, inliningTarget, context.lookupType(PRawIOBase), T_CLOSE, self);
-            } catch (PException e) {
-                rawIOException = e;
-            }
-            deallocWarn(frame, self, warnNode);
-            try {
-                internalClose(frame, self, posixClose);
-            } catch (PException ee) {
-                if (rawIOException != null) {
-                    throw chainExceptions.execute(inliningTarget, ee, rawIOException);
-                } else {
-                    throw ee;
-                }
-            }
-            if (rawIOException != null) {
-                throw rawIOException;
-            }
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = J_SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends PythonUnaryBuiltinNode {
@@ -969,51 +889,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()", "!isUnknown(self)"})
         static Object known(PFileIO self) {
             return self.getSeekable() == 1;
-        }
-
-        @Specialization(guards = "self.isClosed()")
-        static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
-        }
-    }
-
-    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReadableNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "!self.isClosed()")
-        static Object readable(PFileIO self) {
-            return self.isReadable();
-        }
-
-        @Specialization(guards = "self.isClosed()")
-        static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
-        }
-    }
-
-    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class WritableNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "!self.isClosed()")
-        static Object writable(PFileIO self) {
-            return self.isWritable();
-        }
-
-        @Specialization(guards = "self.isClosed()")
-        static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
-        }
-    }
-
-    @Builtin(name = J_FILENO, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class FilenoNode extends PythonBuiltinNode {
-        @Specialization(guards = "!self.isClosed()")
-        static Object fileno(PFileIO self) {
-            return self.getFD();
         }
 
         @Specialization(guards = "self.isClosed()")
@@ -1053,54 +928,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
             FileIOBuiltins.deallocWarn(frame, self, warnNode);
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    abstract static class ClosedNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object doit(PFileIO self) {
-            return self.getFD() < 0;
-        }
-    }
-
-    @Builtin(name = J_CLOSEFD, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    abstract static class CloseFDNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object doit(PFileIO self) {
-            return self.isCloseFD();
-        }
-    }
-
-    @Builtin(name = J_MODE, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    abstract static class ModeNode extends PythonUnaryBuiltinNode {
-
-        public static final TruffleString T_XB = tsLiteral("xb");
-        public static final TruffleString T_XBP = tsLiteral("xb+");
-        public static final TruffleString T_AB = tsLiteral("ab");
-        public static final TruffleString T_ABP = tsLiteral("ab+");
-        public static final TruffleString T_RB = tsLiteral("rb");
-        public static final TruffleString T_RBP = tsLiteral("rb+");
-        public static final TruffleString T_WB = tsLiteral("wb");
-
-        static TruffleString modeString(PFileIO self) {
-            if (self.isCreated()) {
-                return self.isReadable() ? T_XBP : T_XB;
-            }
-            if (self.isAppending()) {
-                return self.isReadable() ? T_ABP : T_AB;
-            } else if (self.isReadable()) {
-                return self.isWritable() ? T_RBP : T_RB;
-            }
-            return T_WB;
-        }
-
-        @Specialization
-        static TruffleString doit(PFileIO self) {
-            return modeString(self);
         }
     }
 
@@ -1155,7 +982,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
                         @Cached PRaiseNode raiseNode) {
-            TruffleString mode = ModeNode.modeString(self);
+            TruffleString mode = CommonFileIOBuiltins.ModeNode.mode(self);
             TruffleString closefd = self.isCloseFD() ? T_TRUE : T_FALSE;
             Object nameobj = lookupName.execute(frame, inliningTarget, self, T_NAME);
             if (nameobj instanceof PNone) {

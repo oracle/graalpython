@@ -178,6 +178,7 @@ import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BytesIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.CommonFileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseDictBuiltins;
@@ -187,6 +188,7 @@ import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.io.WindowsConsoleIOBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
@@ -620,7 +622,9 @@ public abstract class Python3Core {
                         new BufferedReaderMixinBuiltins(),
                         new BufferedWriterMixinBuiltins(),
                         new BufferedIOMixinBuiltins(),
+                        new CommonFileIOBuiltins(),
                         new FileIOBuiltins(),
+                        new WindowsConsoleIOBuiltins(),
                         new TextIOWrapperBuiltins(),
                         new IncrementalNewlineDecoderBuiltins(),
                         new BufferedRWPairBuiltins(),

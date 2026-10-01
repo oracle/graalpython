@@ -213,6 +213,22 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int getWindowsConsoleType(int fd,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return 0;
+        }
+        return nativeLib.getWindowsConsoleType(nativePosixSupport, fd);
+    }
+
+    @ExportMessage
+    final long writeWindowsConsole(int fd, Buffer data,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.writeWindowsConsole(nativePosixSupport, fd, data);
+    }
+
+    @ExportMessage
     final int dup(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();

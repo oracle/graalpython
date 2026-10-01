@@ -96,6 +96,11 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
 
+    /** Returns {@code 'r'}, {@code 'w'}, or zero when {@code fd} is not a Windows console. */
+    public abstract int getWindowsConsoleType(Object receiver, int fd);
+
+    public abstract long writeWindowsConsole(Object receiver, int fd, Buffer data) throws PosixException;
+
     public abstract int dup(Object receiver, int fd) throws PosixException;
 
     public abstract int dup2(Object receiver, int fd, int fd2, boolean inheritable) throws PosixException;

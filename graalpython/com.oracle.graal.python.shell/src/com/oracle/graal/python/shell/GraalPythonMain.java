@@ -157,6 +157,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noUserSite = false;
     private boolean noSite = false;
     private boolean unbufferedIO = false;
+    private boolean legacyWindowsStdio = false;
     private boolean multiContext = false;
     private int repeatedRuns = 1;
     private boolean snaptshotStartup = false;
@@ -794,6 +795,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             safePath = safePath || getBoolEnv("PYTHONSAFEPATH");
             verboseFlag = verboseFlag || getBoolEnv("PYTHONVERBOSE");
             unbufferedIO = unbufferedIO || getBoolEnv("PYTHONUNBUFFERED");
+            legacyWindowsStdio = getBoolEnv("PYTHONLEGACYWINDOWSSTDIO");
             dontWriteBytecode = dontWriteBytecode || getBoolEnv("PYTHONDONTWRITEBYTECODE");
             String maxStrDigitsEnv = getEnv("PYTHONINTMAXSTRDIGITS");
             if (intMaxStrDigits < 0 && maxStrDigitsEnv != null) {
@@ -877,6 +879,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
+        if (IS_WINDOWS) {
+            contextBuilder.option("python.LegacyWindowsStdio", Boolean.toString(legacyWindowsStdio));
+        }
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[programArgs.size()]));
@@ -1288,6 +1293,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         "PYTHON_CPU_COUNT: override the return value of os.cpu_count() (-X cpu_count).\n" +
                         "PYTHONCASEOK : ignore case in 'import' statements (Windows).\n" +
                         "PYTHONIOENCODING: Encoding[:errors] used for stdin/stdout/stderr.\n" +
+                        "PYTHONLEGACYWINDOWSSTDIO: use legacy Windows console I/O.\n" +
                         "PYTHONHASHSEED: if this variable is set to 'random', the effect is the same\n" +
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +

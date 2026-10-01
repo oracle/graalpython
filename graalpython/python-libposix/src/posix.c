@@ -1161,6 +1161,123 @@ GP_EXPORT int64_t call_write(int32_t fd, void *buf, uint64_t count) {
     return write_noraise(fd, buf, count > INT_MAX ? INT_MAX : (unsigned int) count);
 }
 
+GP_EXPORT int32_t call_get_windows_console_type(int32_t fd) {
+    intptr_t osfhandle = get_osfhandle_noraise(fd);
+    if (osfhandle == -1) {
+        return 0;
+    }
+    HANDLE handle = (HANDLE) osfhandle;
+    DWORD mode;
+    if (!GetConsoleMode(handle, &mode)) {
+        return 0;
+    }
+    DWORD event_count;
+    return GetNumberOfConsoleInputEvents(handle, &event_count) ? 'r' : 'w';
+}
+
+/* Copied from CPython's Modules/_io/winconsoleio.c (_find_last_utf8_boundary). */
+static uint32_t find_last_utf8_boundary(const unsigned char *buf, uint32_t len) {
+    for (uint32_t count = 1; count < 4 && count <= len; count++) {
+        unsigned char c = buf[len - count];
+        if (c < 0x80) {
+            return len;
+        }
+        if (c >= 0xc0) {
+            if (c < 0xe0 ? count < 2 : c < 0xf0 ? count < 3 : c < 0xf8 ? count < 4 : 0) {
+                return len - count;
+            }
+            return len;
+        }
+    }
+    return len;
+}
+
+static uint32_t wchar_to_utf8_count(const unsigned char *s, uint32_t len, uint32_t n) {
+    uint32_t start = 0;
+    while (1) {
+        uint32_t mid = 0;
+        for (uint32_t i = len / 2; i <= len; i++) {
+            mid = find_last_utf8_boundary(s, i);
+            if (mid != 0) {
+                break;
+            }
+        }
+        if (mid == len) {
+            uint32_t wlen = MultiByteToWideChar(CP_UTF8, 0, (const char *) s, len, NULL, 0);
+            return wlen <= n ? start + len : start;
+        }
+        if (mid == 0) {
+            mid = len > 1 ? len - 1 : 1;
+        }
+        uint32_t wlen = MultiByteToWideChar(CP_UTF8, 0, (const char *) s, mid, NULL, 0);
+        if (wlen <= n) {
+            s += mid;
+            start += mid;
+            len -= mid;
+            n -= wlen;
+        } else {
+            len = mid;
+        }
+    }
+}
+
+GP_EXPORT int64_t call_write_windows_console(int32_t fd, const unsigned char *buf, uint64_t count) {
+    intptr_t osfhandle = get_osfhandle_noraise(fd);
+    if (osfhandle == -1) {
+        capture_errno();
+        return -1;
+    }
+    if (count == 0) {
+        return 0;
+    }
+
+    const uint32_t max_wlen = 32766U / sizeof(wchar_t);
+    // Like CPython, write at most one bounded chunk and let the caller handle partial writes.
+    uint32_t len = count > max_wlen * 3U ? max_wlen * 3U : (uint32_t) count;
+    uint32_t wlen;
+    while (1) {
+        uint32_t boundary = find_last_utf8_boundary(buf, len);
+        // If the whole chunk is incomplete UTF-8, convert it to replacement characters rather
+        // than returning zero forever when a buffered caller tries to flush it.
+        if (boundary != 0) {
+            len = boundary;
+        }
+        wlen = MultiByteToWideChar(CP_UTF8, 0, (const char *) buf, len, NULL, 0);
+        if (wlen == 0) {
+            set_win_errno(GetLastError());
+            return -1;
+        }
+        if (wlen <= max_wlen) {
+            break;
+        }
+        len /= 2;
+    }
+
+    wchar_t *wbuf = (wchar_t *) malloc(wlen * sizeof(wchar_t));
+    if (wbuf == NULL) {
+        set_posix_errno(ENOMEM);
+        return -1;
+    }
+    wlen = MultiByteToWideChar(CP_UTF8, 0, (const char *) buf, len, wbuf, wlen);
+    DWORD written = 0;
+    BOOL result = wlen && WriteConsoleW((HANDLE) osfhandle, wbuf, wlen, &written, NULL);
+    if (!result) {
+        DWORD error = GetLastError();
+        free(wbuf);
+        set_win_errno(error);
+        return -1;
+    }
+    free(wbuf);
+    if (written < wlen) {
+        len = wchar_to_utf8_count(buf, len, written);
+    }
+    if (len == 0) {
+        set_posix_errno(EIO);
+        return -1;
+    }
+    return len;
+}
+
 GP_EXPORT int32_t call_dup(int32_t fd) {
     if (win_socket_entry_index(fd) >= 0) {
         return win_socket_dup(fd);
@@ -2441,6 +2558,20 @@ int64_t call_read(int32_t fd, void *buf, uint64_t count) {
 
 int64_t call_write(int32_t fd, void *buf, uint64_t count) {
     CAPTURE_ERRNO_AND_RETURN(-1, write(fd, buf, count));
+}
+
+int32_t call_get_windows_console_type(int32_t fd) {
+    (void) fd;
+    return 0;
+}
+
+int64_t call_write_windows_console(int32_t fd, const void *buf, uint64_t count) {
+    (void) fd;
+    (void) buf;
+    (void) count;
+    errno = ENOSYS;
+    capture_errno();
+    return -1;
 }
 
 int32_t call_dup(int32_t fd) {

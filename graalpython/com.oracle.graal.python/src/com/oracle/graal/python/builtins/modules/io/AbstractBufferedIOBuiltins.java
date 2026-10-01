@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,7 +104,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, BUF_SIZE_POS);
         }
 
-        private static void init(PBuffered self, int bufferSize, PythonLanguage language) {
+        static void init(PBuffered self, int bufferSize, PythonLanguage language) {
             self.initBuffer(bufferSize);
             self.setLock(PFactory.createLock(language));
             self.setOwner(0);

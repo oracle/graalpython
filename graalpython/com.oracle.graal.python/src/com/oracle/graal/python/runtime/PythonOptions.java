@@ -143,6 +143,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -u flag. Force stdout and stderr to be unbuffered.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> UnbufferedIO = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONLEGACYWINDOWSSTDIO environment variable for the standard launcher.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> LegacyWindowsStdio = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -I flag. Isolate from the users environment by not adding the cwd to the path", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
 

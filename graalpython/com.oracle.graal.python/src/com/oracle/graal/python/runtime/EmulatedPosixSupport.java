@@ -514,6 +514,20 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public int getWindowsConsoleType(int fd) {
+        return 0;
+    }
+
+    @ExportMessage
+    public long writeWindowsConsole(int fd, Buffer data,
+                    @Bind Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+        return write(fd, data, inliningTarget, errorBranch, eqNode);
+    }
+
     @TruffleBoundary(allowInlining = true)
     private static int doWriteOp(ByteBuffer data, WritableByteChannel channel) throws IOException {
         return channel.write(data);
