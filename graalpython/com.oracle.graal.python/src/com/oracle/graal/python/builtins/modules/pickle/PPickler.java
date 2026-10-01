@@ -40,12 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.pickle;
 
-import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_IMPORT_MAPPING;
-import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_STR_NOT_P;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NEWOBJ_EX__;
@@ -55,10 +52,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.PicklingError;
@@ -74,7 +69,6 @@ import java.util.WeakHashMap;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -85,19 +79,15 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.CachedHashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.IntNodesFactory;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -106,41 +96,27 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNodeGen;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -161,11 +137,9 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TranscodingErrorHandler;
@@ -438,9 +412,8 @@ public class PPickler extends PythonBuiltinObject {
         }
     }
 
-    public abstract static class SaveNode extends Node {
+    public abstract static class SaveNode extends PicklerNodes.BasePickleNode {
         private static final int MAX_RECURSION_DEPTH = 3;
-        private static final TruffleString T_LOCALS = tsLiteral("<locals>");
         private static final TruffleString T_SYS_MODULES = tsLiteral("sys.modules");
 
         static final byte[] TUPLE_LEN_2_OPCODE = new byte[]{PickleUtils.OPCODE_EMPTY_TUPLE, PickleUtils.OPCODE_TUPLE1, PickleUtils.OPCODE_TUPLE2, PickleUtils.OPCODE_TUPLE3};
@@ -457,67 +430,18 @@ public class PPickler extends PythonBuiltinObject {
         @Child private ListNodes.ConstructListNode constructListNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
         @Child private FlushToFileNode flushToFileNode;
-        @Child private CallNode callNode;
-        @SuppressWarnings("FieldMayBeFinal") @Child private PyObjectGetItem getItemNode = PyObjectGetItem.create();
-        @SuppressWarnings("FieldMayBeFinal") @Child private PyIterNextNode getNextNode = PyIterNextNode.create();
-        @Child private CastToTruffleStringNode toStringNode = CastToTruffleStringNode.create();
-        @Child private HiddenAttr.ReadNode readHiddenAttributeNode;
-        @Child private IsBuiltinObjectProfile errProfile;
-        @Child private InlineIsBuiltinClassProfile isBuiltinClassProfile;
-        @Child private CachedHashingStorageGetItem getHashingStorageItemNode;
-        @Child private SequenceStorageNodes.GetItemScalarNode getSeqStorageItemNode;
         @Child private TupleStorageNode getTupleStorageNode;
-        @Child private PyObjectSizeNode sizeNode;
-        @Child private PyIterCheckNode isIteratorObjectNode;
-        @Child private GetClassNode getClassNode;
-        @Child private PyObjectLookupAttr lookupAttrNode;
-        @Child private ExecutePositionalStarargsNode getArgsNode;
-        @Child private ExpandKeywordStarargsNode getKwArgsNode;
-        @Child private HashingStorageGetIterator getHashingStorageIteratorNode;
-        @Child private HashingStorageIteratorNext hashingStorageItNext;
-        @Child private HashingStorageIteratorKey hashingStorageItKey;
-        @Child private HashingStorageIteratorValue hashingStorageItValue;
-        @Child private TruffleString.FromByteArrayWithCompactionUTF32Node tsFromByteArrayWithCompactionNode;
-        @Child private TruffleString.CodePointLengthNode tsCodePointLengthNode;
         @Child private TruffleString.CodePointAtIndexUTF32Node tsCodePointAtIndexUTF32Node;
         @Child private TruffleString.FromLongNode tsFromLongNode;
-        @Child private TruffleString.IndexOfStringNode tsIndexOfStringNode;
-        @Child private TruffleString.SubstringNode tsSubstringNode;
-        @Child private TruffleString.EqualNode tsEqualNode;
         @Child private TruffleString.CopyToByteArrayNode tsCopyToByteArrayNode;
         @Child private TruffleString.GetCodeRangeNode tsGetCodeRangeNode;
-        @Child private TruffleString.SwitchEncodingNode tsSwitchEncodingNode;
-        private final BranchProfile errorProfile = BranchProfile.create();
 
-        protected PException raise(PythonBuiltinClassType type, TruffleString string) {
-            errorProfile.enter();
-            return PRaiseNode.raiseStatic(this, type, string);
-        }
-
-        protected PException raise(PythonBuiltinClassType exceptionType) {
-            errorProfile.enter();
-            return PRaiseNode.raiseStatic(this, exceptionType);
-        }
-
-        protected final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
-            errorProfile.enter();
-            return PRaiseNode.raiseStatic(this, type, format, arguments);
-        }
-
-        protected TruffleString.FromByteArrayWithCompactionUTF32Node ensureTsFromByteArrayWithCompaction() {
-            if (tsFromByteArrayWithCompactionNode == null) {
+        protected SequenceStorage getTupleStorage(Object tuple) {
+            if (getTupleStorageNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsFromByteArrayWithCompactionNode = insert(TruffleString.FromByteArrayWithCompactionUTF32Node.create());
+                getTupleStorageNode = insert(PPicklerFactory.TupleStorageNodeGen.create());
             }
-            return tsFromByteArrayWithCompactionNode;
-        }
-
-        protected TruffleString.CodePointLengthNode ensureTsCodePointLengthNode() {
-            if (tsCodePointLengthNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsCodePointLengthNode = insert(TruffleString.CodePointLengthNode.create());
-            }
-            return tsCodePointLengthNode;
+            return getTupleStorageNode.execute(tuple);
         }
 
         protected TruffleString.CodePointAtIndexUTF32Node ensureTsCodePointAtIndexUTF32Node() {
@@ -536,30 +460,6 @@ public class PPickler extends PythonBuiltinObject {
             return tsFromLongNode;
         }
 
-        protected TruffleString.IndexOfStringNode ensureTsIndexOfStringNode() {
-            if (tsIndexOfStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsIndexOfStringNode = insert(TruffleString.IndexOfStringNode.create());
-            }
-            return tsIndexOfStringNode;
-        }
-
-        protected TruffleString.SubstringNode ensureTsSubstringNode() {
-            if (tsSubstringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsSubstringNode = insert(TruffleString.SubstringNode.create());
-            }
-            return tsSubstringNode;
-        }
-
-        protected TruffleString.EqualNode ensureTsEqualNode() {
-            if (tsEqualNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsEqualNode = insert(TruffleString.EqualNode.create());
-            }
-            return tsEqualNode;
-        }
-
         protected TruffleString.CopyToByteArrayNode ensureTsCopyToByteArrayNode() {
             if (tsCopyToByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -576,262 +476,12 @@ public class PPickler extends PythonBuiltinObject {
             return tsGetCodeRangeNode;
         }
 
-        protected TruffleString.SwitchEncodingNode ensureTsSwitchEncodingNode() {
-            if (tsSwitchEncodingNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsSwitchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
-            }
-            return tsSwitchEncodingNode;
-        }
-
-        protected HashingStorageIterator getHashingStorageIterator(HashingStorage storage) {
-            if (getHashingStorageIteratorNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getHashingStorageIteratorNode = insert(HashingStorageGetIterator.create());
-            }
-            return getHashingStorageIteratorNode.executeCached(storage);
-        }
-
-        protected HashingStorageIteratorNext ensureHashingStorageIteratorNext() {
-            if (hashingStorageItNext == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hashingStorageItNext = insert(HashingStorageIteratorNext.create());
-            }
-            return hashingStorageItNext;
-        }
-
-        protected HashingStorageIteratorKey ensureHashingStorageIteratorKey() {
-            if (hashingStorageItKey == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hashingStorageItKey = insert(HashingStorageIteratorKey.create());
-            }
-            return hashingStorageItKey;
-        }
-
-        protected HashingStorageIteratorValue ensureHashingStorageIteratorValue() {
-            if (hashingStorageItValue == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hashingStorageItValue = insert(HashingStorageIteratorValue.create());
-            }
-            return hashingStorageItValue;
-        }
-
-        protected int length(VirtualFrame frame, Object object) {
-            if (sizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sizeNode = insert(PyObjectSizeNode.create());
-            }
-            return sizeNode.executeCached(frame, object);
-        }
-
-        protected boolean isIterator(Object iter) {
-            if (isIteratorObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isIteratorObjectNode = insert(PyIterCheckNode.create());
-            }
-            return isIteratorObjectNode.executeCached(iter);
-        }
-
-        protected CallNode ensureCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(CallNode.create());
-            }
-            return callNode;
-        }
-
-        protected Object callStarArgsAndKwArgs(VirtualFrame frame, Object method, Object args, Object kwargs) {
-            if (getArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getArgsNode = insert(ExecutePositionalStarargsNode.create());
-            }
-            PKeyword[] keywords;
-            if (kwargs == null) {
-                keywords = PKeyword.EMPTY_KEYWORDS;
-            } else {
-                if (getKwArgsNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getKwArgsNode = insert(ExpandKeywordStarargsNodeGen.create());
-                }
-                keywords = getKwArgsNode.executeCached(kwargs);
-            }
-            return ensureCallNode().execute(frame, method, getArgsNode.executeWith(frame, args), keywords);
-        }
-
-        protected PyObjectLookupAttr getLookupAttrNode() {
-            if (lookupAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupAttrNode = insert(PyObjectLookupAttr.create());
-            }
-            return lookupAttrNode;
-        }
-
-        protected Object lookupAttribute(Frame frame, Object receiver, TruffleString name) {
-            return getLookupAttrNode().executeCached(frame, receiver, name);
-        }
-
-        protected Object lookupAttributeStrict(Frame frame, Object receiver, TruffleString name) {
-            Object attr = lookupAttribute(frame, receiver, name);
-            if (attr == NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
-            }
-            return attr;
-        }
-
-        protected Object getClass(Object object) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.executeCached(object);
-        }
-
-        protected Object getClass(Frame frame, Object object) {
-            Object cls = getLookupAttrNode().executeCached(frame, object, T___CLASS__);
-            return cls == NO_VALUE ? getClass(object) : cls;
-        }
-
-        protected HiddenAttr.ReadNode ensureReadHiddenAttrNode() {
-            if (readHiddenAttributeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readHiddenAttributeNode = insert(HiddenAttr.ReadNode.create());
-            }
-            return readHiddenAttributeNode;
-        }
-
-        public PickleState getGlobalState(Python3Core core) {
-            Object state = ensureReadHiddenAttrNode().executeCached(core.lookupType(PythonBuiltinClassType.Pickler), HiddenAttr.PICKLE_STATE, NO_VALUE);
-            assert state instanceof PickleState;
-            return (PickleState) state;
-        }
-
-        protected Object getDictItem(VirtualFrame frame, PDict dict, Object key) {
-            if (getHashingStorageItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getHashingStorageItemNode = insert(CachedHashingStorageGetItem.create());
-            }
-            return getHashingStorageItemNode.execute(frame, dict.getDictStorage(), key);
-        }
-
-        protected IsBuiltinObjectProfile ensureErrProfile() {
-            if (errProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                errProfile = insert(IsBuiltinObjectProfile.create());
-            }
-            return errProfile;
-        }
-
-        protected boolean isBuiltinClass(Object cls, PythonBuiltinClassType type) {
-            if (isBuiltinClassProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinClassProfile = insert(InlineIsBuiltinClassProfile.create());
-            }
-            return isBuiltinClassProfile.profileClassCached(cls, type);
-        }
-
-        public Object getNextItem(VirtualFrame frame, Object iterator) {
-            return getNextNode.executeCached(frame, iterator);
-        }
-
-        public Object getItem(SequenceStorage storage, int index) {
-            if (getSeqStorageItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSeqStorageItemNode = insert(SequenceStorageNodes.GetItemScalarNode.create());
-            }
-            return getSeqStorageItemNode.executeCached(storage, index);
-        }
-
-        protected SequenceStorage getTupleStorage(Object tuple) {
-            if (getTupleStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTupleStorageNode = insert(PPicklerFactory.TupleStorageNodeGen.create());
-            }
-            return getTupleStorageNode.execute(tuple);
-        }
-
-        public Object getItem(VirtualFrame frame, Object obj, Object key) {
-            return getItemNode.executeCached(frame, obj, key);
-        }
-
-        public TruffleString asString(Object value) {
-            if (value instanceof TruffleString string) {
-                return string;
-            }
-            try {
-                return toStringNode.executeCached(value);
-            } catch (CannotCastException e) {
-                return null;
-            }
-        }
-
         public TruffleString asStringStrict(Object value) {
-            if (value instanceof TruffleString string) {
-                return string;
-            }
-            try {
-                return toStringNode.executeCached(value);
-            } catch (CannotCastException e) {
+            TruffleString string = asString(value);
+            if (string == null) {
                 throw raise(TypeError, MUST_BE_STR_NOT_P, value);
             }
-        }
-
-        public static Pair<Object, Object> getDeepAttribute(VirtualFrame frame, PyObjectLookupAttr lookup, Object obj, TruffleString[] names) {
-            Object parent = null;
-            Object object = obj;
-            for (TruffleString name : names) {
-                parent = object;
-                object = lookup.executeCached(frame, parent, name);
-                if (object == NO_VALUE) {
-                    return null;
-                }
-            }
-            return Pair.create(object, parent);
-        }
-
-        public TruffleString[] getDottedPath(Object obj, TruffleString name) {
-            TruffleString[] dottedPath = StringUtils.split(name, T_DOT, ensureTsCodePointLengthNode(), ensureTsIndexOfStringNode(), ensureTsSubstringNode(), ensureTsEqualNode());
-            assert dottedPath.length > 0;
-            for (TruffleString subPath : dottedPath) {
-                if (ensureTsEqualNode().execute(subPath, T_LOCALS, TS_ENCODING)) {
-                    if (obj == null) {
-                        throw raise(AttributeError, ErrorMessages.CANT_PICKLE_LOCAL_OBJ_S, name);
-                    } else {
-                        throw raise(AttributeError, ErrorMessages.CANT_PICKLE_ATTR_S_OF_P, name, obj);
-                    }
-                }
-            }
-            return dottedPath;
-        }
-
-        protected Pair<TruffleString, TruffleString> get3to2Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
-            PickleState state = getGlobalState(core);
-            return getMapping(frame, state.nameMapping3To2, state.importMapping3To2, T_CP_REVERSE_NAME_MAPPING, T_CP_REVERSE_IMPORT_MAPPING, moduleName, globalName);
-        }
-
-        private Pair<TruffleString, TruffleString> getMapping(VirtualFrame frame, PDict nameMapping, PDict importMapping,
-                        TruffleString nameMappingLabel, TruffleString importMappingLabel, TruffleString moduleName, TruffleString globalName) {
-            Object key = PFactory.createTuple(PythonLanguage.get(this), new Object[]{moduleName, globalName});
-            Object item = getDictItem(frame, nameMapping, key);
-            if (item != null) {
-                if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
-                    throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P, nameMappingLabel, "2-tuples", item);
-                }
-                SequenceStorage storage = ((PTuple) item).getSequenceStorage();
-                Object mappedModuleName = getItem(storage, 0);
-                Object mappedGlobalName = getItem(storage, 1);
-                if (!PGuards.isString(mappedModuleName) || !PGuards.isString(mappedGlobalName)) {
-                    throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P_P, nameMappingLabel, "str", mappedModuleName, mappedGlobalName);
-                }
-                return Pair.create(asString(mappedModuleName), asString(mappedGlobalName));
-            }
-            item = getDictItem(frame, importMapping, moduleName);
-            if (item != null) {
-                if (!PGuards.isString(item)) {
-                    throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P, importMappingLabel, "strings", item);
-                }
-                return Pair.create(asString(item), globalName);
-            }
-            return Pair.create(moduleName, globalName);
+            return string;
         }
 
         private static boolean checkModule(VirtualFrame frame, PyObjectLookupAttr lookup, Object moduleName, Object module, Object global, TruffleString[] dottedPath) {

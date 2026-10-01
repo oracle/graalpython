@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_IMPORT_MAPPING;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_NAME_MAPPING;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_IMPORT_MAPPING;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -588,6 +590,11 @@ public final class PicklerNodes {
             }
         }
 
+        protected Pair<TruffleString, TruffleString> get3to2Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
+            PickleState state = getGlobalState(core);
+            return getMapping(frame, state.nameMapping3To2, state.importMapping3To2, T_CP_REVERSE_NAME_MAPPING, T_CP_REVERSE_IMPORT_MAPPING, moduleName, globalName);
+        }
+
         protected Pair<TruffleString, TruffleString> get2To3Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
             PickleState state = getGlobalState(core);
             return getMapping(frame, state.nameMapping2To3, state.importMapping2To3, T_CP_NAME_MAPPING, T_CP_IMPORT_MAPPING, moduleName, globalName);
@@ -598,11 +605,12 @@ public final class PicklerNodes {
             Object key = PFactory.createTuple(PythonLanguage.get(this), new Object[]{moduleName, globalName});
             Object item = getDictItem(frame, nameMapping, key);
             if (item != null) {
-                if (!(item instanceof PTuple) || length(frame, item) != 2) {
+                if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P, nameMappingLabel, "2-tuples", item);
                 }
-                Object mappedModuleName = getItem(frame, item, 0);
-                Object mappedGlobalName = getItem(frame, item, 1);
+                SequenceStorage storage = ((PTuple) item).getSequenceStorage();
+                Object mappedModuleName = getItem(storage, 0);
+                Object mappedGlobalName = getItem(storage, 1);
                 if (!PGuards.isString(mappedModuleName) || !PGuards.isString(mappedGlobalName)) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_S_NOT_P_P, nameMappingLabel, "str", mappedModuleName, mappedGlobalName);
                 }
