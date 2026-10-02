@@ -589,9 +589,22 @@ public class PPickler extends PythonBuiltinObject {
         @CompilationFinal private long seenTypes;
 
         private final int depth;
-        @Child private SaveNode recursiveSaveNode1;
-        @Child private SaveNode recursiveSaveNode2;
-        @Child private SaveNode recursiveSaveNode3;
+        // Keep recursive profiles separate for each role in the pickle stream.
+        @Child private SaveNode dictKeySaveNode;
+        @Child private SaveNode dictValueSaveNode;
+        @Child private SaveNode setElementSaveNode;
+        @Child private SaveNode listElementSaveNode;
+        @Child private SaveNode tupleElementSaveNode;
+        @Child private SaveNode persistentIdSaveNode;
+        @Child private SaveNode reduceClassSaveNode;
+        @Child private SaveNode reduceCallableSaveNode;
+        @Child private SaveNode reduceArgsSaveNode;
+        @Child private SaveNode reduceKwargsSaveNode;
+        @Child private SaveNode reduceStateSaveNode;
+        @Child private SaveNode reduceStateSetterSaveNode;
+        @Child private SaveNode reduceObjectSaveNode;
+        @Child private SaveNode globalModuleNameSaveNode;
+        @Child private SaveNode globalNameSaveNode;
 
         @Child private ListNodes.ConstructListNode constructListNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
@@ -822,51 +835,181 @@ public class PPickler extends PythonBuiltinObject {
             return tupleCheckNode.execute(object);
         }
 
-        private void save(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
+        private void saveDictKey(VirtualFrame frame, PPickler pickler, Object obj) {
             if (depth < 0) {
-                saveDepthExceeded(pickler, obj, persSave);
+                saveDepthExceeded(pickler, obj, 0);
                 return;
             }
-            if (recursiveSaveNode1 == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveSaveNode1 = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+            if (dictKeySaveNode == null) {
+                dictKeySaveNode = createRecursiveSaveNode();
             }
-            if (depth < MAX_RECURSION_DEPTH) {
-                recursiveSaveNode1.execute(frame, pickler, obj, persSave);
-            } else {
-                saveSetupBoundary(frame, recursiveSaveNode1, pickler, obj, persSave);
-            }
+            saveRecursive(frame, dictKeySaveNode, pickler, obj, 0);
         }
 
-        private void save2(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
+        private void saveDictValue(VirtualFrame frame, PPickler pickler, Object obj) {
             if (depth < 0) {
-                saveDepthExceeded(pickler, obj, persSave);
+                saveDepthExceeded(pickler, obj, 0);
                 return;
             }
-            if (recursiveSaveNode2 == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveSaveNode2 = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+            if (dictValueSaveNode == null) {
+                dictValueSaveNode = createRecursiveSaveNode();
             }
-            if (depth < MAX_RECURSION_DEPTH) {
-                recursiveSaveNode2.execute(frame, pickler, obj, persSave);
-            } else {
-                saveSetupBoundary(frame, recursiveSaveNode2, pickler, obj, persSave);
-            }
+            saveRecursive(frame, dictValueSaveNode, pickler, obj, 0);
         }
 
-        private void save3(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
+        private void saveSetElement(VirtualFrame frame, PPickler pickler, Object obj) {
             if (depth < 0) {
-                saveDepthExceeded(pickler, obj, persSave);
+                saveDepthExceeded(pickler, obj, 0);
                 return;
             }
-            if (recursiveSaveNode3 == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveSaveNode3 = insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+            if (setElementSaveNode == null) {
+                setElementSaveNode = createRecursiveSaveNode();
             }
+            saveRecursive(frame, setElementSaveNode, pickler, obj, 0);
+        }
+
+        private void saveListElement(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (listElementSaveNode == null) {
+                listElementSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, listElementSaveNode, pickler, obj, 0);
+        }
+
+        private void saveTupleElement(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (tupleElementSaveNode == null) {
+                tupleElementSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, tupleElementSaveNode, pickler, obj, 0);
+        }
+
+        private void savePersistentId(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 1);
+                return;
+            }
+            if (persistentIdSaveNode == null) {
+                persistentIdSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, persistentIdSaveNode, pickler, obj, 1);
+        }
+
+        private void saveReduceClass(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceClassSaveNode == null) {
+                reduceClassSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceClassSaveNode, pickler, obj, 0);
+        }
+
+        private void saveReduceCallable(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceCallableSaveNode == null) {
+                reduceCallableSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceCallableSaveNode, pickler, obj, 0);
+        }
+
+        private void saveReduceArgs(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceArgsSaveNode == null) {
+                reduceArgsSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceArgsSaveNode, pickler, obj, 0);
+        }
+
+        private void saveReduceKwargs(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceKwargsSaveNode == null) {
+                reduceKwargsSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceKwargsSaveNode, pickler, obj, 0);
+        }
+
+        private void saveReduceState(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceStateSaveNode == null) {
+                reduceStateSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceStateSaveNode, pickler, obj, 0);
+        }
+
+        private void saveReduceStateSetter(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceStateSetterSaveNode == null) {
+                reduceStateSetterSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceStateSetterSaveNode, pickler, obj, 0);
+        }
+
+        private void saveReduceObject(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (reduceObjectSaveNode == null) {
+                reduceObjectSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, reduceObjectSaveNode, pickler, obj, 0);
+        }
+
+        private void saveGlobalModuleName(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (globalModuleNameSaveNode == null) {
+                globalModuleNameSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, globalModuleNameSaveNode, pickler, obj, 0);
+        }
+
+        private void saveGlobalName(VirtualFrame frame, PPickler pickler, Object obj) {
+            if (depth < 0) {
+                saveDepthExceeded(pickler, obj, 0);
+                return;
+            }
+            if (globalNameSaveNode == null) {
+                globalNameSaveNode = createRecursiveSaveNode();
+            }
+            saveRecursive(frame, globalNameSaveNode, pickler, obj, 0);
+        }
+
+        private SaveNode createRecursiveSaveNode() {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return insert(PPicklerFactory.SaveNodeGen.create(depth < MAX_RECURSION_DEPTH ? depth + 1 : -1));
+        }
+
+        private void saveRecursive(VirtualFrame frame, SaveNode saveNode, PPickler pickler, Object obj, int persSave) {
             if (depth < MAX_RECURSION_DEPTH) {
-                recursiveSaveNode3.execute(frame, pickler, obj, persSave);
+                saveNode.execute(frame, pickler, obj, persSave);
             } else {
-                saveSetupBoundary(frame, recursiveSaveNode3, pickler, obj, persSave);
+                saveSetupBoundary(frame, saveNode, pickler, obj, persSave);
             }
         }
 
@@ -986,9 +1129,12 @@ public class PPickler extends PythonBuiltinObject {
                 i = 0;
                 pickler.write(this, PickleUtils.OPCODE_MARK);
                 while (nextNode.executeCached(storage, it)) {
-                    save(frame, pickler, getKeyNode.executeCached(storage, it), 0);
+                    Object key = getKeyNode.executeCached(storage, it);
                     if (saveValues) {
-                        save2(frame, pickler, getValueNode.executeCached(storage, it), 0);
+                        saveDictKey(frame, pickler, key);
+                        saveDictValue(frame, pickler, getValueNode.executeCached(storage, it));
+                    } else {
+                        saveSetElement(frame, pickler, key);
                     }
                     if (++i == PickleUtils.BATCHSIZE) {
                         break;
@@ -1015,7 +1161,7 @@ public class PPickler extends PythonBuiltinObject {
             HashingStorageIteratorKey getKeyNode = ensureHashingStorageIteratorKey();
             while (next.executeCached(storage, it)) {
                 Object item = getKeyNode.executeCached(storage, it);
-                save(frame, pickler, item, 0);
+                saveSetElement(frame, pickler, item);
             }
         }
 
@@ -1078,8 +1224,8 @@ public class PPickler extends PythonBuiltinObject {
                             },
                             (Object item) -> {
                                 SequenceStorage storage = getTupleStorage(item);
-                                save(frame, pickler, getItem(storage, 0), 0);
-                                save2(frame, pickler, getItem(storage, 1), 0);
+                                saveDictKey(frame, pickler, getItem(storage, 0));
+                                saveDictValue(frame, pickler, getItem(storage, 1));
                             });
         }
 
@@ -1087,7 +1233,7 @@ public class PPickler extends PythonBuiltinObject {
             saveIteratorBatchedUnrolled(frame, pickler, iterator, PickleUtils.OPCODE_APPEND, PickleUtils.OPCODE_APPENDS,
                             (Object item) -> {
                             },
-                            (Object item) -> save(frame, pickler, item, 0));
+                            (Object item) -> saveListElement(frame, pickler, item));
         }
 
         private void saveIterator(VirtualFrame frame, PPickler pickler, Object iterator, byte opcode, Consumer<Object> itemConsumer) {
@@ -1107,7 +1253,7 @@ public class PPickler extends PythonBuiltinObject {
 
         private void saveListIterator(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIterator(frame, pickler, iterator, PickleUtils.OPCODE_APPEND,
-                            (Object item) -> save(frame, pickler, item, 0));
+                            (Object item) -> saveListElement(frame, pickler, item));
         }
 
         private void saveDictIterator(VirtualFrame frame, PPickler pickler, Object iterator) {
@@ -1117,8 +1263,8 @@ public class PPickler extends PythonBuiltinObject {
                                     throw raise(TypeError, ErrorMessages.MUST_S_ITER_RETURN_2TUPLE, DICT_ITEMS);
                                 }
                                 SequenceStorage storage = getTupleStorage(item);
-                                save(frame, pickler, getItem(storage, 0), 0);
-                                save2(frame, pickler, getItem(storage, 1), 0);
+                                saveDictKey(frame, pickler, getItem(storage, 0));
+                                saveDictValue(frame, pickler, getItem(storage, 1));
                             });
         }
 
@@ -1133,7 +1279,7 @@ public class PPickler extends PythonBuiltinObject {
             }
             if (pid != PNone.NONE) {
                 if (isBin(proto)) {
-                    save(frame, pickler, pid, 1);
+                    savePersistentId(frame, pickler, pid);
                     pickler.write(this, PickleUtils.OPCODE_BINPERSID);
                 } else {
                     final TruffleString pidStr = asString(convertToStr(frame, pid));
@@ -1301,9 +1447,9 @@ public class PPickler extends PythonBuiltinObject {
                 }
 
                 if (proto >= 4) {
-                    save(frame, pickler, cls, 0);
-                    save2(frame, pickler, args, 0);
-                    save3(frame, pickler, kwargs, 0);
+                    saveReduceClass(frame, pickler, cls);
+                    saveReduceArgs(frame, pickler, args);
+                    saveReduceKwargs(frame, pickler, kwargs);
                     pickler.write(this, PickleUtils.OPCODE_NEWOBJ_EX);
                 } else {
                     PickleState st = getGlobalState(ctx.getCore());
@@ -1322,8 +1468,8 @@ public class PPickler extends PythonBuiltinObject {
                     }
                     callable = callStarArgsAndKwArgs(frame, st.partial, newargs, kwargs);
 
-                    save(frame, pickler, callable, 0);
-                    save2(frame, pickler, PFactory.createEmptyTuple(PythonLanguage.get(this)), 0);
+                    saveReduceCallable(frame, pickler, callable);
+                    saveReduceArgs(frame, pickler, PFactory.createEmptyTuple(PythonLanguage.get(this)));
                     pickler.write(this, PickleUtils.OPCODE_REDUCE);
                 }
             } else if (useNewobj) {
@@ -1379,19 +1525,19 @@ public class PPickler extends PythonBuiltinObject {
                 // function.
 
                 // Save the class and its __new__ arguments
-                save(frame, pickler, cls, 0);
+                saveReduceClass(frame, pickler, cls);
                 Object[] newargs = new Object[argtupSize - 1];
                 for (int i = 1; i < argtupSize; i++) {
                     newargs[i - 1] = getItem(argtupStorage, i);
                 }
                 newargtup = createTuple(newargs);
-                save2(frame, pickler, newargtup, 0);
+                saveReduceArgs(frame, pickler, newargtup);
                 pickler.write(this, PickleUtils.OPCODE_NEWOBJ);
             } else {
                 profileSeen(SEEN_PLAIN_REDUCE);
                 // Not using NEWOBJ
-                save(frame, pickler, callable, 0);
-                save2(frame, pickler, argtup, 0);
+                saveReduceCallable(frame, pickler, callable);
+                saveReduceArgs(frame, pickler, argtup);
                 pickler.write(this, PickleUtils.OPCODE_REDUCE);
             }
 
@@ -1424,7 +1570,7 @@ public class PPickler extends PythonBuiltinObject {
             if (state != null) {
                 profileSeen(SEEN_REDUCE_STATE);
                 if (stateSetter == null) {
-                    save(frame, pickler, state, 0);
+                    saveReduceState(frame, pickler, state);
                     pickler.write(this, PickleUtils.OPCODE_BUILD);
                 } else {
                     // If a state_setter is specified, call it instead of load_build to update obj's
@@ -1434,9 +1580,9 @@ public class PPickler extends PythonBuiltinObject {
                     // Finally, because state-updating routines only do in-place modification, the
                     // whole operation has to be stack-transparent. Thus, we finally pop the call's
                     // output from the stack.
-                    save(frame, pickler, stateSetter, 0);
-                    save2(frame, pickler, obj, 0);
-                    save3(frame, pickler, state, 0);
+                    saveReduceStateSetter(frame, pickler, stateSetter);
+                    saveReduceObject(frame, pickler, obj);
+                    saveReduceState(frame, pickler, state);
                     pickler.write(this, PickleUtils.OPCODE_TUPLE2);
                     pickler.write(this, PickleUtils.OPCODE_REDUCE);
                     pickler.write(this, PickleUtils.OPCODE_POP);
@@ -1666,8 +1812,8 @@ public class PPickler extends PythonBuiltinObject {
                 }
                 HashingStorageIteratorKey getKeyNode = ensureHashingStorageIteratorKey();
                 HashingStorageIteratorValue getValueNode = ensureHashingStorageIteratorValue();
-                save(frame, pickler, getKeyNode.executeCached(storage, it), 0);
-                save(frame, pickler, getValueNode.executeCached(storage, it), 0);
+                saveDictKey(frame, pickler, getKeyNode.executeCached(storage, it));
+                saveDictValue(frame, pickler, getValueNode.executeCached(storage, it));
                 pickler.write(this, PickleUtils.OPCODE_SETITEM);
             } else {
                 // Write in batches of BATCHSIZE.
@@ -1786,7 +1932,7 @@ public class PPickler extends PythonBuiltinObject {
             Object item;
             if (storage.length() == 1) {
                 item = getItem(storage, 0);
-                save(frame, pickler, item, 0);
+                saveListElement(frame, pickler, item);
                 pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
@@ -1799,7 +1945,7 @@ public class PPickler extends PythonBuiltinObject {
                 pickler.write(this, PickleUtils.OPCODE_MARK);
                 while (total < storage.length()) {
                     item = getItem(storage, total);
-                    save(frame, pickler, item, 0);
+                    saveListElement(frame, pickler, item);
                     total++;
                     if (++thisBatch == PickleUtils.BATCHSIZE) {
                         break;
@@ -1931,7 +2077,7 @@ public class PPickler extends PythonBuiltinObject {
             }
             profileSeen(SEEN_GENERIC_STORAGE);
             for (int i = 0; i < len; i++) {
-                save(frame, pickler, getItem(storage, i), 0);
+                saveTupleElement(frame, pickler, getItem(storage, i));
             }
         }
 
@@ -2214,8 +2360,8 @@ public class PPickler extends PythonBuiltinObject {
                 }
 
                 if (proto >= 4) {
-                    save(frame, pickler, moduleName, 0);
-                    save(frame, pickler, globalName, 0);
+                    saveGlobalModuleName(frame, pickler, moduleName);
+                    saveGlobalName(frame, pickler, globalName);
                     pickler.write(this, PickleUtils.OPCODE_STACK_GLOBAL);
                 } else if (parent != module) {
                     Object reduceValue = createTuple(st.getattr, createTuple(parent, lastname));
