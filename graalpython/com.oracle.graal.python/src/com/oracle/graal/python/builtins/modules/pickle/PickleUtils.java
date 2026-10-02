@@ -59,6 +59,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -214,14 +215,7 @@ public final class PickleUtils {
     public static final TruffleString T_PROTO_LE2_FALSE = tsLiteral("I00\n");
 
     public static void writeSize64(byte[] out, int start, int value) {
-        out[start] = (byte) value;
-        out[start + 1] = (byte) (value >> 8);
-        out[start + 2] = (byte) (value >> 16);
-        out[start + 3] = (byte) (value >> 24);
-        out[start + 4] = 0;
-        out[start + 5] = 0;
-        out[start + 6] = 0;
-        out[start + 7] = 0;
+        NumericSupport.littleEndian().putLong(out, start, Integer.toUnsignedLong(value));
     }
 
     public static int getStringSize(byte[] bytes) {

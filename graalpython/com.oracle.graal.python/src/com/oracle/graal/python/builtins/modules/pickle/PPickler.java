@@ -445,42 +445,28 @@ public class PPickler extends PythonBuiltinObject {
         outputLen += size;
     }
 
-    private static byte intByte1(long value) {
-        return (byte) (value & 0xff);
-    }
-
-    private static byte intByte2(long value) {
-        return (byte) ((value >> 8) & 0xff);
-    }
-
-    private static byte intByte3(long value) {
-        return (byte) ((value >> 16) & 0xff);
-    }
-
-    private static byte intByte4(long value) {
-        return (byte) ((value >> 24) & 0xff);
-    }
-
     private void writeByteOp(Node node, byte opcode, long value) {
         ensureBufferSpace(node, 2);
-        outputBuffer[outputLen++] = opcode;
-        outputBuffer[outputLen++] = intByte1(value);
+        int start = outputLen;
+        outputBuffer[start] = opcode;
+        outputBuffer[start + 1] = (byte) value;
+        outputLen = start + 2;
     }
 
     private void writeShortOp(Node node, byte opcode, long value) {
         ensureBufferSpace(node, 3);
-        outputBuffer[outputLen++] = opcode;
-        outputBuffer[outputLen++] = intByte1(value);
-        outputBuffer[outputLen++] = intByte2(value);
+        int start = outputLen;
+        outputBuffer[start] = opcode;
+        NumericSupport.littleEndian().putShort(outputBuffer, start + 1, (short) value);
+        outputLen = start + 3;
     }
 
     private void writeIntOp(Node node, byte opcode, long value) {
         ensureBufferSpace(node, 5);
-        outputBuffer[outputLen++] = opcode;
-        outputBuffer[outputLen++] = intByte1(value);
-        outputBuffer[outputLen++] = intByte2(value);
-        outputBuffer[outputLen++] = intByte3(value);
-        outputBuffer[outputLen++] = intByte4(value);
+        int start = outputLen;
+        outputBuffer[start] = opcode;
+        NumericSupport.littleEndian().putInt(outputBuffer, start + 1, (int) value);
+        outputLen = start + 5;
     }
 
     private void ensureBufferSpace(Node node, int dataLen) {
@@ -502,19 +488,6 @@ public class PPickler extends PythonBuiltinObject {
             frameStart = outputLen;
             outputLen += PickleUtils.FRAME_HEADER_SIZE;
         }
-    }
-
-    private boolean bypassBuffer(int dataSize) {
-        boolean bypassBuffer = dataSize >= PickleUtils.FRAME_SIZE_TARGET;
-
-        if (bypassBuffer) {
-            assert outputBuffer != null;
-            // Commit the previous frame.
-            commitFrame();
-            // Disable framing temporarily
-            framing = false;
-        }
-        return bypassBuffer;
     }
 
     private void writeRawUnicodeEscape(Node node, TruffleString string,
@@ -811,6 +784,18 @@ public class PPickler extends PythonBuiltinObject {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 seenTypes |= seen;
             }
+        }
+
+        private boolean bypassBuffer(PPickler pickler, int dataSize) {
+            boolean bypassBuffer = dataSize >= PickleUtils.FRAME_SIZE_TARGET;
+            if (bypassBuffer) {
+                profileSeen(SEEN_BYPASS_BUFFER);
+                assert pickler.outputBuffer != null;
+                // Commit the previous frame before disabling framing temporarily.
+                pickler.commitFrame();
+                pickler.framing = false;
+            }
+            return bypassBuffer;
         }
 
         private BoundaryCallData getBoundaryCallData() {
@@ -1600,10 +1585,7 @@ public class PPickler extends PythonBuiltinObject {
             assert proto >= 3;
             int size = bufferLib.getBufferLength(buffer);
             boolean wasFraming = pickler.framing;
-            boolean bypassBuffer = pickler.bypassBuffer(size);
-            if (bypassBuffer) {
-                profileSeen(SEEN_BYPASS_BUFFER);
-            }
+            boolean bypassBuffer = bypassBuffer(pickler, size);
 
             if (size <= 0xff) {
                 pickler.writeByteOp(this, PickleUtils.OPCODE_SHORT_BINBYTES, size);
@@ -1631,10 +1613,7 @@ public class PPickler extends PythonBuiltinObject {
             TruffleString utf8 = switchEncodingNode.execute(string, TruffleString.Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             int size = utf8.byteLength(TruffleString.Encoding.UTF_8);
             boolean wasFraming = pickler.framing;
-            boolean bypassBuffer = pickler.bypassBuffer(size);
-            if (bypassBuffer) {
-                profileSeen(SEEN_BYPASS_BUFFER);
-            }
+            boolean bypassBuffer = bypassBuffer(pickler, size);
 
             if (bypassBuffer && pickler.write != null) {
                 pickler.writeIntOp(node, PickleUtils.OPCODE_BINUNICODE, size);
@@ -2057,10 +2036,7 @@ public class PPickler extends PythonBuiltinObject {
 
             int size = bufferLib.getBufferLength(buffer);
             boolean wasFraming = pickler.framing;
-            boolean bypassBuffer = pickler.bypassBuffer(size);
-            if (bypassBuffer) {
-                profileSeen(SEEN_BYPASS_BUFFER);
-            }
+            boolean bypassBuffer = bypassBuffer(pickler, size);
 
             // Our sizes are ints, but the protocol expects 8 bytes
             pickler.ensureBufferSpace(this, 9);
