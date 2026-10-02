@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
@@ -85,7 +84,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.PListAppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -201,7 +200,7 @@ public final class PythonCextListBuiltins {
             Object op = NativeToPythonInternalNode.executeUncached(opPtr, false);
             Object item = NativeToPythonInternalNode.executeUncached(itemPtr, false);
             if (op instanceof PList list && item != PNone.NO_VALUE) {
-                AppendNode.appendObjectGeneric(list, item, null, SequenceStorageNodes.AppendNode.getUncached(), AppendNode.getUpdateStoreProfileUncached());
+                PListAppendNode.executeUncached(list, item);
                 return 0;
             }
             throw PythonCextBuiltins.badInternalCall("PyList_Append", "op");
