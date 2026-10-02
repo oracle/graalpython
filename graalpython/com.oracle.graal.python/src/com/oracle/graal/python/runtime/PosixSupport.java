@@ -50,16 +50,18 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFIFO;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFMT;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -107,10 +109,12 @@ public abstract class PosixSupport {
          * This value represents unsigned 64 bit integer.
          */
         public final long uid;
+
         /**
          * This value represents unsigned 64 bit integer.
          */
         public final long gid;
+
         protected PwdResult(long uid, long gid) {
             this.uid = uid;
             this.gid = gid;
@@ -697,7 +701,6 @@ public abstract class PosixSupport {
      * {@code setpwent}, {@code getpwent}, and {@code endpwent}.
      */
     public abstract PwdResult[] getpwentries() throws PosixException;
-
 
     /** Wraps already-encoded bytes for narrow native APIs without applying a filesystem conversion. */
     public abstract Object createCStringFromBytes(byte[] bytes);
