@@ -81,7 +81,8 @@ test.test_os.FileTests.test_symlink_keywords @ darwin-arm64,linux-aarch64,linux-
 test.test_os.FileTests.test_write @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_os.FwalkTests.test_compare_to_walk @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.FwalkTests.test_dir_fd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_os.FwalkTests.test_fd_finalization @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+# Assumes stable lowest available FD; unrelated asynchronous finalizers can close descriptors between probes.
+!test.test_os.FwalkTests.test_fd_finalization
 test.test_os.FwalkTests.test_fd_leak @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.FwalkTests.test_file_like_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.FwalkTests.test_walk_above_recursion_limit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
