@@ -43,15 +43,14 @@ package com.oracle.graal.python.builtins.objects.str;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacterCategory;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -60,6 +59,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -343,22 +343,18 @@ public final class StringUtils {
         if (selfLen == sepLen && eqNode.execute(s, sep, TS_ENCODING)) {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
-        List<TruffleString> l = new ArrayList<>();
+        ArrayBuilder<TruffleString> l = new ArrayBuilder<>();
         while (lastEnd < selfLen) {
             int nextIndex = indexOfStringNode.execute(s, sep, lastEnd, selfLen, TS_ENCODING);
             if (nextIndex < 0) {
                 break;
             }
-            add(l, substringNode.execute(s, lastEnd, nextIndex - lastEnd, TS_ENCODING, false));
+            l.add(substringNode.execute(s, lastEnd, nextIndex - lastEnd, TS_ENCODING, false));
             lastEnd = nextIndex + sepLen;
         }
-        add(l, substringNode.execute(s, lastEnd, selfLen - lastEnd, TS_ENCODING, false));
+        LoopNode.reportLoopCount(substringNode, l.size());
+        l.add(substringNode.execute(s, lastEnd, selfLen - lastEnd, TS_ENCODING, false));
         return l.toArray(new TruffleString[l.size()]);
-    }
-
-    @TruffleBoundary
-    private static void add(List<TruffleString> l, TruffleString s) {
-        l.add(s);
     }
 
     @TruffleBoundary
