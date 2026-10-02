@@ -81,7 +81,7 @@ public final class PythonResource implements InternalResource {
     public void unpackFiles(Env env, Path targetDirectory) throws IOException {
         OS os = env.getOS();
         CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
-        Path osArch = Path.of(os.toString()).resolve(cpuArchitecture.toString());
+        Path osArch = Path.of(PythonResourcePlatform.resourceDirectory(os, cpuArchitecture));
         GraalPyPlatformInfoProviderImpl.VersionsInfo versionsInfo = GraalPyPlatformInfoProviderImpl.getVersionsInfo();
         ResourcesFilter filter = new ResourcesFilter();
         if (os.equals(OS.WINDOWS)) {
@@ -209,8 +209,9 @@ public final class PythonResource implements InternalResource {
         CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
         if (!os.equals(OS.UNSUPPORTED) && !cpuArchitecture.equals(CPUArchitecture.UNSUPPORTED)) {
             al = new ArrayList<>(al);
-            al.add(Path.of(os.toString()).resolve(cpuArchitecture.toString()).resolve(VERSIONS_SHA256));
-            al.add(Path.of(os.toString()).resolve(cpuArchitecture.toString()).resolve(NATIVE_SHA256));
+            Path platform = Path.of(PythonResourcePlatform.resourceDirectory(os, cpuArchitecture));
+            al.add(platform.resolve(VERSIONS_SHA256));
+            al.add(platform.resolve(NATIVE_SHA256));
         }
         for (var s : al) {
             try {
@@ -219,6 +220,6 @@ public final class PythonResource implements InternalResource {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-        return sb.toString();
+        return sb.append(PythonResourcePlatform.cacheSuffix()).toString();
     }
 }
