@@ -55,7 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
-import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.PicklingError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -2180,7 +2179,7 @@ public class PPickler extends PythonBuiltinObject {
 
             Object module;
             try {
-                module = importModule(frame, getBoundaryCallData(), moduleName);
+                module = importModule(frame, ctx, moduleName);
             } catch (PException e) {
                 throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED, obj, moduleName);
             }

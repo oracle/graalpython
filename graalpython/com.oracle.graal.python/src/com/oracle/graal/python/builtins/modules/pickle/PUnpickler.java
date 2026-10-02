@@ -130,7 +130,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ASCII_UPPERCASE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -162,7 +161,6 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -183,8 +181,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
-import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -409,7 +405,6 @@ public class PUnpickler extends PythonBuiltinObject {
     // inner nodes
     public abstract static class BasePickleReadNode extends PicklerNodes.BasePickleNode {
         @Child private CastToTruffleStringNode castToTruffleStringNode;
-        @Child private ImportName importNameNode;
         @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private PyMemoryViewFromObject memoryViewNode;
         @Child private MemoryViewBuiltins.ToReadonlyNode toReadonlyNode;
@@ -480,22 +475,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 gName = to3Mapping.getRight();
             }
 
-            if (importNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                importNameNode = insert(ImportNameNodeGen.create());
-            }
-            // ImportName checks initialization for cached modules and honors custom import hooks.
-            // With an empty fromlist, a dotted import returns the top-level package, so look up
-            // the requested module by its full name after importing for side effects.
-            importNameNode.execute(frame, PythonContext.get(this), core.getBuiltins(), mName, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
-            Object module = getDictItem(frame, core.getSysModules(), mName);
-            if (module == null) {
-                errorProfile.enter();
-                throw PRaiseNode.raiseStatic(this, KeyError, new Object[]{mName});
-            }
-            if (!(module instanceof PythonModule)) {
-                throw raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED);
-            }
+            Object module = importModule(frame, PythonContext.get(this), mName);
             return getattribute(frame, module, gName, self.getProto() >= 4);
         }
 
