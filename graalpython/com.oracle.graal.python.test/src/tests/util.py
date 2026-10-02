@@ -44,8 +44,31 @@ import time
 import unittest
 
 IS_BYTECODE_DSL = sys.implementation.name == 'graalpy'
+is_graalpy = sys.implementation.name == "graalpy"
 TRANSIENT_GRAALPY_STARTUP_BLOCKING_IO = "ERROR: BlockingIOError: [Errno 11] Resource temporarily unavailable"
 GRAALPY_SUBPROCESS_TEST_ENV = "GRAALPY_TEST_SUBPROCESS"
+
+
+# gc_collect copied from graalpy patch of stdlib test support
+def gc_collect(until = None):
+    import gc
+    gc.collect()
+    if is_graalpy:
+        time.sleep(0.1)
+    gc.collect()
+    if until:
+        i = 0
+        while until():
+            if is_graalpy:
+                time.sleep(0.1)
+            gc.collect()
+            i += 1
+            if i > 1000:
+                print("WARNING: timeout while waiting for GC")
+                if is_graalpy and hasattr(__graalpython__, 'dump_heap'):
+                    dump_path = __graalpython__.dump_heap()
+                    print(f"HEAP DUMP: {dump_path}")
+                break
 
 
 def run_in_graalpy_subprocess(test):

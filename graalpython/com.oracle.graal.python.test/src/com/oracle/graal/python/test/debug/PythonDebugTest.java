@@ -92,6 +92,56 @@ public class PythonDebugTest {
     }
 
     @Test
+    public void testSuperSourceSections() throws Throwable {
+        assertSuperSourceSections("super().value", "super(Derived, self).method(value)");
+    }
+
+    @Test
+    public void testGenericSuperSourceSections() throws Throwable {
+        assertSuperSourceSections("alias(Derived, self).value", "alias(Derived, self).method(value)");
+    }
+
+    private void assertSuperSourceSections(String valueLookup, String methodCall) throws Throwable {
+        Source source = Source.newBuilder("python", """
+                        class Base:
+                            @property
+                            def value(self):
+                                return 21
+                            def method(self, value):
+                                return value * 2
+                        class Derived(Base):
+                            def run(self):
+                                value = %s
+                                return %s
+                        alias = super
+                        for _ in range(10):
+                            Derived().run()
+                        """.formatted(valueLookup, methodCall), "super_sections.py").buildLiteral();
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(4).build());
+            session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(6).build());
+            tester.startEval(source);
+            // The default session instruments statements, so caller locations cover the enclosing
+            // assignment/return. Check both uncached and cached execution, as for ordinary calls.
+            for (int i = 0; i < 10; i++) {
+                expectSuspended(event -> {
+                    var frames = event.getStackFrames().iterator();
+                    assertEquals(4, frames.next().getSourceSection().getStartLine());
+                    assertEquals("value = " + valueLookup, frames.next().getSourceSection().getCharacters().toString());
+                    event.prepareContinue();
+                });
+                expectSuspended(event -> {
+                    var frames = event.getStackFrames().iterator();
+                    assertEquals(6, frames.next().getSourceSection().getStartLine());
+                    assertEquals("return " + methodCall, frames.next().getSourceSection().getCharacters().toString());
+                    event.prepareContinue();
+                });
+            }
+            tester.expectDone();
+        }
+    }
+
+    @Test
     public void testSteppingAsExpected() throws Throwable {
         // test that various elements step as expected, including generators, statement level atomic
         // expressions, and roots
