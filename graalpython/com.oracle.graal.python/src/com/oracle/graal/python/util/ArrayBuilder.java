@@ -95,6 +95,14 @@ public final class ArrayBuilder<T> {
         return (T) data[size - 1];
     }
 
+    public void reverse() {
+        for (int left = 0, right = size - 1; left < right; left++, right--) {
+            Object item = data[left];
+            data[left] = data[right];
+            data[right] = item;
+        }
+    }
+
     public boolean containsIdentical(Object o) {
         for (int i = 0; i < size; i++) {
             if (data[i] == o) {
