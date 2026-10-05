@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
+import com.oracle.graal.python.nodes.builtins.ListNodesFactory.PListAppendNodeGen;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -74,7 +75,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.OperationProxy;
-import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -260,6 +260,39 @@ public abstract class ListNodes {
 
     }
 
+    @GenerateUncached
+    @GenerateInline(false) // footprint reduction 36 -> 17
+    public abstract static class AppendNode extends PNodeWithContext {
+
+        public abstract void execute(Object list, Object value);
+
+        @Specialization
+        static void appendObjectGeneric(PList list, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PListAppendNode appendNode) {
+            appendNode.execute(list, value);
+        }
+
+        @Fallback
+        static void appendObjectForeign(Object list, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            var storage = getStorageNode.execute(inliningTarget, list);
+            SequenceStorage newStore = appendNode.execute(inliningTarget, storage, value, ListGeneralizationNode.SUPPLIER);
+            assert newStore == storage;
+        }
+
+        @NeverDefault
+        public static AppendNode create() {
+            return AppendNodeGen.create();
+        }
+
+        public static AppendNode getUncached() {
+            return AppendNodeGen.getUncached();
+        }
+    }
+
     /**
      * This node takes a bit of care to avoid compiling code for switching storages. In the
      * interpreter, it will use a different {@link AppendNode} than in the compiled code, so the
@@ -269,12 +302,16 @@ public abstract class ListNodes {
      * code will only see lists of the correct size and storage type.
      */
     @GenerateUncached
-    @GenerateInline(false) // footprint reduction 36 -> 17
+    @GenerateInline(false)
     @OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
-    public abstract static class AppendNode extends PNodeWithContext {
+    public abstract static class PListAppendNode extends PNodeWithContext {
         private static final BranchProfile[] DISABLED = new BranchProfile[]{BranchProfile.getUncached()};
 
-        public abstract void execute(Object list, Object value);
+        public static void executeUncached(PList list, Object value) {
+            PListAppendNodeGen.getUncached().execute(list, value);
+        }
+
+        public abstract void execute(PList list, Object value);
 
         @NeverDefault
         public static BranchProfile[] getUpdateStoreProfile() {
@@ -286,10 +323,9 @@ public abstract class ListNodes {
         }
 
         @Specialization
-        public static void appendObjectGeneric(PList list, Object value,
+        public static void doPList(PList list, Object value,
                         @Bind Node inliningTarget,
-                        // @Exclusive for truffle-interpreted-performance
-                        @Exclusive @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {
             if (updateStoreProfile[0] == null) {
                 // Executed for the first time. We don't pollute the AppendNode specializations,
@@ -312,26 +348,6 @@ public abstract class ListNodes {
                     list.getOrigin().reportUpdatedCapacity(newArrayBasedStore);
                 }
             }
-        }
-
-        @Fallback
-        @StoreBytecodeIndex
-        public static void appendObjectForeign(Object list, Object value,
-                        @Bind Node inliningTarget,
-                        @Cached GetListStorageNode getStorageNode,
-                        @Exclusive @Cached SequenceStorageNodes.AppendNode appendNode) {
-            var storage = getStorageNode.execute(inliningTarget, list);
-            SequenceStorage newStore = appendNode.execute(inliningTarget, storage, value, ListGeneralizationNode.SUPPLIER);
-            assert newStore == storage;
-        }
-
-        @NeverDefault
-        public static AppendNode create() {
-            return AppendNodeGen.create();
-        }
-
-        public static AppendNode getUncached() {
-            return AppendNodeGen.getUncached();
         }
     }
 
