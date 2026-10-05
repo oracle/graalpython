@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 
@@ -72,7 +71,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -150,7 +148,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
-            return PFactory.createContextVarsToken(language, self, oldValue);
+            return PFactory.createContextVarsToken(language, self, threadState.getContextVarsContext(inliningTarget), oldValue);
         }
     }
 
@@ -161,33 +159,21 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         static Object reset(VirtualFrame frame, PContextVar self, PContextVarsToken token,
                         @Bind Node inliningTarget,
                         @Bind PythonContext pythonContext,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Shared @Cached PRaiseNode raise) {
-            if (self == token.getVar()) {
-                token.use(inliningTarget, raise);
-                PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
-                Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
-                try {
-                    if (token.getOldValue() == null) {
-                        PContextVarsContext context = threadState.getContextVarsContext(inliningTarget);
-                        context.contextVarValues = context.contextVarValues.without(self, self.getHash());
-                    } else {
-                        self.setValue(inliningTarget, threadState, token.getOldValue());
-                    }
-                } finally {
-                    BoundaryCallContext.exit(frame, boundaryCallData, saved);
-                }
-            } else {
-                throw raise.raise(inliningTarget, ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                self.resetValue(inliningTarget, threadState, token);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isToken(token)")
         Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached PRaiseNode raise) {
-            throw raise.raise(inliningTarget, TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }
 
         static boolean isToken(Object obj) {

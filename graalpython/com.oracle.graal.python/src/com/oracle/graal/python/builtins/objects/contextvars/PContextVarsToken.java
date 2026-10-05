@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,19 +50,27 @@ import com.oracle.truffle.api.object.Shape;
 public class PContextVarsToken extends PythonBuiltinObject {
     public static final Object MISSING = new Object();
     private final PContextVar var;
+    private final PContextVarsContext context;
     private final Object oldValue;
 
     private boolean used = false;
 
-    public PContextVarsToken(PContextVar var, Object oldValue, Object cls, Shape instanceShape) {
+    public PContextVarsToken(PContextVar var, PContextVarsContext context, Object oldValue, Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         this.var = var;
+        this.context = context;
         this.oldValue = oldValue;
     }
 
-    public void use(Node inliningTarget, PRaiseNode raise) {
+    public void use(Node inliningTarget, PContextVar expectedVar, PContextVarsContext expectedContext) {
         if (used) {
-            throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
+        }
+        if (var != expectedVar) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, this);
+        }
+        if (context != expectedContext) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXT, this);
         }
         used = true;
     }

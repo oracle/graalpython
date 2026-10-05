@@ -71,6 +71,38 @@ ContextHelper = CPyExtType(
     static PyObject* context_copy_current(PyObject* unused, PyObject* args) {
         return PyContext_CopyCurrent();
     }
+    static PyObject* contextvar_new(PyObject* unused, PyObject* args) {
+        const char *name;
+        PyObject *def = NULL;
+        if (!PyArg_ParseTuple(args, "s|O", &name, &def))
+            return NULL;
+        return PyContextVar_New(name, def);
+    }
+    static PyObject* contextvar_get(PyObject* unused, PyObject* args) {
+        PyObject *var, *value, *def = NULL;
+        if (!PyArg_ParseTuple(args, "O|O", &var, &def))
+            return NULL;
+        if (PyContextVar_Get(var, def, &value) < 0)
+            return NULL;
+        if (value == NULL)
+            Py_RETURN_NONE;
+        return value;
+    }
+    static PyObject* contextvar_set(PyObject* unused, PyObject* args) {
+        PyObject *var, *value;
+        if (!PyArg_ParseTuple(args, "OO", &var, &value))
+            return NULL;
+        return PyContextVar_Set(var, value);
+    }
+    static PyObject* contextvar_reset(PyObject* unused, PyObject* args) {
+        PyObject *var, *token;
+        if (!PyArg_ParseTuple(args, "OO", &var, &token))
+            return NULL;
+        int result = PyContextVar_Reset(var, token);
+        if (result < 0)
+            return NULL;
+        return PyLong_FromLong(result);
+    }
     static PyObject* context_is_exact_type(PyObject* unused, PyObject* args) {
         PyObject *obj;
         int kind;
@@ -85,6 +117,10 @@ ContextHelper = CPyExtType(
     }
     ''',
     tp_methods='''
+        {"var_new", (PyCFunction)contextvar_new, METH_VARARGS | METH_STATIC, ""},
+        {"var_get", (PyCFunction)contextvar_get, METH_VARARGS | METH_STATIC, ""},
+        {"var_set", (PyCFunction)contextvar_set, METH_VARARGS | METH_STATIC, ""},
+        {"var_reset", (PyCFunction)contextvar_reset, METH_VARARGS | METH_STATIC, ""},
         {"enter", (PyCFunction)context_enter, METH_VARARGS | METH_STATIC, ""},
         {"exit", (PyCFunction)context_exit, METH_VARARGS | METH_STATIC, ""},
         {"copy", (PyCFunction)context_copy, METH_VARARGS | METH_STATIC, ""},
@@ -138,3 +174,59 @@ def test_cext_context_management():
 
     new_ctx = ContextHelper.new()
     assert new_ctx.run(v.get) == 'default value'
+
+
+
+def test_cext_contextvar_reset():
+    for default_args in ((), ('default value',), (None,)):
+        var = ContextHelper.var_new('test_reset', *default_args)
+        assert isinstance(var, contextvars.ContextVar)
+        assert ContextHelper.var_get(var) == (default_args[0] if default_args else None)
+        assert ContextHelper.var_get(var, 'fallback') == 'fallback'
+
+        token = ContextHelper.var_set(var, 'first value')
+        assert token.old_value is contextvars.Token.MISSING
+        assert ContextHelper.var_get(var) == 'first value'
+        inner_token = ContextHelper.var_set(var, None)
+        assert inner_token.old_value == 'first value'
+        assert ContextHelper.var_reset(var, inner_token) == 0
+        assert var.get() == 'first value'
+        assert ContextHelper.var_reset(var, token) == 0
+        assert var not in contextvars.copy_context()
+        if default_args:
+            assert var.get() == default_args[0]
+        else:
+            assert_raises(LookupError, var.get)
+
+        # Tokens created in Python must work with the C API and vice versa.
+        token = var.set('python value')
+        assert ContextHelper.var_reset(var, token) == 0
+        token = ContextHelper.var_set(var, 'native value')
+        var.reset(token)
+        assert var not in contextvars.copy_context()
+
+        token = ContextHelper.var_set(var, None)
+        inner_token = ContextHelper.var_set(var, 'new value')
+        assert ContextHelper.var_reset(var, inner_token) == 0
+        assert var.get() is None
+        assert ContextHelper.var_reset(var, token) == 0
+
+
+def test_cext_contextvar_reset_errors():
+    var = contextvars.ContextVar('test_reset_errors')
+    other_var = contextvars.ContextVar('other_var')
+    token = ContextHelper.var_set(var, 'value')
+    assert_raises(TypeError, ContextHelper.var_reset, object(), token, err_check='instance of ContextVar')
+    assert_raises(TypeError, ContextHelper.var_reset, var, object(), err_check='instance of Token')
+    assert_raises(ValueError, ContextHelper.var_reset, other_var, token, err_check='different ContextVar')
+    other_context = ContextHelper.copy_current()
+    assert_raises(ValueError, other_context.run, ContextHelper.var_reset, var, token, err_check='different Context')
+    assert_raises(ValueError, other_context.run, var.reset, token, err_check='different Context')
+    assert var.get() == 'value'
+    assert other_context.run(var.get) == 'value'
+
+    # Rejected resets must leave the token usable in its original context.
+    assert ContextHelper.var_reset(var, token) == 0
+    assert_raises(RuntimeError, ContextHelper.var_reset, var, token, err_check='already been used once')
+    assert_raises(RuntimeError, ContextHelper.var_reset, other_var, token, err_check='already been used once')
+    assert var not in contextvars.copy_context()

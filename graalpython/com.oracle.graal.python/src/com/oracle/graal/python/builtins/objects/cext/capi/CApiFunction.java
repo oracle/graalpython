@@ -697,7 +697,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyConfig_SetBytesString", ret = PYSTATUS, args = {PYCONFIG_PTR, WCHAR_T_PTR_LIST, ConstCharPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyConfig_SetString", ret = PYSTATUS, args = {PYCONFIG_PTR, WCHAR_T_PTR_LIST, CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyConfig_SetWideStringList", ret = PYSTATUS, args = {PYCONFIG_PTR, PYWIDESTRINGLIST_PTR, Py_ssize_t, WCHAR_T_PTR_LIST}, call = NotImplemented)
-    @CApiBuiltin(name = "PyContextVar_Reset", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCoro_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCriticalSection2_Begin", ret = Void, args = {PY_CRITICAL_SECTION2_PTR, PyObjectReturn, PyObjectReturn}, call = NotImplemented)
     @CApiBuiltin(name = "PyCriticalSection2_End", ret = Void, args = {PY_CRITICAL_SECTION2_PTR}, call = NotImplemented)
