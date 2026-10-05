@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,7 +109,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
  * the program, because its Truffle stacktrace may already be frozen, and it would not capture more
  * frames. If you need to rethrow without the catching site appearing in the traceback, use
- * {@link PException#getExceptionForReraise(boolean)} method to obtain a fresh {@link PException
+ * {@link PException#getExceptionForReraise} method to obtain a fresh {@link PException
  * PException} to throw</li>
  * </ul>
  * </p>

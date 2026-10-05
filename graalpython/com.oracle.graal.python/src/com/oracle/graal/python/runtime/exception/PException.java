@@ -427,9 +427,9 @@ public final class PException extends AbstractTruffleException {
      * look like the last catch didn't happen, which is desired in `raise` without arguments, at the
      * end of `finally`, `__exit__`...
      */
-    public PException getExceptionForReraise(boolean rootNodeVisible) {
+    public PException getExceptionForReraise(Node location, boolean rootNodeVisible) {
         ensureReified();
-        PException pe = PException.fromObject(pythonException, getLocation(), false);
+        PException pe = PException.fromObjectFixUncachedLocation(pythonException, location, false);
         pe.reraised = true;
         if (pe.getUnreifiedException() instanceof PBaseExceptionGroup grp) {
             grp.setContainsReraises(true);
@@ -465,10 +465,11 @@ public final class PException extends AbstractTruffleException {
     }
 
     @ExportMessage
-    RuntimeException throwException(@Exclusive @Cached GilNode gil) {
+    RuntimeException throwException(@Bind Node location,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            throw getExceptionForReraise(false);
+            throw getExceptionForReraise(location, false);
         } finally {
             gil.release(mustRelease);
         }

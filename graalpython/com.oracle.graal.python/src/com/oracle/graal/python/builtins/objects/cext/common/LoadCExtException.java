@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LoadCExtException extends Exception {
@@ -89,9 +90,9 @@ public abstract class LoadCExtException extends Exception {
         }
 
         @TruffleBoundary
-        public PException reraise() {
+        public PException reraise(Node node) {
             if (cause instanceof PException pcause) {
-                throw pcause.getExceptionForReraise(false);
+                throw pcause.getExceptionForReraise(node, false);
             } else if (cause != null) {
                 throw PConstructAndRaiseNode.getUncached().executeWithFmtMessageAndArgs(null, SystemError, ErrorMessages.M, new Object[]{cause}, null);
             }

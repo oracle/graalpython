@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -137,7 +137,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @Cached InlinedConditionProfile hasPException) {
         AbstractTruffleException caughtException = getCaughtExceptionNode.execute(frame);
         if (hasPException.profile(inliningTarget, caughtException instanceof PException)) {
-            PException exceptionToReraise = ((PException) caughtException).getExceptionForReraise(rootNodeVisible);
+            PException exceptionToReraise = ((PException) caughtException).getExceptionForReraise(inliningTarget, rootNodeVisible);
             exceptionToReraise.dontTraceOnReraise();
             throw exceptionToReraise;
         } else if (caughtException != null) {

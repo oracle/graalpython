@@ -884,7 +884,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             } catch (ApiInitException ie) {
-                throw ie.reraise();
+                throw ie.reraise(inliningTarget);
             } catch (ImportException ie) {
                 throw ie.reraise();
             } catch (IOException e) {
