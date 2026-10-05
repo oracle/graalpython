@@ -190,6 +190,18 @@ def _is_graalos_build():
     return "musl" in _libc()
 
 
+def graalpy_resource_platform():
+    platform = f"{mx.get_os()}/{mx.get_arch()}"
+    libc = _libc()
+    if libc == "musl-swcfi":
+        if platform != "linux/amd64":
+            mx.abort(f"Unsupported GraalPy resource target: {platform}/{libc}")
+        return f"{platform}/{libc}"
+    if "musl" in libc:
+        mx.abort(f"No GraalPy resource variant for libc: {libc}")
+    return platform
+
+
 def _with_bouncycastle():
     return GRAALPY_WITH_BOUNCYCASTLE and not _is_graalos_build()
 
@@ -2732,6 +2744,8 @@ mx_subst.path_substitutions.register_no_arg('graalpy_abiflags', graalpy_abiflags
 mx_subst.results_substitutions.register_no_arg('graalpy_abiflags', graalpy_abiflags)
 mx_subst.path_substitutions.register_no_arg('graalpy_soabi', graalpy_soabi)
 mx_subst.results_substitutions.register_no_arg('graalpy_soabi', graalpy_soabi)
+mx_subst.path_substitutions.register_no_arg('graalpy_resource_platform', graalpy_resource_platform)
+mx_subst.results_substitutions.register_no_arg('graalpy_resource_platform', graalpy_resource_platform)
 mx_subst.path_substitutions.register_no_arg('graalpy_multiarch', graalpy_multiarch)
 mx_subst.results_substitutions.register_no_arg('graalpy_multiarch', graalpy_multiarch)
 mx_subst.path_substitutions.register_no_arg('graalpy_sysconfigdata', graalpy_sysconfigdata)

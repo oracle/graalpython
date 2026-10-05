@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.83.0",
+    "mxversion": "7.87.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "22f20c5c1c3a33ebc72d99bd62bd44e23d4dad40",
+                "version": "26081175a3d1a96c92df3246e3f95fe2146fd2fd",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "22f20c5c1c3a33ebc72d99bd62bd44e23d4dad40",
+                "version": "26081175a3d1a96c92df3246e3f95fe2146fd2fd",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -990,14 +990,15 @@ suite = {
         # the language jar.
         "GRAALPYTHON_VERSIONS_RES": {
             "platformDependent": True,
-            "hashEntry": "META-INF/resources/<os>/<arch>/versions.sha256",
-            "fileListEntry": "META-INF/resources/<os>/<arch>/versions.files",
+            "hashEntry": "META-INF/resources/<graalpy_resource_platform>/versions.sha256",
+            "fileListEntry": "META-INF/resources/<graalpy_resource_platform>/versions.files",
             "type": "dir",
             "layout": {
-                "./META-INF/resources/<os>/<arch>/graalpy_versions": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
+                "./META-INF/resources/<graalpy_resource_platform>/graalpy_versions": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
             },
             "platforms": [
                 "linux-amd64",
+                "linux-amd64-musl-swcfi",
                 "linux-aarch64",
                 "darwin-amd64",
                 "darwin-aarch64",
@@ -1047,7 +1048,7 @@ suite = {
                 "windows": {
                     "<others>": {
                         "layout": {
-                            "<os>/<arch>/": [
+                            "<graalpy_resource_platform>/": [
                                 "dependency:com.oracle.graal.python.cext/<os>-<arch>/<multitarget_libc_selection>/bin/*",
                                 "dependency:python-libposix/<os>-<arch>/<multitarget_libc_selection>/*",
                                 "dependency:python-libbz2/<os>-<arch>/<multitarget_libc_selection>/bin/*",
@@ -1058,7 +1059,7 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "layout": {
-                            "<os>/<arch>/": [
+                            "<graalpy_resource_platform>/": [
                                 "dependency:com.oracle.graal.python.cext/<os>-<arch>/<multitarget_libc_selection>/bin/*",
                                 "dependency:python-libzsupport/<os>-<arch>/<multitarget_libc_selection>/*",
                                 "dependency:python-libposix/<os>-<arch>/<multitarget_libc_selection>/*",
@@ -1378,56 +1379,57 @@ suite = {
         "GRAALPYTHON_NATIVE_RESOURCES": {
             "native": True,
             "platformDependent": True,
-            "hashEntry":  "META-INF/resources/<os>/<arch>/native.sha256",
-            "fileListEntry": "META-INF/resources/<os>/<arch>/native.files",
+            "hashEntry":  "META-INF/resources/<graalpy_resource_platform>/native.sha256",
+            "fileListEntry": "META-INF/resources/<graalpy_resource_platform>/native.files",
             "type": "dir",
             "description": "GraalVM Python platform dependent resources",
             "os_arch": {
                 "windows": {
                     "<others>": {
                         "layout": {
-                            "./META-INF/resources/<os>/<arch>/libs/python<py_ver:major_minor_nodot>.lib": "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/python-native.lib",
-                            "./META-INF/resources/<os>/<arch>/lib-graalpython/": [
+                            "./META-INF/resources/<graalpy_resource_platform>/libs/python<py_ver:major_minor_nodot>.lib": "dependency:GRAALPYTHON_NATIVE_LIBS/<graalpy_resource_platform>/python-native.lib",
+                            "./META-INF/resources/<graalpy_resource_platform>/lib-graalpython/": [
                                 {
                                     "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_LIBS",
-                                    "path": "<os>/<arch>/*",
+                                    "path": "<graalpy_resource_platform>/*",
                                     "exclude": ["python-native.lib"],
                                 },
                             ],
                             # CPython 3.13's venv module copies these launcher names directly.
-                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/venvlauncher.exe": "dependency:python-venvlauncher",
-                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/venvwlauncher.exe": "dependency:python-venvlauncher",
-                            "./META-INF/resources/<os>/<arch>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<graalpy_resource_platform>/Lib/venv/scripts/nt/venvlauncher.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<graalpy_resource_platform>/Lib/venv/scripts/nt/venvwlauncher.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<graalpy_resource_platform>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                         },
                     },
                 },
                 "darwin": {
                     "<others>": {
                         "layout": {
-                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
+                            "./META-INF/resources/<graalpy_resource_platform>/lib/graalpy<graal_ver:major_minor>/": [
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<graalpy_resource_platform>/*",
                             ],
-                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
-                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
-                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
+                            "./META-INF/resources/<graalpy_resource_platform>/lib/python<py_ver:major_minor>/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
+                            "./META-INF/resources/<graalpy_resource_platform>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<graalpy_resource_platform>/lib/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         }
                     }
                 },
                 "<others>": {
                     "<others>": {
                         "layout": {
-                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
+                            "./META-INF/resources/<graalpy_resource_platform>/lib/graalpy<graal_ver:major_minor>/": [
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<graalpy_resource_platform>/*",
                             ],
-                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
-                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
+                            "./META-INF/resources/<graalpy_resource_platform>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<graalpy_resource_platform>/lib/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
                     },
                 },
             },
             "platforms": [
                 "linux-amd64",
+                "linux-amd64-musl-swcfi",
                 "linux-aarch64",
                 "darwin-amd64",
                 "darwin-aarch64",
@@ -1470,8 +1472,8 @@ suite = {
                                 {
                                     "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_RESOURCES",
-                                    "path": "META-INF/resources/<os>/<arch>/*",
-                                    "exclude": ["META-INF/resources/<os>/<arch>/native.sha256", "META-INF/resources/<os>/<arch>/native.files"],
+                                    "path": "META-INF/resources/<graalpy_resource_platform>/*",
+                                    "exclude": ["META-INF/resources/<graalpy_resource_platform>/native.sha256", "META-INF/resources/<graalpy_resource_platform>/native.files"],
                                 },
                             ],
                         },
@@ -1494,8 +1496,8 @@ suite = {
                                 {
                                     "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_RESOURCES",
-                                    "path": "META-INF/resources/<os>/<arch>/*",
-                                    "exclude": ["META-INF/resources/<os>/<arch>/native.sha256", "META-INF/resources/<os>/<arch>/native.files"],
+                                    "path": "META-INF/resources/<graalpy_resource_platform>/*",
+                                    "exclude": ["META-INF/resources/<graalpy_resource_platform>/native.sha256", "META-INF/resources/<graalpy_resource_platform>/native.files"],
                                 },
                             ],
                         },
