@@ -811,7 +811,7 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "ldlibs": ["Ws2_32.lib"],
+                        "ldlibs": ["Ws2_32.lib", "Version.lib"],
                         "multitarget": {
                             "libc": ["default"],
                         },

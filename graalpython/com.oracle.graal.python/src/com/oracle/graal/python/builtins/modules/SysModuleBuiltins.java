@@ -255,6 +255,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -2432,50 +2433,23 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getwindowsversion", minNumOfPositionalArgs = 0, os = PLATFORM_WIN32)
     @GenerateNodeFactory
-    abstract static class Getwindowsversion extends PythonBuiltinNode {
-        static int[] CACHED_VERSION_INFO = null;
-        static int PLATFORM = 2;
-
-        @Specialization
-        PTuple getVersion(
-                        @Bind PythonLanguage language) {
-            if (CACHED_VERSION_INFO == null) {
-                cacheVersion();
-            }
-            return PFactory.createStructSeq(language, WINDOWS_VER_DESC,
-                            CACHED_VERSION_INFO[0], CACHED_VERSION_INFO[1], CACHED_VERSION_INFO[2],
-                            PLATFORM, T_EMPTY_STRING, 0, 0, 0, 1,
-                            PFactory.createTuple(language, CACHED_VERSION_INFO));
+    abstract static class GetWindowsVersion extends PythonBuiltinNode {
+        @Specialization(guards = "isSingleContext()")
+        static PTuple getVersionCached(
+                        @Bind PythonLanguage language,
+                        @Cached(value = "getVersion($node, language)", neverDefault = true) PTuple version) {
+            return version;
         }
 
-        @TruffleBoundary
-        static void cacheVersion() {
-            String[] winvers = System.getProperty("os.version", "10.0.20000").split("\\.");
-            int major = 0;
-            int minor = 0;
-            int build = 0;
-            if (winvers.length > 0) {
-                try {
-                    major = Integer.parseInt(winvers[0]);
-                } catch (NumberFormatException e) {
-                    // use default
-                }
-            }
-            if (winvers.length > 1) {
-                try {
-                    minor = Integer.parseInt(winvers[1]);
-                } catch (NumberFormatException e) {
-                    // use default
-                }
-            }
-            if (winvers.length > 2) {
-                try {
-                    build = Integer.parseInt(winvers[2]);
-                } catch (NumberFormatException e) {
-                    // use default
-                }
-            }
-            CACHED_VERSION_INFO = new int[]{major, minor, build};
+        @Specialization(replaces = "getVersionCached")
+        static PTuple getVersion(
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language) {
+            WindowsVersion versionInfo = language.getWindowsVersion(inliningTarget);
+            return PFactory.createStructSeq(language, WINDOWS_VER_DESC,
+                            versionInfo.major(), versionInfo.minor(), versionInfo.build(),
+                            versionInfo.platform(), versionInfo.servicePack(), versionInfo.servicePackMajor(), versionInfo.servicePackMinor(), versionInfo.suiteMask(), versionInfo.productType(),
+                            PFactory.createTuple(language, new int[]{versionInfo.platformMajor(), versionInfo.platformMinor(), versionInfo.platformBuild()}));
         }
     }
 }

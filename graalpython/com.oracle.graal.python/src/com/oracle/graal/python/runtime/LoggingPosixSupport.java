@@ -65,6 +65,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -482,6 +483,17 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("uname", "%s", lib.uname(delegate));
         } catch (PosixException e) {
             throw logException("uname", e);
+        }
+    }
+
+    @ExportMessage
+    final WindowsVersion getWindowsVersion(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getWindowsVersion", "");
+        try {
+            return logExit("getWindowsVersion", "%s", lib.getWindowsVersion(delegate));
+        } catch (PosixException e) {
+            throw logException("getWindowsVersion", e);
         }
     }
 

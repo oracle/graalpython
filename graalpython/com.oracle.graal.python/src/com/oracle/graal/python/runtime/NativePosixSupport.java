@@ -123,6 +123,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
@@ -289,6 +290,9 @@ public final class NativePosixSupport extends PosixSupport {
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, POINTER, POINTER, POINTER, SINT32})
         abstract int call_uname(long sysname, long nodename, long release, long version, long machine, int size);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int call_get_windows_version(long out, long servicePack);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
         abstract int call_unlinkat(int dirFd, long pathname, int rmdir);
@@ -1173,6 +1177,27 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(relPtr);
             NativeMemory.free(nodePtr);
             NativeMemory.free(sysPtr);
+        }
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public WindowsVersion getWindowsVersion() throws PosixException {
+        long out = NativeMemory.mallocIntArray(11);
+        // OSVERSIONINFOEXW.szCSDVersion contains 128 UTF-16 code units.
+        long servicePack = NativeMemory.mallocByteArray(256);
+        try {
+            if (posixNativeFunctionInvoker.call_get_windows_version(out, servicePack) != 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            int[] info = NativeMemory.readIntArrayElements(out, 0, 11);
+            byte[] buffer = new byte[256];
+            NativeMemory.readByteArrayElements(servicePack, 0, buffer, 0, buffer.length);
+            TruffleString servicePackString = TruffleString.fromByteArrayUncached(buffer, 0, findWideZero(buffer), UTF_16LE, false).switchEncodingUncached(TS_ENCODING);
+            return new WindowsVersion(info[0], info[1], info[2], info[3], servicePackString, info[4], info[5], info[6], info[7], info[8], info[9], info[10]);
+        } finally {
+            NativeMemory.free(servicePack);
+            NativeMemory.free(out);
         }
     }
 

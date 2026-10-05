@@ -50,6 +50,7 @@
 #include <afunix.h>
 #include <assert.h>
 #include <windows.h>
+#include <winver.h>
 #include <direct.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -1459,6 +1460,60 @@ GP_EXPORT int32_t call_fstatvfs(int32_t fd, int64_t *out) {
 }
 GP_EXPORT int32_t call_uname(char *sysname, char *nodename, char *release, char *version, char *machine, int32_t size) { return unsupported(); }
 
+static void get_windows_version_from_kernel32(int32_t *out) {
+    HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+    wchar_t kernel32_path[MAX_PATH];
+    if (kernel32 == NULL || !GetModuleFileNameW(kernel32, kernel32_path, MAX_PATH)) {
+        return;
+    }
+    DWORD verblock_size = GetFileVersionInfoSizeW(kernel32_path, NULL);
+    if (verblock_size == 0) {
+        return;
+    }
+    void *verblock = malloc(verblock_size);
+    if (verblock == NULL) {
+        return;
+    }
+    VS_FIXEDFILEINFO *ffi;
+    UINT ffi_len;
+    if (GetFileVersionInfoW(kernel32_path, 0, verblock_size, verblock) &&
+        VerQueryValueW(verblock, L"", (void **) &ffi, &ffi_len)) {
+        out[0] = (int32_t) HIWORD(ffi->dwProductVersionMS);
+        out[1] = (int32_t) LOWORD(ffi->dwProductVersionMS);
+        out[2] = (int32_t) HIWORD(ffi->dwProductVersionLS);
+    }
+    free(verblock);
+}
+
+// Like CPython, pass the deprecated GetVersionExW result through to the caller.
+#pragma warning(push)
+#pragma warning(disable:4996)
+GP_EXPORT int32_t call_get_windows_version(int32_t *out, wchar_t *service_pack) {
+    OSVERSIONINFOEXW version = {0};
+    version.dwOSVersionInfoSize = sizeof(version);
+    if (!GetVersionExW((OSVERSIONINFOW *) &version)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    out[0] = (int32_t) version.dwMajorVersion;
+    out[1] = (int32_t) version.dwMinorVersion;
+    out[2] = (int32_t) version.dwBuildNumber;
+    out[3] = (int32_t) version.dwPlatformId;
+    out[4] = (int32_t) version.wServicePackMajor;
+    out[5] = (int32_t) version.wServicePackMinor;
+    out[6] = (int32_t) version.wSuiteMask;
+    out[7] = (int32_t) version.wProductType;
+    memcpy(service_pack, version.szCSDVersion, sizeof(version.szCSDVersion));
+    // Compatibility mode can affect GetVersionExW. Read the diagnostic version
+    // from kernel32.dll, falling back to the main version if the lookup fails.
+    out[8] = out[0];
+    out[9] = out[1];
+    out[10] = out[2];
+    get_windows_version_from_kernel32(out + 8);
+    return 0;
+}
+#pragma warning(pop)
+
 GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t rmdir) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
@@ -2673,6 +2728,12 @@ int32_t call_uname(char *sysname, char *nodename, char *release, char *version, 
         capture_errno();
     }
     return result;
+}
+
+int32_t call_get_windows_version(int32_t *out, void *service_pack) {
+    errno = ENOSYS;
+    capture_errno();
+    return -1;
 }
 
 int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
