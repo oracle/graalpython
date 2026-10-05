@@ -1018,7 +1018,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 }
                 // The exception was reified already. Return a new exception that looks like this
                 // catch didn't happen.
-                result = result.getExceptionForReraise(!isInternal());
+                result = result.getExceptionForReraise(bytecode, !isInternal());
                 result.setCatchLocation(bci, bytecode);
             }
         }
@@ -3663,8 +3663,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Reraise {
         @Specialization
         public static void doPException(PException ex,
+                        @Bind BytecodeNode bytecode,
                         @Bind PBytecodeDSLRootNode root) {
-            PException pe = ex.getExceptionForReraise(!root.isInternal());
+            PException pe = ex.getExceptionForReraise(bytecode, !root.isInternal());
             pe.dontTraceOnReraise();
             throw pe;
         }
@@ -4236,7 +4237,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 Object result = callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
                 if (!isTrue.execute(frame, result)) {
                     if (exception instanceof PException pException) {
-                        PException reraisedException = pException.getExceptionForReraise(!rootNode.isInternal());
+                        PException reraisedException = pException.getExceptionForReraise(inliningTarget, !rootNode.isInternal());
                         reraisedException.dontTraceOnReraise();
                         throw reraisedException;
                     } else if (exception instanceof AbstractTruffleException ate) {
@@ -4334,7 +4335,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectIsTrueNode isTrue) {
             if (!isTrue.execute(frame, result)) {
                 if (exception instanceof PException) {
-                    throw ((PException) exception).getExceptionForReraise(!rootNode.isInternal());
+                    throw ((PException) exception).getExceptionForReraise(inliningTarget, !rootNode.isInternal());
                 } else if (exception instanceof AbstractTruffleException) {
                     throw (AbstractTruffleException) exception;
                 } else {
@@ -4734,7 +4735,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @InliningCutoff
         private static void reraiseException(PException exception, BytecodeNode bytecodeNode) {
-            throw exception.getExceptionForReraise(!((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).internal);
+            throw exception.getExceptionForReraise(bytecodeNode, !((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).internal);
         }
 
         @Specialization(guards = "!isPException(exception)")

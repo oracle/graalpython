@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,14 @@ package com.oracle.graal.python.test.interop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -81,6 +84,44 @@ public class PolyglotInteropTest {
         @After
         public void tearDown() {
             context.close();
+        }
+
+        @Test
+        public void exceptionFromExecThroughFinally() {
+            assertExceptionFromExec("""
+                            def run(code):
+                                try:
+                                    exec(code, {})
+                                finally:
+                                    pass
+                            """);
+        }
+
+        @Test
+        public void exceptionFromExecThroughExceptReraise() {
+            assertExceptionFromExec("""
+                            def run(code):
+                                try:
+                                    exec(code, {})
+                                except BaseException:
+                                    raise
+                            """);
+        }
+
+        private void assertExceptionFromExec(String supportCode) {
+            context.eval(Source.newBuilder("python", supportCode, "support.py").buildLiteral());
+            Value run = context.getBindings("python").getMember("run");
+            String[] code = {"undefined_name", "raise ValueError('boom')", "1 / 0"};
+            String[] messages = {"NameError: name 'undefined_name' is not defined", "ValueError: boom", "ZeroDivisionError: division by zero"};
+            // Exercise both the uncached and cached bytecode interpreters.
+            for (int round = 0; round < 10; round++) {
+                for (int i = 0; i < code.length; i++) {
+                    String snippet = code[i];
+                    PolyglotException exception = assertThrows(PolyglotException.class, () -> run.execute(snippet));
+                    assertTrue(exception.isGuestException());
+                    assertEquals(messages[i], exception.getMessage());
+                }
+            }
         }
 
         @Test
