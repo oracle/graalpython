@@ -227,11 +227,15 @@ test.test_dataclasses.TestSlots.test_generated_slots @ darwin-arm64,linux-aarch6
 test.test_dataclasses.TestSlots.test_generated_slots_value @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_returns_new_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_simple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestSlots.test_slots_weakref @ linux-x86_64-github
 test.test_dataclasses.TestSlots.test_slots_weakref_base_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_slots_weakref_base_tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_slots_with_default_factory_no_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_slots_with_default_no_init @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_weakref_slot_make_dataclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestSlots.test_weakref_slot_normal_base_weakref_slot @ linux-x86_64-github
+test.test_dataclasses.TestSlots.test_weakref_slot_subclass_no_weakref_slot @ linux-x86_64-github
+test.test_dataclasses.TestSlots.test_weakref_slot_subclass_weakref_slot @ linux-x86_64-github
 test.test_dataclasses.TestSlots.test_weakref_slot_without_slot @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestStringAnnotations.test_classvar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestStringAnnotations.test_classvar_module_level_import @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
