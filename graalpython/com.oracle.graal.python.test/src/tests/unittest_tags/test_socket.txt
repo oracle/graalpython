@@ -16,7 +16,7 @@ test.test_socket.BasicTCPTest2.testFromFd @ darwin-arm64,linux-aarch64,linux-aar
 test.test_socket.BasicTCPTest2.testOverFlowRecv @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.BasicTCPTest2.testOverFlowRecvFrom @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_socket.BasicTCPTest2.testRecv @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_socket.BasicTCPTest2.testRecvFrom @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_socket.BasicTCPTest2.testRecvFrom @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_socket.BasicTCPTest2.testSendAll @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.BasicTCPTest2.testShutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.BasicUDPTest.testRecvFrom @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
