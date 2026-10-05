@@ -47,8 +47,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VoidNoReturn;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printPythonLikeStackTrace;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
 import com.oracle.graal.python.lib.PyContextCopyCurrent;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -118,7 +119,23 @@ public final class PythonCextContextBuiltins {
         PythonContext.PythonThreadState threadState = pythonContext.getThreadState(language);
         Object oldValue = pvar.getValue(null, threadState);
         pvar.setValue(null, threadState, val);
-        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createContextVarsToken(language, pvar, oldValue));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createContextVarsToken(language, pvar, threadState.getContextVarsContext(null), oldValue));
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static int PyContextVar_Reset(long varPtr, long tokenPtr) {
+        Object var = NativeToPythonInternalNode.executeUncached(varPtr, false);
+        if (!(var instanceof PContextVar pvar)) {
+            throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+        }
+        Object token = NativeToPythonInternalNode.executeUncached(tokenPtr, false);
+        if (!(token instanceof PContextVarsToken ptoken)) {
+            throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
+        }
+        PythonContext pythonContext = PythonContext.get(null);
+        PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage());
+        pvar.resetValue(null, threadState, ptoken);
+        return 0;
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Direct)

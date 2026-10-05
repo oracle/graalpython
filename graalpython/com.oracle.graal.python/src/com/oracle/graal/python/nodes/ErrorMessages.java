@@ -1379,6 +1379,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CONTEXTVAR_KEY_EXPECTED = tsLiteral("A ContextVar key was expected, got %s");
     public static final TruffleString CANNOT_ENTER_CONTEXT_ALREADY_ENTERED = tsLiteral("cannot enter context: %s is already entered");
     public static final TruffleString TOKEN_ONLY_BY_CONTEXTVAR = tsLiteral("Tokens can only be created by ContextVars");
+    public static final TruffleString TOKEN_FOR_DIFFERENT_CONTEXT = tsLiteral("%s was created in a different Context");
     public static final TruffleString TOKEN_FOR_DIFFERENT_CONTEXTVAR = tsLiteral("%s was created by a different ContextVar");
 
     public static final TruffleString ATTRIBUTE_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");

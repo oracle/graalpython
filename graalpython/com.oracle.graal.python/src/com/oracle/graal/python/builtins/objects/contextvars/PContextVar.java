@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,6 +79,16 @@ public final class PContextVar extends PythonBuiltinObject {
     public void setValue(Node node, PythonContext.PythonThreadState state, Object value) {
         PContextVarsContext current = state.getContextVarsContext(node);
         current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
+    }
+
+    public void resetValue(Node node, PythonContext.PythonThreadState state, PContextVarsToken token) {
+        PContextVarsContext current = state.getContextVarsContext(node);
+        token.use(node, this, current);
+        if (token.getOldValue() == null) {
+            current.contextVarValues = current.contextVarValues.without(this, getHash());
+        } else {
+            setValue(node, state, token.getOldValue());
+        }
     }
 
     public Object get(Node node, PythonContext.PythonThreadState state, Object defaultValue) {
