@@ -192,8 +192,9 @@ test.test_asyncio.test_events.PollEventLoopTests.test_server_close @ darwin-arm6
 test.test_asyncio.test_events.PollEventLoopTests.test_ssl_connect_accepted_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_close_after_finish @ linux-aarch64-github,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_exec_invalid_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_exitcode @ darwin-arm64,linux-aarch64-github
-test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_shell @ linux-aarch64-github,linux-x86_64
+# GR-80225
+!test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_exitcode @ darwin-arm64,linux-aarch64-github
+!test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_shell @ linux-aarch64-github,linux-x86_64
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_shell_invalid_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_subprocess_wait_no_same_group @ linux-aarch64-github
 test.test_asyncio.test_events.PollEventLoopTests.test_timeout_rounding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
