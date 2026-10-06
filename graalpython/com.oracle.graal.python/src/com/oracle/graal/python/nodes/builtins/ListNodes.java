@@ -104,6 +104,10 @@ public abstract class ListNodes {
 
         public abstract SequenceStorage execute(Node inliningTarget, Object seq);
 
+        public static SequenceStorage executeUncached(Object seq) {
+            return ListNodesFactory.GetListStorageNodeGen.getUncached().execute(null, seq);
+        }
+
         @Specialization
         static SequenceStorage doPList(PList list) {
             return list.getSequenceStorage();

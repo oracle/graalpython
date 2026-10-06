@@ -158,6 +158,10 @@ public abstract class TupleNodes {
     public abstract static class GetTupleStorage extends Node {
         public abstract SequenceStorage execute(Node inliningTarget, Object tuple);
 
+        public static SequenceStorage executeUncached(Object tuple) {
+            return TupleNodesFactory.GetTupleStorageNodeGen.getUncached().execute(null, tuple);
+        }
+
         @Specialization
         static SequenceStorage doManaged(PTuple tuple) {
             return tuple.getSequenceStorage();

@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.contextvars.PContextIterator;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimal;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
@@ -388,6 +389,22 @@ public final class PFactory {
 
     public static PTupleGetter createTupleGetter(Object cls, Shape shape, int index, Object doc) {
         return new PTupleGetter(cls, shape, index, doc);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, long value) {
+        return new PDecimal(cls, shape, value);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, boolean negative, long coefficient, long exponent, PDecimal.Kind kind) {
+        return new PDecimal(cls, shape, negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, boolean negative, BigInteger coefficient, long exponent, PDecimal.Kind kind) {
+        return new PDecimal(cls, shape, negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, PDecimal value) {
+        return new PDecimal(cls, shape, value);
     }
 
     public static PComplex createComplex(Object cls, Shape shape, double real, double imag) {

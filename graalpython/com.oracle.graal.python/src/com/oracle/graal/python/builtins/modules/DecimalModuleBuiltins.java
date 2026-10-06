@@ -41,7 +41,13 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_COLLECTIONS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_COLLECTIONS_ABC;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_DECIMAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MUTABLE_MAPPING;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NAMEDTUPLE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__DECIMAL;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -55,6 +61,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalExceptionTypes;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalModuleState;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -77,15 +84,41 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_decimal")
 public final class DecimalModuleBuiltins extends PythonBuiltins {
-    private static final TruffleString T__DECIMAL = tsLiteral("_decimal");
-    private static final TruffleString T_DECIMAL = tsLiteral("decimal");
     private static final TruffleString T_DECIMAL_TUPLE = tsLiteral("DecimalTuple");
     private static final TruffleString T_DECIMAL_TUPLE_FIELDS = tsLiteral("sign digits exponent");
-    private static final TruffleString T_COLLECTIONS = tsLiteral("collections");
-    private static final TruffleString T_NAMEDTUPLE = tsLiteral("namedtuple");
     private static final TruffleString T_SIGNAL_DICT = tsLiteral("SignalDict");
-    private static final TruffleString T_COLLECTIONS_ABC = tsLiteral("collections.abc");
-    private static final TruffleString T_MUTABLE_MAPPING = tsLiteral("MutableMapping");
+
+    public static final TruffleString T_ROUND_DOWN = tsLiteral("ROUND_DOWN");
+    public static final TruffleString T_ROUND_UP = tsLiteral("ROUND_UP");
+    public static final TruffleString T_ROUND_HALF_EVEN = tsLiteral("ROUND_HALF_EVEN");
+    public static final TruffleString T_ROUND_HALF_DOWN = tsLiteral("ROUND_HALF_DOWN");
+    public static final TruffleString T_ROUND_HALF_UP = tsLiteral("ROUND_HALF_UP");
+    public static final TruffleString T_ROUND_CEILING = tsLiteral("ROUND_CEILING");
+    public static final TruffleString T_ROUND_FLOOR = tsLiteral("ROUND_FLOOR");
+    public static final TruffleString T_ROUND_05UP = tsLiteral("ROUND_05UP");
+
+    public DecimalModuleBuiltins() {
+        addBuiltinConstant("MAX_PREC", DecimalUtils.MAX_PREC);
+        addBuiltinConstant("MAX_EMAX", DecimalUtils.MAX_EMAX);
+        addBuiltinConstant("MIN_EMIN", DecimalUtils.MIN_EMIN);
+        addBuiltinConstant("MIN_ETINY", DecimalUtils.MIN_ETINY);
+
+        addBuiltinConstant(T_ROUND_DOWN, T_ROUND_DOWN);
+        addBuiltinConstant(T_ROUND_UP, T_ROUND_UP);
+        addBuiltinConstant(T_ROUND_HALF_EVEN, T_ROUND_HALF_EVEN);
+        addBuiltinConstant(T_ROUND_HALF_DOWN, T_ROUND_HALF_DOWN);
+        addBuiltinConstant(T_ROUND_HALF_UP, T_ROUND_HALF_UP);
+        addBuiltinConstant(T_ROUND_CEILING, T_ROUND_CEILING);
+        addBuiltinConstant(T_ROUND_FLOOR, T_ROUND_FLOOR);
+        addBuiltinConstant(T_ROUND_05UP, T_ROUND_05UP);
+
+        addBuiltinConstant("HAVE_THREADS", true);
+        addBuiltinConstant("HAVE_CONTEXTVAR", true);
+
+        // Even _pydecimal exports these constants, despite not being based on libmpdec, so we should do that too
+        addBuiltinConstant("__version__", tsLiteral("1.70"));
+        addBuiltinConstant("__libmpdec_version__", tsLiteral("2.5.1"));
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

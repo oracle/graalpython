@@ -1604,6 +1604,15 @@ public abstract class ErrorMessages {
     public static final TruffleString NOT_A_DIGIT = tsLiteral("not a digit");
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
 
+    // decimal
+    public static final TruffleString OPTIONAL_DECIMAL_CONTEXT = tsLiteral("optional argument must be a context");
+    public static final TruffleString CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED = tsLiteral("conversion from %s to Decimal is not supported");
+    public static final TruffleString DECIMAL_SEQUENCE_LENGTH = tsLiteral("argument must be a sequence of length 3");
+    public static final TruffleString DECIMAL_SIGN = tsLiteral("sign must be an integer with the value 0 or 1");
+    public static final TruffleString DECIMAL_EXPONENT = tsLiteral("exponent must be an integer");
+    public static final TruffleString DECIMAL_SPECIAL_EXPONENT = tsLiteral("string argument in the third position must be 'F', 'n' or 'N'");
+    public static final TruffleString DECIMAL_COEFFICIENT = tsLiteral("coefficient must be a tuple of digits");
+
     // re module errors
     public static final TruffleString BAD_ESCAPE_S = tsLiteral("bad escape %s");
     public static final TruffleString BAD_ESCAPE_END_OF_STRING = tsLiteral("bad escape (end of string)");

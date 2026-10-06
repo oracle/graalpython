@@ -138,6 +138,16 @@ public abstract class BuiltinNames {
     public static final TruffleString T_MAX = tsLiteral("max");
     public static final TruffleString T_RESOLUTION = tsLiteral("resolution");
 
+    // decimal
+    public static final TruffleString T_DECIMAL = tsLiteral("decimal");
+    public static final TruffleString T__DECIMAL = tsLiteral("_decimal");
+
+    // collections
+    public static final TruffleString T_COLLECTIONS = tsLiteral("collections");
+    public static final TruffleString T_COLLECTIONS_ABC = tsLiteral("collections.abc");
+    public static final TruffleString T_NAMEDTUPLE = tsLiteral("namedtuple");
+    public static final TruffleString T_MUTABLE_MAPPING = tsLiteral("MutableMapping");
+
     // built-in functions
     public static final String J_ABS = "abs";
     public static final TruffleString T_ABS = tsLiteral(J_ABS);

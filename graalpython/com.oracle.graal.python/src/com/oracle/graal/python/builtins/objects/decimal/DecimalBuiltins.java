@@ -41,37 +41,85 @@
 package com.oracle.graal.python.builtins.objects.decimal;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__DECIMAL;
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
+import static com.oracle.graal.python.nodes.PGuards.isNone;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.math.BigInteger;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.ConversionException;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.Value;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimal.Kind;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyFloatCheckNode;
+import com.oracle.graal.python.lib.PyListCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDecimal)
 public final class DecimalBuiltins extends PythonBuiltins {
@@ -867,11 +915,267 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpNewNode extends PythonTernaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1, Object arg2,
+        static PDecimal construct(VirtualFrame frame, Object cls, Object value, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.tp_new.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Bind PythonLanguage language,
+                        @Cached(inline = true) CreateDecimalNode createDecimal,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached BranchProfile errorProfile) {
+            if (!isNone(context) && !isNoValue(context) && !(context instanceof PDecimalContext)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OPTIONAL_DECIMAL_CONTEXT);
+            }
+            try {
+                return createDecimal.execute(frame, inliningTarget, cls, value);
+            } catch (ConversionException e) {
+                errorProfile.enter();
+                // Until contexts have flags/traps, use the default InvalidOperation trap.
+                DecimalModuleState state = PythonContext.get(inliningTarget).lookupBuiltinModule(T__DECIMAL).getModuleState(DecimalModuleState.class);
+                PList conditions = PFactory.createList(language, new Object[]{state.getExceptionType(e.condition)});
+                Object exception = callNode.execute(frame, state.getExceptionType(DecimalExceptionTypes.InvalidOperation), conditions);
+                throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
+            }
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        @GenerateUncached
+        @ImportStatic(PGuards.class)
+        abstract static class CreateDecimalNode extends Node {
+            abstract PDecimal execute(VirtualFrame frame, Node inliningTarget, Object cls, Object value) throws ConversionException;
+
+            @Specialization(guards = "isNoValue(value)")
+            static PDecimal doDefault(@SuppressWarnings("unused") Node inliningTarget, Object cls, @SuppressWarnings("unused") PNone value,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return PFactory.createDecimal(cls, getShape.execute(cls), 0L);
+            }
+
+            @Specialization
+            static PDecimal doDecimal(Node inliningTarget, Object cls, PDecimal value,
+                            @Shared @Cached GetClassNode getClass,
+                            @Shared @Cached IsBuiltinClassExactProfile clsProfile,
+                            @Shared @Cached IsBuiltinClassExactProfile valueProfile,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                if (clsProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PDecimal) &&
+                                valueProfile.profileClass(inliningTarget, getClass.execute(inliningTarget, value), PythonBuiltinClassType.PDecimal)) {
+                    return value;
+                }
+                return PFactory.createDecimal(cls, getShape.execute(cls), value);
+            }
+
+            @Specialization(guards = "unicodeCheck.execute(inliningTarget, value)")
+            static PDecimal doString(Node inliningTarget, Object cls, Object value,
+                            @SuppressWarnings("unused") @Shared @Cached PyUnicodeCheckNode unicodeCheck,
+                            @Cached CastToJavaStringNode asString,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
+                return create(cls, DecimalUtils.parse(asString.execute(value)), getShape);
+            }
+
+            @Specialization
+            static PDecimal doInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, int value,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return PFactory.createDecimal(cls, getShape.execute(cls), value);
+            }
+
+            @Specialization
+            static PDecimal doLong(@SuppressWarnings("unused") Node inliningTarget, Object cls, long value,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return PFactory.createDecimal(cls, getShape.execute(cls), value);
+            }
+
+            @Specialization
+            static PDecimal doPInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, PInt value,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return create(cls, DecimalUtils.fromInteger(value.getValue()), getShape);
+            }
+
+            @Specialization(guards = "longCheck.execute(inliningTarget, value)")
+            static PDecimal doIntGeneric(Node inliningTarget, Object cls, Object value,
+                            @SuppressWarnings("unused") @Shared @Cached PyLongCheckNode longCheck,
+                            @Shared @Cached CastToJavaBigIntegerNode asBigInteger,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return create(cls, DecimalUtils.fromInteger(asBigInteger.execute(inliningTarget, value)), getShape);
+            }
+
+            @Specialization
+            static PDecimal doDouble(Node inliningTarget, Object cls, double value,
+                            @Shared @Cached InlinedBranchProfile nonCompactProfile,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                // TODO signal FloatOperation when decimal contexts and signals are implemented.
+                return fromDouble(inliningTarget, cls, value, getShape, nonCompactProfile);
+            }
+
+            @Specialization
+            static PDecimal doPFloat(Node inliningTarget, Object cls, PFloat value,
+                            @Shared @Cached InlinedBranchProfile nonCompactProfile,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return fromDouble(inliningTarget, cls, value.getValue(), getShape, nonCompactProfile);
+            }
+
+            @Specialization(guards = "floatCheck.execute(inliningTarget, value)")
+            static PDecimal doFloatGeneric(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
+                            @SuppressWarnings("unused") @Shared @Cached PyFloatCheckNode floatCheck,
+                            @Shared @Cached PyFloatAsDoubleNode asDouble,
+                            @Shared @Cached InlinedBranchProfile nonCompactProfile,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
+                return fromDouble(inliningTarget, cls, asDouble.execute(frame, inliningTarget, value), getShape, nonCompactProfile);
+            }
+
+            @Specialization(guards = "tupleCheck.execute(inliningTarget, value)")
+            static PDecimal doTuple(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
+                            @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheck,
+                            @Shared @Cached GetTupleStorage getTupleStorage,
+                            @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
+                SequenceStorage storage = getTupleStorage.execute(inliningTarget, value);
+                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+                try {
+                    return create(cls, fromSequence(storage), getShape);
+                } finally {
+                    BoundaryCallContext.exit(frame, boundaryCallData, state);
+                }
+            }
+
+            @Specialization(guards = "listCheck.execute(inliningTarget, value)")
+            static PDecimal doList(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
+                            @SuppressWarnings("unused") @Shared @Cached PyListCheckNode listCheck,
+                            @Shared @Cached GetListStorageNode getListStorage,
+                            @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                            @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
+                SequenceStorage storage = getListStorage.execute(inliningTarget, value);
+                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+                try {
+                    return create(cls, fromSequence(storage), getShape);
+                } finally {
+                    BoundaryCallContext.exit(frame, boundaryCallData, state);
+                }
+            }
+
+            @Fallback
+            static PDecimal doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object cls, Object value,
+                            @Shared @Cached GetClassNode getClass,
+                            @Shared @Cached TypeNodes.GetNameNode getName,
+                            @Shared @Cached PRaiseNode raiseNode) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED,
+                                getName.execute(inliningTarget, getClass.execute(inliningTarget, value)));
+            }
+
+            private static PDecimal create(Object cls, Value value, TypeNodes.GetInstanceShape getShape) {
+                return PFactory.createDecimal(cls, getShape.execute(cls), value.negative(), value.coefficient(), value.exponent(), value.kind());
+            }
+
+            private static PDecimal fromDouble(Node inliningTarget, Object cls, double value, TypeNodes.GetInstanceShape getShape, InlinedBranchProfile nonCompactProfile) {
+                // IEEE 754 binary64 stores the sign in bit 63, an 11-bit biased exponent
+                // in bits 62..52, and a 52-bit fraction in bits 51..0. The masks select
+                long bits = Double.doubleToRawLongBits(value);
+                boolean negative = bits < 0;
+                int exponentBits = (int) ((bits >>> 52) & 0x7ff);
+                long coefficient = bits & 0x000fffffffffffffL;
+                // An all-ones exponent encodes infinity if the fraction is zero, else NaN.
+                if (exponentBits == 0x7ff) {
+                    Kind kind = coefficient == 0 ? Kind.INFINITY : Kind.NAN;
+                    return PFactory.createDecimal(cls, getShape.execute(cls), kind == Kind.INFINITY && negative, 0L, 0, kind);
+                }
+                if (exponentBits == 0 && coefficient == 0) {
+                    return PFactory.createDecimal(cls, getShape.execute(cls), negative, 0L, 0, Kind.FINITE);
+                }
+                int binaryExponent;
+                if (exponentBits == 0) {
+                    // Subnormals have no implicit leading 1. Their integer fraction is
+                    // scaled by 2^(1 - 1023 - 52) = 2^-1074 (bias 1023, 52 fraction bits).
+                    binaryExponent = -1074;
+                } else {
+                    // Normal values have an implicit leading 1 at bit 52. Subtract the
+                    // exponent bias (1023) and fraction width (52) to scale this integer.
+                    coefficient |= 1L << 52;
+                    binaryExponent = exponentBits - 1023 - 52;
+                }
+                // Reduce coefficient * 2^binaryExponent to an odd coefficient.
+                int trailingZeros = Long.numberOfTrailingZeros(coefficient);
+                coefficient >>>= trailingZeros;
+                binaryExponent += trailingZeros;
+                if (binaryExponent >= 0) {
+                    // A compact positive coefficient has 63 usable bits. Check the shift
+                    // count and remaining capacity before multiplying by 2^binaryExponent.
+                    if (binaryExponent < Long.SIZE - 1 && coefficient <= (Long.MAX_VALUE >>> binaryExponent)) {
+                        return PFactory.createDecimal(cls, getShape.execute(cls), negative, coefficient << binaryExponent, 0, Kind.FINITE);
+                    }
+                } else {
+                    // n / 2^k = (n * 5^k) * 10^-k because 2 * 5 = 10, with no decimal
+                    // rounding. Long.MAX_VALUE / 5 is the largest coefficient that can
+                    // survive the next multiplication by 5 without signed-long overflow.
+                    for (int i = 0; i < -binaryExponent; i++) {
+                        if (coefficient > Long.MAX_VALUE / 5) {
+                            nonCompactProfile.enter(inliningTarget);
+                            return create(cls, DecimalUtils.fromFloat(value), getShape);
+                        }
+                        coefficient *= 5;
+                    }
+                    return PFactory.createDecimal(cls, getShape.execute(cls), negative, coefficient, binaryExponent, Kind.FINITE);
+                }
+                nonCompactProfile.enter(inliningTarget);
+                return create(cls, DecimalUtils.fromFloat(value), getShape);
+            }
+
+            @TruffleBoundary
+            private static Value fromSequence(SequenceStorage triple) throws ConversionException {
+                PRaiseNode raiseNode = PRaiseNode.getUncached();
+                // Decimal triples are (sign, digits, exponent), at indices 0, 1, and 2.
+                if (triple.length() != 3) {
+                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SEQUENCE_LENGTH);
+                }
+                Object sign = SequenceStorageNodes.GetItemScalarNode.executeUncached(triple, 0);
+                if (!PyLongCheckNode.executeUncached(sign)) {
+                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SIGN);
+                }
+                long signValue = PyLongAsLongNode.executeUncached(sign);
+                // The tuple format uses 0 for positive and 1 for negative, including zero.
+                if (signValue != 0 && signValue != 1) {
+                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SIGN);
+                }
+                Object exp = SequenceStorageNodes.GetItemScalarNode.executeUncached(triple, 2);
+                Kind kind = Kind.FINITE;
+                long exponent = 0;
+                if (PyUnicodeCheckNode.executeUncached(exp)) {
+                    kind = switch (CastToJavaStringNode.getUncached().execute(exp)) {
+                        case "F" -> Kind.INFINITY;
+                        case "n" -> Kind.NAN;
+                        case "N" -> Kind.SNAN;
+                        default -> throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SPECIAL_EXPONENT);
+                    };
+                } else {
+                    if (!PyLongCheckNode.executeUncached(exp)) {
+                        throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_EXPONENT);
+                    }
+                    exponent = PyLongAsLongNode.executeUncached(exp);
+                }
+                Object digits = SequenceStorageNodes.GetItemScalarNode.executeUncached(triple, 1);
+                SequenceStorage storage;
+                if (PyTupleCheckNode.executeUncached(digits)) {
+                    storage = GetTupleStorage.executeUncached(digits);
+                } else if (PyListCheckNode.executeUncached(digits)) {
+                    storage = GetListStorageNode.executeUncached(digits);
+                } else {
+                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_COEFFICIENT);
+                }
+                StringBuilder coefficient = new StringBuilder(storage.length());
+                for (int i = 0; i < storage.length(); i++) {
+                    Object digit = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
+                    if (!PyLongCheckNode.executeUncached(digit)) {
+                        throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_COEFFICIENT);
+                    }
+                    long n = PyLongAsLongNode.executeUncached(digit);
+                    // Each coefficient element is one base-10 digit, in the range 0..9.
+                    if (n < 0 || n > 9) {
+                        throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_COEFFICIENT);
+                    }
+                    if (kind != Kind.INFINITY) {
+                        coefficient.append((char) ('0' + n));
+                    }
+                }
+                BigInteger integer = coefficient.isEmpty() ? BigInteger.ZERO : new BigInteger(coefficient.toString());
+                return kind == Kind.FINITE ? DecimalUtils.finite(signValue != 0, integer, exponent) : new Value(signValue != 0, integer, 0, kind);
+            }
         }
     }
 
@@ -879,11 +1183,15 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.tp_repr.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static TruffleString repr(PDecimal self,
+                        @Cached TruffleString.FromJavaStringNode fromJavaString) {
+            return fromJavaString.execute(reprString(self), TS_ENCODING);
+        }
+
+        @TruffleBoundary
+        private static String reprString(PDecimal self) {
+            // TODO read capitals from the current context once contexts are implemented.
+            return "Decimal('" + self.toScientificString(true) + "')";
         }
     }
 
