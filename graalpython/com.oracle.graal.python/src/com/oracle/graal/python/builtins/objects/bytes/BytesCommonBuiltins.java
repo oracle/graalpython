@@ -50,10 +50,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -124,6 +121,7 @@ import com.oracle.graal.python.runtime.formatting.BytesFormatProcessor;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -142,6 +140,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1353,7 +1352,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @TruffleBoundary(allowInlining = true)
         static byte[] replace(byte[] bytes, int len, byte[] sub, byte[] replacementBytes, int count) {
             int i, j, pos, maxcount = count, subLen = sub.length, repLen = replacementBytes.length;
-            List<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             int resultLen = 0;
             i = 0;
@@ -1378,9 +1377,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
             i = 0;
             byte[] result = new byte[resultLen];
-            Iterator<byte[]> it = iterator(list);
-            while (hasNext(it)) {
-                byte[] b = next(it);
+            for (int k = 0; k < list.size(); k++) {
+                byte[] b = list.get(k);
                 PythonUtils.arraycopy(b, 0, result, i, b.length);
                 i += b.length;
             }
@@ -1537,11 +1535,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         protected static final byte[] WHITESPACE = new byte[]{' '};
 
-        protected abstract List<byte[]> splitWhitespace(byte[] bytes, int size, int maxsplit);
+        protected abstract ArrayBuilder<byte[]> splitWhitespace(byte[] bytes, int size, int maxsplit);
 
-        protected abstract List<byte[]> splitSingle(byte[] bytes, int size, byte sep, int maxsplit);
+        protected abstract ArrayBuilder<byte[]> splitSingle(byte[] bytes, int size, byte sep, int maxsplit);
 
-        protected abstract List<byte[]> splitDelimiter(byte[] bytes, int size, byte[] sep, int maxsplit);
+        protected abstract ArrayBuilder<byte[]> splitDelimiter(byte[] bytes, int size, byte[] sep, int maxsplit);
 
         protected static boolean isEmptySep(byte[] sep) {
             return sep.length == 0;
@@ -1605,13 +1603,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
         }
 
-        private static PList getBytesResult(List<byte[]> bytes, ListNodes.AppendNode appendNode, Object self, Node inliningTarget, BytesNodes.CreateBytesNode createBytesNode,
-                        PythonLanguage language) {
+        private static PList getBytesResult(ArrayBuilder<byte[]> bytes, ListNodes.AppendNode appendNode, Object self, Node inliningTarget,
+                        BytesNodes.CreateBytesNode createBytesNode, PythonLanguage language) {
             PList result = PFactory.createList(language);
-            Iterator<byte[]> it = iterator(bytes);
-            while (hasNext(it)) {
-                appendNode.execute(result, createBytesNode.execute(inliningTarget, self, next(it)));
+            for (int i = 0; i < bytes.size(); i++) {
+                appendNode.execute(result, createBytesNode.execute(inliningTarget, self, bytes.get(i)));
             }
+            LoopNode.reportLoopCount(inliningTarget, bytes.size());
             return result;
         }
     }
@@ -1633,9 +1631,9 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Override
         @TruffleBoundary
-        protected List<byte[]> splitWhitespace(byte[] bytes, int len, int maxsplit) {
+        protected ArrayBuilder<byte[]> splitWhitespace(byte[] bytes, int len, int maxsplit) {
             int i, j, maxcount = maxsplit;
-            List<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             i = 0;
             while (maxcount-- > 0) {
@@ -1667,9 +1665,9 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         }
 
         @Override
-        protected List<byte[]> splitSingle(byte[] bytes, int len, byte sep, int maxsplit) {
+        protected ArrayBuilder<byte[]> splitSingle(byte[] bytes, int len, byte sep, int maxsplit) {
             int i, j, maxcount = maxsplit;
-            List<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             i = j = 0;
             while ((j < len) && (maxcount-- > 0)) {
@@ -1689,9 +1687,9 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         }
 
         @Override
-        protected List<byte[]> splitDelimiter(byte[] bytes, int len, byte[] sep, int maxsplit) {
+        protected ArrayBuilder<byte[]> splitDelimiter(byte[] bytes, int len, byte[] sep, int maxsplit) {
             int i, j, pos, maxcount = maxsplit, sepLen = sep.length;
-            List<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             i = 0;
             while (maxcount-- > 0) {
@@ -1725,15 +1723,10 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             return BytesCommonBuiltinsClinicProviders.RSplitNodeClinicProviderGen.INSTANCE;
         }
 
-        @TruffleBoundary
-        private static void reverseList(ArrayList<byte[]> list) {
-            Collections.reverse(list);
-        }
-
         @Override
-        protected List<byte[]> splitWhitespace(byte[] bytes, int len, int maxsplit) {
+        protected ArrayBuilder<byte[]> splitWhitespace(byte[] bytes, int len, int maxsplit) {
             int i, j, maxcount = maxsplit;
-            ArrayList<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             i = len - 1;
             while (maxcount-- > 0) {
@@ -1761,14 +1754,14 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     list.add(copyOfRange(bytes, 0, i + 1));
                 }
             }
-            reverseList(list);
+            list.reverse();
             return list;
         }
 
         @Override
-        protected List<byte[]> splitSingle(byte[] bytes, int len, byte sep, int maxsplit) {
+        protected ArrayBuilder<byte[]> splitSingle(byte[] bytes, int len, byte sep, int maxsplit) {
             int i, j, maxcount = maxsplit;
-            ArrayList<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             i = j = len - 1;
             while ((i >= 0) && (maxcount-- > 0)) {
@@ -1783,14 +1776,14 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             if (j >= -1) {
                 list.add(copyOfRange(bytes, 0, j + 1));
             }
-            reverseList(list);
+            list.reverse();
             return list;
         }
 
         @Override
-        protected List<byte[]> splitDelimiter(byte[] bytes, int len, byte[] sep, int maxsplit) {
+        protected ArrayBuilder<byte[]> splitDelimiter(byte[] bytes, int len, byte[] sep, int maxsplit) {
             int j, pos, maxcount = maxsplit, sepLen = sep.length;
-            ArrayList<byte[]> list = new ArrayList<>();
+            ArrayBuilder<byte[]> list = new ArrayBuilder<>();
 
             if (sepLen == 1) {
                 return splitSingle(bytes, len, sep[0], maxcount);
@@ -1806,9 +1799,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 j = pos;
             }
             list.add(copyOfRange(bytes, 0, j));
-            reverseList(list);
+            list.reverse();
             return list;
-
         }
     }
 
@@ -2279,21 +2271,6 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     @TruffleBoundary
     static byte[] copyOfRange(byte[] bytes, int from, int to) {
         return PythonUtils.arrayCopyOfRange(bytes, from, to);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    static Iterator<byte[]> iterator(List<byte[]> bytes) {
-        return bytes.iterator();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    static byte[] next(Iterator<byte[]> it) {
-        return it.next();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    static boolean hasNext(Iterator<byte[]> it) {
-        return it.hasNext();
     }
 
     @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)

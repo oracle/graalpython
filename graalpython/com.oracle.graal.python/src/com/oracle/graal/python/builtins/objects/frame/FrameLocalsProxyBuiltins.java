@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -82,6 +81,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.dsl.Bind;
@@ -90,6 +90,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -190,7 +191,7 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
         PDict snapshot = snapshot(self, language, inliningTarget, setItem);
         HashingStorage storage = snapshot.getDictStorage();
         HashingStorageIterator iterator = getIterator.execute(inliningTarget, storage);
-        List<Object> result = new ArrayList<>();
+        ArrayBuilder<Object> result = new ArrayBuilder<>();
         while (iteratorNext.execute(inliningTarget, storage, iterator)) {
             Object key = iteratorKey.execute(inliningTarget, storage, iterator);
             Object value = iteratorValue.execute(inliningTarget, storage, iterator);
@@ -200,7 +201,8 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
                 case ITEMS -> PFactory.createTuple(language, new Object[]{key, value});
             });
         }
-        return result.toArray();
+        LoopNode.reportLoopCount(inliningTarget, result.size());
+        return result.toObjectArray();
     }
 
     @Slot(value = SlotKind.mp_subscript, isComplex = true)
