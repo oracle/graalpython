@@ -162,6 +162,10 @@ public final class PythonUtils {
     public static final ByteSequence EMPTY_BYTE_SEQUENCE = ByteSequence.create(EMPTY_BYTE_ARRAY);
 
     private static final ConcurrentWeakSet<TruffleString> TRUFFLE_STRING_INTERNING_CACHE = new ConcurrentWeakSet<>();
+    private static final TruffleString.CodePointSet ASCII_WHITESPACE_CODE_POINT_SET = TruffleString.CodePointSet.fromRanges(new int[]{
+                    0x09, 0x0d,
+                    0x1c, 0x20,
+    }, TS_ENCODING);
 
     /**
      * Returns an estimate for the initial capacity of a
@@ -195,6 +199,18 @@ public final class PythonUtils {
     @TruffleBoundary
     public static boolean isInterned(TruffleString string) {
         return TRUFFLE_STRING_INTERNING_CACHE.isInterned(string);
+    }
+
+    /**
+     * Whether a string constant should be interned: fewer than 64 ASCII characters without any
+     * Python whitespace. Names are interned independently of this policy.
+     */
+    @TruffleBoundary
+    public static boolean shouldInternConstant(TruffleString string) {
+        if (string.codePointLengthUncached(TS_ENCODING) >= 64 || string.getCodeRangeUncached(TS_ENCODING) != TruffleString.CodeRange.ASCII) {
+            return false;
+        }
+        return TruffleString.ByteIndexOfCodePointSetNode.getUncached().execute(string, 0, string.byteLength(TS_ENCODING), ASCII_WHITESPACE_CODE_POINT_SET) < 0;
     }
 
     @TruffleBoundary

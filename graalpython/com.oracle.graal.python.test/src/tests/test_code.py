@@ -310,3 +310,66 @@ def test_code_identity():
     assert bar_copy.__code__.co_filename == 'asdf'
     assert foo.__code__.co_filename != 'asdf'
     assert bar.__code__.co_filename != 'asdf'
+
+
+def _check_co_names(source, expected, scope=()):
+    import sys
+    import types
+
+    code = compile(source, '<co_names>', 'exec')
+    for name in scope:
+        code = next(c for c in code.co_consts if isinstance(c, types.CodeType) and c.co_name == name)
+    assert code.co_names == expected, (source, code.co_names)
+    for name in code.co_names:
+        assert sys._is_interned(name), (source, name)
+
+
+def test_co_names_for_method_calls():
+    cases = [
+        ('return obj.m()', ('m',)),
+        ('return obj.m(x=1)', ('m',)),
+        ('return obj.m(*args)', ('m',)),
+        ('return obj.m(**kwargs)', ('m',)),
+        ('return global_obj.m()', ('global_obj', 'm')),
+        ('return obj.a.m()', ('a', 'm')),
+        ('return factory().m()', ('factory', 'm')),
+        ('return obj.m().n()', ('m', 'n')),
+        ('return obj.m(obj.n())', ('m', 'n')),
+        ('obj.first(); return obj.second', ('first', 'second')),
+        ('obj.m(); return obj.m()', ('m',)),
+    ]
+    for body, expected in cases:
+        _check_co_names('def f(obj, args, kwargs):\n    ' + body, expected, ('f',))
+    for call in ('self.__m()', 'self.__m(*args)'):
+        _check_co_names('class C:\n    def f(self, args): return ' + call, ('_C__m',), ('C', 'f'))
+
+
+def test_co_names_for_super_lookups():
+    cases = [
+        ('super().m()', ('super', 'm')),
+        ('super().m', ('super', 'm')),
+        ('super().m(x=1)', ('super', 'm')),
+        ('super(C, self).m()', ('super', 'C', 'm')),
+        ('super(C, self).m', ('super', 'C', 'm')),
+        ('super(C, factory()).m()', ('super', 'C', 'factory', 'm')),
+        ('super(C, factory()).factory()', ('super', 'C', 'factory')),
+        ('super(C, factory()).factory', ('super', 'C', 'factory')),
+    ]
+    for expression, expected in cases:
+        _check_co_names('class C:\n    def f(self): return ' + expression, expected, ('C', 'f'))
+
+
+def test_co_names_for_imports():
+    cases = [
+        ('import a', ('a',), ('a',)),
+        ('import a.b.c', ('a.b.c', 'a'), ('a.b.c',)),
+        ('import a as x', ('a', 'x'), ('a',)),
+        ('import a.b.c as x', ('a.b.c', 'b', 'c', 'x'), ('a.b.c', 'b', 'c')),
+        ('import a.b.c as c', ('a.b.c', 'b', 'c'), ('a.b.c', 'b', 'c')),
+        ('import a.b.c, a.b.c as x', ('a.b.c', 'a', 'b', 'c', 'x'), ('a.b.c', 'b', 'c')),
+        ('import a.b as x, c.d as y', ('a.b', 'b', 'x', 'c.d', 'd', 'y'), ('a.b', 'b', 'c.d', 'd')),
+        ('from a.b import c as x', ('a.b', 'c', 'x'), ('a.b', 'c')),
+    ]
+    for source, module_names, function_names in cases:
+        _check_co_names(source, module_names)
+        _check_co_names('def f():\n    ' + source, function_names, ('f',))
