@@ -40,34 +40,24 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Builtin;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDecimalContextManager)
 public final class DecimalContextManagerBuiltins extends PythonBuiltins {
-    public static final TpSlots SLOTS = DecimalContextManagerBuiltinsSlotsGen.SLOTS;
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DecimalContextManagerBuiltinsFactory.getFactories();
@@ -77,11 +67,10 @@ public final class DecimalContextManagerBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement ContextManager.__enter__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimalContext enter(PDecimalContextManager self,
+                        @Bind Node inliningTarget) {
+            DecimalContextUtils.getState(inliningTarget).setCurrentContext(inliningTarget, self.getLocal());
+            return self.getLocal();
         }
     }
 
@@ -89,23 +78,10 @@ public final class DecimalContextManagerBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object[] args,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement ContextManager.__exit__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
-        }
-    }
-
-    @Slot(value = SlotKind.tp_getattro, isComplex = true)
-    @GenerateNodeFactory
-    public abstract static class TpGetattroNode extends GetAttrBuiltinNode {
-        @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement ContextManager.tp_getattro.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static Object exit(PDecimalContextManager self, @SuppressWarnings("unused") Object[] args,
+                        @Bind Node inliningTarget) {
+            DecimalContextUtils.getState(inliningTarget).setCurrentContext(inliningTarget, self.getOuter());
+            return PNone.NONE;
         }
     }
 }

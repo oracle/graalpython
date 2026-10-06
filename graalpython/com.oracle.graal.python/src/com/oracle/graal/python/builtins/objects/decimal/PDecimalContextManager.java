@@ -44,9 +44,20 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PDecimalContextManager extends PythonBuiltinObject {
-    // TODO implement the outer and local contexts and context restoration state.
+    private final PDecimalContext outer;
+    private final PDecimalContext local;
 
-    public PDecimalContextManager(Object cls, Shape instanceShape) {
+    public PDecimalContextManager(Object cls, Shape instanceShape, PDecimalContext outer, PDecimalContext local) {
         super(cls, instanceShape);
+        this.outer = outer;
+        this.local = local;
+    }
+
+    public PDecimalContext getOuter() {
+        return outer;
+    }
+
+    public PDecimalContext getLocal() {
+        return local;
     }
 }

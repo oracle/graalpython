@@ -40,30 +40,114 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
+import static com.oracle.graal.python.builtins.modules.DecimalModuleBuiltins.T_ROUND_HALF_UP;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class DecimalModuleState {
-    private final PythonClass[] exceptionTypes;
-    private final PythonClass decimalTuple;
-    private final PythonClass signalDict;
+    public static final TruffleString T_DECIMAL_CONTEXT = tsLiteral("decimal_context");
 
-    public DecimalModuleState(PythonClass[] exceptionTypes, PythonClass decimalTuple, PythonClass signalDict) {
+    private final PythonClass[] exceptionTypes;
+    private final PythonClass decimalTupleType;
+    private final PythonClass signalDictType;
+
+    private PDecimalContext defaultContext;
+    private PDecimalContext basicContext;
+    private PDecimalContext extendedContext;
+    private PContextVar currentContext;
+
+    public DecimalModuleState(PythonClass[] exceptionTypes, PythonClass decimalTupleType, PythonClass signalDictType) {
         this.exceptionTypes = exceptionTypes;
-        this.decimalTuple = decimalTuple;
-        this.signalDict = signalDict;
+        this.decimalTupleType = decimalTupleType;
+        this.signalDictType = signalDictType;
     }
 
     public PythonClass getExceptionType(DecimalExceptionTypes type) {
         return exceptionTypes[type.ordinal()];
     }
 
-    public PythonClass getDecimalTuple() {
-        return decimalTuple;
+    public PythonClass getDecimalTupleType() {
+        return decimalTupleType;
     }
 
-    public PythonClass getSignalDict() {
-        return signalDict;
+    public PythonClass getSignalDictType() {
+        return signalDictType;
     }
 
-    // TODO implement per-interpreter current context, context templates, and signal state.
+    public void initializeContexts(PythonLanguage language) {
+        currentContext = PFactory.createContextVar(language, T_DECIMAL_CONTEXT, PContextVar.NO_DEFAULT);
+        Object cls = PythonBuiltinClassType.PDecimalContext;
+        Shape shape = PythonBuiltinClassType.PDecimalContext.getInstanceShape(language);
+        defaultContext = newContext(cls, shape);
+        basicContext = newContext(cls, shape);
+        basicContext.setPrecision(9);
+        basicContext.setRounding(T_ROUND_HALF_UP);
+        basicContext.setTraps(DecimalContextUtils.DEFAULT_TRAPS | DecimalContextUtils.mask(DecimalExceptionTypes.Underflow) | DecimalContextUtils.mask(DecimalExceptionTypes.Clamped));
+        extendedContext = newContext(cls, shape);
+        extendedContext.setPrecision(9);
+        extendedContext.setTraps(0);
+    }
+
+    public PDecimalContext getDefaultContext() {
+        return defaultContext;
+    }
+
+    public PDecimalContext getBasicContext() {
+        return basicContext;
+    }
+
+    public PDecimalContext getExtendedContext() {
+        return extendedContext;
+    }
+
+    public PDecimalContext newContext(Object cls, Shape shape) {
+        PDecimalContext result = PFactory.createDecimalContext(cls, shape);
+        if (defaultContext != null) {
+            result.copyFrom(defaultContext);
+            // Context.__new__ inherits arithmetic settings and signals, but not capitals.
+            result.setCapitals(1);
+        }
+        result.setSignalDicts(PFactory.createDecimalSignalDict(signalDictType, signalDictType.getInstanceShape(), result, false),
+                        PFactory.createDecimalSignalDict(signalDictType, signalDictType.getInstanceShape(), result, true));
+        return result;
+    }
+
+    public PDecimalContext copyContext(PythonLanguage language, PDecimalContext original) {
+        PDecimalContext copy = newContext(PythonBuiltinClassType.PDecimalContext, PythonBuiltinClassType.PDecimalContext.getInstanceShape(language));
+        copy.copyFrom(original);
+        return copy;
+    }
+
+    public PDecimalContext getCurrentContext(Node node) {
+        PythonContext context = PythonContext.get(node);
+        PythonLanguage language = context.getLanguage(node);
+        PythonContext.PythonThreadState threadState = context.getThreadState(language);
+        Object value = currentContext.getValue(node, threadState);
+        if (value == null) {
+            PDecimalContext initial = copyContext(language, defaultContext);
+            initial.setFlags(0);
+            currentContext.setValue(node, threadState, initial);
+            return initial;
+        }
+        return (PDecimalContext) value;
+    }
+
+    public void setCurrentContext(Node node, PDecimalContext value) {
+        PythonContext context = PythonContext.get(node);
+        PythonLanguage language = context.getLanguage(node);
+        if (value == defaultContext || value == basicContext || value == extendedContext) {
+            value = copyContext(language, value);
+            value.setFlags(0);
+        }
+        currentContext.setValue(node, context.getThreadState(language), value);
+    }
 }

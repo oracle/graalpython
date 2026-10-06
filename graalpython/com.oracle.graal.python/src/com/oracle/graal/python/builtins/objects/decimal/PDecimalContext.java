@@ -40,13 +40,113 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
+import static com.oracle.graal.python.builtins.modules.DecimalModuleBuiltins.T_ROUND_HALF_EVEN;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PDecimalContext extends PythonBuiltinObject {
-    // TODO implement precision, rounding, exponent limits, capitals, clamp, flags, and traps.
+    private long precision = 28;
+    private long emin = -999999;
+    private long emax = 999999;
+    private TruffleString rounding = T_ROUND_HALF_EVEN;
+    private int capitals = 1;
+    private int clamp;
+    private int flags;
+    private int traps = DecimalContextUtils.DEFAULT_TRAPS;
+    private PDecimalSignalDict flagsDict;
+    private PDecimalSignalDict trapsDict;
 
     public PDecimalContext(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+    }
+
+    public long getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(long value) {
+        precision = value;
+    }
+
+    public long getEmin() {
+        return emin;
+    }
+
+    public void setEmin(long value) {
+        emin = value;
+    }
+
+    public long getEmax() {
+        return emax;
+    }
+
+    public void setEmax(long value) {
+        emax = value;
+    }
+
+    public TruffleString getRounding() {
+        return rounding;
+    }
+
+    public void setRounding(TruffleString value) {
+        rounding = value;
+    }
+
+    public int getCapitals() {
+        return capitals;
+    }
+
+    public void setCapitals(int value) {
+        capitals = value;
+    }
+
+    public int getClamp() {
+        return clamp;
+    }
+
+    public void setClamp(int value) {
+        clamp = value;
+    }
+
+    public int getFlags() {
+        return flags;
+    }
+
+    public void setFlags(int value) {
+        flags = value;
+    }
+
+    public int getTraps() {
+        return traps;
+    }
+
+    public void setTraps(int value) {
+        traps = value;
+    }
+
+    public PDecimalSignalDict getFlagsDict() {
+        return flagsDict;
+    }
+
+    public PDecimalSignalDict getTrapsDict() {
+        return trapsDict;
+    }
+
+    public void setSignalDicts(PDecimalSignalDict flagsDict, PDecimalSignalDict trapsDict) {
+        this.flagsDict = flagsDict;
+        this.trapsDict = trapsDict;
+    }
+
+    public void copyFrom(PDecimalContext other) {
+        precision = other.precision;
+        emin = other.emin;
+        emax = other.emax;
+        rounding = other.rounding;
+        capitals = other.capitals;
+        clamp = other.clamp;
+        flags = other.flags;
+        traps = other.traps;
     }
 }

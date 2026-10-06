@@ -43,15 +43,11 @@ package com.oracle.graal.python.builtins.objects.decimal;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DECIMAL;
-import static com.oracle.graal.python.nodes.PGuards.isNoValue;
-import static com.oracle.graal.python.nodes.PGuards.isNone;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -61,13 +57,14 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.GetContextNode;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.RaiseSignalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.ConversionException;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.Value;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimal.Kind;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
@@ -88,7 +85,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -100,7 +96,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -117,7 +112,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -917,23 +911,22 @@ public final class DecimalBuiltins extends PythonBuiltins {
         @Specialization
         static PDecimal construct(VirtualFrame frame, Object cls, Object value, Object context,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached(inline = true) CreateDecimalNode createDecimal,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached BranchProfile errorProfile) {
-            if (!isNone(context) && !isNoValue(context) && !(context instanceof PDecimalContext)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OPTIONAL_DECIMAL_CONTEXT);
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached GetContextNode getContext,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PyFloatCheckNode floatCheck,
+                        @Cached TypeNodes.GetInstanceShape getShape) {
+            PDecimalContext decimalContext = getContext.execute(inliningTarget, context);
+            if (floatCheck.execute(inliningTarget, value)) {
+                DecimalContextUtils.addStatus(frame, decimalContext, DecimalContextUtils.conditionMask(DecimalExceptionTypes.FloatOperation), raiseSignal);
             }
             try {
                 return createDecimal.execute(frame, inliningTarget, cls, value);
             } catch (ConversionException e) {
-                errorProfile.enter();
-                // Until contexts have flags/traps, use the default InvalidOperation trap.
-                DecimalModuleState state = PythonContext.get(inliningTarget).lookupBuiltinModule(T__DECIMAL).getModuleState(DecimalModuleState.class);
-                PList conditions = PFactory.createList(language, new Object[]{state.getExceptionType(e.condition)});
-                Object exception = callNode.execute(frame, state.getExceptionType(DecimalExceptionTypes.InvalidOperation), conditions);
-                throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
+                errorProfile.enter(inliningTarget);
+                DecimalContextUtils.addStatus(frame, decimalContext, DecimalContextUtils.conditionMask(e.condition), raiseSignal);
+                return PFactory.createDecimal(cls, getShape.execute(cls), false, 0L, 0L, Kind.NAN);
             }
         }
 
@@ -1001,7 +994,6 @@ public final class DecimalBuiltins extends PythonBuiltins {
             static PDecimal doDouble(Node inliningTarget, Object cls, double value,
                             @Shared @Cached InlinedBranchProfile nonCompactProfile,
                             @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                // TODO signal FloatOperation when decimal contexts and signals are implemented.
                 return fromDouble(inliningTarget, cls, value, getShape, nonCompactProfile);
             }
 
@@ -1184,14 +1176,15 @@ public final class DecimalBuiltins extends PythonBuiltins {
     public abstract static class TpReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(PDecimal self,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaString) {
-            return fromJavaString.execute(reprString(self), TS_ENCODING);
+            boolean capitals = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget).getCapitals() != 0;
+            return fromJavaString.execute(reprString(self, capitals), TS_ENCODING);
         }
 
         @TruffleBoundary
-        private static String reprString(PDecimal self) {
-            // TODO read capitals from the current context once contexts are implemented.
-            return "Decimal('" + self.toScientificString(true) + "')";
+        private static String reprString(PDecimal self, boolean capitals) {
+            return "Decimal('" + self.toScientificString(capitals) + "')";
         }
     }
 

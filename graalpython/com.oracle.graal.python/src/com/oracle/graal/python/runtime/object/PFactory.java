@@ -109,6 +109,9 @@ import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimal;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalContext;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalContextManager;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalSignalDict;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
@@ -405,6 +408,18 @@ public final class PFactory {
 
     public static PDecimal createDecimal(Object cls, Shape shape, PDecimal value) {
         return new PDecimal(cls, shape, value);
+    }
+
+    public static PDecimalContext createDecimalContext(Object cls, Shape shape) {
+        return new PDecimalContext(cls, shape);
+    }
+
+    public static PDecimalSignalDict createDecimalSignalDict(Object cls, Shape shape, PDecimalContext context, boolean traps) {
+        return new PDecimalSignalDict(cls, shape, context, traps);
+    }
+
+    public static PDecimalContextManager createDecimalContextManager(PythonLanguage language, PDecimalContext outer, PDecimalContext local) {
+        return new PDecimalContextManager(PythonBuiltinClassType.PDecimalContextManager, PythonBuiltinClassType.PDecimalContextManager.getInstanceShape(language), outer, local);
     }
 
     public static PComplex createComplex(Object cls, Shape shape, double real, double imag) {

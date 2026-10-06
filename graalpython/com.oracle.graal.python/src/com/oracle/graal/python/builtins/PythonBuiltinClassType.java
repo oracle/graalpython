@@ -158,7 +158,6 @@ import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalBuiltins;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalContextBuiltins;
-import com.oracle.graal.python.builtins.objects.decimal.DecimalContextManagerBuiltins;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalSignalDictBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
@@ -1355,7 +1354,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // decimal
     PDecimal("Decimal", PythonObject, newBuilder().publishInModule("_decimal").moduleName("decimal").basetype().heaptype().haveGC().slots(DecimalBuiltins.SLOTS)),
     PDecimalContext("Context", PythonObject, newBuilder().publishInModule("_decimal").moduleName("decimal").basetype().heaptype().haveGC().slots(DecimalContextBuiltins.SLOTS)),
-    PDecimalContextManager("ContextManager", PythonObject, newBuilder().moduleName("decimal").heaptype().haveGC().disallowInstantiation().slots(DecimalContextManagerBuiltins.SLOTS)),
+    PDecimalContextManager("ContextManager", PythonObject, newBuilder().moduleName("decimal").heaptype().haveGC().disallowInstantiation()),
     PDecimalSignalDictMixin("SignalDictMixin", PythonObject, newBuilder().moduleName("decimal").basetype().heaptype().haveGC().slots(DecimalSignalDictBuiltins.SLOTS)),
 
     // contextvars

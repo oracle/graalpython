@@ -40,30 +40,42 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.HashNotImplemented;
+import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -71,6 +83,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDecimalSignalDictMixin)
 @HashNotImplemented
@@ -82,15 +95,14 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
         return DecimalSignalDictBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "SignalDictMixin", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class CopyNode extends PythonUnaryBuiltinNode {
+    public abstract static class TpNewNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.copy.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimalSignalDict construct(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached TypeNodes.GetInstanceShape getShape) {
+            return PFactory.createDecimalSignalDict(cls, getShape.execute(cls), null, false);
         }
     }
 
@@ -99,11 +111,9 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpInitNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.tp_init.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static Object initialize(PDecimalSignalDict self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            self.detach();
+            return PNone.NONE;
         }
     }
 
@@ -111,23 +121,12 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static TruffleString repr(PDecimalSignalDict self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.tp_repr.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
-        }
-    }
-
-    @Slot(value = SlotKind.tp_getattro, isComplex = true)
-    @GenerateNodeFactory
-    public abstract static class TpGetattroNode extends GetAttrBuiltinNode {
-        @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.tp_getattro.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaString) {
+            self.checkValid(raiseNode, inliningTarget);
+            return fromJavaString.execute(DecimalContextUtils.signalDictRepr(self.getFlags()), TS_ENCODING);
         }
     }
 
@@ -135,11 +134,36 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpRichcompareNode extends RichCmpBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, RichCmpOp op,
+        static Object compare(VirtualFrame frame, PDecimalSignalDict self, Object other, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.tp_richcompare.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached PyDictGetItem getItem,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            self.checkValid(raiseNode, inliningTarget);
+            if (other instanceof PDecimalSignalDict otherSignals) {
+                otherSignals.checkValid(raiseNode, inliningTarget);
+                if (op == RichCmpOp.Py_EQ || op == RichCmpOp.Py_NE) {
+                    return (self.getFlags() == otherSignals.getFlags()) != (op == RichCmpOp.Py_NE);
+                }
+            } else if (other instanceof PDict otherDict && (op == RichCmpOp.Py_EQ || op == RichCmpOp.Py_NE)) {
+                if (lenNode.execute(inliningTarget, otherDict.getDictStorage()) != DecimalContextUtils.SIGNALS.length) {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                }
+                DecimalModuleState state = DecimalContextUtils.getState(inliningTarget);
+                int flags = 0;
+                for (DecimalExceptionTypes signal : DecimalContextUtils.SIGNALS) {
+                    Object value = getItem.execute(frame, inliningTarget, otherDict, state.getExceptionType(signal));
+                    if (value == null) {
+                        return PNotImplemented.NOT_IMPLEMENTED;
+                    }
+                    if (isTrue.execute(frame, value)) {
+                        flags |= DecimalContextUtils.mask(signal);
+                    }
+                }
+                return (self.getFlags() == flags) ^ (op == RichCmpOp.Py_NE);
+            }
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -147,11 +171,18 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpIterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object iterator(VirtualFrame frame, PDecimalSignalDict self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.tp_iter.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyObjectGetIter getIter) {
+            self.checkValid(raiseNode, inliningTarget);
+            DecimalModuleState state = DecimalContextUtils.getState(inliningTarget);
+            Object[] keys = new Object[DecimalContextUtils.SIGNALS.length];
+            for (int i = 0; i < keys.length; i++) {
+                keys[i] = state.getExceptionType(DecimalContextUtils.SIGNALS[i]);
+            }
+            return getIter.execute(frame, inliningTarget, PFactory.createTuple(language, keys));
         }
     }
 
@@ -159,11 +190,11 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MpLengthNode extends LenBuiltinNode {
         @Specialization
-        static int doMock(VirtualFrame frame, Object self,
+        static int length(PDecimalSignalDict self,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.mp_length.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            self.checkValid(raiseNode, inliningTarget);
+            return DecimalContextUtils.SIGNALS.length;
         }
     }
 
@@ -171,11 +202,11 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MpSubscriptNode extends MpSubscriptBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
+        static boolean get(PDecimalSignalDict self, Object key,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.mp_subscript.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            self.checkValid(raiseNode, inliningTarget);
+            return (self.getFlags() & DecimalContextUtils.signalMask(inliningTarget, raiseNode, key)) != 0;
         }
     }
 
@@ -183,11 +214,29 @@ public final class DecimalSignalDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MpAssSubscriptNode extends MpAssSubscriptBuiltinNode {
         @Specialization
-        static void doMock(VirtualFrame frame, Object self, Object arg1, Object arg2,
+        static void set(VirtualFrame frame, PDecimalSignalDict self, Object key, Object value,
                         @Bind Node inliningTarget,
+                        @Cached PyObjectIsTrueNode isTrue,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement SignalDictMixin.mp_ass_subscript.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            self.checkValid(raiseNode, inliningTarget);
+            if (value == PNone.NO_VALUE) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.DECIMAL_SIGNAL_DELETE);
+            }
+            int mask = DecimalContextUtils.signalMask(inliningTarget, raiseNode, key);
+            boolean enabled = isTrue.execute(frame, value);
+            self.setFlags(enabled ? self.getFlags() | mask : self.getFlags() & ~mask);
+        }
+    }
+
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CopyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static PDict copy(PDecimalSignalDict self,
+                        @Bind Node inliningTarget) {
+            self.checkValid(inliningTarget);
+            return DecimalContextUtils.signalsAsDict(inliningTarget, self.getFlags());
         }
     }
 }

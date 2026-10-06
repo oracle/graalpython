@@ -1612,6 +1612,20 @@ public abstract class ErrorMessages {
     public static final TruffleString DECIMAL_EXPONENT = tsLiteral("exponent must be an integer");
     public static final TruffleString DECIMAL_SPECIAL_EXPONENT = tsLiteral("string argument in the third position must be 'F', 'n' or 'N'");
     public static final TruffleString DECIMAL_COEFFICIENT = tsLiteral("coefficient must be a tuple of digits");
+    public static final TruffleString DECIMAL_INVALID_SIGNAL_DICT = tsLiteral("invalid signal dict");
+    public static final TruffleString DECIMAL_EXPECTED_SIGNAL_DICT = tsLiteral("argument must be a signal dict");
+    public static final TruffleString DECIMAL_SIGNAL_DELETE = tsLiteral("signal keys cannot be deleted");
+    public static final TruffleString DECIMAL_CONTEXT_TYPE = tsLiteral("argument must be a context");
+    public static final TruffleString DECIMAL_PREC_RANGE = tsLiteral("valid range for prec is [1, MAX_PREC]");
+    public static final TruffleString DECIMAL_EMIN_RANGE = tsLiteral("valid range for Emin is [MIN_EMIN, 0]");
+    public static final TruffleString DECIMAL_EMAX_RANGE = tsLiteral("valid range for Emax is [0, MAX_EMAX]");
+    public static final TruffleString DECIMAL_CAPITALS_RANGE = tsLiteral("valid values for capitals are 0 or 1");
+    public static final TruffleString DECIMAL_CLAMP_RANGE = tsLiteral("valid values for clamp are 0 or 1");
+    public static final TruffleString DECIMAL_ROUNDING_VALUES = tsLiteral(
+                    "valid values for rounding are:\n  [ROUND_CEILING, ROUND_FLOOR, ROUND_UP, ROUND_DOWN,\n   ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_HALF_EVEN,\n   ROUND_05UP]");
+    public static final TruffleString DECIMAL_INVALID_SIGNALS = tsLiteral(
+                    "valid values for signals are:\n  [InvalidOperation, FloatOperation, DivisionByZero,\n   Overflow, Underflow, Subnormal, Inexact, Rounded,\n   Clamped]");
+    public static final TruffleString DECIMAL_INVALID_LOCALCONTEXT_KEYWORD = tsLiteral("'%s' is an invalid keyword argument for this function");
 
     // re module errors
     public static final TruffleString BAD_ESCAPE_S = tsLiteral("bad escape %s");

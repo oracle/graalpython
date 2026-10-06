@@ -40,13 +40,52 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PDecimalSignalDict extends PythonBuiltinObject {
-    // TODO implement a view of context signals with flags/traps ownership.
+    private PDecimalContext context;
+    private final boolean traps;
 
-    public PDecimalSignalDict(Object cls, Shape instanceShape) {
+    public PDecimalSignalDict(Object cls, Shape instanceShape, PDecimalContext context, boolean traps) {
         super(cls, instanceShape);
+        this.context = context;
+        this.traps = traps;
+    }
+
+    public boolean isValid() {
+        return context != null;
+    }
+
+    public void detach() {
+        context = null;
+    }
+
+    public int getFlags() {
+        return traps ? context.getTraps() : context.getFlags();
+    }
+
+    public void setFlags(int value) {
+        if (traps) {
+            context.setTraps(value);
+        } else {
+            context.setFlags(value);
+        }
+    }
+
+    public void checkValid(Node node) {
+        if (!isValid()) {
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ValueError, ErrorMessages.DECIMAL_INVALID_SIGNAL_DICT);
+        }
+    }
+
+    public void checkValid(PRaiseNode raise, Node inliningTarget) {
+        if (!isValid()) {
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.DECIMAL_INVALID_SIGNAL_DICT);
+        }
     }
 }

@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COLLECTIONS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COLLECTIONS_ABC;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_DECIMAL;
@@ -59,13 +59,18 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalContextUtils;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalExceptionTypes;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalModuleState;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalContext;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalContextManager;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -78,7 +83,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -87,6 +91,9 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_DECIMAL_TUPLE = tsLiteral("DecimalTuple");
     private static final TruffleString T_DECIMAL_TUPLE_FIELDS = tsLiteral("sign digits exponent");
     private static final TruffleString T_SIGNAL_DICT = tsLiteral("SignalDict");
+    public static final TruffleString T_DEFAULT_CONTEXT = tsLiteral("DefaultContext");
+    public static final TruffleString T_BASIC_CONTEXT = tsLiteral("BasicContext");
+    public static final TruffleString T_EXTENDED_CONTEXT = tsLiteral("ExtendedContext");
 
     public static final TruffleString T_ROUND_DOWN = tsLiteral("ROUND_DOWN");
     public static final TruffleString T_ROUND_UP = tsLiteral("ROUND_UP");
@@ -157,18 +164,21 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
         PythonAbstractClass mapping = (PythonAbstractClass) abc.getAttribute(T_MUTABLE_MAPPING);
         PythonClass signalDict = PFactory.createPythonClassAndFixupSlots(null, language, T_SIGNAL_DICT, mixin, new PythonAbstractClass[]{mixin, mapping});
         signalDict.setAttribute(T___MODULE__, T_DECIMAL);
-        module.setModuleState(new DecimalModuleState(exceptionTypes, decimalTuple, signalDict));
+
+        DecimalModuleState state = new DecimalModuleState(exceptionTypes, decimalTuple, signalDict);
+        module.setModuleState(state);
+        state.initializeContexts(language);
+        module.setAttribute(T_DEFAULT_CONTEXT, state.getDefaultContext());
+        module.setAttribute(T_BASIC_CONTEXT, state.getBasicContext());
+        module.setAttribute(T_EXTENDED_CONTEXT, state.getExtendedContext());
     }
 
     @Builtin(name = "getcontext", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetcontextNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement _decimal.getcontext.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimalContext get(@Bind Node inliningTarget) {
+            return DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
         }
     }
 
@@ -176,11 +186,14 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetcontextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object context,
+        static Object set(Object context,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement _decimal.setcontext.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            if (!(context instanceof PDecimalContext decimalContext)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_CONTEXT_TYPE);
+            }
+            DecimalContextUtils.getState(inliningTarget).setCurrentContext(inliningTarget, decimalContext);
+            return PNone.NONE;
         }
     }
 
@@ -188,12 +201,26 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LocalcontextNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object ctx, Object prec, Object rounding, Object Emin, Object Emax, Object capitals, Object clamp, Object flags, Object traps,
+        static PDecimalContextManager local(Object ctx, Object prec, Object rounding, Object emin, Object emax, Object capitals, Object clamp, Object flags, Object traps,
                         PKeyword[] kwargs,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement _decimal.localcontext.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            if (kwargs.length != 0) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_INVALID_LOCALCONTEXT_KEYWORD, kwargs[0].getName());
+            }
+            DecimalModuleState state = DecimalContextUtils.getState(inliningTarget);
+            PDecimalContext outer = state.getCurrentContext(inliningTarget);
+            PDecimalContext source = outer;
+            if (!(ctx instanceof PNone)) {
+                if (!(ctx instanceof PDecimalContext decimalContext)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OPTIONAL_DECIMAL_CONTEXT);
+                }
+                source = decimalContext;
+            }
+            PDecimalContext local = state.copyContext(language, source);
+            DecimalContextUtils.setAttributes(inliningTarget, local, prec, rounding, emin, emax, capitals, clamp, flags, traps);
+            return PFactory.createDecimalContextManager(language, outer, local);
         }
     }
 }
