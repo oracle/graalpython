@@ -13,7 +13,7 @@ test.test_sysconfig.TestSysConfig.test_get_platform @ darwin-arm64,linux-aarch64
 test.test_sysconfig.TestSysConfig.test_get_preferred_schemes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_get_scheme_names @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_ldshared_value @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_sysconfig.TestSysConfig.test_library @ win32-AMD64-github
+test.test_sysconfig.TestSysConfig.test_library @ win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_main @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_nt_venv_scheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_osx_ext_suffix @ darwin-arm64

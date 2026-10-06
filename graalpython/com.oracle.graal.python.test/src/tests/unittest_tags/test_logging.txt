@@ -82,7 +82,7 @@ test.test_logging.ConfigDictTest.test_kwargs_passing @ darwin-arm64,linux-aarch6
 !test.test_logging.ConfigDictTest.test_listen_config_10_ok
 !test.test_logging.ConfigDictTest.test_listen_config_1_ok
 !test.test_logging.ConfigDictTest.test_listen_verify
-test.test_logging.ConfigDictTest.test_multiprocessing_queues @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_logging.ConfigDictTest.test_multiprocessing_queues @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.ConfigDictTest.test_namedtuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.ConfigFileTest.test_config0_ok @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.ConfigFileTest.test_config0_using_cp_ok @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -194,9 +194,9 @@ test.test_logging.QueueHandlerTest.test_queue_listener_multi_start @ darwin-arm6
 test.test_logging.QueueHandlerTest.test_queue_listener_with_StreamHandler @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueHandlerTest.test_queue_listener_with_multiple_handlers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueListenerTest.test_calls_task_done_after_stop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_logging.QueueListenerTest.test_handle_called_with_mp_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_logging.QueueListenerTest.test_handle_called_with_mp_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.QueueListenerTest.test_handle_called_with_queue_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_logging.QueueListenerTest.test_no_messages_in_queue_after_stop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_logging.QueueListenerTest.test_no_messages_in_queue_after_stop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.RotatingFileHandlerTest.test_file_created @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.RotatingFileHandlerTest.test_max_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_logging.RotatingFileHandlerTest.test_max_bytes_delay @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -2943,6 +2943,8 @@ def update_import_cmd(args):
     mx_graalpython_graalos.update_graalos_versions()
 
     if args.rota:
+        # Reload the updated suite and imports before generating the Maven IDE facade.
+        run_mx(["python-pominit"])
         import_updated = _commit_if_dirty(vc, repo, "Update imports")
         _apply_github_unittest_tags(no_commit=True)
         _run_rota_unittest_tag_update(repo)
