@@ -687,6 +687,14 @@ def graalpy_native_pgo_build_and_test(args=None):
                 GRAALPY_HOME=instrumented_home,
         ):
             graalpytest(["--python", instrumented_launcher, "test_venv.py"])
+            mx.log(mx.colorize("[PGO] Training native POSIX runtime paths", color="yellow"))
+            mx.command_function('benchmark')([
+                "micro-small:posix-operations", "--",
+                "--python-vm", "graalpython", "--python-vm-config", "custom",
+                "--experimental-options", "--python.PosixModuleBackend=native",
+                # Keep the workload in the host interpreter so its AOT paths are profiled.
+                "--engine.Compilation=false",
+            ])
             mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", 'custom'])
         iprof_path = Path(SUITE.dir) / f'default.iprof'
         lcov_path = Path(SUITE.dir) / f'default.lcov'

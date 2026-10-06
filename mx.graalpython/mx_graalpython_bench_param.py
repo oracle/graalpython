@@ -109,6 +109,13 @@ MICRO_BENCHMARKS = {
     'call-classmethod-sized': ITER_10 + ['500_000_000'],
     'mmap-anonymous-sized': ITER_10 + ['20_000'],
     'mmap-file': ITER_10 + ['1000'],
+    'posix-operations': ITER_10 + WARMUP_2 + ['2000'],
+    'posix-read': ITER_10 + WARMUP_2 + ['16384'],
+    'posix-write': ITER_10 + WARMUP_2 + ['16384'],
+    'posix-stat': ITER_10 + WARMUP_2 + ['40000'],
+    'posix-open-close': ITER_10 + WARMUP_2 + ['20000'],
+    'posix-lseek': ITER_10 + WARMUP_2 + ['40000'],
+    'posix-scandir': ITER_10 + WARMUP_2 + ['1200'],
     'generate-functions-sized': ITER_15 + ['500_000_000'],
     'try-except-simple': ITER_10 + ['500_000_000'],
     'try-except-store-simple': ITER_10 + ['500_000_000'],
@@ -136,6 +143,13 @@ MICRO_BENCHMARKS = {
 
 # For benchmarking the interpreter with --engine.Compilation=false
 MICRO_BENCHMARKS_SMALL = {
+    'posix-operations': ITER_6 + WARMUP_2 + ['2000'],
+    'posix-read': ITER_6 + WARMUP_2 + ['16384'],
+    'posix-write': ITER_6 + WARMUP_2 + ['16384'],
+    'posix-stat': ITER_6 + WARMUP_2 + ['40000'],
+    'posix-open-close': ITER_6 + WARMUP_2 + ['20000'],
+    'posix-lseek': ITER_6 + WARMUP_2 + ['40000'],
+    'posix-scandir': ITER_6 + WARMUP_2 + ['1200'],
     'nano-arith': ITER_6 + WARMUP_2,
     'nano-loop': ITER_6 + WARMUP_2,
     'nano-if': ITER_6 + WARMUP_2,
