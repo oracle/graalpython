@@ -158,6 +158,14 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 
+    public record WindowsVersion(int major, int minor, int build, int platform, TruffleString servicePack,
+                    int servicePackMajor, int servicePackMinor, int suiteMask, int productType,
+                    int platformMajor, int platformMinor, int platformBuild) {
+    }
+
+    /** Returns the Windows version and product information. */
+    public abstract WindowsVersion getWindowsVersion(Object receiver) throws PosixException;
+
     public abstract void unlinkat(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
 
     public abstract void linkat(Object receiver, int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;

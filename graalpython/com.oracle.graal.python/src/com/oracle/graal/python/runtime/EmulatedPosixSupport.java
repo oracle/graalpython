@@ -250,6 +250,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.IPAddressUtil;
@@ -1513,6 +1514,38 @@ public final class EmulatedPosixSupport extends PosixResources {
                         T_EMPTY_STRING,
                         PythonUtils.getPythonArch()
         };
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    @SuppressWarnings("static-method")
+    public WindowsVersion getWindowsVersion() {
+        String[] winvers = System.getProperty("os.version", "10.0.20000").split("\\.");
+        int major = 0;
+        int minor = 0;
+        int build = 0;
+        if (winvers.length > 0) {
+            try {
+                major = Integer.parseInt(winvers[0]);
+            } catch (NumberFormatException e) {
+                // use default
+            }
+        }
+        if (winvers.length > 1) {
+            try {
+                minor = Integer.parseInt(winvers[1]);
+            } catch (NumberFormatException e) {
+                // use default
+            }
+        }
+        if (winvers.length > 2) {
+            try {
+                build = Integer.parseInt(winvers[2]);
+            } catch (NumberFormatException e) {
+                // use default
+            }
+        }
+        return new WindowsVersion(major, minor, build, 2, T_EMPTY_STRING, 0, 0, 0, 1, major, minor, build);
     }
 
     @TruffleBoundary

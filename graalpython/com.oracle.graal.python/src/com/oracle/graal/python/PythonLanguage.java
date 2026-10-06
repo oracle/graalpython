@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -102,6 +103,9 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -140,6 +144,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -1061,6 +1066,27 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             cachedICUTitleCaser = CaseMap.toTitle().wholeString().noBreakAdjustment();
         }
         return cachedICUTitleCaser;
+    }
+
+    @CompilationFinal private WindowsVersion windowsVersion;
+
+    public WindowsVersion getWindowsVersion(Node node) {
+        if (windowsVersion == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            assert !ImageInfo.inImageBuildtimeCode();
+            try {
+                windowsVersion = PosixSupportLibrary.getUncached().getWindowsVersion(PythonContext.get(node).getPosixSupport());
+            } catch (PosixException e) {
+                EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+                Node previousNode = encapsulating.set(node);
+                try {
+                    throw PConstructAndRaiseNode.getUncached().raiseOSErrorFromPosixException(null, e);
+                } finally {
+                    encapsulating.set(previousNode);
+                }
+            }
+        }
+        return windowsVersion;
     }
 
     @Override
