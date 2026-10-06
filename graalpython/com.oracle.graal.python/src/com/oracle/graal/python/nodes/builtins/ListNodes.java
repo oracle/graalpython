@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -106,6 +107,13 @@ public abstract class ListNodes {
         @Specialization
         static SequenceStorage doPList(PList list) {
             return list.getSequenceStorage();
+        }
+
+        @Specialization(guards = "listCheck.execute(inliningTarget, list)", limit = "1")
+        static SequenceStorage doNative(Node inliningTarget, PythonAbstractNativeObject list,
+                        @Cached PyListCheckNode listCheck,
+                        @Cached GetNativeListStorage getNativeStorage) {
+            return getNativeStorage.execute(inliningTarget, list);
         }
 
         @InliningCutoff
@@ -351,12 +359,13 @@ public abstract class ListNodes {
         }
     }
 
-    @GenerateInline(false)
+    @GenerateInline(inlineByDefault = true)
+    @GenerateUncached
     public abstract static class GetNativeListStorage extends Node {
-        public abstract NativeSequenceStorage execute(PythonAbstractNativeObject list);
+        public abstract NativeSequenceStorage execute(Node inliningTarget, PythonAbstractNativeObject list);
 
         @Specialization
-        NativeSequenceStorage getNative(PythonAbstractNativeObject list) {
+        static NativeSequenceStorage getNative(PythonAbstractNativeObject list) {
             assert IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
             long listRawPtr = list.getPtr();
             long array = readPtrField(listRawPtr, PyListObject__ob_item);
