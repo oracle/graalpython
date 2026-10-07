@@ -897,7 +897,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[programArgs.size()]));
         contextBuilder.in(consoleHandler.createInputStream());
         boolean tty = isTTY();
-        boolean basicReplRequested = !tty || (!ignoreEnv && getBoolEnv("PYTHON_BASIC_REPL"));
         contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(tty));
 
         contextBuilder.option("python.CheckHashPycsMode", checkHashPycsMode);
@@ -937,6 +936,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 }
 
+                boolean basicReplRequested = !tty || (!ignoreEnv && getBoolEnv("PYTHON_BASIC_REPL"));
                 sysModule.putMember("_console_handler", consoleHandler);
                 if (basicReplRequested && tty && !isolateFlag && (inspectFlag || (commandString == null && inputFile == null))) {
                     evalInternal(context, "import readline, rlcompleter");
@@ -960,6 +960,10 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     boolean inspecting = commandString != null || inputFile != null;
                     inspectFlag = false;
                     runInteractiveHook(sysModule);
+                    if (inspecting) {
+                        // The inspected program may have changed os.environ since the launcher started.
+                        basicReplRequested = !tty || (!ignoreEnv && evalInternal(context, "import os; bool(os.environ.get('PYTHON_BASIC_REPL'))").asBoolean());
+                    }
                     if (!basicReplRequested && canUsePyRepl(context)) {
                         rc = readEvalPrintPyRepl(context, inspecting);
                     } else {

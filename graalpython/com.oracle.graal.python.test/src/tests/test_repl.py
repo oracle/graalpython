@@ -352,6 +352,26 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             """), python_args=['-i', f.name], ignore_preamble=False)
 
 
+    def test_inspect_flag_repl_selection():
+        for initial_value, code, flags, repl in [
+            ('', "os.environ['PYTHON_BASIC_REPL'] = '1'", [], 'basic'),
+            ('1', "del os.environ['PYTHON_BASIC_REPL']", [], 'pyrepl'),
+            ('1', "os.environ['PYTHON_BASIC_REPL'] = ''", [], 'pyrepl'),
+            ('', "os.environ['PYTHON_BASIC_REPL'] = '1'", ['-E'], 'pyrepl'),
+            ('', "os.environ['PYTHON_BASIC_REPL'] = '1'", ['-I'], 'pyrepl'),
+        ]:
+            # Autoindent distinguishes the selected REPL even when inspecting an existing __main__.
+            validate_repl("", python_args=[*flags, '-i', '-c', f'import os; {code}'],
+                          repls=(repl,), extra_env={'PYTHON_BASIC_REPL': initial_value},
+                          extra_input_and_output=[
+                              ExpectedInOutItem('>>>', 'def answer():', ''),
+                              ExpectedInOutItem('...', '    return 42', '',
+                                                autoindent=4 if repl == 'pyrepl' else 0),
+                              ExpectedInOutItem('...', '', ''),
+                              ExpectedInOutItem('>>>', 'answer()', '\n42'),
+                          ])
+
+
     def test_inspect_flag_exit():
         with tempfile.NamedTemporaryFile('w') as f:
             f.write('a = 1\nimport sys\nsys.exit(1)\n')
