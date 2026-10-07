@@ -199,6 +199,24 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int getWindowsConsoleType(int fd,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getWindowsConsoleType", "%d", fd);
+        return logExit("getWindowsConsoleType", "%d", lib.getWindowsConsoleType(delegate, fd));
+    }
+
+    @ExportMessage
+    final long writeWindowsConsole(int fd, Buffer data,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("writeWindowsConsole", "%d, %d", fd, data.length);
+        try {
+            return logExit("writeWindowsConsole", "%d", lib.writeWindowsConsole(delegate, fd, data));
+        } catch (PosixException e) {
+            throw logException("writeWindowsConsole", e);
+        }
+    }
+
+    @ExportMessage
     final int dup(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("dup", "%d", fd);

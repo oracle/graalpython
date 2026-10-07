@@ -50,6 +50,7 @@ import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PWindowsConsoleIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -174,6 +175,7 @@ import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
+import com.oracle.graal.python.builtins.modules.io.WindowsConsoleIOBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
@@ -787,15 +789,33 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
         setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, PNone.NONE, stdinBuffer, sysModule, language, true);
 
-        PFileIO stdoutFileIO = PFactory.createFileIO(language);
-        FileIOBuiltins.FileIOInit.internalInit(stdoutFileIO, toTruffleStringUncached("<stdout>"), 1, IOMode.WB);
+        PFileIO stdoutFileIO = createStdoutRaw(context, language, posixSupport, posixLib, toTruffleStringUncached("<stdout>"), 1);
         Object stdoutBuffer = createBufferedIO(buffering, language, stdoutFileIO, posixSupport, posixLib);
-        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, PNone.NONE, stdoutBuffer, sysModule, language, buffering);
+        TruffleString stdoutEncoding = isWindowsConsoleIO(stdoutFileIO) ? StringLiterals.T_UTF8 : stdioEncoding;
+        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdoutEncoding, stdioError, PNone.NONE, stdoutBuffer, sysModule, language, buffering);
 
-        PFileIO stderr = PFactory.createFileIO(language);
-        FileIOBuiltins.FileIOInit.internalInit(stderr, toTruffleStringUncached("<stderr>"), 2, IOMode.WB);
+        PFileIO stderr = createStdoutRaw(context, language, posixSupport, posixLib, toTruffleStringUncached("<stderr>"), 2);
         Object stderrBuffer = createBufferedIO(buffering, language, stderr, posixSupport, posixLib);
-        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, PNone.NONE, stderrBuffer, sysModule, language, buffering);
+        TruffleString stderrEncoding = isWindowsConsoleIO(stderr) ? StringLiterals.T_UTF8 : stdioEncoding;
+        setWrapper(T_STDERR, T___STDERR__, T_W, stderrEncoding, T_BACKSLASHREPLACE, PNone.NONE, stderrBuffer, sysModule, language, buffering);
+    }
+
+    private static PFileIO createStdoutRaw(PythonContext context, PythonLanguage language, Object posixSupport, PosixSupportLibrary posixLib, TruffleString name, int fd) {
+        if (getPythonOS() == PLATFORM_WIN32 && !context.getOption(PythonOptions.LegacyWindowsStdio)) {
+            int consoleType = posixLib.getWindowsConsoleType(posixSupport, fd);
+            if (consoleType != 0) {
+                PFileIO consoleIO = WindowsConsoleIOBuiltins.create(language);
+                WindowsConsoleIOBuiltins.internalInit(consoleIO, name, fd, IOMode.WB, consoleType);
+                return consoleIO;
+            }
+        }
+        PFileIO fileIO = PFactory.createFileIO(language);
+        FileIOBuiltins.FileIOInit.internalInit(fileIO, name, fd, IOMode.WB);
+        return fileIO;
+    }
+
+    private static boolean isWindowsConsoleIO(PFileIO fileIO) {
+        return getPythonOS() == PLATFORM_WIN32 && fileIO.getPythonClass() == PWindowsConsoleIO;
     }
 
     private static Object createBufferedIO(boolean buffering, PythonLanguage language, PFileIO fileIo, Object posixSupport, PosixSupportLibrary posixLib) {
@@ -803,7 +823,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             return fileIo;
         }
         PBuffered writer = PFactory.createBufferedWriter(language);
-        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
+        if (isWindowsConsoleIO(fileIo)) {
+            BufferedWriterBuiltins.BufferedWriterInit.internalInitConsole(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language);
+        } else {
+            BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
+        }
         return writer;
     }
 

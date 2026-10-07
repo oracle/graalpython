@@ -80,7 +80,6 @@ public final class PFileIO extends PythonBuiltinObject {
     }
 
     public void setFD(int fd, PythonContext context) {
-        assert this.fd == null : "'fd' has not been closed!";
         if (closefd) {
             this.fd = new FD(fd, context);
         } else {

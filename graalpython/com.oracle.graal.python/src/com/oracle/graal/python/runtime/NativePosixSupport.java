@@ -233,6 +233,12 @@ public final class NativePosixSupport extends PosixSupport {
         abstract long call_write(int fd, long buf, long count);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_get_windows_console_type(int fd);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, POINTER, SINT64})
+        abstract long call_write_windows_console(int fd, long buf, long count);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
         abstract int call_dup(int fd);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32})
@@ -787,6 +793,26 @@ public final class NativePosixSupport extends PosixSupport {
         try {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, data.data, 0, (int) data.length);
             long n = posixNativeFunctionInvoker.call_write(fd, nativeBuffer, data.length);
+            if (n < 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            return n;
+        } finally {
+            NativeMemory.free(nativeBuffer);
+        }
+    }
+
+    @ExportMessage
+    public int getWindowsConsoleType(int fd) {
+        return posixNativeFunctionInvoker.call_get_windows_console_type(fd);
+    }
+
+    @ExportMessage
+    public long writeWindowsConsole(int fd, Buffer data) throws PosixException {
+        long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
+        try {
+            NativeMemory.writeByteArrayElements(nativeBuffer, 0, data.data, 0, (int) data.length);
+            long n = posixNativeFunctionInvoker.call_write_windows_console(fd, nativeBuffer, data.length);
             if (n < 0) {
                 throw getErrnoAndThrowPosixException();
             }

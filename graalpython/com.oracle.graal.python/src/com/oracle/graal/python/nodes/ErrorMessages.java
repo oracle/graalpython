@@ -1155,6 +1155,11 @@ public abstract class ErrorMessages {
     public static final TruffleString DETACHED_BUFFER = tsLiteral("underlying buffer has been detached");
     public static final TruffleString UNSUPPORTED_WHENCE = tsLiteral("whence value %d unsupported");
     public static final TruffleString IO_CLOSED = tsLiteral("I/O operation on closed file.");
+    public static final TruffleString CANNOT_OPEN_CONSOLE_INPUT_BUFFER_FOR_WRITING = tsLiteral("Cannot open console input buffer for writing");
+    public static final TruffleString CANNOT_OPEN_NON_CONSOLE_FILE = tsLiteral("Cannot open non-console file");
+    public static final TruffleString CONSOLE_BUFFER_DOES_NOT_SUPPORT_WRITING = tsLiteral("Console buffer does not support writing");
+    public static final TruffleString CONSOLE_INPUT_IS_NOT_SUPPORTED = tsLiteral("Console input is not supported");
+    public static final TruffleString MUST_HAVE_EXACTLY_ONE_OF_READ_WRITE_MODE = tsLiteral("Must have exactly one of read or write mode");
     public static final TruffleString MUST_BE_NON_NEG_OR_NEG_1 = tsLiteral("read length must be non-negative or -1");
     public static final TruffleString BUF_SIZE_POS = tsLiteral("buffer size must be strictly positive");
     public static final TruffleString S_SHOULD_RETURN_BYTES = tsLiteral("%s should return bytes");

@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IncrementalNewlineDecoderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.io.WindowsConsoleIOBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
@@ -921,7 +922,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     "BufferedRandom",
                     PBufferedIOBase,
                     newBuilder().publishInModule("_io").basetype().addDict().slots(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedRandomBuiltins.SLOTS)),
-    PWindowsConsoleIO("_WindowsConsoleIO", PRawIOBase, newBuilder().moduleName("_io").basetype()),
+    PWindowsConsoleIO("_WindowsConsoleIO", PRawIOBase, newBuilder().moduleName("_io").basetype().addDict().slots(WindowsConsoleIOBuiltins.SLOTS)),
     PFileIO("FileIO", PRawIOBase, newBuilder().publishInModule("_io").basetype().addDict().slots(FileIOBuiltins.SLOTS)),
     PTextIOWrapper("TextIOWrapper", PTextIOBase, newBuilder().publishInModule("_io").basetype().addDict().slots(TextIOWrapperBuiltins.SLOTS)),
     PIncrementalNewlineDecoder("IncrementalNewlineDecoder", PythonObject, newBuilder().publishInModule("_io").basetype().slots(IncrementalNewlineDecoderBuiltins.SLOTS)),
