@@ -14,8 +14,12 @@ test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aiter_class @ darwin-arm64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_03 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_06 @ linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_07 @ linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_08 @ linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_10 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_11 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_12 @ linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_04 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_05 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
