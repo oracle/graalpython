@@ -802,12 +802,14 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int getWindowsConsoleType(int fd) {
         return posixNativeFunctionInvoker.call_get_windows_console_type(fd);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long writeWindowsConsole(int fd, Buffer data) throws PosixException {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {

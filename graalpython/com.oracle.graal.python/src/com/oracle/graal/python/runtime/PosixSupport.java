@@ -57,4 +57,9 @@ public abstract class PosixSupport {
     public abstract Buffer read(int fd, long length) throws PosixException;
 
     public abstract long write(int fd, Buffer data) throws PosixException;
+
+    /** Returns {@code 'r'}, {@code 'w'}, or zero when {@code fd} is not a Windows console. */
+    public abstract int getWindowsConsoleType(int fd);
+
+    public abstract long writeWindowsConsole(int fd, Buffer data) throws PosixException;
 }

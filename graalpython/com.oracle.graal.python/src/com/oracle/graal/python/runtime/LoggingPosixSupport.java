@@ -196,19 +196,19 @@ public class LoggingPosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    final int getWindowsConsoleType(int fd,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+    @Override
+    @TruffleBoundary
+    public final int getWindowsConsoleType(int fd) {
         logEnter("getWindowsConsoleType", "%d", fd);
-        return logExit("getWindowsConsoleType", "%d", lib.getWindowsConsoleType(delegate, fd));
+        return logExit("getWindowsConsoleType", "%d", delegate.getWindowsConsoleType(fd));
     }
 
-    @ExportMessage
-    final long writeWindowsConsole(int fd, Buffer data,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public final long writeWindowsConsole(int fd, Buffer data) throws PosixException {
         logEnter("writeWindowsConsole", "%d, %d", fd, data.length);
         try {
-            return logExit("writeWindowsConsole", "%d", lib.writeWindowsConsole(delegate, fd, data));
+            return logExit("writeWindowsConsole", "%d", delegate.writeWindowsConsole(fd, data));
         } catch (PosixException e) {
             throw logException("writeWindowsConsole", e);
         }

@@ -789,20 +789,20 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
         setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, PNone.NONE, stdinBuffer, sysModule, language, true);
 
-        PFileIO stdoutFileIO = createStdoutRaw(context, language, posixSupport, posixLib, toTruffleStringUncached("<stdout>"), 1);
+        PFileIO stdoutFileIO = createStdoutRaw(context, language, toTruffleStringUncached("<stdout>"), 1);
         Object stdoutBuffer = createBufferedIO(buffering, language, stdoutFileIO, posixSupport, posixLib);
         TruffleString stdoutEncoding = isWindowsConsoleIO(stdoutFileIO) ? StringLiterals.T_UTF8 : stdioEncoding;
         setWrapper(T_STDOUT, T___STDOUT__, T_W, stdoutEncoding, stdioError, PNone.NONE, stdoutBuffer, sysModule, language, buffering);
 
-        PFileIO stderr = createStdoutRaw(context, language, posixSupport, posixLib, toTruffleStringUncached("<stderr>"), 2);
+        PFileIO stderr = createStdoutRaw(context, language, toTruffleStringUncached("<stderr>"), 2);
         Object stderrBuffer = createBufferedIO(buffering, language, stderr, posixSupport, posixLib);
         TruffleString stderrEncoding = isWindowsConsoleIO(stderr) ? StringLiterals.T_UTF8 : stdioEncoding;
         setWrapper(T_STDERR, T___STDERR__, T_W, stderrEncoding, T_BACKSLASHREPLACE, PNone.NONE, stderrBuffer, sysModule, language, buffering);
     }
 
-    private static PFileIO createStdoutRaw(PythonContext context, PythonLanguage language, Object posixSupport, PosixSupportLibrary posixLib, TruffleString name, int fd) {
+    private static PFileIO createStdoutRaw(PythonContext context, PythonLanguage language, TruffleString name, int fd) {
         if (getPythonOS() == PLATFORM_WIN32 && !context.getOption(PythonOptions.LegacyWindowsStdio)) {
-            int consoleType = posixLib.getWindowsConsoleType(posixSupport, fd);
+            int consoleType = context.getPosixSupport().getWindowsConsoleType(fd);
             if (consoleType != 0) {
                 PFileIO consoleIO = WindowsConsoleIOBuiltins.create(language);
                 WindowsConsoleIOBuiltins.internalInit(consoleIO, name, fd, IOMode.WB, consoleType);
