@@ -143,6 +143,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -243,6 +244,7 @@ public final class PythonCextDictBuiltins {
                                 break;
                             }
                         }
+                        LoopNode.reportLoopCount(inliningTarget, len);
                     } else {
                         /*
                          * Other storages always have string keys or have complex iterators, just
@@ -268,6 +270,7 @@ public final class PythonCextDictBuiltins {
                             // promoted key will never have side-effecting __hash__/__eq__
                             setItem.execute(null, inliningTarget, newStorage, key, value);
                         }
+                        LoopNode.reportLoopCount(inliningTarget, len);
                         dict.setDictStorage(newStorage);
                         if (storage instanceof DynamicObjectStorage dynamicStorage &&
                                         dynamicStorage.getStore() instanceof PythonObject owner) {
@@ -888,6 +891,7 @@ public final class PythonCextDictBuiltins {
                     aStorage = setItemA.execute(null, inliningTarget, aStorage, key, value);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, size);
             a.setDictStorage(aStorage);
             return 0;
         }

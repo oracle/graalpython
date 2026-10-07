@@ -164,12 +164,14 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
         PDict result = PFactory.createDict(language);
         BytecodeFrame bytecodeFrame = self.getBytecodeFrame();
         BytecodeDSLFrameInfo info = bytecodeFrame == null ? null : (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
-        for (int i = 0; info != null && i < info.getVariableCount(); i++) {
+        int varCount = info == null ? 0 : info.getVariableCount();
+        for (int i = 0; i < varCount; i++) {
             Object value = getSlotValue(self, i);
             if (value != null) {
                 result.setDictStorage(setItem.execute(inliningTarget, result.getDictStorage(), info.getVariableName(i), value));
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, varCount);
         PDict extra = self.getFrame().getExtraLocals();
         if (extra != null) {
             result.update(extra);
@@ -289,11 +291,13 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
             int count = 0;
             BytecodeFrame bytecodeFrame = self.getBytecodeFrame();
             BytecodeDSLFrameInfo info = bytecodeFrame == null ? null : (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
-            for (int i = 0; info != null && i < info.getVariableCount(); i++) {
+            int varCount = info == null ? 0 : info.getVariableCount();
+            for (int i = 0; i < varCount; i++) {
                 if (getSlotValue(self, i) != null) {
                     count++;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, Math.max(0, varCount));
             PDict extra = self.getFrame().getExtraLocals();
             return count + (extra == null ? 0 : storageLen.execute(inliningTarget, extra.getDictStorage()));
         }

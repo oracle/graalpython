@@ -162,6 +162,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -225,6 +226,7 @@ public abstract class PythonCextObjectBuiltins {
                 pointers[i] = elem;
                 resolved[i] = nativeToPythonNode.execute(inliningTarget, elem);
             }
+            LoopNode.reportLoopCount(inliningTarget, resolved.length);
             HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
             for (int i = 0; i < resolved.length; i++) {
                 long refCount = CApiTransitions.readNativeRefCount(pointers[i]);
@@ -242,6 +244,7 @@ public abstract class PythonCextObjectBuiltins {
                     updateRefNode.execute(inliningTarget, handleContext, pointers[i], hti, refCount);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, resolved.length);
             Reference.reachabilityFence(resolved);
             return PNone.NO_VALUE;
         }
@@ -335,6 +338,7 @@ public abstract class PythonCextObjectBuiltins {
                         TruffleString name = castToTruffleStringNode.execute(inliningTarget, getItemScalarNode.execute(inliningTarget, storage, i));
                         keywords[i] = new PKeyword(name, kwValues[i]);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, kwcount);
                 } else {
                     throw CompilerDirectives.shouldNotReachHere("_PyObject_MakeTpCall: keywords must be NULL, a tuple or a dict");
                 }

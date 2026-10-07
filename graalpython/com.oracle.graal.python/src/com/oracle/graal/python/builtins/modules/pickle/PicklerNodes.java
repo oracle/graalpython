@@ -110,6 +110,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -601,21 +602,23 @@ public final class PicklerNodes {
         public static Pair<Object, Object> getDeepAttribute(VirtualFrame frame, PyObjectLookupAttr lookup, Object obj, TruffleString[] names) {
             Object parent = null;
             Object object = obj;
-            for (TruffleString name : names) {
+            for (int i = 0; i < names.length; i++) {
                 parent = object;
-                object = lookup.executeCached(frame, parent, name);
+                object = lookup.executeCached(frame, parent, names[i]);
                 if (object == NO_VALUE) {
+                    LoopNode.reportLoopCount(lookup, i);
                     return null;
                 }
             }
+            LoopNode.reportLoopCount(lookup, names.length);
             return Pair.create(object, parent);
         }
 
         public TruffleString[] getDottedPath(Object obj, TruffleString name) {
             TruffleString[] dottedPath = StringUtils.split(name, T_DOT, ensureTsCodePointLengthNode(), ensureTsIndexOfStringNode(), ensureTsSubstringNode(), ensureTsEqualNode());
             assert dottedPath.length > 0;
-            for (TruffleString subPath : dottedPath) {
-                if (ensureTsEqualNode().execute(subPath, T_LOCALS, TS_ENCODING)) {
+            for (int i = 0; i < dottedPath.length; i++) {
+                if (ensureTsEqualNode().execute(dottedPath[i], T_LOCALS, TS_ENCODING)) {
                     if (obj == null) {
                         throw raise(AttributeError, ErrorMessages.CANT_PICKLE_LOCAL_OBJ_S, name);
                     } else {
@@ -623,6 +626,7 @@ public final class PicklerNodes {
                     }
                 }
             }
+            LoopNode.reportLoopCount(this, dottedPath.length);
             return dottedPath;
         }
 

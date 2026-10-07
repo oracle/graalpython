@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -221,29 +221,36 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             for (int i = 0; resultLoopProfile.inject(inliningTarget, i < r); i++) {
                 result[i] = pool[indices[i]];
             }
+            LoopNode.reportLoopCount(inliningTarget, r);
 
             int[] cycles = self.getCycles();
             int i = r - 1;
-            while (mainLoopProfile.profile(inliningTarget, i >= 0)) {
-                int j = cycles[i] - 1;
-                if (j > 0) {
-                    jProfile.enter(inliningTarget);
-                    cycles[i] = j;
-                    int tmp = indices[i];
-                    indices[i] = indices[indices.length - j];
-                    indices[indices.length - j] = tmp;
-                    return PFactory.createTuple(language, result);
+            try {
+                while (mainLoopProfile.profile(inliningTarget, i >= 0)) {
+                    int j = cycles[i] - 1;
+                    if (j > 0) {
+                        jProfile.enter(inliningTarget);
+                        cycles[i] = j;
+                        int tmp = indices[i];
+                        indices[i] = indices[indices.length - j];
+                        indices[indices.length - j] = tmp;
+                        return PFactory.createTuple(language, result);
+                    }
+                    cycles[i] = indices.length - i;
+                    int n1 = indices.length - 1;
+                    assert n1 >= 0;
+                    int num = indices[i];
+                    shiftIndicesProfile.profileCounted(inliningTarget, n1 - i);
+                    for (int k = i; shiftIndicesProfile.profile(inliningTarget, k < n1); k++) {
+                        indices[k] = indices[k + 1];
+                    }
+                    indices[n1] = num;
+                    i = i - 1;
                 }
-                cycles[i] = indices.length - i;
-                int n1 = indices.length - 1;
-                assert n1 >= 0;
-                int num = indices[i];
-                shiftIndicesProfile.profileCounted(inliningTarget, n1 - i);
-                for (int k = i; shiftIndicesProfile.profile(inliningTarget, k < n1); k++) {
-                    indices[k] = indices[k + 1];
-                }
-                indices[n1] = num;
-                i = i - 1;
+            } finally {
+                // approximation
+                long iterations = 2 * (r - 1L - i) * (indices.length - r);
+                LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, iterations));
             }
 
             self.setStopped(true);

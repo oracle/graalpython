@@ -73,6 +73,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBatched)
@@ -140,32 +141,36 @@ public final class BatchedBuiltins extends PythonBuiltins {
             if (bo.it == null) {
                 throw raiseNode.raiseStopIteration(inliningTarget, null);
             }
-            int i;
+            int i = 0;
             int n = bo.batchSize;
             Object it = bo.it;
 
             Object[] items = new Object[n];
-            for (i = 0; i < n; i++) {
-                try {
+            try {
+                for (; i < n; i++) {
                     try {
-                        items[i] = nextNode.execute(frame, inliningTarget, it);
-                    } catch (IteratorExhausted e) {
-                        if (i == 0) {
-                            bo.it = null;
-                            return TpIterNextBuiltin.iteratorExhausted();
+                        try {
+                            items[i] = nextNode.execute(frame, inliningTarget, it);
+                        } catch (IteratorExhausted e) {
+                            if (i == 0) {
+                                bo.it = null;
+                                return TpIterNextBuiltin.iteratorExhausted();
+                            }
+                            if (bo.isStrict()) {
+                                bo.it = null;
+                                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BATCHED_INCOMPLETE_BATCH);
+                            }
+                            items = PythonUtils.arrayCopyOf(items, i);
+                            break;
                         }
-                        if (bo.isStrict()) {
-                            bo.it = null;
-                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BATCHED_INCOMPLETE_BATCH);
-                        }
-                        items = PythonUtils.arrayCopyOf(items, i);
-                        break;
+                    } catch (PException e) {
+                        /* Handle input raised an exception other than StopIteration */
+                        bo.it = null;
+                        throw e;
                     }
-                } catch (PException e) {
-                    /* Handle input raised an exception other than StopIteration */
-                    bo.it = null;
-                    throw e;
                 }
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             return PFactory.createTuple(language, items);
         }

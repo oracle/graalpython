@@ -135,6 +135,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -808,6 +809,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                 pos = end;
                 mustAdvance = start == end;
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, (long) n * groupCount));
             result.add(createSubstring(inliningTarget, input, binary, pos, stringLength, substringByteIndexNode, copyToByteArrayNode));
             return PFactory.createList(PythonLanguage.get(inliningTarget), result.toObjectArray());
         }
@@ -952,6 +954,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                 pos = end;
                 mustAdvance = start == end;
             }
+            LoopNode.reportLoopCount(inliningTarget, createTuples ? (int) Math.min(Integer.MAX_VALUE, (long) result.size() * groupCount) : result.size());
             return PFactory.createList(PythonLanguage.get(inliningTarget), result.toObjectArray());
         }
 

@@ -86,6 +86,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPoll)
@@ -226,6 +227,7 @@ public final class PollBuiltins extends PythonBuiltins {
                     resultSize++;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, pollRevents.length);
             Object[] result = new Object[resultSize];
             int resultIndex = 0;
             for (int i = 0; i < pollRevents.length; i++) {
@@ -233,6 +235,7 @@ public final class PollBuiltins extends PythonBuiltins {
                     result[resultIndex++] = PFactory.createTuple(language, new Object[]{pollFds[i], pollRevents[i]});
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, pollRevents.length);
             return PFactory.createList(language, result);
         }
     }

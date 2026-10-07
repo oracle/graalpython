@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
@@ -115,6 +116,7 @@ public final class MapBuiltins extends PythonBuiltins {
             for (int i = 0; loopProfile.inject(inliningTarget, i < iterators.length); i++) {
                 iterators[i] = getIter.execute(frame, inliningTarget, args[i + 1]);
             }
+            LoopNode.reportLoopCount(inliningTarget, iterators.length);
             map.setIterators(iterators);
             return map;
         }
@@ -145,10 +147,15 @@ public final class MapBuiltins extends PythonBuiltins {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             loopProfile.profileCounted(inliningTarget, iterators.length);
-            for (int i = 0; loopProfile.inject(inliningTarget, i < iterators.length); i++) {
-                Object iterator = iterators[i];
-                TpSlot iternext = getSlots.execute(inliningTarget, iterator).tp_iternext();
-                arguments[i] = callTpIternext.execute(frame, inliningTarget, iternext, iterator);
+            int i = 0;
+            try {
+                for (; loopProfile.inject(inliningTarget, i < iterators.length); i++) {
+                    Object iterator = iterators[i];
+                    TpSlot iternext = getSlots.execute(inliningTarget, iterator).tp_iternext();
+                    arguments[i] = callTpIternext.execute(frame, inliningTarget, iternext, iterator);
+                }
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             return callNode.execute(frame, self.getFunction(), arguments);
         }

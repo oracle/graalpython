@@ -187,6 +187,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -385,6 +386,7 @@ public class PUnpickler extends PythonBuiltinObject {
             // frame not needed for integer key
             hashingStorage = setItem.execute(null, inliningTarget, hashingStorage, i, memo[i]);
         }
+        LoopNode.reportLoopCount(inliningTarget, memo.length);
         return hashingStorage;
     }
 

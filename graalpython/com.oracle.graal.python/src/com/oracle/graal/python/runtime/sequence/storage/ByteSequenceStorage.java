@@ -26,6 +26,8 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.nio.ByteOrder;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -141,7 +143,7 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    public Object[] getCopyOfInternalArray() {
+    public Object[] getCopyOfInternalArray(Node inliningTarget) {
         /*
          * Have to box and copy.
          */
@@ -151,6 +153,7 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
             boxed[i] = getIntItemNormalized(i);
         }
 
+        LoopNode.reportLoopCount(inliningTarget, length);
         return boxed;
     }
 

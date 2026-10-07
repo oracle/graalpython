@@ -325,6 +325,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.SlowPathException;
@@ -3947,6 +3948,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     Object item = getNextNode.execute(virtualFrame, inliningTarget, iterator);
                     result.add(item);
                 } catch (IteratorExhausted e) {
+                    LoopNode.reportLoopCount(inliningTarget, result.size());
                     return result.toArray(new Object[0]);
                 }
             }

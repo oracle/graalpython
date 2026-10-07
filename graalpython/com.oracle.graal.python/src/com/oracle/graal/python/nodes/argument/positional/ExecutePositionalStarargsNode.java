@@ -72,6 +72,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
@@ -141,6 +142,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
                     internalStorage.add(next);
                 } catch (IteratorExhausted e) {
+                    LoopNode.reportLoopCount(inliningTarget, internalStorage.size());
                     return internalStorage.toArray(new Object[0]);
                 }
             }
@@ -178,6 +180,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                 assert hasNext;
                 args[i] = iteratorKey.execute(inliningTarget, storage, it);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return args;
         }
     }

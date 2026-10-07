@@ -98,6 +98,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -240,6 +241,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                     // Cannot break here, the check for GenericAlias needs to check all args
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, argsStorage.length());
             return result;
         }
     }
@@ -269,6 +271,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                     // Cannot break here, the check for GenericAlias needs to check all args
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, argsStorage.length());
             return result;
         }
     }
@@ -315,6 +318,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
             for (int i = 1; i < newargs.length; i++) {
                 result = orNode.execute(frame, result, newargs[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, newargs.length - 1);
             return result;
         }
 

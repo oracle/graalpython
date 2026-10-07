@@ -353,14 +353,15 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
-            return crc32(value, bytes, 0, len);
+            return crc32(inliningTarget, value, bytes, 0, len);
         }
 
         @Specialization(guards = {"!useNative()", "!isBytes(data)"})
         static long doJavaObject(VirtualFrame frame, Object data, int value,
+                        @Bind Node inliningTarget,
                         @Shared("bb") @Cached ToBytesNode toBytesNode) {
             byte[] bytes = toBytesNode.execute(frame, data);
-            return crc32(value, bytes, 0, bytes.length);
+            return crc32(inliningTarget, value, bytes, 0, bytes.length);
         }
 
         @Fallback

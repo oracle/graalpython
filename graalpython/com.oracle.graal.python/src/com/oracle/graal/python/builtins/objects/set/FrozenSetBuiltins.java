@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -179,6 +180,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; i++) {
                 result = intersectNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return PFactory.createFrozenSet(language, result);
         }
 
@@ -258,6 +260,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; i++) {
                 result = diffNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return PFactory.createFrozenSet(language, result);
         }
 
@@ -306,6 +309,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; i++) {
                 result = addAllToOther.execute(frame, inliningTarget, getHashingStorage.execute(frame, inliningTarget, args[i]), result);
             }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
             return PFactory.createFrozenSet(language, result);
         }
     }
@@ -343,6 +347,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 long tmp = hashNode.execute(frame, inliningTarget, key);
                 hash ^= shuffleBits(tmp);
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
 
             // TODO:
             // Remove the effect of an odd number of NULL entries

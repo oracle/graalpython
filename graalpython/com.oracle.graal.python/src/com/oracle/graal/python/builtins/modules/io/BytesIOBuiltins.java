@@ -133,6 +133,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytesIO)
@@ -353,6 +354,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         static Object readlines(PBytesIO self, int maxsize,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             ArrayBuilder<Object> result = new ArrayBuilder<>();
@@ -372,6 +374,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 }
                 cur += n;
             }
+            LoopNode.reportLoopCount(inliningTarget, result.size());
             return PFactory.createList(language, result.toArray(new Object[0]));
         }
     }

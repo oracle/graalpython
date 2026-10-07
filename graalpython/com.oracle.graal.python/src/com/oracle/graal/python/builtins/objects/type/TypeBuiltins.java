@@ -401,7 +401,9 @@ public final class TypeBuiltins extends PythonBuiltins {
         private Object calculateMetaclass(VirtualFrame frame, Node inliningTarget, Object cls, PTuple bases, GetClassNode getClassNode, IsTypeNode isTypeNode,
                         PyObjectLookupAttr lookupMroEntries, GetObjectArrayNode getObjectArrayNode) {
             Object winner = cls;
-            for (Object base : getObjectArrayNode.execute(inliningTarget, bases)) {
+            Object[] basesArray = getObjectArrayNode.execute(inliningTarget, bases);
+            for (int i = 0; i < basesArray.length; i++) {
+                Object base = basesArray[i];
                 if (!isTypeNode.execute(inliningTarget, base) && lookupMroEntries.execute(frame, inliningTarget, base, T___MRO_ENTRIES__) != NO_VALUE) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION);
                 }
@@ -417,6 +419,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 }
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.METACLASS_CONFLICT);
             }
+            LoopNode.reportLoopCount(inliningTarget, basesArray.length);
             return winner;
         }
 
@@ -739,6 +742,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, cls, "__bases__", a[i]);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, a.length);
 
             Object newBestBase = getBestBase.execute(inliningTarget, baseClasses);
             if (newBestBase == null) {

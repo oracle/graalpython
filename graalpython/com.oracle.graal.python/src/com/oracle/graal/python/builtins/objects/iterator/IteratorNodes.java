@@ -98,6 +98,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -358,6 +359,7 @@ public abstract class IteratorNodes {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
                 result[i++] = fromCodePointNode.execute(nextNode.execute(it, TS_ENCODING), TS_ENCODING, true);
             }
+            LoopNode.reportLoopCount(inliningTarget, result.length);
             return result;
         }
 

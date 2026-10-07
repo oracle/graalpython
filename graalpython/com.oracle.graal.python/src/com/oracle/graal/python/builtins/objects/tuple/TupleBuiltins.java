@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -218,6 +219,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                     count++;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, tupleStore.length());
             return count;
         }
     }
@@ -273,6 +275,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                     appendStringNode.execute(buf, toString(frame, inliningTarget, getItemNode.execute(tupleStore, i), reprNode));
                     appendStringNode.execute(buf, T_COMMA_SPACE);
                 }
+                LoopNode.reportLoopCount(inliningTarget, len - 1);
 
                 if (len > 0) {
                     appendStringNode.execute(buf, toString(frame, inliningTarget, getItemNode.execute(tupleStore, len - 1), reprNode));
@@ -482,6 +485,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
 
             hash += 97531;
 

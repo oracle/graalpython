@@ -92,6 +92,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
@@ -194,15 +195,15 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 }
             }
             return PFactory.createTuple(language, new PList[]{
-                            toList(result.getReadFds(), readFDs, language),
-                            toList(result.getWriteFds(), writeFDs, language),
-                            toList(result.getErrorFds(), xFDs, language)});
+                            toList(inliningTarget, result.getReadFds(), readFDs, language),
+                            toList(inliningTarget, result.getWriteFds(), writeFDs, language),
+                            toList(inliningTarget, result.getErrorFds(), xFDs, language)});
         }
 
         /**
          * Also maps the returned FDs back to their original Python level objects.
          */
-        private static PList toList(boolean[] result, ObjAndFDList fds, PythonLanguage language) {
+        private static PList toList(Node inliningTarget, boolean[] result, ObjAndFDList fds, PythonLanguage language) {
             Object[] resultObjs = new Object[result.length];
             int resultObjsIdx = 0;
             for (int i = 0; i < fds.fds.length; i++) {
@@ -210,6 +211,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                     resultObjs[resultObjsIdx++] = fds.objects[i];
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, fds.fds.length);
             return PFactory.createList(language, PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
@@ -231,6 +233,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 }
                 fds.add(fd);
             }
+            LoopNode.reportLoopCount(inliningTarget, objects.size());
             return new ObjAndFDList(objects.toArray(new Object[0]), fds.toArray());
         }
 

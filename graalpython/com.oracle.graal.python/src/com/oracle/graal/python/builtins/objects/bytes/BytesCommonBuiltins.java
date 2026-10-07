@@ -424,9 +424,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 Object element = getItemNode.execute(inliningTarget, substrsStorage, i);
                 byte[] bytes = tobytes.execute(frame, element);
                 if (doIt(self, len, bytes, start, stop)) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, substrsStorage.length());
             return false;
         }
     }
@@ -886,9 +888,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte[] b = bufferLib.getInternalOrCopiedByteArray(buffer);
                 for (int i = 0; i < len; i++) {
                     if (b[i] < 0) {
+                        LoopNode.reportLoopCount(inliningTarget, i);
                         return false;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return true;
             } finally {
                 bufferLib.release(buffer);
@@ -919,9 +923,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte[] b = bufferLib.getInternalOrCopiedByteArray(buffer);
                 for (int i = 0; i < len; i++) {
                     if (!BytesUtils.isAlnum(b[i])) {
+                        LoopNode.reportLoopCount(inliningTarget, i);
                         return false;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return true;
             } finally {
                 bufferLib.release(buffer);
@@ -952,9 +958,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte[] b = bufferLib.getInternalOrCopiedByteArray(buffer);
                 for (int i = 0; i < len; i++) {
                     if (!BytesUtils.isAlpha(b[i])) {
+                        LoopNode.reportLoopCount(inliningTarget, i);
                         return false;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return true;
             } finally {
                 bufferLib.release(buffer);
@@ -985,9 +993,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte[] b = bufferLib.getInternalOrCopiedByteArray(buffer);
                 for (int i = 0; i < len; i++) {
                     if (!BytesUtils.isDigit(b[i])) {
+                        LoopNode.reportLoopCount(inliningTarget, i);
                         return false;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return true;
             } finally {
                 bufferLib.release(buffer);
@@ -1023,10 +1033,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         if (!BytesUtils.isUpper(ch)) {
                             uncased++;
                         } else {
+                            LoopNode.reportLoopCount(inliningTarget, i);
                             return false;
                         }
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return uncased == 0 || len > uncased;
             } finally {
                 bufferLib.release(buffer);
@@ -1062,10 +1074,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         if (!BytesUtils.isLower(ch)) {
                             uncased++;
                         } else {
+                            LoopNode.reportLoopCount(inliningTarget, i);
                             return false;
                         }
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return uncased == 0 || len > uncased;
             } finally {
                 bufferLib.release(buffer);
@@ -1096,9 +1110,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte[] b = bufferLib.getInternalOrCopiedByteArray(buffer);
                 for (int i = 0; i < len; i++) {
                     if (!BytesUtils.isSpace(b[i])) {
+                        LoopNode.reportLoopCount(inliningTarget, i);
                         return false;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return true;
             } finally {
                 bufferLib.release(buffer);
@@ -1134,18 +1150,21 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
                     if (BytesUtils.isUpper(ch)) {
                         if (previousIsCased) {
+                            LoopNode.reportLoopCount(inliningTarget, i);
                             return false;
                         }
                         previousIsCased = true;
                         cased = true;
                     } else if (BytesUtils.isLower(ch)) {
                         if (!previousIsCased) {
+                            LoopNode.reportLoopCount(inliningTarget, i);
                             return false;
                         }
                     } else {
                         previousIsCased = false;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
                 return cased;
             } finally {
                 bufferLib.release(buffer);
@@ -1273,6 +1292,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             for (int i = l, j = 0; i < (len + l); j++, i++) {
                 res[i] = self[j];
             }
+            LoopNode.reportLoopCount(this, len);
             return res;
         }
 
@@ -1400,6 +1420,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             for (int i = 0; i < bytes.length; ++i) {
                 bytes[i] = toLower(bytes[i]);
             }
+            LoopNode.reportLoopCount(node, bytes.length);
             return create.execute(node, self, bytes);
         }
     }
@@ -1417,6 +1438,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             for (int i = 0; i < bytes.length; ++i) {
                 bytes[i] = toUpper(bytes[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, bytes.length);
             return create.execute(inliningTarget, self, bytes);
         }
     }
@@ -1679,6 +1701,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     }
                 }
             }
+            LoopNode.reportLoopCount(this, maxsplit - Math.max(0, maxcount));
+            LoopNode.reportLoopCount(this, j);
             if (i <= len) {
                 list.add(copyOfRange(bytes, i, len));
             }
@@ -1701,6 +1725,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 list.add(copyOfRange(bytes, i, j));
                 i = j + sepLen;
             }
+            LoopNode.reportLoopCount(this, maxsplit - Math.max(0, maxcount));
 
             list.add(copyOfRange(bytes, i, len));
 
@@ -1743,6 +1768,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
                 list.add(copyOfRange(bytes, i + 1, j + 1));
             }
+            LoopNode.reportLoopCount(this, maxsplit - Math.max(0, maxcount));
 
             if (i >= 0) {
                 /* Only occurs when maxcount was reached */
@@ -1754,6 +1780,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     list.add(copyOfRange(bytes, 0, i + 1));
                 }
             }
+            LoopNode.reportLoopCount(this, len - 1 - i);
             list.reverse();
             return list;
         }
@@ -1773,6 +1800,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     }
                 }
             }
+            LoopNode.reportLoopCount(this, maxsplit - Math.max(0, maxcount));
+            LoopNode.reportLoopCount(this, len - (i + 1));
             if (j >= -1) {
                 list.add(copyOfRange(bytes, 0, j + 1));
             }
@@ -1798,6 +1827,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 list.add(copyOfRange(bytes, pos + sepLen, j));
                 j = pos;
             }
+            LoopNode.reportLoopCount(this, maxsplit - Math.max(0, maxcount));
             list.add(copyOfRange(bytes, 0, j));
             list.reverse();
             return list;
@@ -2036,6 +2066,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte value = fromB[i];
                 table[value < 0 ? value + 256 : value] = toB[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, fromB.length);
 
             return PFactory.createBytes(language, table);
         }
@@ -2059,6 +2090,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             for (int i = 1; i < b.length; i++) {
                 b[i] = toLower(b[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, b.length - 1);
             return create.execute(inliningTarget, self, b);
         }
     }
@@ -2095,6 +2127,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
                 b[i] = c;
             }
+            LoopNode.reportLoopCount(inliningTarget, b.length);
 
             return create.execute(inliningTarget, self, b);
         }
@@ -2120,6 +2153,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     b[i] = toUpper(b[i]);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, b.length);
             return create.execute(inliningTarget, self, b);
         }
     }
@@ -2173,6 +2207,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     }
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             if (i > max - j) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.RESULT_TOO_LONG);
             }
@@ -2198,6 +2233,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
 
             }
+            LoopNode.reportLoopCount(inliningTarget, b.length);
             return create.execute(inliningTarget, self, q);
         }
 
@@ -2219,16 +2255,16 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
-            return create.execute(inliningTarget, self, zfill(getInternalByteArrayNode.execute(inliningTarget, storage), storage.length(), width));
+            return create.execute(inliningTarget, self, zfill(inliningTarget, getInternalByteArrayNode.execute(inliningTarget, storage), storage.length(), width));
         }
 
-        private static byte[] zfill(byte[] self, int len, int width) {
+        private static byte[] zfill(Node inliningTarget, byte[] self, int len, int width) {
             if (len >= width) {
                 return self;
             }
 
             int fill = width - len;
-            byte[] p = pad(self, len, fill, 0, (byte) '0');
+            byte[] p = pad(inliningTarget, self, len, fill, 0, (byte) '0');
 
             if (len == 0) {
                 return p;
@@ -2242,7 +2278,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             return p;
         }
 
-        private static byte[] pad(byte[] self, int len, int l, int r, byte fillChar) {
+        private static byte[] pad(Node inliningTarget, byte[] self, int len, int l, int r, byte fillChar) {
             int left = (l < 0) ? 0 : l;
             int right = (r < 0) ? 0 : r;
             if (left == 0 && right == 0) {
@@ -2256,6 +2292,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             for (int i = left, j = 0; i < (left + len); j++, i++) {
                 u[i] = self[j];
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             if (right > 0) {
                 Arrays.fill(u, left + len, u.length, fillChar);
             }
@@ -2311,12 +2348,14 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     for (int i = 0; i < selfBsLen; i++) {
                         if (i < prefixBsLen) {
                             if (selfBs[i] != prefixBs[i]) {
+                                LoopNode.reportLoopCount(node, i);
                                 return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
                             }
                         } else {
                             result[j++] = selfBs[i];
                         }
                     }
+                    LoopNode.reportLoopCount(node, selfBsLen);
                     return create.execute(node, self, result);
                 }
                 return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
@@ -2352,12 +2391,14 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     for (int i = selfBsLen - 1, j = 1; i >= 0; i--, j++) {
                         if (i >= selfBsLen - suffixBsLen) {
                             if (selfBs[i] != suffixBs[suffixBsLen - j]) {
+                                LoopNode.reportLoopCount(node, selfBsLen - i - 1);
                                 return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
                             }
                         } else {
                             result[result.length - k++] = selfBs[i];
                         }
                     }
+                    LoopNode.reportLoopCount(node, selfBsLen);
                     return create.execute(node, self, result);
                 }
                 return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));

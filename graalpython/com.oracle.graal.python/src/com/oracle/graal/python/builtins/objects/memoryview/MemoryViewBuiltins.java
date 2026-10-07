@@ -129,6 +129,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -301,6 +302,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
                         writeBytesAtNode.execute(inliningTarget, srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, Math.max(0, destView.getBufferShape()[0]));
                 } finally {
                     releaseNode.execute(frame, destView);
                 }
@@ -688,6 +690,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, ndim);
             return shape;
         }
 

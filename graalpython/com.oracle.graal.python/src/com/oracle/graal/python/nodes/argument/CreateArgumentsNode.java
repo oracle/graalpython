@@ -86,6 +86,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -286,6 +287,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     kwonly_given += 1;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, co_kwonlyargcount);
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !equalNode.execute(signature.getParameterIds()[0], T_SELF, TS_ENCODING));
             TruffleString name = getName(callable, signature);
             throw raiseTooManyArguments(inliningTarget, name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
@@ -544,6 +546,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, kwLen);
             storeKeywordsOrRaise(callee, pArguments, kwargsIndex, unusedKeywords, k, additionalKwds, lastWrongKeyword,
                             posArgOnlyPassedAsKeywordNames, inliningTarget, posArgOnlyPassedAsKeywordProfile, raise, calleeSignature);
         }
@@ -726,6 +729,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, missingNames.length);
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
                 throw raiseMissing(inliningTarget, callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise, signature);
             }
@@ -804,6 +808,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     missingNames[missingCnt++] = kwname;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, missingNames.length);
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
                 throw raiseMissing(inliningTarget, callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise, signature);
             }

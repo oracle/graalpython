@@ -91,6 +91,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -142,6 +143,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             for (int i = 0; indicesLoopProfile.inject(i < r); i++) {
                 indices[i] = i;
             }
+            LoopNode.reportLoopCount(inliningTarget, r);
             self.setIndices(indices);
             self.setR(r);
             self.setLastResult(null);
@@ -182,6 +184,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 int idx = self.getIndices()[i];
                 result[i] = self.getPool()[idx];
             }
+            LoopNode.reportLoopCount(inliningTarget, result.length);
             self.setLastResult(result);
             return PFactory.createTuple(language, result);
         }
@@ -216,6 +219,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             while (i >= 0 && self.getIndices()[i] == self.getMaximum(poolLen, i)) {
                 i -= 1;
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) ((long) self.getR() - i - 1));
 
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
@@ -230,6 +234,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             for (int j = i + 1; indexLoopProfile.inject(inliningTarget, j < self.getR()); j++) {
                 self.getIndices()[j] = self.maxIndex(j);
             }
+            LoopNode.reportLoopCount(inliningTarget, self.getR() - i - 1);
 
             // Update the result for the new indices starting with i, the leftmost index that
             // changed
@@ -239,6 +244,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 Object elem = self.getPool()[index];
                 result[j] = elem;
             }
+            LoopNode.reportLoopCount(inliningTarget, self.getR() - i);
             self.setLastResult(result);
             return PFactory.createTuple(PythonLanguage.get(inliningTarget), result);
         }

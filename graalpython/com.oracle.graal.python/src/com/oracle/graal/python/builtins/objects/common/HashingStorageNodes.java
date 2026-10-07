@@ -285,7 +285,8 @@ public class HashingStorageNodes {
         Object[] keys = getKeyArrayNode.execute(store);
         EconomicMapStorage result = EconomicMapStorage.create(keys.length);
         ObjectHashMap resultMap = result;
-        for (Object k : keys) {
+        for (int i = 0; i < keys.length; i++) {
+            Object k = keys[i];
             if (k instanceof TruffleString) {
                 Object v = getNode.execute(store, k, PNone.NO_VALUE);
                 if (v != PNone.NO_VALUE) {
@@ -293,6 +294,7 @@ public class HashingStorageNodes {
                 }
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, keys.length);
         return result;
     }
 
@@ -1767,6 +1769,7 @@ public class HashingStorageNodes {
                 PKeyword keyword = keywords[i];
                 result = setItem.execute(frame, inliningTarget, result, keyword.getName(), keyword.getValue());
             }
+            LoopNode.reportLoopCount(inliningTarget, keywords.length);
             return result;
         }
     }

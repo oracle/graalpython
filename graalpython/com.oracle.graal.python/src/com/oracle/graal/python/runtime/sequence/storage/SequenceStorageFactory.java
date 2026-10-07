@@ -25,13 +25,16 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
+
 public abstract class SequenceStorageFactory {
 
     private SequenceStorageFactory() {
         // no instances
     }
 
-    public static SequenceStorage createStorage(Object[] values) {
+    public static SequenceStorage createStorage(Node inliningTarget, Object[] values) {
         assert values != null;
         assert values.getClass() == Object[].class : "cannot use non-Object array for modifiable list";
 
@@ -42,36 +45,38 @@ public abstract class SequenceStorageFactory {
             return EmptySequenceStorage.INSTANCE;
         }
 
-        if (canSpecializeToInt(values)) {
-            return new IntSequenceStorage(specializeToInt(values));
-        } else if (canSpecializeToDouble(values)) {
-            return new DoubleSequenceStorage(specializeToDouble(values));
-        } else if (canSpecializeToLong(values)) {
-            return new LongSequenceStorage(specializeToLong(values));
-        } else if (canSpecializeToBool(values)) {
-            return new BoolSequenceStorage(specializeToBool(values));
+        if (canSpecializeToInt(inliningTarget, values)) {
+            return new IntSequenceStorage(specializeToInt(inliningTarget, values));
+        } else if (canSpecializeToDouble(inliningTarget, values)) {
+            return new DoubleSequenceStorage(specializeToDouble(inliningTarget, values));
+        } else if (canSpecializeToLong(inliningTarget, values)) {
+            return new LongSequenceStorage(specializeToLong(inliningTarget, values));
+        } else if (canSpecializeToBool(inliningTarget, values)) {
+            return new BoolSequenceStorage(specializeToBool(inliningTarget, values));
         } else {
             return new ObjectSequenceStorage(values);
         }
     }
 
-    private static boolean canSpecializeToInt(Object[] values) {
-        for (Object item : values) {
-            if (!(item instanceof Integer)) {
+    private static boolean canSpecializeToInt(Node inliningTarget, Object[] values) {
+        for (int i = 0; i < values.length; i++) {
+            if (!(values[i] instanceof Integer)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return false;
             }
         }
-
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return true;
     }
 
-    private static int[] specializeToInt(Object[] values) {
+    private static int[] specializeToInt(Node inliningTarget, Object[] values) {
         final int[] intVals = new int[values.length];
 
         for (int i = 0; i < values.length; i++) {
             intVals[i] = (int) values[i];
         }
 
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return intVals;
     }
 
@@ -95,63 +100,70 @@ public abstract class SequenceStorageFactory {
         return byteVals;
     }
 
-    private static boolean canSpecializeToLong(Object[] values) {
-        for (Object item : values) {
+    private static boolean canSpecializeToLong(Node inliningTarget, Object[] values) {
+        for (int i = 0; i < values.length; i++) {
+            Object item = values[i];
             if (!(item instanceof Long || item instanceof Integer)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return false;
             }
         }
-
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return true;
     }
 
-    private static long[] specializeToLong(Object[] values) {
+    private static long[] specializeToLong(Node inliningTarget, Object[] values) {
         final long[] intVals = new long[values.length];
         for (int i = 0; i < values.length; i++) {
             long value = (values[i] instanceof Integer) ? (long) ((int) values[i]) : (long) values[i];
             intVals[i] = value;
         }
 
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return intVals;
     }
 
-    private static boolean canSpecializeToDouble(Object[] values) {
-        for (Object item : values) {
-            if (!(item instanceof Double)) {
+    private static boolean canSpecializeToDouble(Node inliningTarget, Object[] values) {
+        for (int i = 0; i < values.length; i++) {
+            if (!(values[i] instanceof Double)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return false;
             }
         }
-
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return true;
     }
 
-    private static double[] specializeToDouble(Object[] values) {
+    private static double[] specializeToDouble(Node inliningTarget, Object[] values) {
         final double[] doubles = new double[values.length];
 
         for (int i = 0; i < values.length; i++) {
             doubles[i] = (double) values[i];
         }
 
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return doubles;
     }
 
-    private static boolean canSpecializeToBool(Object[] values) {
-        for (Object item : values) {
-            if (!(item instanceof Boolean)) {
+    private static boolean canSpecializeToBool(Node inliningTarget, Object[] values) {
+        for (int i = 0; i < values.length; i++) {
+            if (!(values[i] instanceof Boolean)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return false;
             }
         }
-
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return true;
     }
 
-    private static boolean[] specializeToBool(Object[] values) {
+    private static boolean[] specializeToBool(Node inliningTarget, Object[] values) {
         final boolean[] bools = new boolean[values.length];
 
         for (int i = 0; i < values.length; i++) {
             bools[i] = (boolean) values[i];
         }
 
+        LoopNode.reportLoopCount(inliningTarget, values.length);
         return bools;
     }
 }

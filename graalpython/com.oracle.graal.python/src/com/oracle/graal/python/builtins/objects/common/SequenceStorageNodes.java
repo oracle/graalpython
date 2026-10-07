@@ -683,7 +683,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static SequenceStorage doIntSequenceStorage(IntSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doIntSequenceStorage(IntSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             int[] newArray = new int[length];
             int[] values = storage.getInternalIntArray();
 
@@ -695,12 +696,14 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new IntSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static SequenceStorage doLongSequenceStorage(LongSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doLongSequenceStorage(LongSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             long[] newArray = new long[length];
             long[] values = storage.getInternalLongArray();
 
@@ -712,12 +715,14 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new LongSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static SequenceStorage doDoubleSequenceStorage(DoubleSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doDoubleSequenceStorage(DoubleSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             double[] newArray = new double[length];
             double[] values = storage.getInternalDoubleArray();
 
@@ -729,12 +734,14 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new DoubleSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static SequenceStorage doBoolSequenceStorage(BoolSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doBoolSequenceStorage(BoolSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             boolean[] newArray = new boolean[length];
             boolean[] values = storage.getInternalBoolArray();
 
@@ -746,12 +753,14 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new BoolSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static SequenceStorage doByteSequenceStorage(ByteSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doByteSequenceStorage(ByteSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             byte[] newArray = new byte[length];
             byte[] values = storage.getInternalByteArray();
 
@@ -763,12 +772,14 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new ByteSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static SequenceStorage doObjectSequenceStorage(ObjectSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doObjectSequenceStorage(ObjectSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             Object[] newArray = new Object[length];
             Object[] values = storage.getInternalObjectArray();
 
@@ -780,12 +791,14 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new ObjectSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static SequenceStorage doMroSequenceStorage(MroSequenceStorage storage, int start, int stop, int step, int length) {
+        protected static SequenceStorage doMroSequenceStorage(MroSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind Node inliningTarget) {
             PythonAbstractClass[] newArray = new PythonAbstractClass[length];
             PythonAbstractClass[] values = storage.getInternalClassArray();
 
@@ -797,6 +810,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = values[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             return new ObjectSequenceStorage(newArray);
         }
@@ -804,17 +818,19 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static SequenceStorage doNativeInt(NativeIntSequenceStorage storage, int start, int stop, int step, int length,
                         @Bind Node node) {
-            NativeBuffer sliceValueBuffer = doNativePrimitiveSliceInBound(PythonContext.get(node), start, step, length, storage);
+            NativeBuffer sliceValueBuffer = doNativePrimitiveSliceInBound(node, PythonContext.get(node), start, step, length, storage);
             return PythonContext.get(node).nativeBufferContext.createNativeIntStorage(sliceValueBuffer, length);
         }
 
         @Specialization
-        protected static SequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length) {
+        protected static SequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Bind Node inliningTarget) {
 
             byte[] newArray = new byte[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readByteArrayElement(storage.getPtr(), i);
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             return new ByteSequenceStorage(newArray);
         }
 
@@ -826,6 +842,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), i));
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             return new ObjectSequenceStorage(newArray);
         }
 
@@ -837,10 +854,11 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readNode.execute(inliningTarget, storage, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             return new ObjectSequenceStorage(newArray);
         }
 
-        private static NativeBuffer doNativePrimitiveSliceInBound(PythonContext pythonCtx, int start, int step, int sliceLength, NativePrimitiveSequenceStorage storage) {
+        private static NativeBuffer doNativePrimitiveSliceInBound(Node inliningTarget, PythonContext pythonCtx, int start, int step, int sliceLength, NativePrimitiveSequenceStorage storage) {
             var unsafe = pythonCtx.getUnsafe();
             long itemSize = storage.getItemSize();
             long sizeInBytes = sliceLength * itemSize;
@@ -857,6 +875,7 @@ public abstract class SequenceStorageNodes {
                             j = 0; j < sliceLength; srcAddr += stepInBytes, destAddr += itemSize, j++) {
                 unsafe.copyMemory(srcAddr, destAddr, itemSize);
             }
+            LoopNode.reportLoopCount(inliningTarget, Math.max(0, sliceLength));
 
             return sliceBuffer;
         }
@@ -1493,6 +1512,7 @@ public abstract class SequenceStorageNodes {
                 // otherwise copying forwards
                 copyForward(inliningTarget, storage, getRightItemNode, setLeftItemNode, distPos, srcPos, length);
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
         }
 
         private static void copyForward(Node inliningTarget, SequenceStorage storage, GetItemScalarNode getRightItemNode, SetItemScalarNode setLeftItemNode, int destPos, int srcPos, int length) {
@@ -1551,6 +1571,7 @@ public abstract class SequenceStorageNodes {
             for (int cur = distPos, j = srcPos, i = 0; i < length; cur += 1, j++, i++) {
                 setLeftItemNode.execute(inliningTarget, dist, cur, getRightItemNode.execute(inliningTarget, src, j));
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
         }
 
         protected static boolean isArrayBasedSequenceStorage(Object o) {
@@ -1571,28 +1592,33 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static void doIntStorage(IntSequenceStorage storage) {
+        static void doIntStorage(Node inliningTarget, IntSequenceStorage storage) {
             storage.reverse();
+            LoopNode.reportLoopCount(inliningTarget, (storage.length() >>> 1) + (storage.length() & 1));
         }
 
         @Specialization
-        static void doDoubleStorage(DoubleSequenceStorage storage) {
+        static void doDoubleStorage(Node inliningTarget, DoubleSequenceStorage storage) {
             storage.reverse();
+            LoopNode.reportLoopCount(inliningTarget, (storage.length() >>> 1) + (storage.length() & 1));
         }
 
         @Specialization
-        static void doLongStorage(LongSequenceStorage storage) {
+        static void doLongStorage(Node inliningTarget, LongSequenceStorage storage) {
             storage.reverse();
+            LoopNode.reportLoopCount(inliningTarget, (storage.length() >>> 1) + (storage.length() & 1));
         }
 
         @Specialization
-        static void doByteStorage(ByteSequenceStorage storage) {
+        static void doByteStorage(Node inliningTarget, ByteSequenceStorage storage) {
             storage.reverse();
+            LoopNode.reportLoopCount(inliningTarget, (storage.length() >>> 1) + (storage.length() & 1));
         }
 
         @Specialization
-        static void doObjectStorage(ObjectSequenceStorage storage) {
+        static void doObjectStorage(Node inliningTarget, ObjectSequenceStorage storage) {
             storage.reverse();
+            LoopNode.reportLoopCount(inliningTarget, (storage.length() >>> 1) + (storage.length() & 1));
         }
 
         @Specialization
@@ -1610,11 +1636,13 @@ public abstract class SequenceStorageNodes {
                 startAddress += itemSize;
                 endAddress -= itemSize;
             }
+            LoopNode.reportLoopCount(inliningTarget, length / 2);
         }
 
         @Specialization
-        static void doBoolStorage(BoolSequenceStorage storage) {
+        static void doBoolStorage(Node inliningTarget, BoolSequenceStorage storage) {
             storage.reverse();
+            LoopNode.reportLoopCount(inliningTarget, (storage.length() >>> 1) + (storage.length() & 1));
         }
 
         @Specialization
@@ -1645,6 +1673,7 @@ public abstract class SequenceStorageNodes {
                     writeNode.execute(inliningTarget, storage, head, readNode.execute(inliningTarget, storage, tail));
                     writeNode.execute(inliningTarget, storage, tail, temp);
                 }
+                LoopNode.reportLoopCount(inliningTarget, (length >>> 1) + (length & 1));
             }
         }
 
@@ -1655,7 +1684,8 @@ public abstract class SequenceStorageNodes {
             abstract void execute(NativeSequenceStorage storage);
 
             @Specialization
-            static void doNativeByte(NativeByteSequenceStorage storage) {
+            static void doNativeByte(NativeByteSequenceStorage storage,
+                            @Bind Node inliningTarget) {
                 int length = storage.length();
                 if (length > 0) {
                     int head = 0;
@@ -1668,11 +1698,13 @@ public abstract class SequenceStorageNodes {
                         writeByteArrayElement(ptr, head, readByteArrayElement(ptr, tail));
                         writeByteArrayElement(ptr, tail, temp);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, (length >>> 1) + (length & 1));
                 }
             }
 
             @Specialization
-            static void doNativeObject(NativeObjectSequenceStorage storage) {
+            static void doNativeObject(NativeObjectSequenceStorage storage,
+                            @Bind Node inliningTarget) {
                 int length = storage.length();
                 if (length > 0) {
                     int head = 0;
@@ -1685,6 +1717,7 @@ public abstract class SequenceStorageNodes {
                         writePtrArrayElement(ptr, head, readPtrArrayElement(ptr, tail));
                         writePtrArrayElement(ptr, tail, temp);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, (length >>> 1) + (length & 1));
                 }
             }
         }
@@ -1763,6 +1796,7 @@ public abstract class SequenceStorageNodes {
                 for (int cur = start, i = 0; i < slicelen; cur += step, i++) {
                     setLeftItemNode.execute(inliningTarget, self, cur, getRightItemNode.execute(inliningTarget, data, i));
                 }
+                LoopNode.reportLoopCount(inliningTarget, slicelen);
             }
         }
 
@@ -2142,6 +2176,7 @@ public abstract class SequenceStorageNodes {
                 assert elem >= 0 && elem < 256;
                 barr[i] = (byte) elem;
             }
+            LoopNode.reportLoopCount(inliningTarget, barr.length);
             return barr;
         }
 
@@ -2167,6 +2202,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < barr.length; i++) {
                 barr[i] = castToByteNode.execute(inliningTarget, getItemNode.execute(inliningTarget, s, i));
             }
+            LoopNode.reportLoopCount(inliningTarget, barr.length);
             return barr;
         }
     }
@@ -2311,6 +2347,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < len2; i++) {
                 initializeItemNode.execute(inliningTarget, left, i + len1, getItemRightNode.execute(inliningTarget, right, i));
             }
+            LoopNode.reportLoopCount(inliningTarget, len2);
             setLenNode.execute(inliningTarget, left, len1 + len2);
             return left;
         }
@@ -2330,6 +2367,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < len2; i++) {
                 initializeItemNode.execute(inliningTarget, dest, i + len1, getItemRightNode.execute(inliningTarget, right, i));
             }
+            LoopNode.reportLoopCount(inliningTarget, len1 + len2);
             setLenNode.execute(inliningTarget, dest, len1 + len2);
             return dest;
         }
@@ -2608,7 +2646,7 @@ public abstract class SequenceStorageNodes {
                 int newLength = PythonUtils.multiplyExact(len, times);
                 ArrayBasedSequenceStorage repeated = profiled.createEmpty(newLength);
                 Object destArr = repeated.getInternalArrayObject();
-                repeat(destArr, arr1, len, times);
+                repeat(inliningTarget, destArr, arr1, len, times);
                 repeated.setNewLength(newLength);
                 return repeated;
             } catch (OutOfMemoryError e) {
@@ -2635,6 +2673,7 @@ public abstract class SequenceStorageNodes {
                 for (int i = 0; i < len; i++) {
                     setItemNode.execute(inliningTarget, repeated, i, getItemNode.execute(inliningTarget, s, i));
                 }
+                LoopNode.reportLoopCount(inliningTarget, len);
 
                 // read from destination since that is potentially faster
                 for (int j = 1; j < times; j++) {
@@ -2642,6 +2681,8 @@ public abstract class SequenceStorageNodes {
                         setItemNode.execute(inliningTarget, repeated, j * len + i, getDestItemNode.execute(inliningTarget, repeated, i));
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, times - 1);
+                LoopNode.reportLoopCount(inliningTarget, newLen - len);
 
                 repeated.setNewLength(newLen);
                 return repeated;
@@ -2652,10 +2693,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        private static void repeat(Object dest, Object src, int len, int times) {
+        private static void repeat(Node inliningTarget, Object dest, Object src, int len, int times) {
             for (int i = 0; i < times; i++) {
                 PythonUtils.arraycopy(src, 0, dest, i * len, len);
             }
+            LoopNode.reportLoopCount(inliningTarget, times);
         }
 
         protected static boolean isInt(Object times) {
@@ -2708,18 +2750,24 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        public static int doIntStorage(IntSequenceStorage s, int item) {
-            return s.indexOfInt(item);
+        public static int doIntStorage(Node inliningTarget, IntSequenceStorage s, int item) {
+            int index = s.indexOfInt(item);
+            LoopNode.reportLoopCount(inliningTarget, index < 0 ? s.length() : index + 1);
+            return index;
         }
 
         @Specialization
-        public static int doLongStorage(LongSequenceStorage s, long item) {
-            return s.indexOfLong(item);
+        public static int doLongStorage(Node inliningTarget, LongSequenceStorage s, long item) {
+            int index = s.indexOfLong(item);
+            LoopNode.reportLoopCount(inliningTarget, index < 0 ? s.length() : index + 1);
+            return index;
         }
 
         @Specialization
-        public static int doDoubleStorage(DoubleSequenceStorage s, double item) {
-            return s.indexOfDouble(item);
+        public static int doDoubleStorage(Node inliningTarget, DoubleSequenceStorage s, double item) {
+            int index = s.indexOfDouble(item);
+            LoopNode.reportLoopCount(inliningTarget, index < 0 ? s.length() : index + 1);
+            return index;
         }
 
         @Specialization
@@ -3330,21 +3378,23 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static SequenceStorage doNativeBytes(NativeByteSequenceStorage s) {
+        static SequenceStorage doNativeBytes(Node inliningTarget, NativeByteSequenceStorage s) {
             byte[] bytes = new byte[s.length()];
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = (byte) GetNativeItemScalarNode.doNativeByte(s, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, bytes.length);
             return new ByteSequenceStorage(bytes);
         }
 
         @Specialization
-        static SequenceStorage doNativeObjects(NativeObjectSequenceStorage s,
+        static SequenceStorage doNativeObjects(Node inliningTarget, NativeObjectSequenceStorage s,
                         @Cached(inline = false) GetNativeItemScalarNode getItem) {
             Object[] objects = new Object[s.length()];
             for (int i = 0; i < objects.length; i++) {
                 objects[i] = getItem.execute(s, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, objects.length);
             return new ObjectSequenceStorage(objects);
         }
 
@@ -3355,6 +3405,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < objects.length; i++) {
                 objects[i] = readNode.execute(inliningTarget, s, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, objects.length);
             return new ObjectSequenceStorage(objects);
         }
     }
@@ -3372,23 +3423,23 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static Object[] doInt(IntSequenceStorage storage) {
-            return storage.getCopyOfInternalArray();
+        static Object[] doInt(Node inliningTarget, IntSequenceStorage storage) {
+            return storage.getCopyOfInternalArray(inliningTarget);
         }
 
         @Specialization
-        static Object[] doDouble(DoubleSequenceStorage storage) {
-            return storage.getCopyOfInternalArray();
+        static Object[] doDouble(Node inliningTarget, DoubleSequenceStorage storage) {
+            return storage.getCopyOfInternalArray(inliningTarget);
         }
 
         @Specialization
-        static Object[] doByte(ByteSequenceStorage storage) {
-            return storage.getCopyOfInternalArray();
+        static Object[] doByte(Node inliningTarget, ByteSequenceStorage storage) {
+            return storage.getCopyOfInternalArray(inliningTarget);
         }
 
         @Specialization
-        static Object[] doLong(LongSequenceStorage storage) {
-            return storage.getCopyOfInternalArray();
+        static Object[] doLong(Node inliningTarget, LongSequenceStorage storage) {
+            return storage.getCopyOfInternalArray(inliningTarget);
         }
 
         @Specialization
@@ -3397,8 +3448,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static Object[] doBool(BoolSequenceStorage storage) {
-            return storage.getCopyOfInternalArray();
+        static Object[] doBool(Node inliningTarget, BoolSequenceStorage storage) {
+            return storage.getCopyOfInternalArray(inliningTarget);
         }
 
         @Specialization
@@ -3412,12 +3463,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static Object[] doNative(NativeSequenceStorage s,
+        static Object[] doNative(Node inliningTarget, NativeSequenceStorage s,
                         @Cached(inline = false) GetNativeItemScalarNode getNativeItemScalarNode) {
             Object[] result = new Object[s.length()];
             for (int i = 0; i < s.length(); i++) {
                 result[i] = getNativeItemScalarNode.execute(s, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, result.length);
             return result;
         }
     }
@@ -3704,6 +3756,7 @@ public abstract class SequenceStorageNodes {
 
                 memove.execute(inliningTarget, self, cur - i, cur + 1, lim);
             }
+            LoopNode.reportLoopCount(inliningTarget, Math.max(0, slicelen));
             /*- Move the tail of the bytes, in one chunk */
             cur = start + slicelen * step;
             if (cur < len) {
@@ -3898,6 +3951,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < barr.length; i++) {
                 barr[i] = getItemNode.execute(inliningTarget, s, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, barr.length);
             return barr;
         }
 
@@ -4092,6 +4146,7 @@ public abstract class SequenceStorageNodes {
             for (int i = storage.length(); i > index; i--) {
                 writePtrArrayElement(storage.getPtr(), i, readPtrArrayElement(storage.getPtr(), i - 1));
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) storage.length() - index)));
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
             writePtrArrayElement(storage.getPtr(), index, toNative.executeNewRef(inliningTarget, promoted));
             storage.setNewLength(newLength);
@@ -4107,6 +4162,7 @@ public abstract class SequenceStorageNodes {
             for (int i = storage.length(); i > index; i--) {
                 writeByteArrayElement(storage.getPtr(), i, readByteArrayElement(storage.getPtr(), i - 1));
             }
+            LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) storage.length() - index)));
             writeByteArrayElement(storage.getPtr(), index, castToByteNode.execute(null, value));
             storage.setNewLength(newLength);
             return storage;
@@ -4259,7 +4315,7 @@ public abstract class SequenceStorageNodes {
                     value = nextNode.execute(frame, inliningTarget, iterator);
                 } catch (IteratorExhausted e) {
                     LoopNode.reportLoopCount(this, i);
-                    return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
+                    return SequenceStorageFactory.createStorage(inliningTarget, PythonUtils.arrayCopyOf(elements, i));
                 }
                 if (i >= elements.length) {
                     // Intentionally not profiled, because "size" can be reprofiled after this

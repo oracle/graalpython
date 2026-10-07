@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -138,6 +139,7 @@ public abstract class PyDictMerge extends PNodeWithContext {
                     throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, initialSize);
             updateStorageNode.execute(inliningTarget, target, targetStorage, newStorage);
         }
     }
@@ -165,6 +167,7 @@ public abstract class PyDictMerge extends PNodeWithContext {
                 Object value = getItem.execute(frame, inliningTarget, mapping, key);
                 setItem.execute(frame, inliningTarget, target, key, value);
             }
+            LoopNode.reportLoopCount(inliningTarget, keysLen);
         }
     }
 

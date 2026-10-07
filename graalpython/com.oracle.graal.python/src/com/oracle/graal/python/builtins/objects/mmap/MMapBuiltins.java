@@ -154,6 +154,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -572,6 +573,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                             for (int cur = info.start, i = 0; i < info.sliceLength; cur += info.step, i++) {
                                 posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), cur, bufferLib.readByte(buffer, i));
                             }
+                            LoopNode.reportLoopCount(inliningTarget, info.sliceLength);
                         }
                     } catch (PosixException ex) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);

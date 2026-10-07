@@ -85,6 +85,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -246,6 +247,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < result.length; i++) {
                 result[i] = PFactory.createStructSeq(language, STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, entries[i], language, unsignedConversionProfile));
             }
+            LoopNode.reportLoopCount(inliningTarget, result.length);
             return PFactory.createList(language, result);
         }
     }

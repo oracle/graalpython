@@ -161,6 +161,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -582,6 +583,7 @@ public abstract class ObjectNodes {
                         haveSlots = true;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, slotnames.length);
                 if (haveSlots) {
                     /*
                      * If we found some slot attributes, pack them in a tuple along the original
@@ -705,6 +707,7 @@ public abstract class ObjectNodes {
                     for (int i = 0; i < argsLen; i++) {
                         newargsVals[i + 1] = getItemNode.execute(frame, inliningTarget, args, i);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, argsLen);
                 } else {
                     newargsVals = new Object[]{cls};
                 }

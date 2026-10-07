@@ -112,6 +112,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -324,7 +325,7 @@ public abstract class SocketNodes {
                  * getaddrinfo(), which can handle translation from interface name to interface
                  * index
                  */
-                if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(name)) {
+                if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(inliningTarget, name)) {
                     byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixLib, posixSupport, AF_INET6.value, name);
                     if (bytes != null) {
                         return posixLib.createUniversalSockAddrInet6(posixSupport, new Inet6SockAddr(0, bytes, 0, 0));
@@ -377,12 +378,14 @@ public abstract class SocketNodes {
             }
         }
 
-        private static boolean hasScopeId(byte[] name) {
-            for (byte b : name) {
-                if (b == '%') {
+        private static boolean hasScopeId(Node inliningTarget, byte[] name) {
+            for (int i = 0; i < name.length; i++) {
+                if (name[i] == '%') {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, name.length);
             return false;
         }
     }

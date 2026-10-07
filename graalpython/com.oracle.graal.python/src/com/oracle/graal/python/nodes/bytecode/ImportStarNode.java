@@ -62,6 +62,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -108,6 +109,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     TruffleString name = TruffleString.fromJavaStringUncached(attrName, TS_ENCODING);
                     setItemNode.execute(frame, inliningTarget, locals, name, attr);
                 }
+                LoopNode.reportLoopCount(inliningTarget, Math.max(0, len));
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
@@ -116,10 +118,14 @@ public abstract class ImportStarNode extends AbstractImportNode {
             try {
                 Object attrAll = getAttrNode.execute(frame, inliningTarget, importedModule, T___ALL__);
                 int n = sizeNode.execute(frame, inliningTarget, attrAll);
-                for (int i = 0; i < n; i++) {
-                    Object attrName = getItemNode.execute(frame, inliningTarget, attrAll, i);
-                    writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
-                                    codePointAtIndexNode, getAttrNode, setItemNode);
+                try {
+                    for (int i = 0; i < n; i++) {
+                        Object attrName = getItemNode.execute(frame, inliningTarget, attrAll, i);
+                        writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
+                                        codePointAtIndexNode, getAttrNode, setItemNode);
+                    }
+                } finally {
+                    LoopNode.reportLoopCount(inliningTarget, n);
                 }
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, isAttributeErrorProfile);

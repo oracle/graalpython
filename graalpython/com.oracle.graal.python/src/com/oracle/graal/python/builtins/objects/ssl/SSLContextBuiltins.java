@@ -146,6 +146,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -977,6 +978,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             for (int i = 0; i < res.length; i++) {
                 res[i] = (char) data[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, res.length);
             return res;
         }
 
@@ -1087,11 +1089,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 List<PDict> result = PythonUtils.newList();
-                for (X509Certificate cert : self.getCACerts()) {
+                X509Certificate[] certs = self.getCACerts();
+                for (int i = 0; i < certs.length; i++) {
+                    X509Certificate cert = certs[i];
                     if (CertUtils.isCA(cert, CertUtils.getKeyUsage(cert))) {
                         PythonUtils.add(result, CertUtils.decodeCertificate(inliningTarget, constructAndRaiseNode, cert, language));
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, certs.length);
                 return PFactory.createList(language, PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateParsingException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
@@ -1100,14 +1105,18 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "binary_form")
         static Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language) {
             try {
                 List<PBytes> result = PythonUtils.newList();
-                for (X509Certificate cert : self.getCACerts()) {
+                X509Certificate[] certs = self.getCACerts();
+                for (int i = 0; i < certs.length; i++) {
+                    X509Certificate cert = certs[i];
                     if (CertUtils.isCA(cert, CertUtils.getKeyUsage(cert))) {
                         PythonUtils.add(result, PFactory.createBytes(language, CertUtils.getEncoded(cert)));
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, certs.length);
                 return PFactory.createList(language, PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateEncodingException ex) {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, ex);

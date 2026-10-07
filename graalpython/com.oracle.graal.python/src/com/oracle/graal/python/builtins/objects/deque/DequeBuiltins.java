@@ -130,6 +130,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -320,6 +321,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, self.getSize());
             return n;
         }
     }
@@ -430,6 +432,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                 Object item = next(iterator);
                 if (normStart <= idx) {
                     if (eqNode.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
+                        LoopNode.reportLoopCount(inliningTarget, idx + 1);
                         return idx;
                     }
                     if (startState != self.getState()) {
@@ -572,6 +575,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                         Object removed = self.popLeft();
                         assert removed != null;
                         DequeRotateNode.doRight(self, i);
+                        LoopNode.reportLoopCount(inliningTarget, i + 1);
                         return PNone.NONE;
                     } else {
                         // this is basically 'DequeRotateNode.doLeft(self, -1)'

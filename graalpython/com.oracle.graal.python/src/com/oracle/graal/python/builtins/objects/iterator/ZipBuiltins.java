@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -151,13 +151,18 @@ public final class ZipBuiltins extends PythonBuiltins {
                         @Cached CallSlotTpIterNextNode callIterNext) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
-            for (int i = 0; i < iterators.length; i++) {
-                Object it = iterators[i];
-                /*
-                 * Not using PyIterNext because the non-strict version should pass through existing
-                 * StopIteration
-                 */
-                tupleElements[i] = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
+            int i = 0;
+            try {
+                for (; i < iterators.length; i++) {
+                    Object it = iterators[i];
+                    /*
+                     * Not using PyIterNext because the non-strict version should pass through existing
+                     * StopIteration
+                     */
+                    tupleElements[i] = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
+                }
+            } finally {
+                LoopNode.reportLoopCount(inliningTarget, i);
             }
             return PFactory.createTuple(language, tupleElements);
         }
@@ -175,6 +180,7 @@ public final class ZipBuiltins extends PythonBuiltins {
                 try {
                     tupleElements[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
                 } catch (IteratorExhausted e) {
+                    LoopNode.reportLoopCount(inliningTarget, i + 1);
                     if (i > 0) {
                         throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                     }
@@ -189,6 +195,7 @@ public final class ZipBuiltins extends PythonBuiltins {
                     throw e;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, iterators.length);
             return PFactory.createTuple(language, tupleElements);
         }
     }

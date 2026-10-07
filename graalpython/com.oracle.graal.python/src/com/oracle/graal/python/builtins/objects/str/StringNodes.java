@@ -104,6 +104,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -477,6 +478,7 @@ public abstract class StringNodes {
                     item = getItemNode.execute(storage, i);
                     appendStringNode.execute(sb, castToStringNode.execute(inliningTarget, item));
                 }
+                LoopNode.reportLoopCount(inliningTarget, len - 1);
                 return toStringNode.execute(sb);
             } catch (OutOfMemoryError e) {
                 throw raise.raise(inliningTarget, MemoryError);
@@ -679,6 +681,7 @@ public abstract class StringNodes {
 
         @Specialization
         static TruffleString doReplace(TruffleString self, TruffleString old, TruffleString with, int maxCountArg,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
@@ -702,16 +705,20 @@ public abstract class StringNodes {
                 int replacements = 0;
                 TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
                 int i = 0;
-                while (it.hasNext()) {
-                    if (replacements++ >= maxCount) {
-                        TruffleString rest = substringNode.execute(self, i, selfCpLen - i, TS_ENCODING, true);
-                        appendStringNode.execute(sb, rest);
-                        return toStringNode.execute(sb);
+                try {
+                    while (it.hasNext()) {
+                        if (replacements++ >= maxCount) {
+                            TruffleString rest = substringNode.execute(self, i, selfCpLen - i, TS_ENCODING, true);
+                            appendStringNode.execute(sb, rest);
+                            return toStringNode.execute(sb);
+                        }
+                        appendStringNode.execute(sb, with);
+                        int codePoint = nextNode.execute(it, TS_ENCODING);
+                        appendCodePointNode.execute(sb, codePoint, 1, true);
+                        ++i;
                     }
-                    appendStringNode.execute(sb, with);
-                    int codePoint = nextNode.execute(it, TS_ENCODING);
-                    appendCodePointNode.execute(sb, codePoint, 1, true);
-                    ++i;
+                } finally {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                 }
                 if (replacements < maxCount) {
                     appendStringNode.execute(sb, with);
@@ -737,6 +744,7 @@ public abstract class StringNodes {
                         }
                         idx = indexOfStringNode.execute(self, old, start, selfCpLen, TS_ENCODING);
                     } while (idx >= 0);
+                    LoopNode.reportLoopCount(inliningTarget, replacements);
                     TruffleString rest = substringNode.execute(self, start, selfCpLen - start, TS_ENCODING, true);
                     appendStringNode.execute(sb, rest);
                     return toStringNode.execute(sb);
@@ -756,6 +764,7 @@ public abstract class StringNodes {
 
         @Specialization
         static TruffleString doString(TruffleString self,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
@@ -802,6 +811,7 @@ public abstract class StringNodes {
                         break;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, selfLen);
             appendCodePointNode.execute(sb, (byte) (useDoubleQuotes ? '"' : '\''), 1, true);
             return toStringNode.execute(sb);
         }

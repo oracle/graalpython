@@ -92,6 +92,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -317,6 +318,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         memberString = switchEncodingNode.execute(memberString, TS_ENCODING);
                         addNode.execute(frame, attributes, memberString);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, size)));
                 } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }

@@ -98,6 +98,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -153,6 +154,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 Buffer bytes = posixLib.getPathAsBytes(context.getPosixSupport(), path);
                 argsArray[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             return argsArray;
         }
 
@@ -190,6 +192,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 result[i] = o1;
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             return result;
         }
 
@@ -307,6 +310,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     executables[i] = createCStringFromBytes(inliningTarget, bytes, posixLib, raiseNode);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
 
             gil.release(true);
             try {
@@ -343,6 +347,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_VALUES_IN_FDS_TO_KEEP);
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             return fds;
         }
 

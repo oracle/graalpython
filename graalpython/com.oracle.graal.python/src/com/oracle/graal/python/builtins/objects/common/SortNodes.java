@@ -300,6 +300,7 @@ public abstract class SortNodes {
             for (int i = 0; i < len; i++) {
                 array[i] = getItemScalarNode.execute(inliningTarget, storage, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             if (keyfunc instanceof PNone) {
                 sortWithoutKey(frame, array, len, reverse, callContext);
             } else {
@@ -308,6 +309,7 @@ public abstract class SortNodes {
             for (int i = 0; i < len; i++) {
                 setItemScalarNode.execute(inliningTarget, storage, i, array[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
         }
 
         private void sortWithoutKey(VirtualFrame frame, Object[] array, int len, boolean reverse, CallContext callContext) {
@@ -421,6 +423,7 @@ public abstract class SortNodes {
                 }
                 pairArray[reverse ? len - i - 1 : i] = new SortingPair(key, array[i]);
             }
+            LoopNode.reportLoopCount(this, len - 1);
             if (keySortComparator != null) {
                 callSortWithKey(pairArray, len, keySortComparator);
             } else {
@@ -449,6 +452,7 @@ public abstract class SortNodes {
             for (int i = 0; i < len; i++) {
                 array[reverse ? len - i - 1 : i] = pairArray[i].value;
             }
+            LoopNode.reportLoopCount(this, len);
         }
 
         @TruffleBoundary

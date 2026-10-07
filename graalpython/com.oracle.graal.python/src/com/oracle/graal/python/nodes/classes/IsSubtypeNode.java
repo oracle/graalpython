@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -304,11 +305,14 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         if (builtinClassIsSubtypeProfile.profile(inliningTarget, isBuiltinClass(derived) && !isBuiltinClass(cls))) {
             return false;
         }
-        for (PythonAbstractClass n : getMro.execute(inliningTarget, derived).getInternalClassArray()) {
-            if (isSameType(inliningTarget, isSameTypeNode, n, cls)) {
+        PythonAbstractClass[] mro = getMro.execute(inliningTarget, derived).getInternalClassArray();
+        for (int i = 0; i < mro.length; i++) {
+            if (isSameType(inliningTarget, isSameTypeNode, mro[i], cls)) {
+                LoopNode.reportLoopCount(inliningTarget, i);
                 return true;
             }
         }
+        LoopNode.reportLoopCount(inliningTarget, mro.length);
         return false;
     }
 

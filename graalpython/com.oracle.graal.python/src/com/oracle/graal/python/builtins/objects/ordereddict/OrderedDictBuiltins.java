@@ -132,6 +132,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -356,6 +357,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                             throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                         }
                     }
+                    LoopNode.reportLoopCount(inliningTarget, initialSize);
                 } else {
                     Object keysAttribute = lookupKeys.execute(frame, inliningTarget, mapping, T_KEYS);
                     if (keysAttribute != PNone.NO_VALUE) {
@@ -368,6 +370,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
             for (PKeyword keyword : kwargs) {
                 setItem.execute(frame, inliningTarget, self, keyword.getName(), keyword.getValue());
             }
+            LoopNode.reportLoopCount(inliningTarget, kwargs.length);
         }
     }
 

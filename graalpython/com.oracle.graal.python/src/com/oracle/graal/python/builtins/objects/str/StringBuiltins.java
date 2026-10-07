@@ -188,6 +188,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -704,9 +705,11 @@ public final class StringBuiltins extends PythonBuiltins {
                 TruffleString subStr = castPrefixNode.cast(inliningTarget, element, ErrorMessages.INVALID_ELEMENT_TYPE, op.methodName(), element);
                 int subStrLen = codePointLengthNode.execute(subStr, TS_ENCODING);
                 if (doIt(self, subStr, cpStart, cpEnd, selfLen, subStrLen, regionEqualNode, op)) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, storage.length());
             return false;
         }
 
@@ -871,6 +874,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 cnt++;
                 pos = i + subLen;
             }
+            LoopNode.reportLoopCount(indexOfStringNode, cnt);
             return cnt;
         }
 
@@ -1035,6 +1039,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 int value = nextNode.execute(toIt, TS_ENCODING);
                 storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
             }
+            LoopNode.reportLoopCount(inliningTarget, fromLen);
             assert !toIt.hasNext();
             if (hasZ) {
                 TruffleStringIterator zIt = createCodePointIteratorNode.execute(zString, TS_ENCODING);
@@ -1307,6 +1312,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 appendNode.execute(list, substringNode.execute(self, lastEnd, nextIndex - lastEnd, TS_ENCODING, false));
                 lastEnd = nextIndex + sepLen;
             }
+            LoopNode.reportLoopCount(inliningTarget, (maxsplit < 0 ? Integer.MAX_VALUE : maxsplit) - splits);
             appendNode.execute(list, substringNode.execute(self, lastEnd, selfLen - lastEnd, TS_ENCODING, false));
             return list;
         }
@@ -1367,7 +1373,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 // Start next segment search at that point
                 start = index;
             }
-
+            LoopNode.reportLoopCount(appendNode, splits);
             return list;
         }
     }
@@ -1416,6 +1422,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 end = idx;
                 splits++;
             }
+            LoopNode.reportLoopCount(inliningTarget, splits);
 
             appendNode.execute(list, substringNode.execute(self, 0, end, TS_ENCODING, true));
             reverseNode.execute(frame, list);
@@ -1447,8 +1454,8 @@ public final class StringBuiltins extends PythonBuiltins {
             // emitted in ws->non-ws transition and at the end
             boolean hasSegment = false;
             int start = 0, end = length, splits = 0;
-
-            for (int i = length - 1; i >= 0; i--) {
+            int i = length - 1;
+            for (; i >= 0; i--) {
                 if (StringUtils.isSpace(codePointAtIndexNode.execute(s, i))) {
                     if (hasSegment) {
                         appendNode.execute(list, substringNode.execute(s, start, end - start, TS_ENCODING, false));
@@ -1464,6 +1471,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     start = i;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, length - 1 - i);
             if (hasSegment) {
                 appendNode.execute(list, substringNode.execute(s, 0, end, TS_ENCODING, false));
             }
@@ -1545,6 +1553,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     TruffleString line = substringNode.execute(self, substringStartByteIndex, substringByteLength, TS_ENCODING, false);
                     appendNode.execute(list, line);
                 } while (matchFound);
+                LoopNode.reportLoopCount(inliningTarget, list.getSequenceStorage().length());
                 return list;
             }
 
@@ -2276,6 +2285,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
                 end++;
             }
+            LoopNode.reportLoopCount(nextNode, end);
             if (start != end) {
                 appendSegment(self, language, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end - 1);
             }
@@ -2432,6 +2442,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 appendCodePointNode.execute(sb, codePointAtIndexNode.execute(value, i), 1, true);
                 j++;
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             return toStringNode.execute(sb);
         }
 

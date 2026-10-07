@@ -116,6 +116,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
@@ -1050,11 +1051,13 @@ public final class FloatBuiltins extends PythonBuiltins {
                         ++exponent;
                         mantissa /= 2;
                     }
+                    LoopNode.reportLoopCount(inliningTarget, exponent);
                 } else if (mantissa < 0.5) {
                     while (mantissa < 0.5) {
                         --exponent;
                         mantissa *= 2;
                     }
+                    LoopNode.reportLoopCount(inliningTarget, -exponent);
                 }
                 if (neg) {
                     mantissa = -mantissa;

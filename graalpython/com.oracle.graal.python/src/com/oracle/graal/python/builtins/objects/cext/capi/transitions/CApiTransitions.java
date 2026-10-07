@@ -153,6 +153,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1908,11 +1909,13 @@ public abstract class CApiTransitions {
                 if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC) &&
                                 newRefcnt == MANAGED_REFCNT + 1 && obj.getReplicatedNativeReferences() != null) {
                     hasReplicatedNativeReferences.enter(inliningTarget);
-                    for (Object referent : obj.getReplicatedNativeReferences()) {
-                        if (referent instanceof PythonObject pythonObject) {
+                    Object[] referents = obj.getReplicatedNativeReferences();
+                    for (int i = 0; i < referents.length; i++) {
+                        if (referents[i] instanceof PythonObject pythonObject) {
                             updateRefNode.execute(inliningTarget, pythonObject, pythonObject.getRefCount());
                         }
                     }
+                    LoopNode.reportLoopCount(inliningTarget, referents.length);
                 }
             }
             return obj.getPtr();

@@ -135,6 +135,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -309,6 +310,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                             UniversalSockAddr forwardAddr = addrInfoCursorLib.getSockAddr(cursor);
                             storage = appendNode.execute(inliningTarget, storage, makeIpAddrNode.execute(frame, inliningTarget, forwardAddr), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                         } while (addrInfoCursorLib.next(cursor));
+                        LoopNode.reportLoopCount(inliningTarget, storage.length());
                     } finally {
                         addrInfoCursorLib.release(cursor);
                     }
@@ -726,6 +728,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                                     new Object[]{cursorLib.getFamily(cursor), cursorLib.getSockType(cursor), cursorLib.getProtocol(cursor), canonName, addr});
                     storage = appendNode.execute(inliningTarget, storage, tuple, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                 } while (cursorLib.next(cursor));
+                LoopNode.reportLoopCount(inliningTarget, storage.length());
                 return PFactory.createList(context.getLanguage(inliningTarget), storage);
             } finally {
                 cursorLib.release(cursor);

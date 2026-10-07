@@ -141,6 +141,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1016,6 +1017,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         Object item = getItemScalarNode.execute(inliningTarget, storage, i);
                         skipFilePrefixes[i] = castToStringChecked.cast(inliningTarget, item, ErrorMessages.FOUND_NON_STR_S_IN_SKIP_FILE_PREFIXES, item);
                     }
+                    LoopNode.reportLoopCount(inliningTarget, skipFilePrefixes.length);
                     if (stacklevel < 2) {
                         stacklevel = 2;
                     }

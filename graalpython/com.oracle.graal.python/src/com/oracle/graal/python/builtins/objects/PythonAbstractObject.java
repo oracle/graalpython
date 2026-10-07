@@ -175,6 +175,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
@@ -1162,7 +1163,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object attr = PNone.NO_VALUE;
 
                 Object klass = getClassNode.execute(inliningTarget, object);
-                for (PythonAbstractClass c : getMroNode.execute(inliningTarget, klass)) {
+                PythonAbstractClass[] mro = getMroNode.execute(inliningTarget, klass);
+                int i = 0;
+                for (; i < mro.length; i++) {
+                    PythonAbstractClass c = mro[i];
                     // n.b. we need to use a different node because it makes a difference if the
                     // type is native
                     attr = readTypeAttrNode.execute(c, attrKeyName);
@@ -1171,6 +1175,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         break;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, i);
                 if (attr == PNone.NO_VALUE) {
                     attr = readObjectAttrNode.execute(owner, attrKeyName);
                 }
@@ -1337,6 +1342,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         for (int i = 0; loopProfile.inject(inliningTarget, i < length); i++) {
                             starArgs[i] = iLibIterator.getIteratorNextElement(iterator);
                         }
+                        LoopNode.reportLoopCount(inliningTarget, starArgs.length);
                         if (isIndexNotZeroProfile.profile(inliningTarget, index > 0)) {
                             newArgs = new Object[index + starArgs.length];
                             PythonUtils.arraycopy(arguments, 0, newArgs, 0, index);
@@ -1388,12 +1394,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         @Specialization(replaces = "cached")
-        static Object[] generic(Object[] arguments,
+        static Object[] generic(Node inliningTarget, Object[] arguments,
                         @Shared @Cached(inline = false) PForeignToPTypeNode fromForeign) {
             Object[] convertedArgs = new Object[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
             }
+            LoopNode.reportLoopCount(inliningTarget, arguments.length);
             return convertedArgs;
         }
     }

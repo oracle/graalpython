@@ -285,6 +285,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -1236,6 +1237,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 for (Object hook : hooks) {
                     callNode.get(inliningTarget).execute(frame, hook, event, argsTuple);
                 }
+                LoopNode.reportLoopCount(inliningTarget, hooks.length);
             }
         }
     }

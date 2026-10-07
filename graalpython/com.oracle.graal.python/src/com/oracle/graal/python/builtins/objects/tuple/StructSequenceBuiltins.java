@@ -99,6 +99,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -219,6 +220,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                     appendStringNode.execute(sb, T_EQ);
                     appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, getItemNode.execute(inliningTarget, tupleStore, i)));
                 }
+                LoopNode.reportLoopCount(inliningTarget, visibleSize - 1);
             }
             appendStringNode.execute(sb, T_RPAREN);
             return toStringNode.execute(sb);
@@ -259,6 +261,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                     // We're reading past length, GetItemScalarNode doesn't do a bounds check
                     dictSetItem.execute(inliningTarget, dict, n, getSeqItem.execute(inliningTarget, storage, i));
                 }
+                LoopNode.reportLoopCount(inliningTarget, nFields - nVisibleFields);
             }
             return PFactory.createTuple(language, new Object[]{type, PFactory.createTuple(language, new Object[]{tuple, dict})});
         }
@@ -294,6 +297,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
             for (int i = 0; i < nFields; i++) {
                 values[i] = getItemNode.execute(inliningTarget, storage, i);
             }
+            LoopNode.reportLoopCount(inliningTarget, nFields);
 
             TruffleString[] fieldNames = getFieldNamesNode.execute(inliningTarget, type);
             boolean[] matched = new boolean[changes.length];
@@ -306,6 +310,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                     }
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, nFields);
 
             checkUnexpected(changes, matched, inliningTarget, raiseNode, language);
             return PFactory.createTuple(type, getInstanceShapeNode.execute(type), new ObjectSequenceStorage(values, storage.length()));

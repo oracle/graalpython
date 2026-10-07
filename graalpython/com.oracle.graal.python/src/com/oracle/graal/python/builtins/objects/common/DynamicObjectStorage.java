@@ -71,6 +71,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -174,6 +175,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = {"self.cachedLength < 0", "!hasNoDeletedProperties(self)"}, replaces = "cachedLen")
         static int length(DynamicObjectStorage self,
+                        @Bind Node inliningTarget,
                         @Shared @Cached(inline = false) ReadAttributeFromPythonObjectNode readNode,
                         @Cached DynamicObject.GetKeyArrayNode keyArrayNode) {
             Object[] keys = keyArrayNode.execute(self.store);
@@ -181,6 +183,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
             }
+            LoopNode.reportLoopCount(inliningTarget, keys.length);
             return cacheLength(self, len);
         }
 

@@ -242,6 +242,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -816,7 +817,7 @@ public abstract class TypeNodes {
                 SequenceStorage storage = tuple.getSequenceStorage();
                 Object[] values = toArrayNode.execute(inliningTarget, storage);
                 try {
-                    return cast(values, storage);
+                    return cast(inliningTarget, values, storage);
                 } catch (ClassCastException e) {
                     throw raise.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
                 }
@@ -824,7 +825,7 @@ public abstract class TypeNodes {
                 int length = Math.toIntExact(readLongField(nativeTuple.getPtr(), CFields.PyVarObject__ob_size));
                 Object[] values = getTpBasesNode.readPyObjectArray(CStructAccess.getFieldPtr(nativeTuple.getPtr(), PyTupleObject__ob_item), length);
                 try {
-                    return cast(values, length);
+                    return cast(inliningTarget, values, length);
                 } catch (ClassCastException e) {
                     throw raise.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
                 }
@@ -833,15 +834,16 @@ public abstract class TypeNodes {
         }
 
         // TODO: get rid of this
-        private static PythonAbstractClass[] cast(Object[] arr, SequenceStorage storage) {
-            return cast(arr, storage.length());
+        private static PythonAbstractClass[] cast(Node inliningTarget, Object[] arr, SequenceStorage storage) {
+            return cast(inliningTarget, arr, storage.length());
         }
 
-        private static PythonAbstractClass[] cast(Object[] arr, int length) {
+        private static PythonAbstractClass[] cast(Node inliningTarget, Object[] arr, int length) {
             PythonAbstractClass[] bases = new PythonAbstractClass[length];
             for (int i = 0; i < length; i++) {
                 bases[i] = (PythonAbstractClass) arr[i];
             }
+            LoopNode.reportLoopCount(inliningTarget, length);
             return bases;
         }
     }
@@ -942,6 +944,7 @@ public abstract class TypeNodes {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, bases.length);
             return base;
         }
     }
@@ -2049,6 +2052,7 @@ public abstract class TypeNodes {
                         throw raise.raise(inliningTarget, PythonBuiltinClassType.NotImplementedError, ErrorMessages.CREATING_CLASS_NON_CLS_BASES);
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, array.length);
             }
             // check for possible layout conflicts
             PythonAbstractClass base = getBestBaseNode.execute(inliningTarget, basesArray);
@@ -2139,6 +2143,7 @@ public abstract class TypeNodes {
                         ctx.addWeak = true;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, slotlen);
                 // Make slots into a tuple
                 Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
                 try {
@@ -2150,7 +2155,7 @@ public abstract class TypeNodes {
                     BoundaryCallContext.exit(frame, language, context, state);
                 }
                 /* Secondary bases may provide weakrefs or dict */
-                typeNewSlotBases(ctx, base, basesArray);
+                typeNewSlotBases(inliningTarget, ctx, base, basesArray);
             }
 
             int indexedSlotCount = getIndexedSlotsCountNode.execute(inliningTarget, base);
@@ -2159,6 +2164,7 @@ public abstract class TypeNodes {
                     IndexedSlotDescriptor slotDesc = PFactory.createIndexedSlotDescriptor(language, slotName, indexedSlotCount++, pythonClass);
                     pythonClass.setAttribute(slotName, slotDesc);
                 }
+                LoopNode.reportLoopCount(inliningTarget, ctx.copiedSlots.length);
             }
             pythonClass.setIndexedSlotCount(indexedSlotCount);
 
@@ -2179,7 +2185,7 @@ public abstract class TypeNodes {
         }
 
         // equivalent of type_new_slot_bases in CPython
-        private static void typeNewSlotBases(TypeNewContext ctx, Object primaryBase, PythonAbstractClass[] basesArray) {
+        private static void typeNewSlotBases(Node inliningTarget, TypeNewContext ctx, Object primaryBase, PythonAbstractClass[] basesArray) {
             if (basesArray.length > 1 && (ctx.mayAddDict && !ctx.addDict || ctx.mayAddWeak && !ctx.addWeak)) {
                 for (PythonAbstractClass base : basesArray) {
                     if (base == primaryBase) {
@@ -2196,6 +2202,7 @@ public abstract class TypeNodes {
                         break;
                     }
                 }
+                LoopNode.reportLoopCount(inliningTarget, basesArray.length);
             }
         }
 

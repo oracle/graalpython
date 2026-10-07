@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -141,6 +142,7 @@ public abstract class GetFrameLocalsNode extends Node {
                     storage = setItem.execute(inliningTarget, storage, name, value);
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, varCount);
             return PFactory.createDict(language, storage);
         }
     }
