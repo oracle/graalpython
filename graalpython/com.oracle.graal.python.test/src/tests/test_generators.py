@@ -9,6 +9,33 @@ import unittest
 from tests import util
 
 
+class AsyncGeneratorTest(unittest.TestCase):
+    def test_aclose_await_in_finally(self):
+        resumed = []
+
+        class Suspend:
+            def __await__(self):
+                return (yield "suspended")
+
+        async def gen():
+            try:
+                yield 1
+            finally:
+                resumed.append(await Suspend())
+
+        g = gen()
+        with self.assertRaises(StopIteration) as cm:
+            g.__anext__().send(None)
+        self.assertEqual(cm.exception.value, 1)
+
+        close = g.aclose()
+        self.assertEqual(close.send(None), "suspended")
+        self.assertEqual(resumed, [])
+        with self.assertRaises(StopIteration):
+            close.send(42)
+        self.assertEqual(resumed, [42])
+
+
 class ExceptionTest(unittest.TestCase):
     # Tests for the issue #23353: check that the currently handled exception
     # is correctly saved/restored in PyEval_EvalFrameEx().

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.asyncio;
 
 import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.AwaitableState;
-import static com.oracle.graal.python.nodes.ErrorMessages.GENERATOR_IGNORED_EXIT;
+import static com.oracle.graal.python.nodes.ErrorMessages.ASYNCGEN_IGNORED_EXIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR;
 
 import java.util.List;
@@ -174,6 +174,7 @@ public final class AsyncGenThrowBuiltins extends PythonBuiltins {
                     if (isAGWrappedValue.profileObject(inliningTarget, retval, PythonBuiltinClassType.PAsyncGenAWrappedValue)) {
                         throw yieldClose(inliningTarget, self, gen);
                     }
+                    return retval;
                 } else {
                     // athrow mode
                     try {
@@ -212,7 +213,7 @@ public final class AsyncGenThrowBuiltins extends PythonBuiltins {
         static PException yieldClose(Node inliningTarget, PAsyncGenAThrow athrow, PAsyncGen gen) {
             gen.setRunningAsync(false);
             athrow.setState(AwaitableState.CLOSED);
-            return PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, GENERATOR_IGNORED_EXIT);
+            return PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, ASYNCGEN_IGNORED_EXIT);
         }
 
         static PException checkError(PAsyncGenAThrow athrow, PAsyncGen gen, PException exception,
