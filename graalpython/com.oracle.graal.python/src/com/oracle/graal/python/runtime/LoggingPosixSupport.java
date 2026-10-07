@@ -302,6 +302,17 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final int msvcrtKbhit() throws PosixException {
+        logEnter("msvcrtKbhit", "");
+        try {
+            return logExit("msvcrtKbhit", "%d", delegate.msvcrtKbhit());
+        } catch (PosixException e) {
+            throw logException("msvcrtKbhit", e);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
     public final int[] pipe() throws PosixException {
         logEnter("pipe", "");
         try {

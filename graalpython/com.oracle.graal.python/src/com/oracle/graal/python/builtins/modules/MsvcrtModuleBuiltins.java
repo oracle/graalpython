@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -89,6 +90,21 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("LK_UNLCK", PosixConstants._LK_UNLCK.getValueIfDefined());
         addBuiltinConstant("LK_RLCK", PosixConstants._LK_RLCK.getValueIfDefined());
         addBuiltinConstant("LK_NBRLCK", PosixConstants._LK_NBRLCK.getValueIfDefined());
+    }
+
+    @Builtin(name = "kbhit", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class KbhitNode extends PythonBuiltinNode {
+        @Specialization
+        int kbhit(VirtualFrame frame,
+                        @Bind Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                return getPosixSupport().msvcrtKbhit();
+            } catch (PosixSupport.PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
     }
 
     @Builtin(name = "locking", minNumOfPositionalArgs = 3, parameterNames = {"fd", "mode", "nbytes"})

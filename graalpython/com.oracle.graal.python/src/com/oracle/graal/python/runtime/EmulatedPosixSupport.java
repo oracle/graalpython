@@ -607,6 +607,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
+    public int msvcrtKbhit() throws UnsupportedPosixFeatureException {
+        throw createUnsupportedFeature("msvcrt.kbhit");
+    }
+
+    @Override
+    @TruffleBoundary
     public int[] pipe() throws PosixException {
         try {
             return super.pipeResource();

@@ -984,6 +984,9 @@ public abstract class PosixSupport {
     public abstract void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException;
 
     @TruffleBoundary
+    public abstract int msvcrtKbhit() throws PosixException;
+
+    @TruffleBoundary
     public abstract int[] pipe() throws PosixException;
 
     @TruffleBoundary
