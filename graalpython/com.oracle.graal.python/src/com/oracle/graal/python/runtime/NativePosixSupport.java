@@ -3310,11 +3310,10 @@ public final class NativePosixSupport extends PosixSupport {
                     NativeMemory.readLongArrayElements(nativeOutput, 0, output, 0, output.length);
                     return createPwdResult(data, output, fromByteArrayNode, switchEncodingFromUtf8Node);
                 }
-                if (result != OSErrorEnum.ERANGE.getNumber() || sysConfMax != -1) {
-                    // no point in trying larger buffer if we got different error or the OS already
-                    // told
-                    // us that sysConfMax should be enough...
-                    throw newPosixException(result);
+                if (result != OSErrorEnum.ERANGE.getNumber()) {
+                    // CPython treats failed lookups as missing entries, except for ERANGE,
+                    // which requires retrying with a larger buffer even if sysconf gave a size.
+                    return null;
                 }
             } finally {
                 NativeMemory.free(nativeOutput);
