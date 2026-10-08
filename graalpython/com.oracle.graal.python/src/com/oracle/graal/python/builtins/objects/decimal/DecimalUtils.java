@@ -62,7 +62,49 @@ public final class DecimalUtils {
     // precision. The precision - 1 offset accounts for the remaining coefficient digits.
     public static final long MIN_ETINY = MIN_EMIN - (MAX_PREC - 1);
 
+    // Bound retained storage independently of the user's precision and exponent limits.
+    private static final BigInteger[] SMALL_POWERS_OF_TEN = createSmallPowersOfTen();
+
     private DecimalUtils() {
+    }
+
+    private static BigInteger[] createSmallPowersOfTen() {
+        BigInteger[] powers = new BigInteger[128];
+        powers[0] = BigInteger.ONE;
+        for (int i = 1; i < powers.length; i++) {
+            powers[i] = powers[i - 1].multiply(BigInteger.TEN);
+        }
+        return powers;
+    }
+
+    static BigInteger pow10(long exponent) {
+        if (exponent >= 0 && exponent < SMALL_POWERS_OF_TEN.length) {
+            return SMALL_POWERS_OF_TEN[(int) exponent];
+        }
+        // Java arrays (and BigInteger itself) have int-sized lengths. Check before narrowing.
+        return BigInteger.TEN.pow(Math.toIntExact(exponent));
+    }
+
+    static int digits(long coefficient) {
+        assert coefficient >= 0;
+        int count = 1;
+        for (long c = coefficient; c >= 10; c /= 10) {
+            count++;
+        }
+        return count;
+    }
+
+    static int digits(BigInteger value) {
+        BigInteger magnitude = value.abs();
+        int bits = magnitude.bitLength();
+        if (bits < Long.SIZE) {
+            return digits(magnitude.longValue());
+        }
+        // 646456993 / 2^31 is a lower approximation of log10(2). For every int-sized
+        // bit length its error, plus the width of the bit-length interval, is less than one
+        // decimal digit. The magnitude therefore has either estimate or estimate + 1 digits.
+        int estimate = (int) (((bits - 1L) * 646456993L) >>> 31) + 1;
+        return magnitude.compareTo(pow10(estimate)) >= 0 ? estimate + 1 : estimate;
     }
 
     // Special values have an unused exponent of zero. A zero NaN coefficient means no
@@ -169,7 +211,13 @@ public final class DecimalUtils {
             if (pos != text.length()) {
                 throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);
             }
-            return new Value(negative, coefficient.isEmpty() ? BigInteger.ZERO : new BigInteger(coefficient.toString()), 0, kind);
+            BigInteger integer;
+            if (coefficient.isEmpty()) {
+                integer = BigInteger.ZERO;
+            } else {
+                integer = new BigInteger(coefficient.toString());
+            }
+            return new Value(negative, integer, 0, kind);
         }
         if (coefficient.isEmpty()) {
             throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);
@@ -208,7 +256,7 @@ public final class DecimalUtils {
     static Value finite(boolean negative, BigInteger coefficient, long exponent) throws ConversionException {
         // The adjusted exponent locates the most significant digit: exponent + digits - 1.
         // Both the stored exponent and the adjusted exponent must fit libmpdec's limits.
-        if (exponent < MIN_ETINY || exponent > MAX_EMAX || exponent + coefficient.toString().length() - 1 > MAX_EMAX) {
+        if (exponent < MIN_ETINY || exponent > MAX_EMAX || exponent + digits(coefficient) - 1 > MAX_EMAX) {
             throw new ConversionException(DecimalExceptionTypes.InvalidOperation);
         }
         return new Value(negative, coefficient, exponent, Kind.FINITE);

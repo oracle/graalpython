@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalContextUtils;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalExceptionTypes;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalModuleState;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalRounding;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimalContext;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimalContextManager;
@@ -95,14 +96,14 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
     public static final TruffleString T_BASIC_CONTEXT = tsLiteral("BasicContext");
     public static final TruffleString T_EXTENDED_CONTEXT = tsLiteral("ExtendedContext");
 
-    public static final TruffleString T_ROUND_DOWN = tsLiteral("ROUND_DOWN");
-    public static final TruffleString T_ROUND_UP = tsLiteral("ROUND_UP");
-    public static final TruffleString T_ROUND_HALF_EVEN = tsLiteral("ROUND_HALF_EVEN");
-    public static final TruffleString T_ROUND_HALF_DOWN = tsLiteral("ROUND_HALF_DOWN");
-    public static final TruffleString T_ROUND_HALF_UP = tsLiteral("ROUND_HALF_UP");
-    public static final TruffleString T_ROUND_CEILING = tsLiteral("ROUND_CEILING");
-    public static final TruffleString T_ROUND_FLOOR = tsLiteral("ROUND_FLOOR");
-    public static final TruffleString T_ROUND_05UP = tsLiteral("ROUND_05UP");
+    public static final TruffleString T_ROUND_DOWN = DecimalRounding.ROUND_DOWN.getPythonName();
+    public static final TruffleString T_ROUND_UP = DecimalRounding.ROUND_UP.getPythonName();
+    public static final TruffleString T_ROUND_HALF_EVEN = DecimalRounding.ROUND_HALF_EVEN.getPythonName();
+    public static final TruffleString T_ROUND_HALF_DOWN = DecimalRounding.ROUND_HALF_DOWN.getPythonName();
+    public static final TruffleString T_ROUND_HALF_UP = DecimalRounding.ROUND_HALF_UP.getPythonName();
+    public static final TruffleString T_ROUND_CEILING = DecimalRounding.ROUND_CEILING.getPythonName();
+    public static final TruffleString T_ROUND_FLOOR = DecimalRounding.ROUND_FLOOR.getPythonName();
+    public static final TruffleString T_ROUND_05UP = DecimalRounding.ROUND_05UP.getPythonName();
 
     public DecimalModuleBuiltins() {
         addBuiltinConstant("MAX_PREC", DecimalUtils.MAX_PREC);

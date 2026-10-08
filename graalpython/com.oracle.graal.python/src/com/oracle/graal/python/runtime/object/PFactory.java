@@ -394,16 +394,32 @@ public final class PFactory {
         return new PTupleGetter(cls, shape, index, doc);
     }
 
+    public static PDecimal createDecimal(PythonLanguage language, long value) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), value);
+    }
+
     public static PDecimal createDecimal(Object cls, Shape shape, long value) {
         return new PDecimal(cls, shape, value);
+    }
+
+    public static PDecimal createDecimal(PythonLanguage language, boolean negative, long coefficient, long exponent, PDecimal.Kind kind) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), negative, coefficient, exponent, kind);
     }
 
     public static PDecimal createDecimal(Object cls, Shape shape, boolean negative, long coefficient, long exponent, PDecimal.Kind kind) {
         return new PDecimal(cls, shape, negative, coefficient, exponent, kind);
     }
 
+    public static PDecimal createDecimal(PythonLanguage language, boolean negative, BigInteger coefficient, long exponent, PDecimal.Kind kind) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), negative, coefficient, exponent, kind);
+    }
+
     public static PDecimal createDecimal(Object cls, Shape shape, boolean negative, BigInteger coefficient, long exponent, PDecimal.Kind kind) {
         return new PDecimal(cls, shape, negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(PythonLanguage language, PDecimal value) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), value);
     }
 
     public static PDecimal createDecimal(Object cls, Shape shape, PDecimal value) {

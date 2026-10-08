@@ -147,7 +147,12 @@ public final class PDecimal extends PythonBuiltinObject {
         if (kind == Kind.INFINITY) {
             return sign + "Infinity";
         }
-        String digits = isCompact() ? Long.toString(compactCoefficient) : largeCoefficient.toString();
+        String digits;
+        if (isCompact()) {
+            digits = Long.toString(compactCoefficient);
+        } else {
+            digits = largeCoefficient.toString();
+        }
         if (kind != Kind.FINITE) {
             return sign + (kind == Kind.NAN ? "NaN" : "sNaN") + (digits.equals("0") ? "" : digits);
         }
@@ -167,7 +172,10 @@ public final class PDecimal extends PythonBuiltinObject {
             return sign + digits;
         }
         // Scientific notation puts exactly one coefficient digit before the point.
-        String significand = digits.length() == 1 ? digits : digits.charAt(0) + "." + digits.substring(1);
+        String significand = digits;
+        if (digits.length() != 1) {
+            significand = digits.charAt(0) + "." + digits.substring(1);
+        }
         return sign + significand + (capitals ? "E" : "e") + (adjustedExponent >= 0 ? "+" : "") + adjustedExponent;
     }
 }

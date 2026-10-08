@@ -1625,6 +1625,9 @@ public abstract class ErrorMessages {
                     "valid values for rounding are:\n  [ROUND_CEILING, ROUND_FLOOR, ROUND_UP, ROUND_DOWN,\n   ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_HALF_EVEN,\n   ROUND_05UP]");
     public static final TruffleString DECIMAL_INVALID_SIGNALS = tsLiteral(
                     "valid values for signals are:\n  [InvalidOperation, FloatOperation, DivisionByZero,\n   Overflow, Underflow, Subnormal, Inexact, Rounded,\n   Clamped]");
+    public static final TruffleString DECIMAL_INFINITY_TO_INTEGER = tsLiteral("cannot convert Infinity to integer");
+    public static final TruffleString DECIMAL_NAN_TO_INTEGER = tsLiteral("cannot convert NaN to integer");
+    public static final TruffleString DECIMAL_SNAN_TO_FLOAT = tsLiteral("cannot convert signaling NaN to float");
     public static final TruffleString DECIMAL_INVALID_LOCALCONTEXT_KEYWORD = tsLiteral("'%s' is an invalid keyword argument for this function");
 
     // re module errors

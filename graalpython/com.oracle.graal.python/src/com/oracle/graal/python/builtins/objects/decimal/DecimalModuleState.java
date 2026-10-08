@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
-import static com.oracle.graal.python.builtins.modules.DecimalModuleBuiltins.T_ROUND_HALF_UP;
+import static com.oracle.graal.python.builtins.objects.decimal.DecimalRounding.ROUND_HALF_UP;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -90,7 +90,7 @@ public final class DecimalModuleState {
         defaultContext = newContext(cls, shape);
         basicContext = newContext(cls, shape);
         basicContext.setPrecision(9);
-        basicContext.setRounding(T_ROUND_HALF_UP);
+        basicContext.setRounding(ROUND_HALF_UP);
         basicContext.setTraps(DecimalContextUtils.DEFAULT_TRAPS | DecimalContextUtils.mask(DecimalExceptionTypes.Underflow) | DecimalContextUtils.mask(DecimalExceptionTypes.Clamped));
         extendedContext = newContext(cls, shape);
         extendedContext.setPrecision(9);
@@ -114,7 +114,7 @@ public final class DecimalModuleState {
         if (defaultContext != null) {
             result.copyFrom(defaultContext);
             // Context.__new__ inherits arithmetic settings and signals, but not capitals.
-            result.setCapitals(1);
+            result.setCapitals(true);
         }
         result.setSignalDicts(PFactory.createDecimalSignalDict(signalDictType, signalDictType.getInstanceShape(), result, false),
                         PFactory.createDecimalSignalDict(signalDictType, signalDictType.getInstanceShape(), result, true));

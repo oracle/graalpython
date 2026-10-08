@@ -40,18 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
-import static com.oracle.graal.python.builtins.modules.DecimalModuleBuiltins.T_ROUND_HALF_EVEN;
+import static com.oracle.graal.python.builtins.objects.decimal.DecimalRounding.ROUND_HALF_EVEN;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PDecimalContext extends PythonBuiltinObject {
     private long precision = 28;
     private long emin = -999999;
     private long emax = 999999;
-    private TruffleString rounding = T_ROUND_HALF_EVEN;
-    private int capitals = 1;
+    private DecimalRounding rounding = ROUND_HALF_EVEN;
+    private boolean capitals = true;
     private int clamp;
     private int flags;
     private int traps = DecimalContextUtils.DEFAULT_TRAPS;
@@ -86,19 +85,19 @@ public final class PDecimalContext extends PythonBuiltinObject {
         emax = value;
     }
 
-    public TruffleString getRounding() {
+    public DecimalRounding getRounding() {
         return rounding;
     }
 
-    public void setRounding(TruffleString value) {
+    public void setRounding(DecimalRounding value) {
         rounding = value;
     }
 
-    public int getCapitals() {
+    public boolean getCapitals() {
         return capitals;
     }
 
-    public void setCapitals(int value) {
+    public void setCapitals(boolean value) {
         capitals = value;
     }
 

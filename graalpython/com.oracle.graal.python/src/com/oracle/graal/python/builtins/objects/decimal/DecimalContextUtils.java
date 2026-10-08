@@ -51,7 +51,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.DecimalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -92,12 +91,7 @@ public final class DecimalContextUtils {
                     DecimalExceptionTypes.InvalidOperation, DecimalExceptionTypes.ConversionSyntax,
                     DecimalExceptionTypes.DivisionImpossible, DecimalExceptionTypes.DivisionUndefined, DecimalExceptionTypes.InvalidContext
     };
-    private static final TruffleString[] ROUNDING_MODES = {
-                    DecimalModuleBuiltins.T_ROUND_CEILING, DecimalModuleBuiltins.T_ROUND_FLOOR,
-                    DecimalModuleBuiltins.T_ROUND_UP, DecimalModuleBuiltins.T_ROUND_DOWN,
-                    DecimalModuleBuiltins.T_ROUND_HALF_UP, DecimalModuleBuiltins.T_ROUND_HALF_DOWN,
-                    DecimalModuleBuiltins.T_ROUND_HALF_EVEN, DecimalModuleBuiltins.T_ROUND_05UP
-    };
+    private static final DecimalRounding[] ROUNDING_MODES = DecimalRounding.values();
     public static final int DEFAULT_TRAPS = mask(DecimalExceptionTypes.InvalidOperation) |
                     mask(DecimalExceptionTypes.DivisionByZero) | mask(DecimalExceptionTypes.Overflow);
     public static final TruffleString T_FLAGS = tsLiteral("flags");
@@ -212,11 +206,11 @@ public final class DecimalContextUtils {
     }
 
     @TruffleBoundary
-    public static TruffleString validateRounding(Node node, Object value) {
+    public static DecimalRounding validateRounding(Node node, Object value) {
         try {
             TruffleString string = CastToTruffleStringNode.executeUncached(value);
-            for (TruffleString rounding : ROUNDING_MODES) {
-                if (rounding.equalsUncached(string, TS_ENCODING)) {
+            for (DecimalRounding rounding : ROUNDING_MODES) {
+                if (rounding.getPythonName().equalsUncached(string, TS_ENCODING)) {
                     return rounding;
                 }
             }
@@ -243,7 +237,7 @@ public final class DecimalContextUtils {
             self.setEmax(validateLong(node, PRaiseNode.getUncached(), asContextLong(node, emax), 0, DecimalUtils.MAX_EMAX, ErrorMessages.DECIMAL_EMAX_RANGE));
         }
         if (isProvided(capitals)) {
-            self.setCapitals((int) validateLong(node, PRaiseNode.getUncached(), asContextLong(node, capitals), 0, 1, ErrorMessages.DECIMAL_CAPITALS_RANGE));
+            self.setCapitals(validateLong(node, PRaiseNode.getUncached(), asContextLong(node, capitals), 0, 1, ErrorMessages.DECIMAL_CAPITALS_RANGE) != 0);
         }
         if (isProvided(clamp)) {
             self.setClamp(validateClamp(node, PRaiseNode.getUncached(), asContextLong(node, clamp)));
@@ -270,8 +264,8 @@ public final class DecimalContextUtils {
 
     @TruffleBoundary
     public static String contextRepr(PDecimalContext self) {
-        return "Context(prec=" + self.getPrecision() + ", rounding=" + self.getRounding().toJavaStringUncached() +
-                        ", Emin=" + self.getEmin() + ", Emax=" + self.getEmax() + ", capitals=" + self.getCapitals() +
+        return "Context(prec=" + self.getPrecision() + ", rounding=" + self.getRounding().getPythonName().toJavaStringUncached() +
+                        ", Emin=" + self.getEmin() + ", Emax=" + self.getEmax() + ", capitals=" + (self.getCapitals() ? 1 : 0) +
                         ", clamp=" + self.getClamp() + ", flags=" + signalNames(self.getFlags()) + ", traps=" + signalNames(self.getTraps()) + ")";
     }
 

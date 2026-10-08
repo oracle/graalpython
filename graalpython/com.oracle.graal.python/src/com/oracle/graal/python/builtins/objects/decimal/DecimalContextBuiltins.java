@@ -492,7 +492,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
     public abstract static class RadixNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PDecimal radix(@SuppressWarnings("unused") PDecimalContext self, @Bind PythonLanguage language) {
-            return PFactory.createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), 10L);
+            return PFactory.createDecimal(language, 10L);
         }
     }
 
@@ -896,7 +896,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached GetClassNode getClass) {
             Object args = PFactory.createTuple(language, new Object[]{
-                            self.getPrecision(), self.getRounding(), self.getEmin(), self.getEmax(), self.getCapitals(), self.getClamp(),
+                            self.getPrecision(), self.getRounding().getPythonName(), self.getEmin(), self.getEmax(), self.getCapitals() ? 1 : 0, self.getClamp(),
                             DecimalContextUtils.signalsAsList(inliningTarget, self.getFlags()), DecimalContextUtils.signalsAsList(inliningTarget, self.getTraps())
             });
             return PFactory.createTuple(language, new Object[]{getClass.execute(inliningTarget, self), args});
@@ -1012,7 +1012,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
     public abstract static class RoundingNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         static TruffleString get(PDecimalContext self, @SuppressWarnings("unused") PNone value) {
-            return self.getRounding();
+            return self.getRounding().getPythonName();
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1028,7 +1028,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
     public abstract static class CapitalsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         static int get(PDecimalContext self, @SuppressWarnings("unused") PNone value) {
-            return self.getCapitals();
+            return self.getCapitals() ? 1 : 0;
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1041,7 +1041,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
             long number = asLong.execute(frame, inliningTarget, value);
-            self.setCapitals((int) DecimalContextUtils.validateLong(inliningTarget, raiseNode, number, 0, 1, ErrorMessages.DECIMAL_CAPITALS_RANGE));
+            self.setCapitals(DecimalContextUtils.validateLong(inliningTarget, raiseNode, number, 0, 1, ErrorMessages.DECIMAL_CAPITALS_RANGE) != 0);
             return PNone.NONE;
         }
     }
