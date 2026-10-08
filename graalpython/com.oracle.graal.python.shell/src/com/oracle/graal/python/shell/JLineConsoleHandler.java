@@ -100,7 +100,8 @@ public class JLineConsoleHandler extends ConsoleHandler {
         try {
             // The grapheme capability probe consumes pending input, including commands sent through
             // a pseudo-terminal before readline is initialized (GR-80639).
-            terminal = TerminalBuilder.builder().streams(inputStream, outputStream).system(true).graphemeCluster(false).build();
+            // PyREPL also imports readline. Do not consume terminal input until readLine is used.
+            terminal = TerminalBuilder.builder().streams(inputStream, outputStream).system(true).graphemeCluster(false).paused(true).build();
         } catch (IOException ex) {
             throw new RuntimeException("unexpected error opening console reader", ex);
         } finally {
@@ -236,7 +237,14 @@ public class JLineConsoleHandler extends ConsoleHandler {
         if (lineBuffer.isEmpty()) {
             Object[] signalHandlers = stashSignalHandlers();
             try {
-                String lines = reader.readLine(prompt);
+                Terminal terminal = reader.getTerminal();
+                String lines;
+                terminal.resume();
+                try {
+                    lines = reader.readLine(prompt);
+                } finally {
+                    terminal.pause(true);
+                }
                 Collections.addAll(lineBuffer, lines.split("\n"));
             } catch (UserInterruptException e) {
                 throw e;
