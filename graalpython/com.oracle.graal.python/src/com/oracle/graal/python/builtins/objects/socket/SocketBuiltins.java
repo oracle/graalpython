@@ -97,12 +97,10 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.RecvfromResult;
+import com.oracle.graal.python.runtime.PosixSupport.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -172,7 +170,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         static Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, @SuppressWarnings("unused") PNone fileno,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -196,18 +193,18 @@ public final class SocketBuiltins extends PythonBuiltins {
                 int fd;
                 gil.release(true);
                 try {
-                    fd = posixLib.socket(context.getPosixSupport(), family, type, proto);
+                    fd = context.getPosixSupport().socket(family, type, proto);
                 } finally {
                     gil.acquire();
                 }
                 try {
-                    posixLib.setInheritable(context.getPosixSupport(), fd, false);
-                    sockInit(context, posixLib, self, fd, family, type, proto);
+                    context.getPosixSupport().setInheritable(fd, false);
+                    sockInit(context, self, fd, family, type, proto);
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     try {
-                        posixLib.close(context.getPosixSupport(), fd);
+                        context.getPosixSupport().close(fd);
                     } catch (PosixException posixException) {
                         // ignore
                     }
@@ -222,8 +219,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(fileno)")
         static Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, Object fileno,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PyLongAsIntNode asIntNode,
@@ -238,9 +233,9 @@ public final class SocketBuiltins extends PythonBuiltins {
             }
             int family = familyIn;
             try {
-                UniversalSockAddr addr = posixLib.getsockname(context.getPosixSupport(), fd);
+                UniversalSockAddr addr = context.getPosixSupport().getsockname(fd);
                 if (family == -1) {
-                    family = addrLib.getFamily(addr);
+                    family = addr.getFamily();
                 }
             } catch (PosixException e) {
                 if (family == -1 || e.hasErrno(EBADF) || e.hasErrno(ENOTSOCK)) {
@@ -250,24 +245,24 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 int type = typeIn;
                 if (type == -1) {
-                    type = getIntSockopt(context.getPosixSupport(), posixLib, fd, SOL_SOCKET.value, SO_TYPE.value);
+                    type = getIntSockopt(context.getPosixSupport(), fd, SOL_SOCKET.value, SO_TYPE.value);
                 }
                 int proto = protoIn;
                 if (SO_PROTOCOL.defined) {
                     if (proto == -1) {
-                        proto = getIntSockopt(context.getPosixSupport(), posixLib, fd, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined());
+                        proto = getIntSockopt(context.getPosixSupport(), fd, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined());
                     }
                 } else {
                     proto = 0;
                 }
-                sockInit(context, posixLib, self, fd, family, type, proto);
+                sockInit(context, self, fd, family, type, proto);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
 
-        private static void sockInit(PythonContext context, PosixSupportLibrary posixLib,
+        private static void sockInit(PythonContext context,
                         PSocket self, int fd, int family, int type, int proto) throws PosixException {
             self.setFd(fd);
             self.setFamily(family);
@@ -277,13 +272,13 @@ public final class SocketBuiltins extends PythonBuiltins {
             long defaultTimeout = context.lookupBuiltinModule(T__SOCKET).getModuleState(Long.class);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
-                posixLib.setBlocking(context.getPosixSupport(), fd, false);
+                context.getPosixSupport().setBlocking(fd, false);
             }
         }
 
-        private static int getIntSockopt(PosixSupport posixSupport, PosixSupportLibrary posixLib, int fd, int level, int option) throws PosixException {
+        private static int getIntSockopt(PosixSupport posixSupport, int fd, int level, int option) throws PosixException {
             byte[] tmp = new byte[4];
-            int len = posixLib.getsockopt(posixSupport, fd, level, option, tmp, tmp.length);
+            int len = posixSupport.getsockopt(fd, level, option, tmp, tmp.length);
             assert len == tmp.length;
             return PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
         }
@@ -312,7 +307,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object accept(VirtualFrame frame, PSocket self,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -321,18 +315,18 @@ public final class SocketBuiltins extends PythonBuiltins {
 
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
-                PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, self,
-                                (p, s) -> p.accept(s, self.getFd()),
+                PosixSupport.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixSupport, gil, self,
+                                s -> s.accept(self.getFd()),
                                 false, false);
                 try {
                     Object pythonAddr = makeSockAddrNode.execute(frame, inliningTarget, acceptResult.sockAddr);
-                    posixLib.setInheritable(posixSupport, acceptResult.socketFd, false);
+                    posixSupport.setInheritable(acceptResult.socketFd, false);
                     return PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{acceptResult.socketFd, pythonAddr});
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     try {
-                        posixLib.close(posixSupport, acceptResult.socketFd);
+                        posixSupport.close(acceptResult.socketFd);
                     } catch (PosixException posixException) {
                         // ignore
                     }
@@ -352,7 +346,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object bind(VirtualFrame frame, PSocket self, Object address,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLibrary,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -363,7 +356,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLibrary.bind(context.getPosixSupport(), self.getFd(), addr);
+                    context.getPosixSupport().bind(self.getFd(), addr);
                 } finally {
                     gil.acquire();
                 }
@@ -382,7 +375,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object close(VirtualFrame frame, PSocket socket,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int fd = socket.getFd();
@@ -391,7 +383,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     socket.setFd(INVALID_FD);
                     gil.release(true);
                     try {
-                        posixLib.close(context.getPosixSupport(), fd);
+                        context.getPosixSupport().close(fd);
                     } finally {
                         gil.acquire();
                     }
@@ -413,7 +405,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         static Object connect(VirtualFrame frame, PSocket self, Object address,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
@@ -424,19 +415,19 @@ public final class SocketBuiltins extends PythonBuiltins {
             auditNode.audit(frame, inliningTarget, T_SOCKET_CONNECT, self, address);
 
             try {
-                doConnect(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, self, connectAddr);
+                doConnect(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, self, connectAddr);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
 
-        static void doConnect(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket self,
+        static void doConnect(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupport posixSupport, GilNode gil, PSocket self,
                         UniversalSockAddr connectAddr) throws PosixException {
             try {
                 gil.release(true);
                 try {
-                    posixLib.connect(posixSupport, self.getFd(), connectAddr);
+                    posixSupport.connect(self.getFd(), connectAddr);
                 } finally {
                     gil.acquire();
                 }
@@ -449,13 +440,13 @@ public final class SocketBuiltins extends PythonBuiltins {
                     waitConnect = self.getTimeoutNs() > 0 && e.hasErrno(EINPROGRESS) && isSelectable(self);
                 }
                 if (waitConnect) {
-                    SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, self,
-                                    (p, s) -> {
+                    SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixSupport, gil, self,
+                                    s -> {
                                         byte[] tmp = new byte[4];
-                                        p.getsockopt(s, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
+                                        s.getsockopt(self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
                                         int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
-                                            throw new PosixErrnoException(err, p.strerror(s, err));
+                                            throw new PosixErrnoException(err, s.strerror(err));
                                         }
                                         return null;
                                     },
@@ -474,7 +465,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         static Object connectEx(VirtualFrame frame, PSocket self, Object address,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
@@ -485,7 +475,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             auditNode.audit(frame, inliningTarget, T_SOCKET_CONNECT, self, address); // sic! connect
 
             try {
-                ConnectNode.doConnect(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, self, connectAddr);
+                ConnectNode.doConnect(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, self, connectAddr);
             } catch (PosixException e) {
                 if (e instanceof PosixErrnoException errnoException) {
                     return errnoException.getErrorCode();
@@ -504,7 +494,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object get(VirtualFrame frame, PSocket socket,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -512,7 +501,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 UniversalSockAddr addr;
                 gil.release(true);
                 try {
-                    addr = posixLib.getpeername(context.getPosixSupport(), socket.getFd());
+                    addr = context.getPosixSupport().getpeername(socket.getFd());
                 } finally {
                     gil.acquire();
                 }
@@ -531,7 +520,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object get(VirtualFrame frame, PSocket socket,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -539,7 +527,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 UniversalSockAddr addr;
                 gil.release(true);
                 try {
-                    addr = posixLib.getsockname(context.getPosixSupport(), socket.getFd());
+                    addr = context.getPosixSupport().getsockname(socket.getFd());
                 } finally {
                     gil.acquire();
                 }
@@ -583,7 +571,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object listen(VirtualFrame frame, PSocket self, int backlogIn,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int backlog = backlogIn;
@@ -593,7 +580,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    posixLib.listen(context.getPosixSupport(), self.getFd(), backlog);
+                    context.getPosixSupport().listen(self.getFd(), backlog);
                 } finally {
                     gil.acquire();
                 }
@@ -619,7 +606,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object recv(VirtualFrame frame, PSocket socket, int recvlen, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -640,8 +626,8 @@ public final class SocketBuiltins extends PythonBuiltins {
             }
 
             try {
-                int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                (p, s) -> p.recv(s, socket.getFd(), bytes, 0, bytes.length, flags),
+                int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                s -> s.recv(socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false);
                 if (outlen == 0) {
                     return PFactory.createEmptyBytes(language);
@@ -669,7 +655,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object recvFrom(VirtualFrame frame, PSocket socket, int recvlen, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -687,8 +672,8 @@ public final class SocketBuiltins extends PythonBuiltins {
             }
 
             try {
-                RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                (p, s) -> p.recvfrom(s, socket.getFd(), bytes, 0, bytes.length, flags),
+                RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                s -> s.recvfrom(socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false);
                 PBytes resultBytes;
                 PythonLanguage language = context.getLanguage(inliningTarget);
@@ -723,7 +708,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -757,8 +741,8 @@ public final class SocketBuiltins extends PythonBuiltins {
 
                 final int len = recvlen;
                 try {
-                    int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                    (p, s) -> p.recv(s, socket.getFd(), bytes, 0, len, flags),
+                    int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                    s -> s.recv(socket.getFd(), bytes, 0, len, flags),
                                     false, false);
                     if (!directWrite) {
                         bufferLib.writeFromByteArray(buffer, 0, bytes, 0, outlen);
@@ -791,7 +775,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -825,8 +808,8 @@ public final class SocketBuiltins extends PythonBuiltins {
                 }
 
                 try {
-                    RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                    (p, s) -> p.recvfrom(s, socket.getFd(), bytes, 0, bytes.length, flags),
+                    RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                    s -> s.recvfrom(socket.getFd(), bytes, 0, bytes.length, flags),
                                     false, false);
                     if (!directWrite) {
                         bufferLib.writeFromByteArray(buffer, 0, bytes, 0, result.readBytes);
@@ -858,7 +841,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -870,8 +852,8 @@ public final class SocketBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
 
                 try {
-                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                    (p, s) -> p.send(s, socket.getFd(), bytes, 0, len, flags),
+                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                    s -> s.send(socket.getFd(), bytes, 0, len, flags),
                                     true, false);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -899,7 +881,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -921,8 +902,8 @@ public final class SocketBuiltins extends PythonBuiltins {
                     try {
                         final int offset1 = offset;
                         final int len1 = len;
-                        int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                        (p, s) -> p.send(s, socket.getFd(), bytes, offset1, len1, flags),
+                        int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                        s -> s.send(socket.getFd(), bytes, offset1, len1, flags),
                                         true, false, timeoutHelper);
                         offset += outlen;
                         len -= outlen;
@@ -958,7 +939,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile hasFlagsProfile,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
@@ -987,8 +967,8 @@ public final class SocketBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
 
                 try {
-                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket,
-                                    (p, s) -> p.sendto(s, socket.getFd(), bytes, 0, len, flags, addr),
+                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket,
+                                    s -> s.sendto(socket.getFd(), bytes, 0, len, flags, addr),
                                     true, false);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -1007,10 +987,9 @@ public final class SocketBuiltins extends PythonBuiltins {
         static PNone doBoolean(VirtualFrame frame, PSocket socket, boolean blocking,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.setBlocking(context.getPosixSupport(), socket.getFd(), blocking);
+                context.getPosixSupport().setBlocking(socket.getFd(), blocking);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1032,13 +1011,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object setTimeout(VirtualFrame frame, PSocket socket, Object seconds,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long timeout = parseTimeoutNode.execute(frame, inliningTarget, seconds);
             socket.setTimeoutNs(timeout);
             try {
-                posixLib.setBlocking(context.getPosixSupport(), socket.getFd(), timeout < 0);
+                context.getPosixSupport().setBlocking(socket.getFd(), timeout < 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1055,10 +1033,9 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object shutdown(VirtualFrame frame, PSocket socket, int how,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.shutdown(context.getPosixSupport(), socket.getFd(), how);
+                context.getPosixSupport().shutdown(socket.getFd(), how);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1132,7 +1109,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind Node inliningTarget,
@@ -1156,7 +1132,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
             }
             try {
-                posixLib.setsockopt(context.getPosixSupport(), socket.getFd(), level, option, bytes, len);
+                context.getPosixSupport().setsockopt(socket.getFd(), level, option, bytes, len);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1166,7 +1142,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNone(none)")
         static Object setNull(VirtualFrame frame, PSocket socket, int level, int option, @SuppressWarnings("unused") PNone none, Object buflenObj,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongAsIntNode asIntNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -1177,7 +1152,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SETSECKOPT_BUFF_OUT_OFRANGE);
             }
             try {
-                posixLib.setsockopt(context.getPosixSupport(), socket.getFd(), level, option, null, buflen);
+                context.getPosixSupport().setsockopt(socket.getFd(), level, option, null, buflen);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1207,17 +1182,16 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object getSockOpt(VirtualFrame frame, PSocket socket, int level, int option, int buflen,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 if (buflen == 0) {
                     byte[] result = new byte[4];
-                    posixLib.getsockopt(context.getPosixSupport(), socket.getFd(), level, option, result, result.length);
+                    context.getPosixSupport().getsockopt(socket.getFd(), level, option, result, result.length);
                     return PythonUtils.ARRAY_ACCESSOR.getInt(result, 0);
                 } else if (buflen > 0 && buflen < 1024) {
                     byte[] result = new byte[buflen];
-                    int len = posixLib.getsockopt(context.getPosixSupport(), socket.getFd(), level, option, result, result.length);
+                    int len = context.getPosixSupport().getsockopt(socket.getFd(), level, option, result, result.length);
                     return PFactory.createBytes(context.getLanguage(inliningTarget), result, len);
                 } else {
                     throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.GETSECKOPT_BUFF_OUT_OFRANGE);

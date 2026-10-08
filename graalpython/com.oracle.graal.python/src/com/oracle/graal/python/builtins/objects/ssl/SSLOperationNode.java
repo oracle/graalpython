@@ -60,8 +60,7 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
@@ -73,7 +72,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -171,7 +169,6 @@ public abstract class SSLOperationNode extends PNodeWithContext {
 
     @Specialization(guards = "socket.getSocket() != null")
     static void doSocket(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                     @Shared @Cached PRaiseNode raiseNode) {
@@ -222,8 +219,8 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                         byte[] bytes1 = networkInboundBIO.getInternalBytes();
                         int offset1 = networkInboundBIO.getWritePosition();
                         try {
-                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket.getSocket(),
-                                            (p, s) -> p.recv(s, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
+                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket.getSocket(),
+                                            s -> s.recv(socket.getSocket().getFd(), bytes1, offset1, len1, 0),
                                             true, false, timeoutHelper);
                             if (recvlen == 0) {
                                 // This means EOF
@@ -249,8 +246,8 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                         int offset2 = networkOutboundBIO.getReadPosition();
                         int len2 = networkOutboundBIO.getPending();
                         try {
-                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket.getSocket(),
-                                            (p, s) -> p.send(s, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
+                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, context.getPosixSupport(), gil, socket.getSocket(),
+                                            s -> s.send(socket.getSocket().getFd(), bytes2, offset2, len2, 0),
                                             true, false, timeoutHelper);
                             networkOutboundBIO.advanceReadPosition(writtenBytes);
                         } catch (PosixException e) {

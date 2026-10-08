@@ -161,7 +161,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -1587,8 +1587,8 @@ public final class PythonCextBuiltins {
         PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
         PythonContext context = PythonContext.get(null);
         try {
-            return PosixSupportLibrary.getUncached().mmapGetPointer(context.getPosixSupport(), object.getPosixSupportHandle());
-        } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+            return context.getPosixSupport().mmapGetPointer(object.getPosixSupportHandle());
+        } catch (PosixSupport.UnsupportedPosixFeatureException e) {
             throw PConstructAndRaiseNode.getUncached().raiseOSErrorUnsupported(null, e);
         }
     }

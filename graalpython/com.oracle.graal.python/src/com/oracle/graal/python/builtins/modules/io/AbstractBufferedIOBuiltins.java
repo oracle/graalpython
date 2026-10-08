@@ -64,8 +64,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -116,11 +116,10 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         }
 
         public static void internalInit(PBuffered self, int bufferSize, PythonLanguage language,
-                        Object posixSupport,
-                        PosixSupportLibrary posixLib) {
+                        PosixSupport posixSupport) {
             init(self, bufferSize, language);
             try {
-                FileIOBuiltins.TellNode.internalTell(self.getFileIORaw(), posixSupport, posixLib);
+                FileIOBuiltins.TellNode.internalTell(self.getFileIORaw(), posixSupport);
             } catch (PosixException e) {
                 // ignore.. it's ok if it's not seekable
             }

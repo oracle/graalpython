@@ -82,10 +82,9 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -99,7 +98,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -173,7 +171,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         var context = core.getContext();
-        if (PosixSupportLibrary.getUncached().getBackend(context.getPosixSupport()).equalsUncached(T_JAVA, TS_ENCODING)) {
+        if (context.getPosixSupport().getBackend().equalsUncached(T_JAVA, TS_ENCODING)) {
             for (EmulatedSignal signal : EmulatedSignal.values()) {
                 if (signalModule.getAttribute(signal.name) == PNone.NO_VALUE) {
                     moduleData.signals.put(signal.name(), signal.number);
@@ -298,10 +296,9 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         static int alarm(VirtualFrame frame, int seconds,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.alarm(context.getPosixSupport(), seconds);
+                return context.getPosixSupport().alarm(seconds);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -474,10 +471,9 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         static PNone doInt(VirtualFrame frame, int signum,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.raise(context.getPosixSupport(), signum);
+                context.getPosixSupport().raise(signum);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -504,14 +500,13 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, int which, Object seconds, Object interval,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
             Timeval delay = toTimeval(frame, inliningTarget, seconds, timeFromObjectNode);
             Timeval intervalTimeval = toTimeval(frame, inliningTarget, interval, timeFromObjectNode);
             try {
-                return createResultTuple(language, posixLib.setitimer(context.getPosixSupport(), which, delay, intervalTimeval));
+                return createResultTuple(language, context.getPosixSupport().setitimer(which, delay, intervalTimeval));
             } catch (PosixException e) {
                 throw raiseItimerError(frame, inliningTarget, e, constructAndRaiseNode);
             }
@@ -556,11 +551,10 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, int which,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
             try {
-                return SetitimerNode.createResultTuple(language, posixLib.getitimer(context.getPosixSupport(), which));
+                return SetitimerNode.createResultTuple(language, context.getPosixSupport().getitimer(which));
             } catch (PosixException e) {
                 throw SetitimerNode.raiseItimerError(frame, inliningTarget, e, constructAndRaiseNode);
             }

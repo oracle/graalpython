@@ -81,9 +81,9 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.Buffer;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -97,7 +97,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -111,7 +110,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
     /**
      * Helper converter which iterates the argv argument and converts each element to the opaque
-     * narrow string representation used by {@link PosixSupportLibrary}.
+     * narrow string representation used by {@link PosixSupport}.
      */
     abstract static class ProcessArgsConversionNode extends ArgumentCastNode {
         @Specialization
@@ -129,7 +128,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PosixSupportNodes.GetPathAsBytesNode getPathAsBytesNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
             PList argsList;
@@ -151,8 +150,8 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 Object o = getItemNode.execute(argsStorage, i);
                 Object path = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
-                Buffer bytes = posixLib.getPathAsBytes(context.getPosixSupport(), path);
-                argsArray[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
+                Buffer bytes = getPathAsBytesNode.execute(inliningTarget, context.getPosixSupport(), path);
+                argsArray[i] = context.getPosixSupport().createCStringFromBytes(bytes.data);
             }
             LoopNode.reportLoopCount(inliningTarget, len);
             return argsArray;
@@ -178,7 +177,6 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached PyObjectGetItem getItem,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, inliningTarget, env);
@@ -186,7 +184,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < length; ++i) {
                 Object o = getItem.execute(frame, inliningTarget, env, i);
                 byte[] bytes = toBytesNode.execute(frame, o);
-                Object o1 = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes);
+                Object o1 = context.getPosixSupport().createCStringFromBytes(bytes);
                 if (o1 == null) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }
@@ -239,11 +237,11 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return s.getBytes();
         }
 
-        private static Object createCStringFromBytes(Node inliningTarget, byte[] bytes, PosixSupportLibrary posixLib, PRaiseNode raiseNode) {
-            Object o = posixLib.createCStringFromBytes(PosixSupport.get(inliningTarget), bytes);
+        private static Object createCStringFromBytes(Node inliningTarget, byte[] bytes, PRaiseNode raiseNode) {
+            Object o = PosixSupport.get(inliningTarget).createCStringFromBytes(bytes);
             if (o == null) {
-                // TODO reconsider the contract of PosixSupportLibrary#createCStringFromBytes w.r.t.
-                // embedded null checks (we need to review that anyway since PosixSupportLibrary
+                // TODO reconsider the contract of PosixSupport#createCStringFromBytes w.r.t.
+                // embedded null checks (we need to review that anyway since PosixSupport
                 // cannot do Python-specific fsencode)
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
@@ -258,7 +256,6 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
                         boolean restoreSignals, boolean callSetsid, int pgidToSet, Object gidObject, Object groupsList,
                         Object uidObject, int childUmask, Object preexecFn, boolean allowVFork,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
@@ -299,7 +296,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     }
                     Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
                     for (int j = 0; j < additionalArgs.length; ++j) {
-                        extendedArgs[j] = createCStringFromBytes(inliningTarget, fsEncode(additionalArgs[j].toJavaStringUncached()), posixLib, raiseNode);
+                        extendedArgs[j] = createCStringFromBytes(inliningTarget, fsEncode(additionalArgs[j].toJavaStringUncached()), raiseNode);
                     }
                     if (processArgs.length > 1) {
                         PythonUtils.arraycopy(processArgs, 1, extendedArgs, additionalArgs.length, processArgs.length - 1);
@@ -307,14 +304,14 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     processArgs = extendedArgs;
                     executables[i] = extendedArgs[0];
                 } else {
-                    executables[i] = createCStringFromBytes(inliningTarget, bytes, posixLib, raiseNode);
+                    executables[i] = createCStringFromBytes(inliningTarget, bytes, raiseNode);
                 }
             }
             LoopNode.reportLoopCount(inliningTarget, length);
 
             gil.release(true);
             try {
-                return posixLib.forkExec(context.getPosixSupport(), executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead,
+                return context.getPosixSupport().forkExec(executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead,
                                 stderrWrite, errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork);
             } catch (PosixException e) {
                 gil.acquire();

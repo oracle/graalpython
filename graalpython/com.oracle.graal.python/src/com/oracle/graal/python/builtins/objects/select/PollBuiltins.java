@@ -72,8 +72,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -85,7 +84,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -158,7 +156,6 @@ public final class PollBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PyTimeFromObjectNode fromTime,
                         @Cached IsBuiltinObjectProfile typeErrorProfile,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -193,7 +190,7 @@ public final class PollBuiltins extends PythonBuiltins {
                     try {
                         gil.release(true);
                         try {
-                            posixLib.poll(PosixSupport.get(inliningTarget), pollFds, pollEvents, pollRevents, timeoutMs);
+                            PosixSupport.get(inliningTarget).poll(pollFds, pollEvents, pollRevents, timeoutMs);
                         } finally {
                             gil.acquire();
                         }

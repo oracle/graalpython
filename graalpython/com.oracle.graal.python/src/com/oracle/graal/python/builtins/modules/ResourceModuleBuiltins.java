@@ -60,9 +60,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.RusageResult;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -72,7 +71,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "resource")
@@ -155,13 +153,12 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
         static PTuple getruusage(VirtualFrame frame, int who,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             PosixSupport posixSupport = context.getPosixSupport();
             RusageResult rusage;
             try {
-                rusage = posixLib.getrusage(posixSupport, who);
+                rusage = posixSupport.getrusage(who);
             } catch (PosixException e) {
                 if (e.hasErrno(OSErrorEnum.EINVAL)) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.RUSAGE_INVALID_WHO);

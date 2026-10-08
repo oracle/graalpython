@@ -59,14 +59,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -102,18 +101,17 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         Object locking(VirtualFrame frame, int fd, int mode, long nbytes,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gilNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_LOCKING, fd, mode, nbytes);
             try {
                 gilNode.release(true);
                 try {
-                    posixLib.msvcrtLocking(getPosixSupport(), fd, mode, nbytes);
+                    getPosixSupport().msvcrtLocking(fd, mode, nbytes);
                 } finally {
                     gilNode.acquire();
                 }
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
@@ -133,11 +131,10 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         @Specialization
         int setMode(VirtualFrame frame, int fd, int flags,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.setMode(getPosixSupport(), fd, flags);
-            } catch (PosixSupportLibrary.PosixException e) {
+                return getPosixSupport().setMode(fd, flags);
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -156,12 +153,11 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         long getOsfHandle(VirtualFrame frame, int fd,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_GET_OSFHANDLE, fd);
             try {
-                return posixLib.getOsfHandle(getPosixSupport(), fd);
-            } catch (PosixSupportLibrary.PosixException e) {
+                return getPosixSupport().getOsfHandle(fd);
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -181,12 +177,11 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         int openOsfHandle(VirtualFrame frame, long handle, int flags,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_OPEN_OSFHANDLE, handle, flags);
             try {
-                return posixLib.openOsfHandle(getPosixSupport(), handle, flags);
-            } catch (PosixSupportLibrary.PosixException e) {
+                return getPosixSupport().openOsfHandle(handle, flags);
+            } catch (PosixSupport.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }

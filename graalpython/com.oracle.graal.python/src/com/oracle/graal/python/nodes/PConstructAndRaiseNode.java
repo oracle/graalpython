@@ -56,9 +56,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNodeGen.LazyNodeGen;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -213,8 +213,8 @@ public abstract class PConstructAndRaiseNode extends Node {
         return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage()};
     }
 
-    private static Object[] createOsErrorArgs(Exception exception, TruffleString.EqualNode eqNode) {
-        OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception, eqNode);
+    private static Object[] createOsErrorArgs(Exception exception) {
+        OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception);
         return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message};
     }
 
@@ -230,8 +230,8 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseOSErrorInternal(frame, createOsErrorArgs(osErrorEnum, filename));
     }
 
-    public final PException raiseOSError(Frame frame, Exception exception, TruffleString.EqualNode eqNode) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(exception, eqNode));
+    public final PException raiseOSError(Frame frame, Exception exception) {
+        return raiseOSErrorInternal(frame, createOsErrorArgs(exception));
     }
 
     public final PException raiseOSError(Frame frame, OSErrorEnum osErrorEnum, Exception exception) {

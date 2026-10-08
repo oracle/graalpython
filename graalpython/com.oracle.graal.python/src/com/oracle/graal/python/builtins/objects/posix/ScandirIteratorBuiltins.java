@@ -61,8 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
@@ -73,7 +72,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -91,9 +89,8 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone close(PScandirIterator self,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            self.ref.rewindAndClose(posixLib, getPosixSupport());
+        PNone close(PScandirIterator self) {
+            self.ref.rewindAndClose(getPosixSupport());
             return PNone.NONE;
         }
     }
@@ -113,7 +110,6 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
         @Specialization
         static Object next(VirtualFrame frame, PScandirIterator self,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
             if (self.ref.isReleased()) {
@@ -121,14 +117,14 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
             }
             PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             try {
-                Object dirEntryData = posixLib.readdir(posixSupport, self.ref.getReference());
+                Object dirEntryData = posixSupport.readdir(self.ref.getReference());
                 if (dirEntryData == null) {
-                    self.ref.rewindAndClose(posixLib, posixSupport);
+                    self.ref.rewindAndClose(posixSupport);
                     throw iteratorExhausted();
                 }
                 return PFactory.createDirEntry(language, dirEntryData, self.path);
             } catch (PosixException e) {
-                self.ref.rewindAndClose(posixLib, posixSupport);
+                self.ref.rewindAndClose(posixSupport);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -148,9 +144,8 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        PNone exit(PScandirIterator self, Object type, Object value, Object traceback,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            self.ref.rewindAndClose(posixLib, getPosixSupport());
+        PNone exit(PScandirIterator self, Object type, Object value, Object traceback) {
+            self.ref.rewindAndClose(getPosixSupport());
             return PNone.NONE;
         }
     }
@@ -174,8 +169,6 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
         }
 
         private static class ReleaserRootNode extends RootNode {
-            @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
-
             ReleaserRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
@@ -183,7 +176,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 PScandirIterator.DirStreamRef ref = (PScandirIterator.DirStreamRef) frame.getArguments()[0];
-                ref.rewindAndClose(posixSupportLibrary, PythonContext.get(this).getPosixSupport());
+                ref.rewindAndClose(PythonContext.get(this).getPosixSupport());
                 return null;
             }
         }

@@ -53,8 +53,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,7 +62,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -90,11 +89,11 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         static int shmOpen(VirtualFrame frame, TruffleString path, int flags, int mode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object name = posixLib.createCStringFromString(context.getPosixSupport(), path);
-                return posixLib.shmOpen(context.getPosixSupport(), name, flags, mode);
+                Object name = createCStringFromStringNode.execute(inliningTarget, context.getPosixSupport(), path);
+                return context.getPosixSupport().shmOpen(name, flags, mode);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);
             }
@@ -115,11 +114,11 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         static PNone shmUnlink(VirtualFrame frame, TruffleString path,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                Object name = posixLib.createCStringFromString(context.getPosixSupport(), path);
-                posixLib.shmUnlink(context.getPosixSupport(), name);
+                Object name = createCStringFromStringNode.execute(inliningTarget, context.getPosixSupport(), path);
+                context.getPosixSupport().shmUnlink(name);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);
             }

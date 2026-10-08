@@ -59,8 +59,8 @@ import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRU
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
-import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_POLLFD;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
@@ -78,7 +78,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
@@ -99,36 +98,12 @@ import com.oracle.graal.python.annotations.DowncallSignature;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
-import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.WindowsVersion;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.ArrayUtils;
@@ -139,18 +114,8 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.AbstractTruffleString;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TranscodingErrorHandler;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -164,8 +129,20 @@ import sun.misc.Unsafe;
  * functions store errno in a C thread-local only when the POSIX return value indicates an error. This
  * avoids unconditional FFM call-state capture on the hot POSIX path.
  */
-@ExportLibrary(PosixSupportLibrary.class)
 public final class NativePosixSupport extends PosixSupport {
+    public static final class NativePwdResult extends PwdResult {
+        public final Buffer name;
+        public final Buffer dir;
+        public final Buffer shell;
+
+        public NativePwdResult(Buffer name, long uid, long gid, Buffer dir, Buffer shell) {
+            super(uid, gid);
+            this.name = name;
+            this.dir = dir;
+            this.shell = shell;
+        }
+    }
+
     private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
@@ -715,15 +692,15 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public TruffleString getBackend() {
         return nativeBackend;
     }
 
-    @ExportMessage
-    public TruffleString strerror(int errorCode,
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) {
+    @Override
+    @TruffleBoundary
+    public TruffleString strerror(int errorCode) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
@@ -731,23 +708,28 @@ public final class NativePosixSupport extends PosixSupport {
         try {
             posixNativeFunctionInvoker.call_strerror(errorCode, buf, STRERROR_BUF_LENGTH);
             // TODO PyUnicode_DecodeLocale
-            return zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, buf);
+            TruffleString message = NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(buf);
+            message.toJavaStringUncached();
+            return message;
         } finally {
             NativeMemory.free(buf);
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getpid() {
         return posixNativeFunctionInvoker.call_getpid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int umask(int mask) {
         return posixNativeFunctionInvoker.call_umask(mask);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -761,7 +743,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int close(int fd) throws PosixException {
         final int rv = posixNativeFunctionInvoker.call_close(fd);
         if (rv < 0) {
@@ -770,7 +753,8 @@ public final class NativePosixSupport extends PosixSupport {
         return rv;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Buffer read(int fd, long length) throws PosixException {
         long count = Math.min(length, MAX_READ);
         Buffer buffer = Buffer.allocate(count);
@@ -787,7 +771,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long write(int fd, Buffer data) throws PosixException {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {
@@ -802,12 +787,14 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int getWindowsConsoleType(int fd) {
         return posixNativeFunctionInvoker.call_get_windows_console_type(fd);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long writeWindowsConsole(int fd, Buffer data) throws PosixException {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {
@@ -822,7 +809,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int dup(int fd) throws PosixException {
         int newFd = posixNativeFunctionInvoker.call_dup(fd);
         if (newFd < 0) {
@@ -831,7 +819,8 @@ public final class NativePosixSupport extends PosixSupport {
         return newFd;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int dup2(int fd, int fd2, boolean inheritable) throws PosixException {
         int newFd = posixNativeFunctionInvoker.call_dup2(fd, fd2, inheritable ? 1 : 0);
         if (newFd < 0) {
@@ -840,7 +829,8 @@ public final class NativePosixSupport extends PosixSupport {
         return newFd;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean getInheritable(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.get_inheritable(fd);
         if (result < 0) {
@@ -849,14 +839,16 @@ public final class NativePosixSupport extends PosixSupport {
         return result != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setInheritable(int fd, boolean inheritable) throws PosixException {
         if (posixNativeFunctionInvoker.set_inheritable(fd, inheritable ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getOsfHandle(int fd) throws PosixException {
         long nativeOut = NativeMemory.mallocLongArray(1);
         try {
@@ -869,7 +861,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int openOsfHandle(long handle, int flags) throws PosixException {
         int fd = posixNativeFunctionInvoker.call_open_osfhandle(handle, flags);
         if (fd < 0) {
@@ -878,7 +871,8 @@ public final class NativePosixSupport extends PosixSupport {
         return fd;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int setMode(int fd, int mode) throws PosixException {
         int previousMode = posixNativeFunctionInvoker.call_setmode(fd, mode);
         if (previousMode < 0) {
@@ -887,14 +881,16 @@ public final class NativePosixSupport extends PosixSupport {
         return previousMode;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException {
         if (posixNativeFunctionInvoker.call_msvcrt_locking(fd, mode, nbytes) != 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int[] pipe() throws PosixException {
         int[] fds = new int[2];
         long nativeFds = NativeMemory.mallocIntArray(fds.length);
@@ -909,13 +905,12 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
-                    @Bind Node inliningTarget) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         int largestFD = findMax(readfds, -1);
         largestFD = findMax(writefds, largestFD);
         largestFD = findMax(errorfds, largestFD);
-        LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, (long) readfds.length + writefds.length + errorfds.length));
         // This will be treated as boolean array (output parameter), each item indicating if given
         // FD was selected or not
         byte[] selected = new byte[readfds.length + writefds.length + errorfds.length];
@@ -977,7 +972,8 @@ public final class NativePosixSupport extends PosixSupport {
         return max;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException {
         assert fds.length == events.length && fds.length == revents.length;
         int count = fds.length;
@@ -1008,7 +1004,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long lseek(int fd, long offset, int how) throws PosixException {
         long res = posixNativeFunctionInvoker.call_lseek(fd, offset, how);
         if (res < 0) {
@@ -1017,7 +1014,8 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void ftruncate(int fd, long length) throws PosixException {
         int res = posixNativeFunctionInvoker.call_ftruncate(fd, length);
         if (res != 0) {
@@ -1025,7 +1023,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void truncate(Object path, long length) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1038,7 +1037,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fsync(int fd) throws PosixException {
         int res = posixNativeFunctionInvoker.call_fsync(fd);
         if (res != 0) {
@@ -1046,23 +1046,26 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void flock(int fd, int operation) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void flock(int fd, int operation) throws PosixException {
         int res = posixNativeFunctionInvoker.call_flock(fd, operation);
         if (res != 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException {
         int res = posixNativeFunctionInvoker.call_fcntl_lock(fd, blocking ? 1 : 0, lockType, whence, start, length);
         if (res != 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean getBlocking(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.get_blocking(fd);
         if (result < 0) {
@@ -1071,14 +1074,16 @@ public final class NativePosixSupport extends PosixSupport {
         return result != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setBlocking(int fd, boolean blocking) throws PosixException {
         if (posixNativeFunctionInvoker.set_blocking(fd, blocking ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int[] getTerminalSize(int fd) throws PosixException {
         int[] size = new int[2];
         long nativeSize = NativeMemory.mallocIntArray(size.length);
@@ -1093,7 +1098,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long sysconf(int name) throws PosixException {
         long result = posixNativeFunctionInvoker.call_sysconf(name);
         if (result == Long.MIN_VALUE) {
@@ -1102,7 +1108,8 @@ public final class NativePosixSupport extends PosixSupport {
         return result;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException {
         long[] out = new long[13];
         long nativeOut = NULLPTR;
@@ -1122,7 +1129,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] fstat(int fd) throws PosixException {
         long[] out = new long[13];
         long nativeOut = NativeMemory.mallocLongArray(out.length);
@@ -1138,7 +1146,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] statvfs(Object path) throws PosixException {
         long[] out = new long[11];
         long nativeOut = NULLPTR;
@@ -1158,7 +1167,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] fstatvfs(int fd) throws PosixException {
         long[] out = new long[11];
         long nativeOut = NativeMemory.mallocLongArray(out.length);
@@ -1174,10 +1184,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object[] uname(
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public Object[] uname() throws PosixException {
         long sysPtr = NULLPTR;
         long nodePtr = NULLPTR;
         long relPtr = NULLPTR;
@@ -1195,11 +1204,11 @@ public final class NativePosixSupport extends PosixSupport {
             }
             return new Object[]{
                             // TODO PyUnicode_DecodeFSDefault
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, sysPtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, nodePtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, relPtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, verPtr),
-                            zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, machinePtr)
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(sysPtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(nodePtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(relPtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(verPtr),
+                            NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(machinePtr)
             };
         } finally {
             NativeMemory.free(machinePtr);
@@ -1210,7 +1219,7 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
     @TruffleBoundary
     public WindowsVersion getWindowsVersion() throws PosixException {
         long out = NativeMemory.mallocIntArray(11);
@@ -1231,7 +1240,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void unlinkat(int dirFd, Object pathname, boolean rmdir) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -1244,7 +1254,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException {
         long oldPathPtr = NULLPTR;
         long newPathPtr = NULLPTR;
@@ -1261,7 +1272,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
         long targetPtr = NULLPTR;
         long linkpathPtr = NULLPTR;
@@ -1278,7 +1290,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void mkdirat(int dirFd, Object pathname, int mode) throws PosixException {
         long pathnamePtr = pathToNativeCString(pathname);
         try {
@@ -1291,7 +1304,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object getcwd() throws PosixException {
         for (int bufLen = 1024;; bufLen += 1024) {
             int byteLen = WINDOWS ? bufLen * 2 : bufLen;
@@ -1316,7 +1330,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void chdir(Object path) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1329,7 +1344,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchdir(int fd) throws PosixException {
         int result = posixNativeFunctionInvoker.call_fchdir(fd);
         if (result != 0) {
@@ -1337,12 +1353,14 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean isatty(int fd) {
         return posixNativeFunctionInvoker.call_isatty(fd) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object opendir(Object path) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1356,7 +1374,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object fdopendir(int fd) throws PosixException {
         long ptr = posixNativeFunctionInvoker.call_fdopendir(fd);
         if (ptr == 0) {
@@ -1365,7 +1384,8 @@ public final class NativePosixSupport extends PosixSupport {
         return ptr;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void closedir(Object dirStreamObj) throws PosixException {
         int res = posixNativeFunctionInvoker.call_closedir(((Long) dirStreamObj).longValue());
         if (res != 0) {
@@ -1373,7 +1393,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object readdir(Object dirStreamObj) throws PosixException {
         int nameBufBytes = WINDOWS ? DIRENT_NAME_BUF_LENGTH * 2 : DIRENT_NAME_BUF_LENGTH;
         byte[] name = new byte[nameBufBytes];
@@ -1408,70 +1429,55 @@ public final class NativePosixSupport extends PosixSupport {
         return null;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void rewinddir(Object dirStreamObj) {
-        posixNativeFunctionInvoker.call_rewinddir(((Long) dirStreamObj).longValue());
+        posixNativeFunctionInvoker.call_rewinddir((Long) dirStreamObj);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public Object dirEntryGetName(Object dirEntryObj) {
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         return dirEntry.name;
     }
 
-    @ExportMessage
-    public static class DirEntryGetPath {
-        @Specialization(guards = "endsWithSlash(scandirPath)")
-        static NativePath withSlash(@SuppressWarnings("unused") NativePosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
-            NativePath scandirPathBuffer = (NativePath) scandirPath;
-            int pathLen = scandirPathBuffer.data.length;
-            int nameLen = dirEntry.name.data.length;
-            byte[] buf = new byte[pathLen + nameLen];
-            PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen, nameLen);
-            return createLike(scandirPathBuffer, buf);
+    @Override
+    @TruffleBoundary
+    public Object dirEntryGetPath(Object dirEntryObj, Object scandirPath) {
+        DirEntry dirEntry = (DirEntry) dirEntryObj;
+        NativePath path = (NativePath) scandirPath;
+        int pathLen = path.data.length;
+        int nameLen = dirEntry.name.data.length;
+        boolean wide = path instanceof WidePath;
+        byte last = path.data[pathLen - (wide ? 2 : 1)];
+        boolean hasSlash = last == '/' || last == '\\';
+        int separatorBytes = hasSlash ? 0 : wide ? 2 : 1;
+        byte[] buf = new byte[pathLen + separatorBytes + nameLen];
+        PythonUtils.arraycopy(path.data, 0, buf, 0, pathLen);
+        if (!hasSlash) {
+            buf[pathLen] = (byte) (wide ? '\\' : '/');
         }
-
-        @Specialization(guards = "!endsWithSlash(scandirPath)")
-        static NativePath withoutSlash(@SuppressWarnings("unused") NativePosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
-            NativePath scandirPathBuffer = (NativePath) scandirPath;
-            int pathLen = scandirPathBuffer.data.length;
-            int nameLen = dirEntry.name.data.length;
-            int separatorBytes = scandirPathBuffer instanceof WidePath ? 2 : 1;
-            byte[] buf = new byte[pathLen + separatorBytes + nameLen];
-            PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            buf[pathLen] = (byte) (scandirPathBuffer instanceof WidePath ? '\\' : '/');
-            PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + separatorBytes, nameLen);
-            return createLike(scandirPathBuffer, buf);
-        }
-
-        protected static boolean endsWithSlash(Object path) {
-            NativePath b = (NativePath) path;
-            byte last = b.data[b.data.length - (b instanceof WidePath ? 2 : 1)];
-            return last == '/' || last == '\\';
-        }
-
-        private static NativePath createLike(NativePath path, byte[] data) {
-            return path instanceof WidePath ? new WidePath(data) : new NarrowPath(data);
-        }
+        PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + separatorBytes, nameLen);
+        return wide ? new WidePath(buf) : new NarrowPath(buf);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public long dirEntryGetInode(Object dirEntry) {
         DirEntry entry = (DirEntry) dirEntry;
         return entry.ino;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
+    @Override
+    @TruffleBoundary
     public int dirEntryGetType(Object dirEntryObj) {
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         return dirEntry.type;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException {
         assert PosixConstants.HAVE_UTIMENSAT.value;
         assert timespec == null || timespec.length == 4;
@@ -1490,7 +1496,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void futimens(int fd, long[] timespec) throws PosixException {
         assert PosixConstants.HAVE_FUTIMENS.value;
         assert timespec == null || timespec.length == 4;
@@ -1505,7 +1512,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void futimes(int fd, Timeval[] timeval) throws PosixException {
         assert timeval == null || timeval.length == 2;
         long timevalPtr = copyTimevalArrayToNativeOrNull(timeval);
@@ -1519,7 +1527,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void lutimes(Object filename, Timeval[] timeval) throws PosixException {
         assert timeval == null || timeval.length == 2;
         long filenamePtr = NULLPTR;
@@ -1537,7 +1546,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void utimes(Object filename, Timeval[] timeval) throws PosixException {
         assert timeval == null || timeval.length == 2;
         long filenamePtr = NULLPTR;
@@ -1555,7 +1565,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         long oldPathPtr = NULLPTR;
         long newPathPtr = NULLPTR;
@@ -1572,7 +1583,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
         long oldPathPtr = NULLPTR;
         long newPathPtr = NULLPTR;
@@ -1589,7 +1601,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) {
         long pathPtr = pathToNativeCString(path);
         int ret;
@@ -1599,12 +1612,13 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(pathPtr);
         }
         if (ret != 0 && LOGGER.isLoggable(Level.FINE)) {
-            log(Level.FINE, "faccessat return value: %d, errno: %d", ret, getErrno());
+            LOGGER.fine(String.format("faccessat return value: %d, errno: %d", ret, getErrno()));
         }
         return ret == 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1617,7 +1631,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchmod(int fd, int mode) throws PosixException {
         int ret = posixNativeFunctionInvoker.call_fchmod(fd, mode);
         if (ret != 0) {
@@ -1625,7 +1640,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) throws PosixException {
         long pathPtr = pathToNativeCString(path);
         try {
@@ -1638,7 +1654,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void fchown(int fd, long owner, long group) throws PosixException {
         int ret = posixNativeFunctionInvoker.call_fchown(fd, owner, group);
         if (ret != 0) {
@@ -1646,7 +1663,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object readlinkat(int dirFd, Object path) throws PosixException {
         int bufferBytes = WINDOWS ? PATH_MAX.value * 2 : PATH_MAX.value;
         byte[] buffer = new byte[bufferBytes];
@@ -1670,7 +1688,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void kill(long pid, int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_kill(pid, signal);
         if (res == -1) {
@@ -1678,7 +1697,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void raise(int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_raise(signal);
         if (res != 0) {
@@ -1686,12 +1706,14 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int alarm(int seconds) {
         return posixNativeFunctionInvoker.call_alarm(seconds);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Timeval[] getitimer(int which) throws PosixException {
         long nativeCurrentValue = NativeMemory.mallocLongArray(4);
         try {
@@ -1705,7 +1727,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException {
         long nativeNewValue = NULLPTR;
         long nativeOldValue = NULLPTR;
@@ -1723,7 +1746,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void signalSelf(int signal) throws PosixException {
         if (!ImageInfo.inImageRuntimeCode()) {
             throw new UnsupportedPosixFeatureException("self-signals are only supported in native standalone");
@@ -1734,7 +1758,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void killpg(long pgid, int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_killpg(pgid, signal);
         if (res == -1) {
@@ -1742,9 +1767,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public long[] waitpid(long pid, int options,
-                    @Bind Node node) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long[] waitpid(Node node, long pid, int options) throws PosixException {
         boolean hasNohang = (options & WNOHANG.getValueIfDefined()) != 0;
         int subOptions = options | WNOHANG.getValueIfDefined();
         long nativeStatus = NativeMemory.callocIntArray(1);
@@ -1765,72 +1790,86 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wcoredump(int status) {
         return posixNativeFunctionInvoker.call_wcoredump(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifcontinued(int status) {
         return posixNativeFunctionInvoker.call_wifcontinued(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifstopped(int status) {
         return posixNativeFunctionInvoker.call_wifstopped(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifsignaled(int status) {
         return posixNativeFunctionInvoker.call_wifsignaled(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public boolean wifexited(int status) {
         return posixNativeFunctionInvoker.call_wifexited(status) != 0;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public int wexitstatus(int status) {
         return posixNativeFunctionInvoker.call_wexitstatus(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public int wtermsig(int status) {
         return posixNativeFunctionInvoker.call_wtermsig(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary(allowInlining = true)
     public int wstopsig(int status) {
         return posixNativeFunctionInvoker.call_wstopsig(status);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getuid() {
         return posixNativeFunctionInvoker.call_getuid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long geteuid() {
         return posixNativeFunctionInvoker.call_geteuid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getgid() {
         return posixNativeFunctionInvoker.call_getgid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getegid() {
         return posixNativeFunctionInvoker.call_getegid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getppid() {
         return posixNativeFunctionInvoker.call_getppid();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setpgid(long pid, long pgid) throws PosixException {
         int res = posixNativeFunctionInvoker.call_setpgid(pid, pgid);
         if (res < 0) {
@@ -1838,7 +1877,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getpgid(long pid) throws PosixException {
         long res = posixNativeFunctionInvoker.call_getpgid(pid);
         if (res < 0) {
@@ -1847,12 +1887,14 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getpgrp() {
         return posixNativeFunctionInvoker.call_getpgrp();
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long getsid(long pid) throws PosixException {
         long res = posixNativeFunctionInvoker.call_getsid(pid);
         if (res < 0) {
@@ -1861,7 +1903,8 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long setsid() throws PosixException {
         long res = posixNativeFunctionInvoker.call_setsid();
         if (res < 0) {
@@ -1870,7 +1913,8 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public long[] getgroups() throws PosixException {
         // The first call gets us the number of groups, so we can allocate the output array
         int res = posixNativeFunctionInvoker.call_getgroups(0, NULLPTR);
@@ -1894,7 +1938,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public RusageResult getrusage(int who) throws PosixException {
         long nativeResult = NativeMemory.mallocLongArray(16);
         try {
@@ -1924,7 +1969,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public OpenPtyResult openpty() throws PosixException {
         long nativeOutvars = NativeMemory.mallocIntArray(2);
         try {
@@ -1940,21 +1986,25 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public TruffleString ctermid(
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) {
+    @Override
+    @TruffleBoundary
+    public Buffer ctermid() {
         long nativeBuf = NativeMemory.mallocByteArray(L_ctermid.value);
         try {
             posixNativeFunctionInvoker.call_ctermid(nativeBuf);
-            // TODO PyUnicode_DecodeFSDefault
-            return zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, nativeBuf);
+            int length = 0;
+            while (length < L_ctermid.value && NativeMemory.readByte(nativeBuf + length) != 0) {
+                length++;
+            }
+            byte[] result = NativeMemory.readByteArrayElements(nativeBuf, 0, length);
+            return Buffer.wrap(result);
         } finally {
             NativeMemory.free(nativeBuf);
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setenv(Object name, Object value, boolean overwrite) throws PosixException {
         long namePtr = NULLPTR;
         long valuePtr = NULLPTR;
@@ -1971,7 +2021,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void unsetenv(Object name) throws PosixException {
         long namePtr = opaqueStringToNative(name);
         try {
@@ -1984,10 +2035,10 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork,
-                    @Bind Node inliningTarget) throws PosixException {
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
 
         // The following strings and string arrays need to be present in the native function:
         // - char** of executable names ('\0'-terminated strings with an extra NULL at the end)
@@ -2018,16 +2069,16 @@ public final class NativePosixSupport extends PosixSupport {
 
         try {
             offsetsLen = executables.length + 1;
-            dataLen = addLengthsOfCStrings(inliningTarget, 0, executables);
+            dataLen = addLengthsOfCStrings(0, executables);
 
             argsPos = offsetsLen;
             offsetsLen += args.length + 1;
-            dataLen = addLengthsOfCStrings(inliningTarget, dataLen, args);
+            dataLen = addLengthsOfCStrings(dataLen, args);
 
             if (env != null) {
                 envPos = offsetsLen;
                 offsetsLen += env.length + 1;
-                dataLen = addLengthsOfCStrings(inliningTarget, dataLen, env);
+                dataLen = addLengthsOfCStrings(dataLen, env);
             } else {
                 envPos = -1;
             }
@@ -2099,9 +2150,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public void execv(Object pathname, Object[] args,
-                    @Bind Node inliningTarget) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void execv(Object pathname, Object[] args) throws PosixException {
 
         if (WINDOWS) {
             throw newPosixException(OSErrorEnum.ENOSYS.getNumber());
@@ -2127,7 +2178,7 @@ public final class NativePosixSupport extends PosixSupport {
         try {
             // The +1 can overflow only if the buffer contains 2^63-1 bytes, which is impossible
             // since we are using Java arrays limited to 2^31-1.
-            dataLen = addLengthsOfCStrings(inliningTarget, pathnameLen + 1L, args);
+            dataLen = addLengthsOfCStrings(pathnameLen + 1L, args);
         } catch (OverflowException e) {
             throw newPosixException(OSErrorEnum.E2BIG.getNumber());
         }
@@ -2161,7 +2212,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int system(Object command) {
         long commandPtr = opaqueStringToNative(command);
         try {
@@ -2171,12 +2223,11 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    private static long addLengthsOfCStrings(Node inliningTarget, long prevLen, Object[] src) throws OverflowException {
+    private static long addLengthsOfCStrings(long prevLen, Object[] src) throws OverflowException {
         long len = prevLen;
         for (int i = 0; i < src.length; i++) {
             len = PythonUtils.addExact(len, ((Buffer) src[i]).length);
         }
-        LoopNode.reportLoopCount(inliningTarget, src.length);
         return PythonUtils.addExact(len, src.length);   // add space for terminating '\0'
     }
 
@@ -2211,18 +2262,16 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public Object mmap(Node inliningTarget, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException {
         long tagnamePtr = NULLPTR;
         try {
             if (tagname instanceof TruffleString tagnameString) {
                 tagnamePtr = WINDOWS
-                                ? stringToNativeUTF16CString(tagnameString, switchEncodingNode, copyToByteArrayNode)
-                                : stringToNativeUTF8CString(inliningTarget, tagnameString, switchEncodingNode, isValidNode, copyToByteArrayNode);
+                                ? stringToNativeUTF16CString(tagnameString, TruffleString.SwitchEncodingNode.getUncached(), TruffleString.CopyToByteArrayNode.getUncached())
+                                : stringToNativeUTF8CString(inliningTarget, tagnameString, TruffleString.SwitchEncodingNode.getUncached(), TruffleString.IsValidNode.getUncached(),
+                                                TruffleString.CopyToByteArrayNode.getUncached());
             }
             long address = posixNativeFunctionInvoker.call_mmap(length, prot, flags, fd, offset, tagnamePtr);
             if (address == 0) {
@@ -2234,7 +2283,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public byte mmapReadByte(Object mmap, long index) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2245,7 +2295,8 @@ public final class NativePosixSupport extends PosixSupport {
         return UNSAFE.getByte(handle.pointer + index);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapWriteByte(Object mmap, long index, byte value) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2253,7 +2304,8 @@ public final class NativePosixSupport extends PosixSupport {
         UNSAFE.putByte(handle.pointer + index, value);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2262,7 +2314,8 @@ public final class NativePosixSupport extends PosixSupport {
         return length;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2270,14 +2323,16 @@ public final class NativePosixSupport extends PosixSupport {
         UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, handle.pointer + index, length);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void mmapFlush(Object mmap, long offset, long length) {
         MMapHandle handle = (MMapHandle) mmap;
         checkIndexAndLen(handle, offset, length);
         posixNativeFunctionInvoker.call_msync(handle.pointer, offset, length);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void mmapUnmap(Object mmap, long length) throws PosixException {
         MMapHandle handle = (MMapHandle) mmap;
         if (length != handle.length) {
@@ -2290,7 +2345,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long mmapGetPointer(Object mmap) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2308,7 +2364,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int socket(int domain, int type, int protocol) throws PosixException {
         int result = posixNativeFunctionInvoker.call_socket(domain, type, protocol);
         if (result == -1) {
@@ -2317,7 +2374,8 @@ public final class NativePosixSupport extends PosixSupport {
         return result;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public AcceptResult accept(int sockfd) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         long nativeAddr = NULLPTR;
@@ -2337,7 +2395,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void bind(int sockfd, UniversalSockAddr usa) throws PosixException {
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
         int addrLen = addr.getLen();
@@ -2353,7 +2412,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void connect(int sockfd, UniversalSockAddr usa) throws PosixException {
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
         int addrLen = addr.getLen();
@@ -2369,7 +2429,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void listen(int sockfd, int backlog) throws PosixException {
         int result = posixNativeFunctionInvoker.call_listen(sockfd, backlog);
         if (result == -1) {
@@ -2377,7 +2438,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public UniversalSockAddr getpeername(int sockfd) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         long nativeAddr = NULLPTR;
@@ -2397,7 +2459,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public UniversalSockAddr getsockname(int sockfd) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         long nativeAddr = NULLPTR;
@@ -2417,7 +2480,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkBounds(buf, offset, len);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
@@ -2433,7 +2497,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr usa) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl destAddr = (UniversalSockAddrImpl) usa;
@@ -2456,7 +2521,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkBounds(buf, offset, len);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
@@ -2472,7 +2538,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl srcAddr = new UniversalSockAddrImpl(this);
@@ -2497,7 +2564,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void shutdown(int sockfd, int how) throws PosixException {
         int res = posixNativeFunctionInvoker.call_shutdown(sockfd, how);
         if (res != 0) {
@@ -2505,7 +2573,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         assert optlen >= 0 && optval.length >= optlen;
         long nativeOptval = NULLPTR;
@@ -2532,7 +2601,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         assert optlen >= 0 && optval.length >= optlen;
         long nativeOptval = NULLPTR;
@@ -2547,7 +2617,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int inet_addr(Object src) {
         long srcPtr = bufferToNativeCString((Buffer) src);
         try {
@@ -2557,7 +2628,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int inet_aton(Object src) throws InvalidAddressException {
         long srcPtr = bufferToNativeCString((Buffer) src);
         try {
@@ -2571,7 +2643,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object inet_ntoa(int src) {
         Buffer buf = Buffer.allocate(INET_ADDRSTRLEN.value);
         long nativeBuf = NativeMemory.mallocByteArray(INET_ADDRSTRLEN.value);
@@ -2586,7 +2659,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
         byte[] buf = new byte[family == AF_INET.value ? 4 : 16];
         long srcPtr = NULLPTR;
@@ -2612,7 +2686,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object inet_ntop(int family, byte[] src) throws PosixException {
         if ((family == AF_INET.value && src.length < 4) || (family == AF_INET6.value && src.length < 16)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2636,7 +2711,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public Object gethostname() throws PosixException {
         int maxLen = (HOST_NAME_MAX.defined ? HOST_NAME_MAX.getValueIfDefined() : _POSIX_HOST_NAME_MAX.value) + 1;
         if (maxLen <= 1) {
@@ -2659,10 +2735,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public Object[] getnameinfo(UniversalSockAddr usa, int flags,
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public Object[] getnameinfo(UniversalSockAddr usa, int flags) throws GetAddrInfoException {
         Buffer host = Buffer.allocate(NI_MAXHOST.value);
         Buffer serv = Buffer.allocate(NI_MAXSERV.value);
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
@@ -2675,7 +2750,7 @@ public final class NativePosixSupport extends PosixSupport {
             nativeServ = NativeMemory.mallocByteArray(NI_MAXSERV.value);
             int res = posixNativeFunctionInvoker.call_getnameinfo(nativeAddr, addr.getLen(), nativeHost, NI_MAXHOST.value, nativeServ, NI_MAXSERV.value, flags);
             if (res != 0) {
-                throw new GetAddrInfoException(res, gai_strerror(inliningTarget, res, zeroTerminatedUtf8ToTruffleStringNode));
+                throw new GetAddrInfoException(res, gai_strerror(null, res, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()));
             }
             NativeMemory.readByteArrayElements(nativeHost, 0, host.data, 0, host.data.length);
             NativeMemory.readByteArrayElements(nativeServ, 0, serv.data, 0, serv.data.length);
@@ -2690,10 +2765,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws GetAddrInfoException {
+    @Override
+    @TruffleBoundary
+    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
         long nodePtr = NULLPTR;
         long servicePtr = NULLPTR;
         long nativePtr = NULLPTR;
@@ -2703,7 +2777,7 @@ public final class NativePosixSupport extends PosixSupport {
             nativePtr = NativeMemory.mallocLongArray(1);
             int res = posixNativeFunctionInvoker.call_getaddrinfo(nodePtr, servicePtr, family, sockType, protocol, flags, nativePtr);
             if (res != 0) {
-                throw new GetAddrInfoException(res, gai_strerror(inliningTarget, res, zeroTerminatedUtf8ToTruffleStringNode));
+                throw new GetAddrInfoException(res, gai_strerror(null, res, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()));
             }
             long head = NativeMemory.readLong(nativePtr);
             assert head != 0;     // getaddrinfo should return at least one result
@@ -2827,7 +2901,6 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportLibrary(AddrInfoCursorLibrary.class)
     protected static class AddrInfoCursorImpl implements AddrInfoCursor {
 
         private final NativePosixSupport nativePosixSupport;
@@ -2841,15 +2914,17 @@ public final class NativePosixSupport extends PosixSupport {
             info.update(head, nativePosixSupport);
         }
 
-        @ExportMessage
-        void release() {
+        @Override
+        @TruffleBoundary
+        public void release() {
             checkReleased();
             nativePosixSupport.posixNativeFunctionInvoker.call_freeaddrinfo(head);
             head = 0;
         }
 
-        @ExportMessage
-        boolean next() {
+        @Override
+        @TruffleBoundary
+        public boolean next() {
             checkReleased();
             long nextPtr = info.getNextPtr();
             if (nextPtr == 0) {
@@ -2859,32 +2934,37 @@ public final class NativePosixSupport extends PosixSupport {
             return true;
         }
 
-        @ExportMessage
-        int getFlags() {
+        @Override
+        @TruffleBoundary
+        public int getFlags() {
             checkReleased();
             return info.getFlags();
         }
 
-        @ExportMessage
-        int getFamily() {
+        @Override
+        @TruffleBoundary
+        public int getFamily() {
             checkReleased();
             return info.getFamily();
         }
 
-        @ExportMessage
-        int getSockType() {
+        @Override
+        @TruffleBoundary
+        public int getSockType() {
             checkReleased();
             return info.getSockType();
         }
 
-        @ExportMessage
-        int getProtocol() {
+        @Override
+        @TruffleBoundary
+        public int getProtocol() {
             checkReleased();
             return info.getProtocol();
         }
 
-        @ExportMessage
-        Object getCanonName() {
+        @Override
+        @TruffleBoundary
+        public Object getCanonName() {
             checkReleased();
             long namePtr = info.getCanonNamePtr();
             if (namePtr == 0) {
@@ -2896,8 +2976,9 @@ public final class NativePosixSupport extends PosixSupport {
             return Buffer.wrap(buf);
         }
 
-        @ExportMessage
-        UniversalSockAddr getSockAddr() {
+        @Override
+        @TruffleBoundary
+        public UniversalSockAddr getSockAddr() {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nativePosixSupport);
             PythonUtils.arraycopy(info.socketAddress, 0, addr.data, 0, info.getAddrLen());
             addr.setFamily(info.getAddrFamily());
@@ -2912,8 +2993,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         addr.setFamily(AF_INET.value);
         ARRAY_ACCESSOR_BE.putShort(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT), (short) src.getPort());
@@ -2922,8 +3004,9 @@ public final class NativePosixSupport extends PosixSupport {
         return addr;
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         addr.setFamily(AF_INET6.value);
         ARRAY_ACCESSOR_BE.putShort(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT), (short) src.getPort());
@@ -2935,8 +3018,9 @@ public final class NativePosixSupport extends PosixSupport {
         return addr;
     }
 
-    @ExportMessage
-    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws InvalidUnixSocketPathException {
+    @Override
+    @TruffleBoundary
+    public UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws InvalidUnixSocketPathException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         addr.setFamily(AF_UNIX.value);
         byte[] path = src.getPath();
@@ -2949,7 +3033,6 @@ public final class NativePosixSupport extends PosixSupport {
         return addr;
     }
 
-    @ExportLibrary(UniversalSockAddrLibrary.class)
     protected static class UniversalSockAddrImpl implements UniversalSockAddr {
 
         private final NativePosixSupport nativePosixSupport;
@@ -2961,8 +3044,9 @@ public final class NativePosixSupport extends PosixSupport {
             this.data = new byte[(int) getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
         }
 
-        @ExportMessage
-        int getFamily() {
+        @Override
+        @TruffleBoundary
+        public int getFamily() {
             int offset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
             int size = (int) getConstant(SIZEOF_STRUCT_SOCKADDR_SA_FAMILY);
             if (getLen() >= offset + size) {
@@ -2994,8 +3078,9 @@ public final class NativePosixSupport extends PosixSupport {
             }
         }
 
-        @ExportMessage
-        Inet4SockAddr asInet4SockAddr() {
+        @Override
+        @TruffleBoundary
+        public Inet4SockAddr asInet4SockAddr() {
             if (getFamily() != AF_INET.value) {
                 throw CompilerDirectives.shouldNotReachHere("Only AF_INET socket address can be converted to Inet4SockAddr");
             }
@@ -3007,8 +3092,9 @@ public final class NativePosixSupport extends PosixSupport {
             return new Inet4SockAddr(port, address);
         }
 
-        @ExportMessage
-        Inet6SockAddr asInet6SockAddr() {
+        @Override
+        @TruffleBoundary
+        public Inet6SockAddr asInet6SockAddr() {
             if (getFamily() != AF_INET6.value) {
                 throw CompilerDirectives.shouldNotReachHere("Only AF_INET6 socket address can be converted to Inet6SockAddr");
             }
@@ -3023,8 +3109,9 @@ public final class NativePosixSupport extends PosixSupport {
             return new Inet6SockAddr(port, address, flowInfo, scopeId);
         }
 
-        @ExportMessage
-        UnixSockAddr asUnixSockAddr() {
+        @Override
+        @TruffleBoundary
+        public UnixSockAddr asUnixSockAddr() {
             if (getFamily() != AF_UNIX.value) {
                 throw CompilerDirectives.shouldNotReachHere("Only AF_UNIX socket address can be converted to UnixSockAddr");
             }
@@ -3057,8 +3144,9 @@ public final class NativePosixSupport extends PosixSupport {
 
     }
 
-    @ExportMessage
-    long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             long ptr = posixNativeFunctionInvoker.call_sem_open(namePtr, openFlags, mode, value);
@@ -3071,16 +3159,18 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void semClose(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semClose(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_close(handle);
         if (res < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    void semUnlink(Object name) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semUnlink(Object name) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             int res = posixNativeFunctionInvoker.call_sem_unlink(namePtr);
@@ -3092,8 +3182,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    int shmOpen(Object name, int openFlags, int mode) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public int shmOpen(Object name, int openFlags, int mode) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             int fd = posixNativeFunctionInvoker.call_shm_open(namePtr, openFlags, mode);
@@ -3106,8 +3197,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void shmUnlink(Object name) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void shmUnlink(Object name) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
             int res = posixNativeFunctionInvoker.call_shm_unlink(namePtr);
@@ -3121,8 +3213,9 @@ public final class NativePosixSupport extends PosixSupport {
 
     private static final UnsupportedPosixFeatureException NO_SEM_GETVALUE_EXCEPTION = new UnsupportedPosixFeatureException("sem_getvalue is not available on the current platform");
 
-    @ExportMessage
-    int semGetValue(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public int semGetValue(long handle) throws PosixException {
         /*
          * This works on Linux and is emulated with Windows semaphore APIs as on CPython. It
          * doesn't work on Darwin. It might work on some other Unix-likes, but it's hard to check,
@@ -3143,24 +3236,27 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
-    void semPost(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semPost(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_post(handle);
         if (res < 0) {
             throw getSemPostErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    void semWait(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public void semWait(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_wait(handle);
         if (res < 0) {
             throw getErrnoAndThrowPosixException();
         }
     }
 
-    @ExportMessage
-    boolean semTryWait(long handle) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public boolean semTryWait(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_trywait(handle);
         if (res < 0) {
             int errno = getErrno();
@@ -3172,10 +3268,9 @@ public final class NativePosixSupport extends PosixSupport {
         return true;
     }
 
-    @ExportMessage
-    boolean semTimedWait(long handle, long deadlineNs,
-                    @Bind Node node,
-                    @CachedLibrary("this") PosixSupportLibrary thisLib) throws PosixException {
+    @Override
+    @TruffleBoundary
+    public boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException {
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_LINUX) {
             int res = posixNativeFunctionInvoker.call_sem_timedwait(handle, deadlineNs);
             if (res < 0) {
@@ -3189,7 +3284,7 @@ public final class NativePosixSupport extends PosixSupport {
         } else {
             long deadlineMs = deadlineNs / 1_000_000;
             while (true) {
-                if (thisLib.semTryWait(this, handle)) {
+                if (semTryWait(handle)) {
                     return true;
                 }
                 long currentMs = System.currentTimeMillis();
@@ -3197,49 +3292,47 @@ public final class NativePosixSupport extends PosixSupport {
                     return false;
                 }
                 long delayMs = Math.min(deadlineMs - currentMs, 20);
-                TruffleSafepoint.setBlockedThreadInterruptible(node, Thread::sleep, delayMs);
+                TruffleSafepoint.setBlockedThreadInterruptible(location, Thread::sleep, delayMs);
             }
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult getpwuid(long uid,
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
-        return getpw(uid, NULLPTR, fromByteArrayNode, switchEncodingFromUtf8Node);
+    public NativePwdResult getpwuid(long uid) throws PosixException {
+        return getpw(uid, NULLPTR);
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult getpwnam(Object name,
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+    public NativePwdResult getpwnam(Object name) throws PosixException {
         long namePtr = bufferToNativeCString((Buffer) name);
         try {
-            return getpw(-1, namePtr, fromByteArrayNode, switchEncodingFromUtf8Node);
+            return getpw(-1, namePtr);
         } finally {
             NativeMemory.free(namePtr);
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
     public boolean hasGetpwentries() {
         return true;
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult[] getpwentries(
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+    public NativePwdResult[] getpwentries() throws PosixException {
         // Note: this is not thread safe, so potentially problematic while running multiple contexts
         // within one VM
         int sysConfMax = getSysConfPwdSizeMax();
         int initialBufferSize = sysConfMax == -1 ? 1024 : sysConfMax;
 
-        ArrayList<PwdResult> result = new ArrayList<>();
+        ArrayList<NativePwdResult> result = new ArrayList<>();
         posixNativeFunctionInvoker.call_setpwent();
         long nativeBufferSize = NULLPTR;
         long nativeOutput = NULLPTR;
@@ -3271,7 +3364,7 @@ public final class NativePosixSupport extends PosixSupport {
                 NativeMemory.readByteArrayElements(nativeBuffer, 0, buffer, 0, buffer.length);
                 long[] output = new long[PWD_OUTPUT_LEN];
                 NativeMemory.readLongArrayElements(nativeOutput, 0, output, 0, output.length);
-                result.add(createPwdResult(buffer, output, fromByteArrayNode, switchEncodingFromUtf8Node));
+                result.add(createPwdResult(buffer, output));
             }
         } finally {
             posixNativeFunctionInvoker.call_endpwent();
@@ -3279,16 +3372,10 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(nativeOutput);
             NativeMemory.free(nativeBufferSize);
         }
-        return toPwdResultArray(result);
+        return result.toArray(new NativePwdResult[0]);
     }
 
-    @TruffleBoundary
-    private static PwdResult[] toPwdResultArray(ArrayList<PwdResult> result) {
-        return result.toArray(new PwdResult[0]);
-    }
-
-    private PwdResult getpw(long uid, long namePtr, TruffleString.FromByteArrayNode fromByteArrayNode,
-                    TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+    private NativePwdResult getpw(long uid, long namePtr) throws PosixException {
         int sysConfMax = getSysConfPwdSizeMax();
         int bufferSize = sysConfMax == -1 ? 1024 : sysConfMax;
         while (bufferSize < PWD_BUFFER_MAX_SIZE) {
@@ -3308,7 +3395,7 @@ public final class NativePosixSupport extends PosixSupport {
                     NativeMemory.readByteArrayElements(nativeData, 0, data, 0, data.length);
                     long[] output = new long[PWD_OUTPUT_LEN];
                     NativeMemory.readLongArrayElements(nativeOutput, 0, output, 0, output.length);
-                    return createPwdResult(data, output, fromByteArrayNode, switchEncodingFromUtf8Node);
+                    return createPwdResult(data, output);
                 }
                 if (result != OSErrorEnum.ERANGE.getNumber()) {
                     // CPython treats failed lookups as missing entries, except for ERANGE,
@@ -3324,16 +3411,16 @@ public final class NativePosixSupport extends PosixSupport {
         throw outOfMemoryPosixError();
     }
 
-    private static PwdResult createPwdResult(byte[] data, long[] output, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node)
-                    throws PosixException {
-        return new PwdResult(
-                        extractZeroTerminatedString(data, output[0], fromByteArrayNode, switchEncodingFromUtf8Node),
+    private static NativePwdResult createPwdResult(byte[] data, long[] output) throws PosixException {
+        return new NativePwdResult(
+                        Buffer.wrap(extractZeroTerminatedBytes(data, output[0])),
                         output[1], output[2],
-                        extractZeroTerminatedString(data, output[3], fromByteArrayNode, switchEncodingFromUtf8Node),
-                        extractZeroTerminatedString(data, output[4], fromByteArrayNode, switchEncodingFromUtf8Node));
+                        Buffer.wrap(extractZeroTerminatedBytes(data, output[3])),
+                        Buffer.wrap(extractZeroTerminatedBytes(data, output[4])));
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int ioctlBytes(int fd, long request, byte[] arg) throws PosixException {
         long nativeArg = NULLPTR;
         try {
@@ -3354,7 +3441,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    @ExportMessage
+    @Override
+    @TruffleBoundary
     public int ioctlInt(int fd, long request, int arg) throws PosixException {
         int res = posixNativeFunctionInvoker.call_ioctl_int(fd, request, arg);
         if (res < 0) {
@@ -3363,8 +3451,7 @@ public final class NativePosixSupport extends PosixSupport {
         return res;
     }
 
-    private static TruffleString extractZeroTerminatedString(byte[] buffer, long longOffset, TruffleString.FromByteArrayNode fromByteArrayNode,
-                    TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+    private static byte[] extractZeroTerminatedBytes(byte[] buffer, long longOffset) throws PosixException {
         if (longOffset < 0 || longOffset >= buffer.length) {
             throw outOfMemoryPosixError();
         }
@@ -3374,7 +3461,7 @@ public final class NativePosixSupport extends PosixSupport {
             throw CompilerDirectives.shouldNotReachHere("Could not find the end of the string");
         }
         // TODO PyUnicode_DecodeFSDefault
-        return createString(buffer, offset, end - offset, true, fromByteArrayNode, switchEncodingFromUtf8Node);
+        return PythonUtils.arrayCopyOfRange(buffer, offset, end);
     }
 
     private static PosixException outOfMemoryPosixError() throws PosixException {
@@ -3395,186 +3482,58 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     // ------------------
-    // Path conversions
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object createPathFromString(TruffleString path,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    @Exclusive @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
-        if (WINDOWS) {
-            TruffleString utf16 = switchEncodingNode.execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-            return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
-        }
-        return checkNarrowPath(inliningTarget, encodeFSDefaultNode.execute(null, inliningTarget, path));
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object createPathFromBytes(byte[] path,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        if (WINDOWS) {
-            TruffleString utf8 = fromByteArrayNode.execute(path, UTF_8, true);
-            TruffleString utf16 = switchEncodingNode.execute(utf8, UTF_16LE, windowsPathDecodeErrorHandler(inliningTarget, path));
-            return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
-        }
-        return checkNarrowPath(inliningTarget, path);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public TruffleString getPathAsString(Object path,
-                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-        NativePath result = (NativePath) path;
-        TruffleString encoded = fromByteArrayNode.execute(result.data, 0, result.data.length, result.encoding(), true);
-        if (result instanceof WidePath) {
-            return switchEncodingNode.execute(encoded, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-        }
-        TruffleString utf8 = encoded;
-        if (isValidNode.execute(utf8, UTF_8)) {
-            return switchEncodingNode.execute(utf8, TS_ENCODING);
-        }
-        TranscodingErrorHandler errorHandler = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32
-                        ? TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8
-                        : PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER;
-        return switchEncodingNode.execute(utf8, TS_ENCODING, errorHandler);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Buffer getPathAsBytes(Object path) {
-        NativePath nativePath = (NativePath) path;
-        if (nativePath instanceof NarrowPath) {
-            return Buffer.wrap(nativePath.data);
-        }
-        TruffleString utf16 = TruffleString.fromByteArrayUncached(nativePath.data, UTF_16LE);
-        TruffleString utf8 = utf16.switchEncodingUncached(UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-        InternalByteArray bytes = utf8.getInternalByteArrayUncached(UTF_8);
-        return Buffer.wrap(PythonUtils.arrayCopyOfRange(bytes.getArray(), bytes.getOffset(), bytes.getEnd()));
-    }
-
-    private static TranscodingErrorHandler windowsPathDecodeErrorHandler(Node inliningTarget, byte[] input) {
-        return (AbstractTruffleString sourceString, int byteIndex, int estimatedByteLength, TruffleString.Encoding sourceEncoding,
-                        TruffleString.Encoding targetEncoding) -> {
-            if (byteIndex + 2 < input.length && (input[byteIndex] & 0xff) == 0xed &&
-                            (input[byteIndex + 1] & 0xe0) == 0xa0 && (input[byteIndex + 2] & 0xc0) == 0x80) {
-                int codePoint = ((input[byteIndex] & 0x0f) << 12) | ((input[byteIndex + 1] & 0x3f) << 6) | (input[byteIndex + 2] & 0x3f);
-                return new TranscodingErrorHandler.ReplacementString(TruffleString.fromCodePointUncached(codePoint, UTF_16LE, true), 3);
-            }
-            Object exception = CallNode.executeUncached(PythonBuiltinClassType.UnicodeDecodeError,
-                            PythonUtils.toTruffleStringUncached("utf-8"), PFactory.createBytes(PythonLanguage.get(inliningTarget), input),
-                            byteIndex, Math.min(input.length, byteIndex + Math.max(1, estimatedByteLength)),
-                            PythonUtils.toTruffleStringUncached("invalid UTF-8 path"));
-            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
-        };
-    }
-
-    @ExportMessage
-    public Object createCStringFromString(TruffleString string,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        return checkCString(inliningTarget, getUTF8StringBytes(inliningTarget, string, switchEncodingNode, isValidNode, copyToByteArrayNode));
-    }
-
-    @ExportMessage
-    public Object createCStringFromBytes(byte[] bytes,
-                    @Bind Node inliningTarget) {
-        return checkCString(inliningTarget, bytes);
-    }
-
-    @ExportMessage
-    public Object createWideStringFromString(TruffleString string,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        TruffleString utf16 = switchEncodingNode.execute(string, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-        byte[] bytes = copyToByteArrayNode.execute(utf16, UTF_16LE);
-        return checkWideString(bytes);
-    }
-
-    @ExportMessage
-    public TruffleString getCStringAsString(Object string,
-                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-        if (string instanceof WideString wideString) {
-            TruffleString utf16 = fromByteArrayNode.execute(wideString.data, UTF_16LE, true);
-            return switchEncodingNode.execute(utf16, TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-        }
-        Buffer buffer = (Buffer) string;
-        return createString(buffer.data, 0, (int) buffer.length, true, fromByteArrayNode, switchEncodingNode);
-    }
-
-    @ExportMessage
-    public Buffer getCStringAsBytes(Object string) {
-        if (string instanceof WideString wideString) {
-            TruffleString utf16 = TruffleString.fromByteArrayUncached(wideString.data, UTF_16LE);
-            TruffleString utf8 = utf16.switchEncodingUncached(UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-            InternalByteArray bytes = utf8.getInternalByteArrayUncached(UTF_8);
-            return Buffer.wrap(PythonUtils.arrayCopyOfRange(bytes.getArray(), bytes.getOffset(), bytes.getEnd()));
-        }
-        return (Buffer) string;
-    }
-
-    private static TruffleString createString(byte[] src, int offset, int length, boolean copy, TruffleString.FromByteArrayNode fromByteArrayNode,
-                    TruffleString.SwitchEncodingNode switchEncodingNode) {
-        TruffleString utf8 = fromByteArrayNode.execute(src, offset, length, UTF_8, copy);
-        return switchEncodingNode.execute(utf8, TS_ENCODING);
-    }
-
-    private static byte[] getUTF8StringBytes(Node node, TruffleString str, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.IsValidNode isValidNode,
-                    TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        if (!isValidNode.execute(str, TS_ENCODING)) {
-            throw raiseSurrogatesEncodeError(node, str);
-        }
-        TruffleString utf8 = switchEncodingNode.execute(str, UTF_8);
-        byte[] bytes = new byte[utf8.byteLength(UTF_8)];
-        copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, UTF_8);
-        return bytes;
-    }
+    // Raw representations used by PosixSupportNodes. These methods deliberately do not create or
+    // decode TruffleStrings.
 
     @TruffleBoundary
-    private static PException raiseSurrogatesEncodeError(Node node, TruffleString str) {
-        int byteIndex = TruffleString.ByteIndexOfCodePointSetNode.getUncached().execute(str, 0, str.byteLength(TS_ENCODING), SURROGATE_CODE_POINT_SET);
-        int start = byteIndex < 0 ? 0 : byteIndex / 4;
-        int length = str.codePointLengthUncached(TS_ENCODING);
-        int end = Math.min(start + 1, length);
-        while (end < length) {
-            int codePoint = str.codePointAtIndexUncached(end, TS_ENCODING);
-            if (codePoint < Character.MIN_SURROGATE || codePoint > Character.MAX_SURROGATE) {
-                break;
-            }
-            end++;
-        }
-        Object exception = CallNode.executeUncached(PythonBuiltinClassType.UnicodeEncodeError,
-                        PythonUtils.toTruffleStringUncached("utf-8"), str, start, end,
-                        PythonUtils.toTruffleStringUncached("surrogates not allowed"));
-        return PRaiseNode.raiseExceptionObjectStatic(node, exception);
+    public Object createRawPath(byte[] data, boolean wide) {
+        return wide ? checkWidePath(data) : checkNarrowPath(data);
     }
 
-    private static Buffer checkCString(Node inliningTarget, byte[] path) {
-        for (int i = 0; i < path.length; i++) {
-            if (path[i] == 0) {
-                LoopNode.reportLoopCount(inliningTarget, i);
+    @Override
+    @TruffleBoundary
+    public Object createCStringFromBytes(byte[] bytes) {
+        return checkCString(bytes);
+    }
+
+    public Object createRawWideString(byte[] data) {
+        return checkWideString(data);
+    }
+
+    public byte[] getRawPathData(Object path) {
+        return ((NativePath) path).data;
+    }
+
+    public boolean isWidePath(Object path) {
+        return ((NativePath) path) instanceof WidePath;
+    }
+
+    public byte[] getRawStringData(Object string) {
+        return string instanceof WideString ? ((WideString) string).data : ((Buffer) string).data;
+    }
+
+    public boolean isWideString(Object string) {
+        return string instanceof WideString;
+    }
+
+    public int getRawStringLength(Object string) {
+        return string instanceof WideString ? ((WideString) string).data.length : (int) ((Buffer) string).length;
+    }
+
+    private static Buffer checkCString(byte[] path) {
+        for (byte b : path) {
+            if (b == 0) {
                 return null;
             }
         }
-        LoopNode.reportLoopCount(inliningTarget, path.length);
         // TODO we keep a byte[] provided by the caller, who can potentially change it, making our
         // check for embedded nulls pointless. Maybe we should copy it and while on it, might as
         // well add the terminating null character, avoiding the copy we do later in pathToCString.
         return Buffer.wrap(path);
     }
 
-    private static NarrowPath checkNarrowPath(Node inliningTarget, byte[] path) {
-        return checkCString(inliningTarget, path) == null ? null : new NarrowPath(path);
+    private static NarrowPath checkNarrowPath(byte[] path) {
+        return checkCString(path) == null ? null : new NarrowPath(path);
     }
 
     private static WidePath checkWidePath(byte[] path) {
@@ -3718,7 +3677,7 @@ public final class NativePosixSupport extends PosixSupport {
 
     @TruffleBoundary
     private PosixException newPosixException(int errno, Integer winerror) throws PosixException {
-        throw new PosixErrnoException(errno, strerror(errno, null, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()), winerror);
+        throw new PosixErrnoException(errno, strerror(errno), winerror);
     }
 
     // CPython performs this mapping in PC/errmap.h:winerror_to_errno().
@@ -3929,6 +3888,37 @@ public final class NativePosixSupport extends PosixSupport {
         return NativeMemory.copyToNativeZeroTerminatedByteArray(utf8, 0, utf8.length);
     }
 
+    @TruffleBoundary
+    private static byte[] getUTF8StringBytes(Node node, TruffleString str, TruffleString.SwitchEncodingNode switchEncodingNode,
+                    TruffleString.IsValidNode isValidNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        if (!isValidNode.execute(str, TS_ENCODING)) {
+            throw raiseSurrogatesEncodeError(node, str);
+        }
+        TruffleString utf8 = switchEncodingNode.execute(str, UTF_8);
+        byte[] bytes = new byte[utf8.byteLength(UTF_8)];
+        copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, UTF_8);
+        return bytes;
+    }
+
+    @TruffleBoundary
+    private static PException raiseSurrogatesEncodeError(Node node, TruffleString str) {
+        int byteIndex = TruffleString.ByteIndexOfCodePointSetNode.getUncached().execute(str, 0, str.byteLength(TS_ENCODING), SURROGATE_CODE_POINT_SET);
+        int start = byteIndex < 0 ? 0 : byteIndex / 4;
+        int length = str.codePointLengthUncached(TS_ENCODING);
+        int end = Math.min(start + 1, length);
+        while (end < length) {
+            int codePoint = str.codePointAtIndexUncached(end, TS_ENCODING);
+            if (codePoint < Character.MIN_SURROGATE || codePoint > Character.MAX_SURROGATE) {
+                break;
+            }
+            end++;
+        }
+        Object exception = CallNode.executeUncached(PythonBuiltinClassType.UnicodeEncodeError,
+                        PythonUtils.toTruffleStringUncached("utf-8"), str, start, end,
+                        PythonUtils.toTruffleStringUncached("surrogates not allowed"));
+        return PRaiseNode.raiseExceptionObjectStatic(node, exception);
+    }
+
     private static long stringToNativeUTF16CString(TruffleString input,
                     TruffleString.SwitchEncodingNode switchEncodingNode,
                     TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
@@ -3952,13 +3942,6 @@ public final class NativePosixSupport extends PosixSupport {
         if (offset < 0 || offset + length > buf.length) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
-        }
-    }
-
-    @TruffleBoundary
-    private static void log(Level level, String fmt, Object... args) {
-        if (LOGGER.isLoggable(level)) {
-            LOGGER.log(level, String.format(fmt, args));
         }
     }
 

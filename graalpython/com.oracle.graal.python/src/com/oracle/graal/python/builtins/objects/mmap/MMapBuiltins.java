@@ -65,7 +65,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.MAP_PRIVATE;
 import static com.oracle.graal.python.runtime.PosixConstants.MAP_SHARED;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_WRITE;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.ST_SIZE;
+import static com.oracle.graal.python.runtime.PosixSupport.ST_SIZE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -75,8 +75,8 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -134,8 +134,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
@@ -171,13 +170,13 @@ public final class MMapBuiltins extends PythonBuiltins {
         return MMapBuiltinsFactory.getFactories();
     }
 
-    private static byte[] readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, Object posixSupport, long pos, int len,
+    private static byte[] readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupport posixSupport, long pos, int len,
                     PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
         try {
             assert len > 0;
             assert pos + len <= self.getLength();
             byte[] buffer = new byte[len];
-            posixLib.mmapReadBytes(posixSupport, self.getPosixSupportHandle(), pos, buffer, buffer.length);
+            posixSupport.mmapReadBytes(self.getPosixSupportHandle(), pos, buffer, buffer.length);
             return buffer;
         } catch (PosixException e) {
             throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -215,7 +214,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         Object tagname, Object trackFdArg,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
@@ -272,11 +270,11 @@ public final class MMapBuiltins extends PythonBuiltins {
             // For file mappings we use fstat to validate the length or to initialize the length if
             // it is 0 meaning that we should find it out for the user
             long length = lengthIn;
-            PosixSupport posixSupport1 = PosixSupport.get(inliningTarget);
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             if (fd != ANONYMOUS_FD) {
                 long[] fstatResult = null;
                 try {
-                    fstatResult = posixSupport.fstat(posixSupport1, fd);
+                    fstatResult = posixSupport.fstat(fd);
                 } catch (PosixException ignored) {
                 }
                 if (fstatResult != null && length == 0) {
@@ -302,7 +300,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 // MAP_ANONYMOUS, maybe this can be detected and handled by the POSIX layer
             } else if (mmapArgs.trackFd()) {
                 try {
-                    trackedFd = posixSupport.dup(posixSupport1, fd);
+                    trackedFd = posixSupport.dup(fd);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
@@ -312,11 +310,11 @@ public final class MMapBuiltins extends PythonBuiltins {
 
             Object mmapHandle;
             try {
-                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, fd, offset, mmapTagname);
+                mmapHandle = posixSupport.mmap(inliningTarget, length, prot, flags, fd, offset, mmapTagname);
             } catch (PosixException e) {
                 if (trackedFd != ANONYMOUS_FD) {
                     try {
-                        posixSupport.close(posixSupport1, trackedFd);
+                        posixSupport.close(trackedFd);
                     } catch (PosixException ignored) {
                     }
                 }
@@ -380,12 +378,11 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long len = self.getLength();
             checkBounds(inliningTarget, raiseNode, MMAP_INDEX_OUT_OF_RANGE, index, len);
             try {
-                byte b = posixSupportLib.mmapReadByte(context.getPosixSupport(), self.getPosixSupportHandle(), index);
+                byte b = context.getPosixSupport().mmapReadByte(self.getPosixSupportHandle(), index);
                 // CPython indeed returns bytes object from sq_item, although it returns single byte
                 // value as integer from mp_subscript, see, e.g.: `for i in mmap_object: print(i)`
                 return PFactory.createBytes(context.getLanguage(inliningTarget), new byte[]{b});
@@ -404,7 +401,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Exclusive @Cached InlinedConditionProfile negativeIndexProfile,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyLongAsLongNode asLongNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -413,7 +409,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             long idx = negativeIndexProfile.profile(inliningTarget, i < 0) ? i + len : i;
             checkBounds(inliningTarget, raiseNode, MMAP_INDEX_OUT_OF_RANGE, idx, len);
             try {
-                return posixSupportLib.mmapReadByte(context.getPosixSupport(), self.getPosixSupportHandle(), idx) & 0xFF;
+                return context.getPosixSupport().mmapReadByte(self.getPosixSupportHandle(), idx) & 0xFF;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -423,7 +419,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Exclusive @Cached InlinedConditionProfile emptyProfile,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
@@ -436,7 +431,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 if (emptyProfile.profile(inliningTarget, len == 0)) {
                     return PFactory.createEmptyBytes(context.getLanguage(inliningTarget));
                 }
-                byte[] result = readBytes(frame, inliningTarget, self, posixSupportLib, context.getPosixSupport(), info.start, len, constructAndRaiseNode);
+                byte[] result = readBytes(frame, inliningTarget, self, context.getPosixSupport(), info.start, len, constructAndRaiseNode);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), result);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, e);
@@ -452,7 +447,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static void doSingle(VirtualFrame frame, PMMap self, int index, Object val,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyBytesCheckNode checkNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -475,7 +469,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
             byte b = bufferLib.readByte(val, 0);
             try {
-                posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), index, b);
+                context.getPosixSupport().mmapWriteByte(self.getPosixSupportHandle(), index, b);
             } catch (PosixException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
             }
@@ -490,7 +484,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static void doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object valueObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyIndexCheckNode checkNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -523,7 +516,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_ITEM_VALUE_MUST_BE_IN_RANGE);
             }
             try {
-                posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), idx, (byte) value);
+                context.getPosixSupport().mmapWriteByte(self.getPosixSupportHandle(), idx, (byte) value);
             } catch (PosixException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
             }
@@ -534,7 +527,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static void doSlice(VirtualFrame frame, PMMap self, PSlice slice, Object valueObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
@@ -567,11 +559,11 @@ public final class MMapBuiltins extends PythonBuiltins {
                 if (info.sliceLength > 0) {
                     try {
                         if (step1Profile.profile(inliningTarget, info.step == 1)) {
-                            posixSupportLib.mmapWriteBytes(context.getPosixSupport(), self.getPosixSupportHandle(),
+                            context.getPosixSupport().mmapWriteBytes(self.getPosixSupportHandle(),
                                             info.start, bufferLib.getInternalOrCopiedByteArray(buffer), bufferLen);
                         } else {
                             for (int cur = info.start, i = 0; i < info.sliceLength; cur += info.step, i++) {
-                                posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), cur, bufferLib.readByte(buffer, i));
+                                context.getPosixSupport().mmapWriteByte(self.getPosixSupportHandle(), cur, bufferLib.readByte(buffer, i));
                             }
                             LoopNode.reportLoopCount(inliningTarget, info.sliceLength);
                         }
@@ -625,9 +617,8 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone close(PMMap self,
-                        @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib) {
-            self.close(posixSupportLib, context.getPosixSupport());
+                        @Bind PythonContext context) {
+            self.close(context.getPosixSupport());
             return PNone.NONE;
         }
     }
@@ -650,7 +641,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static long size(VirtualFrame frame, PMMap self,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             if (self.isClosed()) {
@@ -660,7 +650,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 return self.getLength();
             }
             try {
-                return posixSupport.fstat(context.getPosixSupport(), self.getFd())[ST_SIZE];
+                return context.getPosixSupport().fstat(self.getFd())[ST_SIZE];
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -706,14 +696,13 @@ public final class MMapBuiltins extends PythonBuiltins {
         static int readByte(VirtualFrame frame, PMMap self,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             if (self.getPos() >= self.getLength()) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
             }
             try {
-                byte res = posixSupportLib.mmapReadByte(context.getPosixSupport(), self.getPosixSupportHandle(), self.getPos());
+                byte res = context.getPosixSupport().mmapReadByte(self.getPosixSupportHandle(), self.getPos());
                 self.setPos(self.getPos() + 1);
                 return res & 0xFF;
             } catch (PosixException e) {
@@ -732,7 +721,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached InlinedConditionProfile noneProfile,
                         @Cached InlinedConditionProfile emptyProfile,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedConditionProfile negativeProfile,
@@ -759,7 +747,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 return PFactory.createEmptyBytes(context.getLanguage(inliningTarget));
             }
             try {
-                byte[] buffer = MMapBuiltins.readBytes(frame, inliningTarget, self, posixLib, context.getPosixSupport(), self.getPos(), PythonUtils.toIntExact(nread), constructAndRaiseNode);
+                byte[] buffer = MMapBuiltins.readBytes(frame, inliningTarget, self, context.getPosixSupport(), self.getPos(), PythonUtils.toIntExact(nread), constructAndRaiseNode);
                 self.setPos(self.getPos() + buffer.length);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), buffer);
             } catch (OverflowException e) {
@@ -777,7 +765,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         static Object readline(VirtualFrame frame, PMMap self,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // Posix abstraction is leaking here a bit: with read mmapped memory, we'd just read
@@ -788,7 +775,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             int nread;
             outer: while (self.getPos() < self.getLength()) {
                 try {
-                    nread = posixLib.mmapReadBytes(context.getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), buffer, (int) Math.min(self.getRemaining(), buffer.length));
+                    nread = context.getPosixSupport().mmapReadBytes(self.getPosixSupportHandle(), self.getPos(), buffer, (int) Math.min(self.getRemaining(), buffer.length));
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
@@ -822,7 +809,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -834,7 +820,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 if (self.getPos() > self.getLength() || self.getLength() - self.getPos() < dataLen) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
                 }
-                posixLib.mmapWriteBytes(context.getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
+                context.getPosixSupport().mmapWriteBytes(self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
                 self.setPos(self.getPos() + dataLen);
                 return dataLen;
             } catch (PosixException e) {
@@ -911,7 +897,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("subBuffer") PythonBufferAccessLibrary bufferLib,
                         @Cached LongIndexConverterNode startConverter,
                         @Cached LongIndexConverterNode endConverter,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -932,7 +917,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 byte[] firstBuffer = new byte[bufferSize];
                 byte[] secondBuffer = new byte[bufferSize];
 
-                readBytes(frame, inliningTarget, self, posixLib, context.getPosixSupport(), start, secondBuffer, constructAndRaiseNode, raiseNode);
+                readBytes(frame, inliningTarget, self, context.getPosixSupport(), start, secondBuffer, constructAndRaiseNode, raiseNode);
                 for (long selfIdx = start; selfIdx <= end - subLen; selfIdx++, buffersIndex++) {
                     // Make sure that the buffers have enough room for the search
                     if (buffersIndex + subLen > bufferSize * 2) {
@@ -941,7 +926,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         secondBuffer = tmp;
                         buffersIndex -= bufferSize; // move to the tail of the first buffer now
                         long readIndex = selfIdx + subLen - 1;
-                        readBytes(frame, inliningTarget, self, posixLib, context.getPosixSupport(), readIndex, secondBuffer, constructAndRaiseNode, raiseNode);
+                        readBytes(frame, inliningTarget, self, context.getPosixSupport(), readIndex, secondBuffer, constructAndRaiseNode, raiseNode);
                         // It's OK if we read less than buffer size, the outer loop condition
                         // 'selfIdx <= end' and the check in readBytes should cover that we don't
                         // read
@@ -971,12 +956,12 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
         }
 
-        private static void readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, PosixSupport posixSupport, long index, byte[] buffer,
+        private static void readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupport posixSupport, long index, byte[] buffer,
                         PConstructAndRaiseNode.Lazy constructAndRaiseNode, PRaiseNode raiseNode) {
             try {
                 long remaining = self.getLength() - index;
                 int toReadLen = remaining > buffer.length ? buffer.length : (int) remaining;
-                int nread = posixLib.mmapReadBytes(posixSupport, self.getPosixSupportHandle(), index, buffer, toReadLen);
+                int nread = posixSupport.mmapReadBytes(self.getPosixSupportHandle(), index, buffer, toReadLen);
                 if (toReadLen != nread) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
                 }
@@ -1017,7 +1002,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached LongIndexConverterNode sizeConversion,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             long size;
@@ -1035,7 +1019,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
 
             try {
-                posixLib.mmapFlush(context.getPosixSupport(), self.getPosixSupportHandle(), offset, self.getLength());
+                context.getPosixSupport().mmapFlush(self.getPosixSupportHandle(), offset, self.getLength());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1063,8 +1047,6 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         private static class ReleaserRootNode extends RootNode {
-            @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
-
             ReleaserRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
@@ -1072,7 +1054,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 PMMap.MMapRef ref = (PMMap.MMapRef) frame.getArguments()[0];
-                ref.close(posixSupportLibrary, PythonContext.get(this).getPosixSupport());
+                ref.close(PythonContext.get(this).getPosixSupport());
                 return null;
             }
         }

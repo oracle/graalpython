@@ -60,8 +60,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -89,12 +89,11 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         PBytes doit(VirtualFrame frame, int handle, int size,
                         @Bind PythonContext context,
                         @Bind PythonLanguage language,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] buffer = new byte[size];
             try {
-                int received = posixLib.recv(context.getPosixSupport(), handle, buffer, 0, size, 0);
+                int received = context.getPosixSupport().recv(handle, buffer, 0, size, 0);
                 if (received == size) {
                     return PFactory.createBytes(language, buffer);
                 }
@@ -120,14 +119,13 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static int doit(VirtualFrame frame, int handle, Object buffer,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                return posixLib.send(context.getPosixSupport(), handle, bytes, 0, bufferLib.getBufferLength(buffer), 0);
+                return context.getPosixSupport().send(handle, bytes, 0, bufferLib.getBufferLength(buffer), 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
@@ -148,11 +146,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone doit(VirtualFrame frame, int handle,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.close(context.getPosixSupport(), handle);
+                context.getPosixSupport().close(handle);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -171,11 +168,11 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone doit(VirtualFrame frame, TruffleString name,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
+                        @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.semUnlink(posixSupport, posixLib.createCStringFromString(posixSupport, name));
+                posixSupport.semUnlink(createCStringFromStringNode.execute(inliningTarget, posixSupport, name));
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

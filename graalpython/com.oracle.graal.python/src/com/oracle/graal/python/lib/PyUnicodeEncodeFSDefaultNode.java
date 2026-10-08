@@ -49,6 +49,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -66,6 +67,12 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 @GenerateCached(false)
 @GenerateInline
 public abstract class PyUnicodeEncodeFSDefaultNode extends PNodeWithContext {
+
+    @TruffleBoundary
+    public static byte[] executeUncached(TruffleString string) {
+        return PyUnicodeEncodeFSDefaultNodeGen.getUncached().execute(null, null, string);
+    }
+
     public abstract byte[] execute(Frame frame, Node inliningTarget, TruffleString string);
 
     @Specialization

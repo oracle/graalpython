@@ -165,7 +165,6 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -173,7 +172,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -407,7 +405,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 source = builder.build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {
-                ErrorAndMessagePair error = OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached());
+                ErrorAndMessagePair error = OSErrorEnum.fromException(e);
                 String msg = String.format("%s: can't open file '%s': [Errno %d] %s\n", context.getOption(PythonOptions.Executable), inputFilePath, error.oserror.getNumber(), error.message);
                 // CPython uses fprintf(stderr, ...)
                 try {
@@ -630,19 +628,18 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PBytes doString(VirtualFrame frame, Object filenameObj,
+        static PBytes doString(VirtualFrame frame, Object filenameObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                TruffleString filename = castToTruffleStringNode.execute(inliningTarget, filenameObj);
+                String filename = castToStringNode.execute(filenameObj);
                 TruffleFile file = context.getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
             } catch (Exception ex) {
-                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex, eqNode);
+                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
             }
         }
@@ -972,9 +969,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {
         @Specialization
-        TruffleString posixModuleBackend(
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.getBackend(getPosixSupport());
+        TruffleString posixModuleBackend() {
+            return getPosixSupport().getBackend();
         }
     }
 
@@ -1251,7 +1247,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         TruffleString doit(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             TruffleFile tempFile;
             try {
@@ -1259,7 +1254,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), J_GRAALPYTHON_ID, ".hprof");
                 tempFile.delete();
             } catch (IOException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e);
             }
             PythonUtils.dumpHeap(tempFile.getPath());
             return fromJavaStringNode.execute(tempFile.getPath(), TS_ENCODING);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -116,11 +116,10 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         public static void internalInit(PBuffered self, PFileIO raw, int bufferSize, PythonLanguage language,
-                        Object posixSupport,
-                        PosixSupportLibrary posixLib) {
+                        PosixSupport posixSupport) {
             self.setDetached(false);
             self.setRaw(raw, true);
-            BufferedInitNode.internalInit(self, bufferSize, language, posixSupport, posixLib);
+            BufferedInitNode.internalInit(self, bufferSize, language, posixSupport);
             self.resetRead();
             self.setOK(true);
         }

@@ -888,7 +888,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             } catch (ImportException ie) {
                 throw ie.reraise();
             } catch (IOException e) {
-                throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e, TruffleString.EqualNode.getUncached());
+                throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e);
             }
         }
     }

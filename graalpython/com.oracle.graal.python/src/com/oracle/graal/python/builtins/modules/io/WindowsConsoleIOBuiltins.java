@@ -79,9 +79,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.Buffer;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -150,13 +149,12 @@ public final class WindowsConsoleIOBuiltins extends PythonBuiltins {
         @Specialization
         static PNone init(PFileIO self, int file, IONodes.IOMode mode, @SuppressWarnings("unused") boolean closefd, @SuppressWarnings("unused") Object opener,
                         @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @Bind PythonContext context) {
             if (file < 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, NEG_FILE_DESC);
             }
             // We don't release the GIL because CPython doesn't do it
-            int consoleType = posixLib.getWindowsConsoleType(context.getPosixSupport(), file);
+            int consoleType = context.getPosixSupport().getWindowsConsoleType(file);
             if (consoleType == 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CANNOT_OPEN_NON_CONSOLE_FILE);
             }
@@ -179,7 +177,6 @@ public final class WindowsConsoleIOBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
@@ -194,7 +191,7 @@ public final class WindowsConsoleIOBuiltins extends PythonBuiltins {
                 try {
                     gil.release(true);
                     try {
-                        return posixLib.writeWindowsConsole(context.getPosixSupport(), self.getFD(), new Buffer(bytes, length));
+                        return context.getPosixSupport().writeWindowsConsole(self.getFD(), new Buffer(bytes, length));
                     } finally {
                         gil.acquire();
                     }

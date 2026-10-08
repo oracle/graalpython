@@ -254,9 +254,9 @@ public abstract class PyTraceBackPrint {
 
     protected static CharSequence getSourceLine(TruffleString fileName, int lineNo) {
         final PythonContext context = PythonContext.get(null);
-        TruffleFile file = null;
+        TruffleFile file;
         try {
-            file = context.getPublicTruffleFileRelaxed(fileName, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
+            file = context.getPublicTruffleFileRelaxed(fileName.toJavaStringUncached(), PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
         } catch (IllegalArgumentException | SecurityException | UnsupportedOperationException e) {
             return null;
         }

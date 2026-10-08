@@ -72,11 +72,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupport.ChannelNotSelectableException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupport.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -91,7 +90,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -135,7 +133,6 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
         static PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
                         @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile isNotNoneTimeout,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
@@ -167,7 +164,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 try {
                     gil.release(true);
                     try {
-                        result = posixLib.select(PosixSupport.get(inliningTarget), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                        result = PosixSupport.get(inliningTarget).select(readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
                     } finally {
                         gil.acquire();
                     }

@@ -80,8 +80,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -135,11 +134,10 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         synchronized PNone flock(VirtualFrame frame, int fd, int operation,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_FCNTL_FLOCK, fd, operation);
             try {
-                posix.flock(getPosixSupport(), fd, operation);
+                getPosixSupport().flock(fd, operation);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -157,7 +155,6 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         PNone lockf(VirtualFrame frame, int fd, int code, Object lenObj, Object startObj, int whence,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -181,7 +178,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                 len = asLongNode.execute(frame, inliningTarget, lenObj);
             }
             try {
-                posix.fcntlLock(getPosixSupport(), fd, (code & LOCK_NB.value) == 0, lockType, whence, start, len);
+                getPosixSupport().fcntlLock(fd, (code & LOCK_NB.value) == 0, lockType, whence, start, len);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -206,7 +203,6 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor($node)") InteropCallData callData,
@@ -262,7 +258,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                 bufferLib.readIntoByteArray(buffer, 0, ioctlArg, 0, len);
                             }
                             try {
-                                int ret = callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, releaseGil, posixLib, gilNode, constructAndRaiseNode);
+                                int ret = callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, releaseGil, gilNode, constructAndRaiseNode);
                                 if (writable && mutateArg) {
                                     return ret;
                                 } else {
@@ -294,7 +290,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                     }
                     byte[] ioctlArg = new byte[len + 1];
                     copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);
-                    callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, posixLib, gilNode, constructAndRaiseNode);
+                    callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, gilNode, constructAndRaiseNode);
                     return PFactory.createBytes(context.getLanguage(inliningTarget), ioctlArg, len);
                 }
 
@@ -307,7 +303,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
             try {
                 gilNode.release(true);
                 try {
-                    return posixLib.ioctlInt(getPosixSupport(), fd, request, intArg);
+                    return getPosixSupport().ioctlInt(fd, request, intArg);
                 } finally {
                     gilNode.acquire();
                 }
@@ -316,14 +312,14 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private int callIoctlBytes(VirtualFrame frame, Node inliningTarget, int fd, long request, byte[] ioctlArg, boolean releaseGil, PosixSupportLibrary posixLib, GilNode gilNode,
+        private int callIoctlBytes(VirtualFrame frame, Node inliningTarget, int fd, long request, byte[] ioctlArg, boolean releaseGil, GilNode gilNode,
                         PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 if (releaseGil) {
                     gilNode.release(true);
                 }
                 try {
-                    return posixLib.ioctlBytes(getPosixSupport(), fd, request, ioctlArg);
+                    return getPosixSupport().ioctlBytes(fd, request, ioctlArg);
                 } finally {
                     if (releaseGil) {
                         gilNode.acquire();

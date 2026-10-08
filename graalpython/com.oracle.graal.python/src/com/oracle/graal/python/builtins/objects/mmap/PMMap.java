@@ -49,14 +49,13 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.NativePosixSupport;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -85,8 +84,8 @@ public final class PMMap extends PythonObject {
         return ref.getReference();
     }
 
-    void close(PosixSupportLibrary lib, Object posix) {
-        ref.close(lib, posix);
+    void close(PosixSupport posix) {
+        ref.close(posix);
     }
 
     boolean isClosed() {
@@ -146,10 +145,9 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     byte readByte(int byteOffset,
                     @Bind Node inliningTarget,
-                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode) {
         try {
-            return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
+            return PythonContext.get(inliningTarget).getPosixSupport().mmapReadByte(getPosixSupportHandle(), byteOffset);
         } catch (PosixException e) {
             throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
@@ -158,10 +156,9 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     void writeByte(int byteOffset, byte value,
                     @Bind Node inliningTarget,
-                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode) {
         try {
-            posixLib.mmapWriteByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset, value);
+            PythonContext.get(inliningTarget).getPosixSupport().mmapWriteByte(getPosixSupportHandle(), byteOffset, value);
         } catch (PosixException e) {
             throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
@@ -196,7 +193,7 @@ public final class PMMap extends PythonObject {
             return new MMapBuiltins.ReleaseCallback(this);
         }
 
-        void close(PosixSupportLibrary posixLib, Object posixSupport) {
+        void close(PosixSupport posixSupport) {
             if (!markReleased()) {
                 return;
             }
@@ -204,13 +201,13 @@ public final class PMMap extends PythonObject {
             Object handle = getReference();
             if (fd != -1) {
                 try {
-                    posixLib.close(posixSupport, fd);
+                    posixSupport.close(fd);
                 } catch (PosixException e) {
                     // ignored (CPython does not check the return value)
                 }
             }
             try {
-                posixLib.mmapUnmap(posixSupport, handle, length);
+                posixSupport.mmapUnmap(handle, length);
             } catch (PosixException e) {
                 // ignored (CPython does not check the return value)
             }
@@ -224,12 +221,10 @@ public final class PMMap extends PythonObject {
     }
 
     @ExportMessage
-    long getNativePointer(
-                    @Bind Node inliningTarget,
-                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+    long getNativePointer(@Bind Node inliningTarget) {
         try {
-            return posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), getPosixSupportHandle());
-        } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+            return PythonContext.get(inliningTarget).getPosixSupport().mmapGetPointer(getPosixSupportHandle());
+        } catch (PosixSupport.UnsupportedPosixFeatureException e) {
             return NULLPTR;
         }
     }

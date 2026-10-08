@@ -50,11 +50,11 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupport;
+import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
+import com.oracle.graal.python.runtime.PosixSupport.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupport.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.frame.Frame;
@@ -63,27 +63,23 @@ import com.oracle.truffle.api.nodes.Node;
 public class SocketUtils {
     @FunctionalInterface
     public interface SocketFunction<T> {
-        /*
-         * NB: The library and support need to be passed as arguments and shouldn't be taken from
-         * the closure. Otherwise, Truffle has trouble inlining the library call.
-         */
-        T run(PosixSupportLibrary posixLib, Object posixSupport) throws PosixException;
+        T run(PosixSupport posixSupport) throws PosixException;
     }
 
     /**
      * Rough equivalent of CPython's {@code sock_call}. Takes care of calling select for connections
      * with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil,
+    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupport posixSupport, GilNode gil,
                     PSocket socket, SocketFunction<T> function, boolean writing, boolean connect) throws PosixException {
-        return callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket, function, writing, connect, null);
+        return callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixSupport, gil, socket, function, writing, connect, null);
     }
 
     /**
      * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
      * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil,
+    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupport posixSupport, GilNode gil,
                     PSocket socket, SocketFunction<T> function, boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
         TimeoutHelper timeoutHelper = timeoutHelperIn;
         if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
@@ -107,10 +103,10 @@ public class SocketUtils {
                         if (PosixConstants.IS_WIN32) {
                             int[] errorfds = connect ? new int[]{socket.getFd()} : EMPTY_INT_ARRAY;
                             if (writing) {
-                                SelectResult selected = posixLib.select(posixSupport, EMPTY_INT_ARRAY, new int[]{socket.getFd()}, errorfds, selectTimeout);
+                                SelectResult selected = posixSupport.select(EMPTY_INT_ARRAY, new int[]{socket.getFd()}, errorfds, selectTimeout);
                                 ready = selected.getWriteFds()[0] || connect && selected.getErrorFds()[0];
                             } else {
-                                SelectResult selected = posixLib.select(posixSupport, new int[]{socket.getFd()}, EMPTY_INT_ARRAY, errorfds, selectTimeout);
+                                SelectResult selected = posixSupport.select(new int[]{socket.getFd()}, EMPTY_INT_ARRAY, errorfds, selectTimeout);
                                 ready = selected.getReadFds()[0] || connect && selected.getErrorFds()[0];
                             }
                         } else {
@@ -119,7 +115,7 @@ public class SocketUtils {
                                 event |= PosixConstants.POLLERR.getValueIfDefined();
                             }
                             int[] revents = new int[1];
-                            posixLib.poll(posixSupport, new int[]{socket.getFd()}, new int[]{event}, revents, pollTimeout(selectTimeout));
+                            posixSupport.poll(new int[]{socket.getFd()}, new int[]{event}, revents, pollTimeout(selectTimeout));
                             ready = revents[0] != 0;
                         }
                         if (!ready) {
@@ -141,7 +137,7 @@ public class SocketUtils {
                 try {
                     gil.release(true);
                     try {
-                        return function.run(posixLib, posixSupport);
+                        return function.run(posixSupport);
                     } finally {
                         gil.acquire();
                     }

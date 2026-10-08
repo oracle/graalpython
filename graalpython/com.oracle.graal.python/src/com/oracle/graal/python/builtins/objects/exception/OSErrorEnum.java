@@ -247,7 +247,7 @@ public enum OSErrorEnum {
     }
 
     @TruffleBoundary
-    private static OSErrorEnum fromMessage(TruffleString message, TruffleString.EqualNode eqNode) {
+    private static OSErrorEnum fromMessage(TruffleString message) {
         if (message == null) {
             return null;
         }
@@ -255,14 +255,15 @@ public enum OSErrorEnum {
             if (oserror.getMessage() == null) {
                 continue;
             }
-            if (eqNode.execute(message, oserror.getMessage(), TS_ENCODING)) {
+
+            if (message.equalsUncached(oserror.getMessage(), TS_ENCODING)) {
                 return oserror;
             }
             for (TruffleString altMessage : oserror.alternativeMessages) {
                 if (altMessage == null) {
                     continue;
                 }
-                if (eqNode.execute(message, altMessage, TS_ENCODING)) {
+                if (message.equalsUncached(altMessage, TS_ENCODING)) {
                     return oserror;
                 }
             }
@@ -281,7 +282,7 @@ public enum OSErrorEnum {
         return null;
     }
 
-    public static ErrorAndMessagePair fromException(Exception e, TruffleString.EqualNode eqNode) {
+    public static ErrorAndMessagePair fromException(Exception e) {
         if (e instanceof IOException) {
             if (e instanceof NoSuchFileException || e instanceof FileNotFoundException) {
                 return new ErrorAndMessagePair(OSErrorEnum.ENOENT, OSErrorEnum.ENOENT.getMessage());
@@ -305,14 +306,14 @@ public enum OSErrorEnum {
                 // specific error numbers like in the glob module: failing to match the correct
                 // error number of 40 (link loop) breaks that module's code
                 TruffleString reason = getReason((FileSystemException) e);
-                OSErrorEnum oserror = OSErrorEnum.fromMessage(reason, eqNode);
+                OSErrorEnum oserror = OSErrorEnum.fromMessage(reason);
                 if (oserror == null) {
                     return new ErrorAndMessagePair(OSErrorEnum.EIO, reason);
                 } else {
                     return new ErrorAndMessagePair(oserror, oserror.getMessage());
                 }
             } else { // Generic IOException
-                OSErrorEnum oserror = tryFindErrnoFromMessage(e, eqNode);
+                OSErrorEnum oserror = tryFindErrnoFromMessage(e);
                 if (oserror == null) {
                     return new ErrorAndMessagePair(OSErrorEnum.EIO, getMessage(e));
                 } else {
@@ -360,13 +361,13 @@ public enum OSErrorEnum {
     }
 
     @TruffleBoundary
-    private static OSErrorEnum tryFindErrnoFromMessage(Exception e, TruffleString.EqualNode eqNode) {
+    private static OSErrorEnum tryFindErrnoFromMessage(Exception e) {
         String message = e.getMessage();
         Matcher m = ERRNO_PATTERN.matcher(message);
         if (m.find()) {
             return fromNumber(Integer.parseInt(m.group(1)));
         }
-        return OSErrorEnum.fromMessage(toTruffleStringUncached(message), eqNode);
+        return OSErrorEnum.fromMessage(toTruffleStringUncached(message));
     }
 
     @ValueType
