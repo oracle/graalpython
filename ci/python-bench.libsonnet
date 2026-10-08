@@ -260,7 +260,8 @@
             ruby: "==3.1.2",
             papi: "==5.5.1",
         },
-        environment +: environment(self.os, self.arch) + {
+        // Benchmarks may download build dependencies, such as Rust for pydantic-core.
+        environment +: environment(self.os, self.arch) + $.overlay_imports.INTERNET_ACCESS_ENV + {
             BISECT_BENCHMARK_CONFIG: "bisect-benchmark.ini",
             ENABLE_POLYBENCH_HPC: "yes",
             POLYBENCH_HPC_EXTRA_HEADERS: "/cm/shared/apps/papi/papi-5.5.1/include",
