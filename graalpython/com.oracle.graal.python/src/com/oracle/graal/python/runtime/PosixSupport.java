@@ -987,6 +987,9 @@ public abstract class PosixSupport {
     public abstract int msvcrtKbhit() throws PosixException;
 
     @TruffleBoundary
+    public abstract boolean supportsVirtualTerminal();
+
+    @TruffleBoundary
     public abstract int[] pipe() throws PosixException;
 
     @TruffleBoundary

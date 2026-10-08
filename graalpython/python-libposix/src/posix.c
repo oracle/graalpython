@@ -1371,6 +1371,12 @@ GP_EXPORT int32_t call_msvcrt_kbhit(void) {
     return _kbhit();
 }
 
+GP_EXPORT int32_t supports_virtual_terminal(void) {
+    DWORD mode = 0;
+    HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
+    return GetConsoleMode(handle, &mode) && (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+}
+
 GP_EXPORT int32_t call_pipe2(int32_t *pipefd) {
     int result = _pipe(pipefd, 8192, _O_BINARY | _O_NOINHERIT);
     if (result < 0) {
@@ -2630,6 +2636,10 @@ int32_t call_msvcrt_locking(int32_t fd, int32_t mode, int64_t nbytes) {
     errno = ENOSYS;
     capture_errno();
     return -1;
+}
+
+int32_t supports_virtual_terminal(void) {
+    return 0;
 }
 
 int32_t call_msvcrt_kbhit(void) {

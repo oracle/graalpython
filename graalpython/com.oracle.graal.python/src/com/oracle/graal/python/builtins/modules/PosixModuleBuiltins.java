@@ -611,6 +611,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_supports_virtual_terminal", minNumOfPositionalArgs = 0, os = PythonOS.PLATFORM_WIN32)
+    @GenerateNodeFactory
+    abstract static class SupportsVirtualTerminalNode extends PythonBuiltinNode {
+        @Specialization
+        static boolean supportsVirtualTerminal(@Bind PythonContext context) {
+            return context.getPosixSupport().supportsVirtualTerminal();
+        }
+    }
+
     @Builtin(name = "_is_inputhook_installed", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class IsInputHookInstalledNode extends PythonBuiltinNode {

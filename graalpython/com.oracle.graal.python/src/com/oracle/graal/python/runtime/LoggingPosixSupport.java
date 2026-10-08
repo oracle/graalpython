@@ -313,6 +313,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final boolean supportsVirtualTerminal() {
+        logEnter("supportsVirtualTerminal", "");
+        return logExit("supportsVirtualTerminal", "%s", delegate.supportsVirtualTerminal());
+    }
+
+    @Override
+    @TruffleBoundary
     public final int[] pipe() throws PosixException {
         logEnter("pipe", "");
         try {
