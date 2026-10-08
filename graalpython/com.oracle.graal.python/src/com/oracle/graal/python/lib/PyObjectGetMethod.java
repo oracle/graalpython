@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,10 +43,13 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
@@ -110,6 +113,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @Cached GetCachedTpSlotsNode getTypeSlotsNode,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
                     @Cached LookupAttributeInMRONode.Dynamic lookupNode,
+                    @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached CallSlotDescrGet callGetNode,
                     @Cached ReadAttributeFromObjectNode readAttr,
@@ -124,7 +128,7 @@ public abstract class PyObjectGetMethod extends Node {
         TpSlot getMethod = null;
         if (descr != PNone.NO_VALUE) {
             hasDescr.enter(inliningTarget);
-            if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
+            if (isMethodDescriptor(inliningTarget, descr, getClass, getTypeFlagsNode)) {
                 methodFound = true;
             } else {
                 // lookupGet acts as branch profile for this branch
@@ -157,6 +161,18 @@ public abstract class PyObjectGetMethod extends Node {
             return new BoundDescriptor(descr);
         }
         throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+    }
+
+    private static boolean isMethodDescriptor(Node inliningTarget, Object descriptor, GetClassNode getClassNode,
+                    GetTypeFlagsNode getTypeFlagsNode) {
+        if (MaybeBindDescriptorNode.isMethodDescriptor(descriptor)) {
+            return true;
+        }
+        if (descriptor instanceof PythonAbstractNativeObject) {
+            Object descriptorType = getClassNode.execute(inliningTarget, descriptor);
+            return (getTypeFlagsNode.execute(descriptorType) & TypeFlags.METHOD_DESCRIPTOR) != 0;
+        }
+        return false;
     }
 
     @Specialization(guards = "isForeignObject(inliningTarget, isForeignObjectNode, receiver)", limit = "1")

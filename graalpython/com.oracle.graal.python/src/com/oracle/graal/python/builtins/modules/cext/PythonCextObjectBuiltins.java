@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
@@ -65,12 +66,14 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.POINTER_SIZE;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
 import java.lang.ref.Reference;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,6 +91,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -119,6 +124,8 @@ import com.oracle.graal.python.lib.PyObjectGetAIter;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectGetMethod;
+import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
@@ -136,6 +143,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
+import com.oracle.graal.python.nodes.builtins.TupleNodesFactory.GetTupleStorageNodeGen;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -156,6 +165,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -287,6 +297,61 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject, PyObjectPtr}, call = Ignored)
+    static int GraalPyPrivate_Object_VectorcallMethod(long methodNamePtr, long receiverPtr, long argsArray, long nargs, long kwnamesPtr, long resultPointer) {
+        TruffleString methodName = CastToTruffleStringNode.castKnownStringUncached(NativeToPythonInternalNode.executeUncached(methodNamePtr, false));
+        Object receiver = NativeToPythonInternalNode.executeUncached(receiverPtr, false);
+        long resultPointerValue = NULLPTR;
+        try {
+            Object callable = PyObjectGetMethodNodeGen.getUncached().execute(null, null, receiver, methodName);
+            boolean isBound = callable instanceof BoundDescriptor;
+            if (!isBound && callable instanceof PythonAbstractNativeObject) {
+                resultPointerValue = PythonToNativeInternalNode.executeNewRefUncached(callable);
+                return 1;
+            }
+            Object[] args = readArguments(argsArray, (int) nargs, receiver, isBound);
+            if (isBound) {
+                callable = ((BoundDescriptor) callable).descriptor;
+            }
+
+            PKeyword[] keywords;
+            if (kwnamesPtr == NULLPTR) {
+                keywords = PKeyword.EMPTY_KEYWORDS;
+            } else {
+                Object keywordNames = NativeToPythonInternalNode.executeUncached(kwnamesPtr, false);
+                SequenceStorage storage = GetTupleStorageNodeGen.getUncached().execute(null, keywordNames);
+                int kwcount = storage.length();
+                Object[] kwValues = CStructAccess.ReadObjectNode.getUncached().readPyObjectArray(argsArray, kwcount, (int) nargs);
+                keywords = new PKeyword[kwcount];
+                for (int i = 0; i < kwcount; i++) {
+                    TruffleString name = CastToTruffleStringNode.executeUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i));
+                    keywords[i] = new PKeyword(name, kwValues[i]);
+                }
+            }
+            Object result = CallNode.executeUncached(callable, args, keywords);
+            resultPointerValue = PythonToNativeInternalNode.executeNewRefUncached(result);
+            return 0;
+        } catch (CannotCastException e) {
+            // PyVectorcall_NARGS cannot exceed Py_ssize_t, and GraalPy arrays are int-sized.
+            throw CompilerDirectives.shouldNotReachHere(e);
+        } finally {
+            writePtr(resultPointer, resultPointerValue);
+        }
+    }
+
+    private static Object[] readArguments(long argsArray, int nargs,
+                    Object receiver, boolean isBound) {
+        if (isBound) {
+            return CStructAccess.ReadObjectNode.getUncached().readPyObjectArray(argsArray, nargs);
+        }
+        Object[] args = new Object[nargs + 1];
+        args[0] = receiver;
+        for (int i = 0; i < nargs; i++) {
+            args[i + 1] = CStructAccess.ReadObjectNode.getUncached().read(argsArray, i * POINTER_SIZE);
+        }
+        return args;
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Object_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -309,6 +374,8 @@ public abstract class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Direct)
     abstract static class _PyObject_MakeTpCall extends CApi5BuiltinNode {
 
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(_PyObject_MakeTpCall.class);
+
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") long threadState, Object callable, long argsArray, long nargs, Object kwargs,
                         @Cached CStructAccess.ReadObjectNode readNode,
@@ -321,6 +388,9 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             try {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    logCallableType(callable);
+                }
 
                 Object[] args = readNode.readPyObjectArray(argsArray, (int) nargs);
                 PKeyword[] keywords;
@@ -348,6 +418,12 @@ public abstract class PythonCextObjectBuiltins {
                 // Integer.MAX_VALUE arguments.
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
+        }
+
+        @TruffleBoundary
+        private static void logCallableType(Object callable) {
+            Object type = GetClassNode.executeUncached(callable);
+            LOGGER.fine(TypeNodes.GetNameNode.executeUncached(type).toJavaStringUncached());
         }
     }
 
@@ -483,6 +559,32 @@ public abstract class PythonCextObjectBuiltins {
                 return 1;
             } finally {
                 writePtr(resultPointer, result);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObjectAsTruffleString, PyObjectPtr}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_GetMethod extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int getMethod(Object receiver, TruffleString name, long resultPointer,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached PyObjectGetMethod getMethodNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached InlinedConditionProfile isBoundProfile) {
+            long resultPointerValue = NULLPTR;
+            try {
+                Object result = getMethodNode.execute(null, inliningTarget, receiver, name);
+                boolean isBound = isBoundProfile.profile(inliningTarget, result instanceof BoundDescriptor);
+                if (isBound) {
+                    result = ((BoundDescriptor) result).descriptor;
+                }
+                resultPointerValue = toNativeNode.executeNewRef(inliningTarget,
+                                ensureNode.execute(context, result, false));
+                return isBound ? 0 : 1;
+            } finally {
+                writePtr(resultPointer, resultPointerValue);
             }
         }
     }

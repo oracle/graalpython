@@ -254,7 +254,9 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
 
     // TODO(fa): should be an implicit signature
     GCCOLLECT(false, Py_ssize_t, Int),
-    GETDICTPTRFUN(true, Pointer, PyObject);
+    GETDICTPTRFUN(true, Pointer, PyObject),
+    // typedef PyObject *(*vectorcallfunc)(PyObject *, PyObject *const *, size_t, PyObject *);
+    VECTORCALL(false, PyObjectReturn, PyObject, Pointer, Py_ssize_t, PyObject);
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;

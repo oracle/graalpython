@@ -92,6 +92,135 @@ class AttroClass(object):
 
 
 class TestObject(unittest.TestCase):
+    def test_get_method_keeps_method_descriptors_unbound(self):
+        module = compile_module_from_string(
+            """
+            #include <Python.h>
+
+            PyAPI_FUNC(int) _PyObject_GetMethod(PyObject *, PyObject *, PyObject **);
+
+            static PyObject* native_descriptor_call(PyObject* self, PyObject* args, PyObject* kwargs) {
+                if (PyTuple_GET_SIZE(args) != 1 || (kwargs != NULL && PyDict_GET_SIZE(kwargs) != 0)) {
+                    PyErr_SetString(PyExc_TypeError, "expected exactly one positional argument");
+                    return NULL;
+                }
+                return Py_NewRef(PyTuple_GET_ITEM(args, 0));
+            }
+
+            static PyObject* native_descriptor_get(PyObject* self, PyObject* obj, PyObject* type) {
+                if (obj == NULL || obj == Py_None) {
+                    return Py_NewRef(self);
+                }
+                return PyMethod_New(self, obj);
+            }
+
+            static PyTypeObject NativeMethodDescriptor_Type = {
+                PyVarObject_HEAD_INIT(NULL, 0)
+                .tp_name = "test_get_method.NativeMethodDescriptor",
+                .tp_basicsize = sizeof(PyObject),
+                .tp_call = native_descriptor_call,
+                .tp_descr_get = native_descriptor_get,
+                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_METHOD_DESCRIPTOR,
+            };
+
+            static PyObject* get_method(PyObject* self, PyObject* args) {
+                PyObject* obj;
+                PyObject* name;
+                if (!PyArg_ParseTuple(args, "OO:get_method", &obj, &name)) {
+                    return NULL;
+                }
+                PyObject* method = NULL;
+                int is_method = _PyObject_GetMethod(obj, name, &method);
+                if (method == NULL) {
+                    return NULL;
+                }
+                PyObject* result = PyTuple_New(2);
+                if (result == NULL) {
+                    Py_DECREF(method);
+                    return NULL;
+                }
+                PyTuple_SET_ITEM(result, 0, PyBool_FromLong(is_method));
+                PyTuple_SET_ITEM(result, 1, method);
+                return result;
+            }
+
+            static PyMethodDef methods[] = {
+                {"get_method", get_method, METH_VARARGS, NULL},
+                {NULL, NULL, 0, NULL}
+            };
+
+            static struct PyModuleDef module = {
+                PyModuleDef_HEAD_INIT, "test_get_method", NULL, -1, methods
+            };
+
+            PyMODINIT_FUNC PyInit_test_get_method(void) {
+                if (PyType_Ready(&NativeMethodDescriptor_Type) < 0) {
+                    return NULL;
+                }
+                PyObject* m = PyModule_Create(&module);
+                if (m == NULL) {
+                    return NULL;
+                }
+                PyObject* descriptor = NativeMethodDescriptor_Type.tp_alloc(&NativeMethodDescriptor_Type, 0);
+                if (descriptor == NULL || PyModule_AddObject(m, "native_method_descriptor", descriptor) < 0) {
+                    Py_XDECREF(descriptor);
+                    Py_DECREF(m);
+                    return NULL;
+                }
+                return m;
+            }
+            """,
+            "test_get_method",
+        )
+
+        class C:
+            def method(self):
+                return self
+
+        obj = C()
+        is_method, method = module.get_method(obj, "method")
+        assert is_method is True
+        assert method(obj) is obj
+
+        Native = CPyExtType(
+            "GetMethodNative",
+            """
+            static PyObject* get_self(PyObject* self, PyObject* unused) {
+                return Py_NewRef(self);
+            }
+            """,
+            tp_methods='{"get_self", (PyCFunction)get_self, METH_NOARGS, ""}',
+        )
+        native_obj = Native()
+        is_method, method = module.get_method(native_obj, "get_self")
+        assert is_method is True
+        assert method(native_obj) is native_obj
+
+        class WithNativeMethodDescriptor:
+            native_method_descriptor = module.native_method_descriptor
+
+        native_descriptor_obj = WithNativeMethodDescriptor()
+        is_method, method = module.get_method(native_descriptor_obj, "native_method_descriptor")
+        assert is_method is True
+        assert method is module.native_method_descriptor
+        assert method(native_descriptor_obj) is native_descriptor_obj
+        assert native_descriptor_obj.native_method_descriptor() is native_descriptor_obj
+
+        obj.method = lambda: "instance attribute"
+        is_method, method = module.get_method(obj, "method")
+        assert is_method is False
+        assert method() == "instance attribute"
+
+        class WithGetAttribute:
+            def __getattribute__(self, name):
+                if name == "method":
+                    return lambda: "custom getattribute"
+                return object.__getattribute__(self, name)
+
+        is_method, method = module.get_method(WithGetAttribute(), "method")
+        assert is_method is False
+        assert method() == "custom getattribute"
+
     def test_iter_dict_before_getattr_property(self):
         module = compile_module_from_string(
             """

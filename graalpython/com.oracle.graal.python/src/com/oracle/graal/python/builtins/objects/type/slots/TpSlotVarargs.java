@@ -41,11 +41,16 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_flags;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.lang.ref.Reference;
 
@@ -55,9 +60,11 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateNativeArgsTupleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateNativeKwNamesTupleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.EagerTupleState;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
@@ -66,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -99,13 +108,17 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -124,7 +137,9 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class TpSlotVarargs {
@@ -314,16 +329,109 @@ public final class TpSlotVarargs {
         }
     }
 
-    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "<varargs slot>");
+    private static final CApiTiming C_API_TIMING_TP_CALL = CApiTiming.create(true, "tp_call");
+    private static final CApiTiming C_API_TIMING_TP_INIT = CApiTiming.create(true, "tp_init");
+    private static final CApiTiming C_API_TIMING_TP_NEW = CApiTiming.create(true, "tp_new");
+    private static final CApiTiming C_API_TIMING_VECTORCALL = CApiTiming.create(true, "vectorcall");
+
+    @GenerateInline(false)
+    @GenerateUncached
+    abstract static class CallNativeVectorcallNode extends Node {
+
+        abstract Object execute(VirtualFrame frame, Object callable, long vectorcallPointer, Object[] args, PKeyword[] keywords);
+
+        @Specialization
+        static Object callNative(VirtualFrame frame, Object callable, long vectorcallPointer, Object[] args, PKeyword[] keywords,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached CreateNativeKwNamesTupleNode createNativeKwNamesTupleNode,
+                        @Cached ReleaseNativeArgsTupleNode releaseNativeKwNamesTupleNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
+                        @Cached PyObjectCheckFunctionResultNode checkResultNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
+            Object promotedCallable = ensurePythonObjectNode.execute(context, callable, false);
+            Object[] fastcallArgs = new Object[args.length + keywords.length];
+            for (int i = 0; i < args.length; i++) {
+                fastcallArgs[i] = ensurePythonObjectNode.execute(context, args[i], false);
+            }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
+
+            long nativeArgs = NULLPTR;
+            Object[] keywordNames = null;
+            long keywordNamesPtr = NULLPTR;
+            try {
+                if (keywords.length > 0) {
+                    keywordNames = new Object[keywords.length];
+                    for (int i = 0; i < keywords.length; i++) {
+                        keywordNames[i] = keywords[i].getName();
+                        fastcallArgs[args.length + i] = ensurePythonObjectNode.execute(context, keywords[i].getValue(), false);
+                    }
+                    LoopNode.reportLoopCount(inliningTarget, keywordNames.length);
+                    keywordNamesPtr = createNativeKwNamesTupleNode.execute(context, keywordNames);
+                }
+                nativeArgs = createNativeArguments(fastcallArgs, toNativeNode, inliningTarget);
+
+                long nativeResult = invokeVectorcall(frame, vectorcallPointer, context, boundaryCallData, threadState,
+                                toNativeNode.execute(inliningTarget, promotedCallable), nativeArgs, args.length, keywordNamesPtr);
+                return checkResultNode.execute(threadState, T___CALL__, toPythonNode.executeTransferAndRelease(inliningTarget, nativeResult));
+            } finally {
+                if (nativeArgs != NULLPTR) {
+                    NativeMemory.free(nativeArgs);
+                }
+                if (keywordNames != null) {
+                    releaseNativeKwNamesTupleNode.execute(keywordNamesPtr, keywordNames);
+                }
+                Reference.reachabilityFence(promotedCallable);
+                Reference.reachabilityFence(fastcallArgs);
+                Reference.reachabilityFence(keywordNames);
+            }
+        }
+
+        private static long createNativeArguments(Object[] args, PythonToNativeInternalNode toNativeNode, Node inliningTarget) {
+            if (args.length == 0) {
+                return NULLPTR;
+            }
+            long pointer = NativeMemory.mallocPtrArray(args.length);
+            for (int i = 0; i < args.length; i++) {
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(args[i]);
+                NativeMemory.writePtrArrayElement(pointer, i, toNativeNode.execute(inliningTarget, args[i]));
+            }
+            LoopNode.reportLoopCount(inliningTarget, args.length);
+            return pointer;
+        }
+
+        private static long invokeVectorcall(VirtualFrame frame, long vectorcallPointer, PythonContext context, BoundaryCallData boundaryCallData, PythonThreadState threadState,
+                        long callable, long args, long nargs, long keywordNames) {
+            Object state = BoundaryCallContext.enter(frame, threadState, boundaryCallData);
+            CApiTiming.enter();
+            try {
+                return ExternalFunctionInvoker.invokeVECTORCALL(vectorcallPointer, callable, args, nargs, keywordNames);
+            } catch (Throwable exception) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                GilNode.uncachedAcquire();
+                throw CompilerDirectives.shouldNotReachHere(exception);
+            } finally {
+                CApiTiming.exit(C_API_TIMING_VECTORCALL);
+                if (frame != null && threadState.getCaughtException() != null) {
+                    PArguments.setException(frame, threadState.getCaughtException());
+                }
+                BoundaryCallContext.exit(frame, threadState, state);
+            }
+        }
+    }
 
     @GenerateInline(false)
     @GenerateUncached
     abstract static class CallNativeTernaryfuncNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name);
+        abstract Object execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CApiTiming timing);
 
         @Specialization
-        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name,
+        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CApiTiming timing,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
@@ -351,7 +459,7 @@ public final class TpSlotVarargs {
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
-                long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
+                long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, timing, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.execute(inliningTarget, promotedSelf),
                                 argsTuplePtr,
                                 toNativeNode.execute(inliningTarget, kwargsDict));
@@ -419,7 +527,7 @@ public final class TpSlotVarargs {
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
-                int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
+                int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING_TP_INIT, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.execute(inliningTarget, promotedSelf),
                                 argsTuplePtr,
                                 toNativeNode.execute(inliningTarget, kwargsDict));
@@ -512,7 +620,7 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CallNativeTernaryfuncNode callNode) {
             // 'tp_new' slot's C type is actually 'newfunc' but that is compatible to 'ternaryfunc'.
-            return callNode.execute(frame, slot, self, args, keywords, T___NEW__);
+            return callNode.execute(frame, slot, self, args, keywords, T___NEW__, C_API_TIMING_TP_NEW);
         }
     }
 
@@ -535,9 +643,29 @@ public final class TpSlotVarargs {
 
         @Specialization
         @InliningCutoff
-        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached InlinedConditionProfile vectorcallProfile,
+                        @Cached CallNativeVectorcallNode callVectorcallNode,
                         @Cached CallNativeTernaryfuncNode callNode) {
-            return callNode.execute(frame, slot, self, args, keywords, T___CALL__);
+            if (self instanceof PythonNativeObject nativeObject) {
+                long vectorcallPointer = getVectorcallPointer(nativeObject);
+                if (vectorcallProfile.profile(inliningTarget, vectorcallPointer != NULLPTR)) {
+                    return callVectorcallNode.execute(frame, self, vectorcallPointer, args, keywords);
+                }
+            }
+            return callNode.execute(frame, slot, self, args, keywords, T___CALL__, C_API_TIMING_TP_CALL);
+        }
+
+        /** Reads the vectorcall pointer without resolving any native object or its type. */
+        private static long getVectorcallPointer(PythonNativeObject callable) {
+            long callablePtr = callable.getPtr();
+            long obType = CStructAccess.readPtrField(callablePtr, PyObject__ob_type);
+            if ((CStructAccess.readLongField(obType, PyTypeObject__tp_flags) & HAVE_VECTORCALL) == 0) {
+                return NULLPTR;
+            }
+            long vectorcallOffset = CStructAccess.readLongField(obType, PyTypeObject__tp_vectorcall_offset);
+            assert vectorcallOffset > 0;
+            return NativeMemory.readPtr(callablePtr + vectorcallOffset);
         }
     }
 
