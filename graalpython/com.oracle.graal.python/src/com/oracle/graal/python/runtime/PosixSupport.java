@@ -67,6 +67,15 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PosixSupport {
 
+    /*
+     * POSIX operations must have @TruffleBoundary on both their declarations and implementations.
+     * The declaration prevents partial evaluation of unresolved virtual calls and avoids performance
+     * warnings. After devirtualization, partial evaluation sees the concrete implementation, which
+     * needs its own annotation because method annotations are not inherited. TruffleString
+     * conversions that benefit from partial evaluation belong in PosixSupportNodes, outside these
+     * boundaries.
+     */
+
     public static final int ST_MODE = 0;
 
     public static final char POSIX_FILENAME_SEPARATOR = '/';
@@ -121,8 +130,6 @@ public abstract class PosixSupport {
         }
     }
 
-    // region Socket addresses
-
     /**
      * Base class for addresses specific to a particular socket family.
      *
@@ -152,12 +159,16 @@ public abstract class PosixSupport {
      *
      */
     public interface UniversalSockAddr {
+        @TruffleBoundary
         int getFamily();
 
+        @TruffleBoundary
         Inet4SockAddr asInet4SockAddr();
 
+        @TruffleBoundary
         Inet6SockAddr asInet6SockAddr();
 
+        @TruffleBoundary
         UnixSockAddr asUnixSockAddr();
     }
 
@@ -284,8 +295,6 @@ public abstract class PosixSupport {
         }
     }
 
-    // endregion
-
     public static final class AcceptResult {
         public final int socketFd;
         public final UniversalSockAddr sockAddr;
@@ -318,8 +327,6 @@ public abstract class PosixSupport {
         }
     }
 
-    // region Name resolution messages
-
     /**
      * Represents one or more addrinfos returned by {@code getaddrinfo()}.
      *
@@ -329,20 +336,28 @@ public abstract class PosixSupport {
      * {@link #next()} method.
      */
     public interface AddrInfoCursor {
+        @TruffleBoundary
         void release();
 
+        @TruffleBoundary
         boolean next();
 
+        @TruffleBoundary
         int getFlags();
 
+        @TruffleBoundary
         int getFamily();
 
+        @TruffleBoundary
         int getSockType();
 
+        @TruffleBoundary
         int getProtocol();
 
+        @TruffleBoundary
         Object getCanonName();
 
+        @TruffleBoundary
         UniversalSockAddr getSockAddr();
     }
 
@@ -377,8 +392,6 @@ public abstract class PosixSupport {
             return this;
         }
     }
-
-    // endregion
 
     /**
      * Base class for exceptions that originate in the POSIX support layer.
@@ -652,34 +665,46 @@ public abstract class PosixSupport {
         return PythonContext.get(node).getPosixSupport();
     }
 
+    @TruffleBoundary
     public abstract long semOpen(Object name, int openFlags, int mode, int value) throws PosixException;
 
+    @TruffleBoundary
     public final long semOpen(Object name) throws PosixException {
         return semOpen(name, 0, 0, 0);
     }
 
+    @TruffleBoundary
     public abstract void semClose(long handle) throws PosixException;
 
+    @TruffleBoundary
     public abstract void semUnlink(Object name) throws PosixException;
 
+    @TruffleBoundary
     public abstract int shmOpen(Object name, int openFlags, int mode) throws PosixException;
 
+    @TruffleBoundary
     public abstract void shmUnlink(Object name) throws PosixException;
 
+    @TruffleBoundary
     public abstract int semGetValue(long handle) throws PosixException;
 
+    @TruffleBoundary
     public abstract void semPost(long handle) throws PosixException;
 
+    @TruffleBoundary
     public abstract void semWait(long handle) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean semTryWait(long handle) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean semTimedWait(Node location, long handle, long deadlineNs) throws PosixException;
 
     /**
      * Equivalent of POSIX {@code getpwuid_r}. On top of the error codes defined by POSIX, this may
      * also throw {@code ENOMEM}. Returns {@code null} if no matching entry was found.
      */
+    @TruffleBoundary
     public abstract PwdResult getpwuid(long uid) throws PosixException;
 
     /**
@@ -688,236 +713,342 @@ public abstract class PosixSupport {
      *
      * @param name the name encoded the same way as paths
      */
+    @TruffleBoundary
     public abstract PwdResult getpwnam(Object name) throws PosixException;
 
     /**
      * Availability of {@link #getpwentries()}. If {@code false}, then {@link #getpwentries()} will
      * throw {@link UnsupportedPosixFeatureException}.
      */
+    @TruffleBoundary
     public abstract boolean hasGetpwentries();
 
     /**
      * Returns a list of all entries in the password database. Equivalent of using POSIX functions
      * {@code setpwent}, {@code getpwent}, and {@code endpwent}.
      */
+    @TruffleBoundary
     public abstract PwdResult[] getpwentries() throws PosixException;
 
     /** Wraps already-encoded bytes for narrow native APIs without applying a filesystem conversion. */
+    @TruffleBoundary
     public abstract Object createCStringFromBytes(byte[] bytes);
 
+    @TruffleBoundary
     public abstract int socket(int domain, int type, int protocol) throws PosixException;
 
+    @TruffleBoundary
     public abstract AcceptResult accept(int sockfd) throws PosixException;
 
+    @TruffleBoundary
     public abstract void bind(int sockfd, UniversalSockAddr addr) throws PosixException;
 
+    @TruffleBoundary
     public abstract void connect(int sockfd, UniversalSockAddr addr) throws PosixException;
 
+    @TruffleBoundary
     public abstract void listen(int sockfd, int backlog) throws PosixException;
 
+    @TruffleBoundary
     public abstract UniversalSockAddr getpeername(int sockfd) throws PosixException;
 
+    @TruffleBoundary
     public abstract UniversalSockAddr getsockname(int sockfd) throws PosixException;
 
+    @TruffleBoundary
     public abstract int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
+    @TruffleBoundary
     public abstract int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
 
+    @TruffleBoundary
     public abstract int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
     // For STREAM sockets, the returned address will be AF_UNSPEC
+    @TruffleBoundary
     public abstract RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
+    @TruffleBoundary
     public abstract void shutdown(int sockfd, int how) throws PosixException;
 
+    @TruffleBoundary
     public abstract int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
 
+    @TruffleBoundary
     public abstract void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
 
+    @TruffleBoundary
     public abstract int inet_addr(Object src);
 
+    @TruffleBoundary
     public abstract int inet_aton(Object src) throws InvalidAddressException;
 
+    @TruffleBoundary
     public abstract Object inet_ntoa(int address);
 
+    @TruffleBoundary
     public abstract byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException;
 
+    @TruffleBoundary
     public abstract Object inet_ntop(int family, byte[] src) throws PosixException;
 
+    @TruffleBoundary
     public abstract Object gethostname() throws PosixException;
 
+    @TruffleBoundary
     public abstract Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException;
 
     /** The caller must release the returned cursor exactly once. */
+    @TruffleBoundary
     public abstract AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags)
                     throws UnsupportedPosixFeatureException, GetAddrInfoException;
 
+    @TruffleBoundary
     public abstract int ioctlBytes(int fd, long request, byte[] arg) throws PosixException;
 
+    @TruffleBoundary
     public abstract int ioctlInt(int fd, long request, int arg) throws PosixException;
 
+    @TruffleBoundary
     public abstract UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src);
 
+    @TruffleBoundary
     public abstract UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src);
 
+    @TruffleBoundary
     public abstract UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException;
 
+    @TruffleBoundary
     public abstract void raise(int signal) throws PosixException;
 
+    @TruffleBoundary
     public abstract int alarm(int seconds) throws PosixException;
 
+    @TruffleBoundary
     public abstract Timeval[] getitimer(int which) throws PosixException;
 
+    @TruffleBoundary
     public abstract Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException;
 
+    @TruffleBoundary
     public abstract void signalSelf(int signal) throws PosixException;
 
+    @TruffleBoundary
     public abstract void kill(long pid, int signal) throws PosixException;
 
+    @TruffleBoundary
     public abstract void killpg(long pid, int signal) throws PosixException;
 
+    @TruffleBoundary
     public abstract long[] waitpid(Node location, long pid, int options) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean wcoredump(int status);
 
+    @TruffleBoundary
     public abstract boolean wifcontinued(int status);
 
+    @TruffleBoundary
     public abstract boolean wifstopped(int status);
 
+    @TruffleBoundary
     public abstract boolean wifsignaled(int status);
 
+    @TruffleBoundary
     public abstract boolean wifexited(int status);
 
+    @TruffleBoundary
     public abstract int wexitstatus(int status);
 
+    @TruffleBoundary
     public abstract int wtermsig(int status);
 
+    @TruffleBoundary
     public abstract int wstopsig(int status);
 
+    @TruffleBoundary
     public abstract long getuid();
 
+    @TruffleBoundary
     public abstract long geteuid() throws UnsupportedPosixFeatureException;
 
+    @TruffleBoundary
     public abstract long getgid();
 
+    @TruffleBoundary
     public abstract long getegid() throws UnsupportedPosixFeatureException;
 
+    @TruffleBoundary
     public abstract long getppid() throws UnsupportedPosixFeatureException;
 
+    @TruffleBoundary
     public abstract long getpgid(long pid) throws PosixException;
 
+    @TruffleBoundary
     public abstract void setpgid(long pid, long pgid) throws PosixException;
 
+    @TruffleBoundary
     public abstract long getpgrp() throws UnsupportedPosixFeatureException;
 
+    @TruffleBoundary
     public abstract long getsid(long pid) throws PosixException;
 
+    @TruffleBoundary
     public abstract long setsid() throws PosixException;
 
+    @TruffleBoundary
     public abstract long[] getgroups() throws PosixException;
 
+    @TruffleBoundary
     public abstract RusageResult getrusage(int who) throws PosixException;
 
+    @TruffleBoundary
     public abstract OpenPtyResult openpty() throws PosixException;
 
+    @TruffleBoundary
     public abstract Object ctermid() throws PosixException;
 
     // note: this leaks memory in native backend and is not synchronized
+    @TruffleBoundary
     public abstract void setenv(Object name, Object value, boolean overwrite) throws PosixException;
 
+    @TruffleBoundary
     public abstract void unsetenv(Object name) throws PosixException;
 
+    @TruffleBoundary
     public abstract int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
                     int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep,
                     boolean allowVFork) throws PosixException;
 
     // args.length must be > 0
+    @TruffleBoundary
     public abstract void execv(Object pathname, Object[] args) throws PosixException;
 
     // does not throw, because posix does not exactly define the return value
+    @TruffleBoundary
     public abstract int system(Object command);
 
+    @TruffleBoundary
     public abstract Object mmap(Node location, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException;
 
+    @TruffleBoundary
     public abstract byte mmapReadByte(Object mmap, long index) throws PosixException;
 
+    @TruffleBoundary
     public abstract void mmapWriteByte(Object mmap, long index, byte value) throws PosixException;
 
+    @TruffleBoundary
     public abstract int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException;
 
+    @TruffleBoundary
     public abstract void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) throws PosixException;
 
+    @TruffleBoundary
     public abstract void mmapFlush(Object mmap, long offset, long length) throws PosixException;
 
+    @TruffleBoundary
     public abstract void mmapUnmap(Object mmap, long length) throws PosixException;
 
+    @TruffleBoundary
     public abstract long mmapGetPointer(Object mmap) throws UnsupportedPosixFeatureException;
 
+    @TruffleBoundary
     public abstract TruffleString getBackend();
 
+    @TruffleBoundary
     public abstract TruffleString strerror(int errorCode);
 
+    @TruffleBoundary
     public abstract long getpid();
 
+    @TruffleBoundary
     public abstract int umask(int mask) throws PosixException;
 
+    @TruffleBoundary
     public abstract int openat(int dirFd, Object pathname, int flags, int mode) throws PosixException;
 
+    @TruffleBoundary
     public abstract int close(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract long getOsfHandle(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract int openOsfHandle(long handle, int flags) throws PosixException;
 
+    @TruffleBoundary
     public abstract int setMode(int fd, int mode) throws PosixException;
 
+    @TruffleBoundary
     public abstract void msvcrtLocking(int fd, int mode, long nbytes) throws PosixException;
 
+    @TruffleBoundary
     public abstract int[] pipe() throws PosixException;
 
+    @TruffleBoundary
     public abstract SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
 
+    @TruffleBoundary
     public abstract void poll(int[] fds, int[] events, int[] revents, int timeout) throws PosixException;
 
+    @TruffleBoundary
     public abstract long lseek(int fd, long offset, int how) throws PosixException;
 
+    @TruffleBoundary
     public abstract void ftruncate(int fd, long length) throws PosixException;
 
+    @TruffleBoundary
     public abstract void truncate(Object path, long length) throws PosixException;
 
+    @TruffleBoundary
     public abstract void fsync(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract void flock(int fd, int operation) throws PosixException;
 
+    @TruffleBoundary
     public abstract void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean getBlocking(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract void setBlocking(int fd, boolean blocking) throws PosixException;
 
+    @TruffleBoundary
     public abstract int[] getTerminalSize(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract long sysconf(int name) throws PosixException;
 
+    @TruffleBoundary
     public abstract Buffer read(int fd, long length) throws PosixException;
 
+    @TruffleBoundary
     public abstract long write(int fd, Buffer data) throws PosixException;
 
     /** Returns {@code 'r'}, {@code 'w'}, or zero when {@code fd} is not a Windows console. */
+    @TruffleBoundary
     public abstract int getWindowsConsoleType(int fd);
 
+    @TruffleBoundary
     public abstract long writeWindowsConsole(int fd, Buffer data) throws PosixException;
 
+    @TruffleBoundary
     public abstract int dup(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract int dup2(int fd, int fd2, boolean inheritable) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean getInheritable(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract void setInheritable(int fd, boolean inheritable) throws PosixException;
 
     // see stat_struct_to_longs in posix.c for the layout of the array
+    @TruffleBoundary
     public abstract long[] fstatat(int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
 
     /**
@@ -928,12 +1059,16 @@ public abstract class PosixSupport {
      *         constants for some of the indices, e.g., {@link #ST_MODE}.
      * @throws PosixException if an error occurs
      */
+    @TruffleBoundary
     public abstract long[] fstat(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract long[] statvfs(Object path) throws PosixException;
 
+    @TruffleBoundary
     public abstract long[] fstatvfs(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract Object[] uname() throws PosixException;
 
     public record WindowsVersion(int major, int minor, int build, int platform, TruffleString servicePack,
@@ -942,72 +1077,103 @@ public abstract class PosixSupport {
     }
 
     /** Returns the Windows version and product information. */
+    @TruffleBoundary
     public abstract WindowsVersion getWindowsVersion() throws PosixException;
 
+    @TruffleBoundary
     public abstract void unlinkat(int dirFd, Object pathname, boolean rmdir) throws PosixException;
 
+    @TruffleBoundary
     public abstract void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;
 
+    @TruffleBoundary
     public abstract void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException;
 
+    @TruffleBoundary
     public abstract void mkdirat(int dirFd, Object pathname, int mode) throws PosixException;
 
+    @TruffleBoundary
     public abstract Object getcwd() throws PosixException;
 
+    @TruffleBoundary
     public abstract void chdir(Object path) throws PosixException;
 
+    @TruffleBoundary
     public abstract void fchdir(int fd) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean isatty(int fd);
 
     /** Caller is responsible for closing the returned directory stream with {@link #closedir(Object)}. */
+    @TruffleBoundary
     public abstract Object opendir(Object path) throws PosixException;
 
+    @TruffleBoundary
     public abstract Object fdopendir(int fd) throws PosixException;
 
     /** Implementations must deal with this being called more than once. */
+    @TruffleBoundary
     public abstract void closedir(Object dirStream) throws PosixException;
 
     /** Returns null when there are no more entries or the stream has been closed. */
+    @TruffleBoundary
     public abstract Object readdir(Object dirStream) throws PosixException;
 
+    @TruffleBoundary
     public abstract void rewinddir(Object dirStream);
 
     /** Returns an opaque directory-entry name suitable for path conversion. */
+    @TruffleBoundary
     public abstract Object dirEntryGetName(Object dirEntry) throws PosixException;
 
     /** Returns the entry name joined to the path originally passed to {@link #opendir(Object)}. */
+    @TruffleBoundary
     public abstract Object dirEntryGetPath(Object dirEntry, Object scandirPath) throws PosixException;
 
+    @TruffleBoundary
     public abstract long dirEntryGetInode(Object dirEntry) throws PosixException;
 
+    @TruffleBoundary
     public abstract int dirEntryGetType(Object dirEntry);
 
     /** The timespec contains access seconds/nanoseconds, then modification seconds/nanoseconds, or is null for now. */
+    @TruffleBoundary
     public abstract void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
 
+    @TruffleBoundary
     public abstract void futimens(int fd, long[] timespec) throws PosixException;
 
     /** The timeval is null or contains access and modification times. */
+    @TruffleBoundary
     public abstract void futimes(int fd, Timeval[] timeval) throws PosixException;
 
+    @TruffleBoundary
     public abstract void lutimes(Object filename, Timeval[] timeval) throws PosixException;
 
+    @TruffleBoundary
     public abstract void utimes(Object filename, Timeval[] timeval) throws PosixException;
 
+    @TruffleBoundary
     public abstract void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
+    @TruffleBoundary
     public abstract void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
+    @TruffleBoundary
     public abstract boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException;
 
+    @TruffleBoundary
     public abstract void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
 
+    @TruffleBoundary
     public abstract void fchmod(int fd, int mode) throws PosixException;
 
+    @TruffleBoundary
     public abstract void fchownat(int dirFd, Object pathname, long owner, long group, boolean followSymlinks) throws PosixException;
 
+    @TruffleBoundary
     public abstract void fchown(int fd, long owner, long group) throws PosixException;
 
+    @TruffleBoundary
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
 }

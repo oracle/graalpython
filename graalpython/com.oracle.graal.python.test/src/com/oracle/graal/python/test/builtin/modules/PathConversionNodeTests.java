@@ -93,7 +93,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
         org.junit.Assume.assumeTrue(backendName.equals("java") || !IS_WINDOWS);
         PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
         PosixSupport posixSupport = PythonContext.get(null).getPosixSupport();
-        pathToString = p -> PosixSupportNodes.getPathAsString(null, posixSupport, p.value).toJavaStringUncached();
+        pathToString = p -> PosixSupportNodes.GetPathAsStringNode.executeUncached(posixSupport, p.value).toJavaStringUncached();
     }
 
     @After

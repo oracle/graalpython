@@ -1070,11 +1070,11 @@ public class SocketTests {
     }
 
     private Object s2p(String s) {
-        return PosixSupportNodes.createCStringFromString(posixSupport, toTruffleStringUncached(s));
+        return PosixSupportNodes.CreateCStringFromStringNode.executeUncached(posixSupport, toTruffleStringUncached(s));
     }
 
     private String p2s(Object p) {
-        return PosixSupportNodes.getCStringAsString(posixSupport, p).toJavaStringUncached();
+        return PosixSupportNodes.GetCStringAsStringNode.executeUncached(posixSupport, p).toJavaStringUncached();
     }
 
     private static void expectErrno(ThrowingRunnable runnable, OSErrorEnum... expectedErrorCodes) {

@@ -359,11 +359,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                     Object k;
                     Object v;
                     if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                        k = PosixSupportNodes.createWideStringFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
-                        v = PosixSupportNodes.createWideStringFromString(posixSupport, value);
+                        k = PosixSupportNodes.CreateWideStringFromStringNode.executeUncached(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
+                        v = PosixSupportNodes.CreateWideStringFromStringNode.executeUncached(posixSupport, value);
                     } else {
-                        k = PosixSupportNodes.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
-                        v = PosixSupportNodes.createPathFromString(posixSupport, value);
+                        k = PosixSupportNodes.CreatePathFromStringNode.executeUncached(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
+                        v = PosixSupportNodes.CreatePathFromStringNode.executeUncached(posixSupport, value);
                     }
                     posixSupport.setenv(k, v, true);
                 } catch (PosixException ignored) {

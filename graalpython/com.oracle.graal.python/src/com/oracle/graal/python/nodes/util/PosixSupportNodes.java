@@ -73,6 +73,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -93,26 +95,6 @@ public final class PosixSupportNodes {
     private PosixSupportNodes() {
     }
 
-    public static Object createPathFromString(PosixSupport posixSupport, TruffleString path) {
-        return CreatePathFromStringNodeGen.getUncached().execute(null, null, posixSupport, path);
-    }
-
-    public static TruffleString getPathAsString(Node inliningTarget, PosixSupport posixSupport, Object path) {
-        return GetPathAsStringNodeGen.getUncached().execute(inliningTarget, posixSupport, path);
-    }
-
-    public static Object createCStringFromString(PosixSupport posixSupport, TruffleString string) {
-        return CreateCStringFromStringNodeGen.getUncached().execute(null, posixSupport, string);
-    }
-
-    public static Object createWideStringFromString(PosixSupport posixSupport, TruffleString string) {
-        return CreateWideStringFromStringNodeGen.getUncached().execute(null, posixSupport, string);
-    }
-
-    public static TruffleString getCStringAsString(PosixSupport posixSupport, Object string) {
-        return GetCStringAsStringNodeGen.getUncached().execute(null, posixSupport, string);
-    }
-
     @TruffleBoundary
     private static String newStringFromUTF8(byte[] utf8Bytes) {
         return new String(utf8Bytes, StandardCharsets.UTF_8);
@@ -120,31 +102,41 @@ public final class PosixSupportNodes {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
+    @ImportStatic(PosixSupportNodes.class)
     public abstract static class CreatePathFromStringNode extends PNodeWithContext {
         public abstract Object execute(Frame frame, Node inliningTarget, PosixSupport posixSupport, TruffleString path);
 
-        @Specialization
-        static Object doNative(Frame frame, Node inliningTarget, NativePosixSupport posixSupport, TruffleString path,
+        @TruffleBoundary
+        public static Object executeUncached(PosixSupport posixSupport, TruffleString path) {
+            return CreatePathFromStringNodeGen.getUncached().execute(null, null, posixSupport, path);
+        }
+
+        @Specialization(guards = "isWindows()")
+        static Object doNativeWindows(@SuppressWarnings("unused") Frame frame, @SuppressWarnings("unused") Node inliningTarget,
+                        NativePosixSupport posixSupport, TruffleString path,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            TruffleString utf16 = switchEncodingNode.execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            return posixSupport.createRawPath(copyToByteArrayNode.execute(utf16, UTF_16LE), true);
+        }
+
+        @Specialization(guards = "!isWindows()")
+        static Object doNativePosix(Frame frame, Node inliningTarget, NativePosixSupport posixSupport, TruffleString path,
                         @Shared @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
-            if (isWindows()) {
-                TruffleString utf16 = switchEncodingNode.execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-                return posixSupport.createRawPath(copyToByteArrayNode.execute(utf16, UTF_16LE), true);
-            }
             return posixSupport.createRawPath(encodeFSDefaultNode.execute(frame, inliningTarget, path), false);
         }
 
-        @Specialization
-        static Object doEmulated(Frame frame, Node inliningTarget, EmulatedPosixSupport posixSupport, TruffleString path,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+        @Specialization(guards = "isWindows()")
+        static Object doEmulatedWindows(@SuppressWarnings("unused") Frame frame, @SuppressWarnings("unused") Node inliningTarget,
+                        EmulatedPosixSupport posixSupport, TruffleString path,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return posixSupport.createRawPath(toJavaStringNode.execute(path));
+        }
+
+        @Specialization(guards = "!isWindows()")
+        static Object doEmulatedPosix(Frame frame, Node inliningTarget, EmulatedPosixSupport posixSupport, TruffleString path,
                         @Shared @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
-            String javaPath;
-            if (isWindows()) {
-                javaPath = toJavaStringNode.execute(path);
-            } else {
-                javaPath = PosixSupportNodes.newStringFromUTF8(encodeFSDefaultNode.execute(frame, inliningTarget, path));
-            }
+            String javaPath = PosixSupportNodes.newStringFromUTF8(encodeFSDefaultNode.execute(frame, inliningTarget, path));
             return posixSupport.createRawPath(javaPath);
         }
 
@@ -164,17 +156,20 @@ public final class PosixSupportNodes {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
+    @ImportStatic(PosixSupportNodes.class)
     public abstract static class CreatePathFromBytesNode extends PNodeWithContext {
         public abstract Object execute(Node inliningTarget, PosixSupport posixSupport, byte[] path);
 
-        @Specialization
-        static Object doNative(Node inliningTarget, NativePosixSupport posixSupport, byte[] path,
+        @Specialization(guards = "!isWindows()")
+        static Object doNativePosix(@SuppressWarnings("unused") Node inliningTarget, NativePosixSupport posixSupport, byte[] path) {
+            return posixSupport.createRawPath(path, false);
+        }
+
+        @Specialization(guards = "isWindows()")
+        static Object doNativeWindows(Node inliningTarget, NativePosixSupport posixSupport, byte[] path,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            if (!isWindows()) {
-                return posixSupport.createRawPath(path, false);
-            }
             TruffleString utf8 = fromByteArrayNode.execute(path, UTF_8, true);
             TruffleString utf16 = switchEncodingNode.execute(utf8, UTF_16LE, windowsPathDecodeErrorHandler(inliningTarget, path));
             return posixSupport.createRawPath(copyToByteArrayNode.execute(utf16, UTF_16LE), true);
@@ -202,20 +197,32 @@ public final class PosixSupportNodes {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
+    @ImportStatic(PosixSupportNodes.class)
     public abstract static class GetPathAsStringNode extends PNodeWithContext {
         public abstract TruffleString execute(Node inliningTarget, PosixSupport posixSupport, Object path);
 
-        @Specialization
-        static TruffleString doNative(@SuppressWarnings("unused") Node inliningTarget,
+        @TruffleBoundary
+        public static TruffleString executeUncached(PosixSupport posixSupport, Object path) {
+            return GetPathAsStringNodeGen.getUncached().execute(null, posixSupport, path);
+        }
+
+        @Specialization(guards = "isWindows()")
+        static TruffleString doNativeWindows(@SuppressWarnings("unused") Node inliningTarget,
                         NativePosixSupport posixSupport, Object path,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            byte[] data = posixSupport.getRawPathData(path);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(data, UTF_16LE, true), TS_ENCODING,
+                            TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+        }
+
+        @Specialization(guards = "!isWindows()")
+        static TruffleString doNativePosix(@SuppressWarnings("unused") Node inliningTarget,
+                        NativePosixSupport posixSupport, Object path,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.IsValidNode isValidNode) {
             byte[] data = posixSupport.getRawPathData(path);
-            if (posixSupport.isWidePath(path)) {
-                return switchEncodingNode.execute(fromByteArrayNode.execute(data, UTF_16LE, true), TS_ENCODING,
-                                TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
-            }
             return decodeFilesystemString(data, data.length, fromByteArrayNode, switchEncodingNode, isValidNode);
         }
 
@@ -241,19 +248,23 @@ public final class PosixSupportNodes {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
+    @ImportStatic(PosixSupportNodes.class)
     public abstract static class GetPathAsBytesNode extends PNodeWithContext {
         public abstract Buffer execute(Node inliningTarget, PosixSupport posixSupport, Object path);
 
-        @Specialization
-        static Buffer doNative(@SuppressWarnings("unused") Node inliningTarget,
+        @Specialization(guards = "!isWindows()")
+        static Buffer doNativePosix(@SuppressWarnings("unused") Node inliningTarget,
+                        NativePosixSupport posixSupport, Object path) {
+            return Buffer.wrap(posixSupport.getRawPathData(path));
+        }
+
+        @Specialization(guards = "isWindows()")
+        static Buffer doNativeWindows(@SuppressWarnings("unused") Node inliningTarget,
                         NativePosixSupport posixSupport, Object path,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             byte[] data = posixSupport.getRawPathData(path);
-            if (!posixSupport.isWidePath(path)) {
-                return Buffer.wrap(data);
-            }
             TruffleString utf16 = fromByteArrayNode.execute(data, UTF_16LE, true);
             TruffleString utf8 = switchEncodingNode.execute(utf16, UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             return Buffer.wrap(copyToByteArrayNode.execute(utf8, UTF_8));
@@ -284,6 +295,11 @@ public final class PosixSupportNodes {
     @GenerateInline(inlineByDefault = true)
     public abstract static class CreateCStringFromStringNode extends PNodeWithContext {
         public abstract Object execute(Node inliningTarget, PosixSupport posixSupport, TruffleString string);
+
+        @TruffleBoundary
+        public static Object executeUncached(PosixSupport posixSupport, TruffleString string) {
+            return CreateCStringFromStringNodeGen.getUncached().execute(null, posixSupport, string);
+        }
 
         @Specialization
         static Object doNative(Node inliningTarget, NativePosixSupport posixSupport, TruffleString string,
@@ -319,6 +335,11 @@ public final class PosixSupportNodes {
     public abstract static class CreateWideStringFromStringNode extends PNodeWithContext {
         public abstract Object execute(Node inliningTarget, PosixSupport posixSupport, TruffleString string);
 
+        @TruffleBoundary
+        public static Object executeUncached(PosixSupport posixSupport, TruffleString string) {
+            return CreateWideStringFromStringNodeGen.getUncached().execute(null, posixSupport, string);
+        }
+
         @Specialization
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget,
                         NativePosixSupport posixSupport, TruffleString string,
@@ -353,6 +374,11 @@ public final class PosixSupportNodes {
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetCStringAsStringNode extends PNodeWithContext {
         public abstract TruffleString execute(Node inliningTarget, PosixSupport posixSupport, Object string);
+
+        @TruffleBoundary
+        public static TruffleString executeUncached(PosixSupport posixSupport, Object string) {
+            return GetCStringAsStringNodeGen.getUncached().execute(null, posixSupport, string);
+        }
 
         @Specialization
         static TruffleString doNative(@SuppressWarnings("unused") Node inliningTarget,
@@ -392,16 +418,19 @@ public final class PosixSupportNodes {
     public abstract static class GetCStringAsBytesNode extends PNodeWithContext {
         public abstract Buffer execute(Node inliningTarget, PosixSupport posixSupport, Object string);
 
-        @Specialization
-        static Buffer doNative(@SuppressWarnings("unused") Node inliningTarget,
+        @Specialization(guards = "!posixSupport.isWideString(string)")
+        static Buffer doNativeNarrow(@SuppressWarnings("unused") Node inliningTarget,
+                        @SuppressWarnings("unused") NativePosixSupport posixSupport, Object string) {
+            return (Buffer) string;
+        }
+
+        @Specialization(guards = "posixSupport.isWideString(string)")
+        static Buffer doNativeWide(@SuppressWarnings("unused") Node inliningTarget,
                         NativePosixSupport posixSupport, Object string,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             byte[] data = posixSupport.getRawStringData(string);
-            if (!posixSupport.isWideString(string)) {
-                return (Buffer) string;
-            }
             TruffleString utf16 = fromByteArrayNode.execute(data, UTF_16LE, true);
             TruffleString utf8 = switchEncodingNode.execute(utf16, UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             return Buffer.wrap(copyToByteArrayNode.execute(utf8, UTF_8));
@@ -463,7 +492,8 @@ public final class PosixSupportNodes {
         }
     }
 
-    private static boolean isWindows() {
+    @Idempotent
+    static boolean isWindows() {
         return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;
     }
 
