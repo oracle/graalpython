@@ -1318,6 +1318,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 storage = setHashingStorageItem(frame, storage, key, value);
             }
 
+            LoopNode.reportLoopCount(this, (j - i) / 2);
             self.stack.clear(i);
             pDataPush(self, PFactory.createDict(PythonLanguage.get(this), storage));
         }
@@ -1821,6 +1822,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
             }
 
+            LoopNode.reportLoopCount(this, (len - x) / 2);
             self.stack.clear(x);
         }
 

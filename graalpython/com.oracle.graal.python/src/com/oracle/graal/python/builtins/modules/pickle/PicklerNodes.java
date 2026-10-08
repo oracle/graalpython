@@ -642,6 +642,7 @@ public final class PicklerNodes {
                 parts++;
                 start = dot + 1;
             }
+            LoopNode.reportLoopCount(this, parts - 2 + (start < length ? 1 : 0));
             TruffleString[] dottedPath = new TruffleString[parts];
             TruffleString.SubstringNode substring = ensureTsSubstringNode();
             start = 0;
@@ -650,6 +651,7 @@ public final class PicklerNodes {
                 dottedPath[part++] = substring.execute(name, start, dot - start, TS_ENCODING, false);
                 start = dot + 1;
             }
+            LoopNode.reportLoopCount(this, part);
             dottedPath[part] = substring.execute(name, start, length - start, TS_ENCODING, false);
             return dottedPath;
         }

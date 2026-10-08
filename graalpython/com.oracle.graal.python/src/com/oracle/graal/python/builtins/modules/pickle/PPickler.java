@@ -137,6 +137,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1953,6 +1954,7 @@ public class PPickler extends PythonBuiltinObject {
                 }
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             } while (total < storage.length());
+            LoopNode.reportLoopCount(this, total);
         }
 
         private void batchIntList(VirtualFrame frame, PPickler pickler, IntSequenceStorage storage) {
@@ -1972,8 +1974,10 @@ public class PPickler extends PythonBuiltinObject {
                     opcodeBoundary(frame, pickler);
                     saveLong(pickler, proto, storage.getIntItemNormalized(i));
                 }
+                LoopNode.reportLoopCount(this, batchEnd - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
+            LoopNode.reportLoopCount(this, length / PickleUtils.BATCHSIZE + (length % PickleUtils.BATCHSIZE == 0 ? 0 : 1));
         }
 
         private void batchLongList(VirtualFrame frame, PPickler pickler, LongSequenceStorage storage) {
@@ -1993,8 +1997,10 @@ public class PPickler extends PythonBuiltinObject {
                     opcodeBoundary(frame, pickler);
                     saveLong(pickler, proto, storage.getLongItemNormalized(i));
                 }
+                LoopNode.reportLoopCount(this, batchEnd - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
+            LoopNode.reportLoopCount(this, length / PickleUtils.BATCHSIZE + (length % PickleUtils.BATCHSIZE == 0 ? 0 : 1));
         }
 
         private void batchDoubleList(VirtualFrame frame, PPickler pickler, DoubleSequenceStorage storage) {
@@ -2014,8 +2020,10 @@ public class PPickler extends PythonBuiltinObject {
                     opcodeBoundary(frame, pickler);
                     saveFloat(pickler, proto, storage.getDoubleItemNormalized(i));
                 }
+                LoopNode.reportLoopCount(this, batchEnd - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
+            LoopNode.reportLoopCount(this, length / PickleUtils.BATCHSIZE + (length % PickleUtils.BATCHSIZE == 0 ? 0 : 1));
         }
 
         private void batchList(VirtualFrame frame, PPickler pickler, int proto, Object iterator) {
@@ -2079,6 +2087,7 @@ public class PPickler extends PythonBuiltinObject {
             for (int i = 0; i < len; i++) {
                 saveTupleElement(frame, pickler, getItem(storage, i));
             }
+            LoopNode.reportLoopCount(this, len);
         }
 
         private void storeIntTupleElements(VirtualFrame frame, PPickler pickler, IntSequenceStorage storage) {
@@ -2087,6 +2096,7 @@ public class PPickler extends PythonBuiltinObject {
                 opcodeBoundary(frame, pickler);
                 saveLong(pickler, proto, storage.getIntItemNormalized(i));
             }
+            LoopNode.reportLoopCount(this, storage.length());
         }
 
         private void storeLongTupleElements(VirtualFrame frame, PPickler pickler, LongSequenceStorage storage) {
@@ -2095,6 +2105,7 @@ public class PPickler extends PythonBuiltinObject {
                 opcodeBoundary(frame, pickler);
                 saveLong(pickler, proto, storage.getLongItemNormalized(i));
             }
+            LoopNode.reportLoopCount(this, storage.length());
         }
 
         private void storeDoubleTupleElements(VirtualFrame frame, PPickler pickler, DoubleSequenceStorage storage) {
@@ -2103,6 +2114,7 @@ public class PPickler extends PythonBuiltinObject {
                 opcodeBoundary(frame, pickler);
                 saveFloat(pickler, proto, storage.getDoubleItemNormalized(i));
             }
+            LoopNode.reportLoopCount(this, storage.length());
         }
 
         private void saveTuple(VirtualFrame frame, PPickler pickler, int proto, boolean fastMode, PTuple obj) {
