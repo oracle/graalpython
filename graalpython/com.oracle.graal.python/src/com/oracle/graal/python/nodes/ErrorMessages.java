@@ -1628,6 +1628,15 @@ public abstract class ErrorMessages {
     public static final TruffleString DECIMAL_INFINITY_TO_INTEGER = tsLiteral("cannot convert Infinity to integer");
     public static final TruffleString DECIMAL_NAN_TO_INTEGER = tsLiteral("cannot convert NaN to integer");
     public static final TruffleString DECIMAL_SNAN_TO_FLOAT = tsLiteral("cannot convert signaling NaN to float");
+    public static final TruffleString DECIMAL_SNAN_HASH = tsLiteral("Cannot hash a signaling NaN value");
+    public static final TruffleString DECIMAL_INTEGER_ARGUMENT = tsLiteral("argument must be an integer");
+    public static final TruffleString DECIMAL_FORMAT_N_DEPRECATED = tsLiteral("Format specifier 'N' is deprecated and slated for removal in Python 3.18");
+    public static final TruffleString DECIMAL_ROUND_DIGITS = tsLiteral("optional arg must be an integer");
+    public static final TruffleString DECIMAL_FORMAT_STRING = tsLiteral("format arg must be str");
+    public static final TruffleString DECIMAL_FORMAT_DICT = tsLiteral("optional argument must be a dict");
+    public static final TruffleString DECIMAL_FORMAT_OVERRIDE = tsLiteral("invalid override dict");
+    public static final TruffleString DECIMAL_FORMAT_INVALID = tsLiteral("invalid format string");
+    public static final TruffleString DECIMAL_FORMAT_LIMITS = tsLiteral("format specification exceeds internal limits of _decimal");
     public static final TruffleString DECIMAL_INVALID_LOCALCONTEXT_KEYWORD = tsLiteral("'%s' is an invalid keyword argument for this function");
 
     // re module errors

@@ -60,6 +60,8 @@ public final class DecimalModuleState {
     private final PythonClass decimalTupleType;
     private final PythonClass signalDictType;
 
+    private Object rationalType;
+
     private PDecimalContext defaultContext;
     private PDecimalContext basicContext;
     private PDecimalContext extendedContext;
@@ -81,6 +83,14 @@ public final class DecimalModuleState {
 
     public PythonClass getSignalDictType() {
         return signalDictType;
+    }
+
+    public Object getRationalType() {
+        return rationalType;
+    }
+
+    public void setRationalType(Object rationalType) {
+        this.rationalType = rationalType;
     }
 
     public void initializeContexts(PythonLanguage language) {

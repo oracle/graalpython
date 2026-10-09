@@ -65,6 +65,7 @@ public final class PDecimal extends PythonBuiltinObject {
     private final Kind kind;
     private final long compactCoefficient;
     private final BigInteger largeCoefficient;
+    private long hash = -1;
 
     public PDecimal(Object cls, Shape instanceShape, long value) {
         super(cls, instanceShape);
@@ -90,6 +91,7 @@ public final class PDecimal extends PythonBuiltinObject {
         largeCoefficient = null;
     }
 
+    @TruffleBoundary
     public PDecimal(Object cls, Shape instanceShape, boolean negative, BigInteger coefficient, long exponent, Kind kind) {
         super(cls, instanceShape);
         assert coefficient.signum() >= 0;
@@ -113,6 +115,15 @@ public final class PDecimal extends PythonBuiltinObject {
         kind = value.kind;
         compactCoefficient = value.compactCoefficient;
         largeCoefficient = value.largeCoefficient;
+    }
+
+    public long getHash() {
+        return hash;
+    }
+
+    public void setHash(long hash) {
+        assert hash != -1;
+        this.hash = hash;
     }
 
     public boolean isNegative() {

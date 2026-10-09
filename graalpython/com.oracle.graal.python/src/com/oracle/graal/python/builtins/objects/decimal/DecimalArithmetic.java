@@ -818,6 +818,148 @@ final class DecimalArithmetic {
         return a.exponent() + digits(difference) - 1 - (adjusted == 0 ? 2 : 1);
     }
 
+    /** Context-free rescaling used by integer conversions and formatting. */
+    @TruffleBoundary
+    static Value rescale(Value operand, long exponent, DecimalRounding rounding) {
+        BigInteger coefficient = operand.coefficient();
+        long shift = operand.exponent() - exponent;
+        if (coefficient.signum() == 0) {
+            return finite(operand.negative(), coefficient, exponent);
+        }
+        if (shift >= 0) {
+            return finite(operand.negative(), coefficient.multiply(pow10(shift)), exponent);
+        }
+        BigInteger quotient;
+        BigInteger remainder;
+        BigInteger divisor;
+        if (-shift > digits(coefficient)) {
+            // Preserve the direction of rounding without allocating 10**(-shift).
+            quotient = BigInteger.ZERO;
+            remainder = BigInteger.ONE;
+            divisor = BigInteger.TEN;
+        } else {
+            divisor = pow10(-shift);
+            BigInteger[] parts = coefficient.divideAndRemainder(divisor);
+            quotient = parts[0];
+            remainder = parts[1];
+        }
+        DecimalArithmetic work = new DecimalArithmetic(1, 0, 0, rounding, 0);
+        if (work.increment(operand.negative(), quotient, remainder, divisor)) {
+            quotient = quotient.add(BigInteger.ONE);
+        }
+        return finite(operand.negative(), quotient, exponent);
+    }
+
+    @TruffleBoundary
+    static BigInteger toInteger(PDecimal decimal, DecimalRounding rounding) {
+        if (decimal.getExponent() >= 0) {
+            return toInteger(decimal);
+        }
+        Value rounded = rescale(value(decimal), 0, rounding);
+        if (rounded.negative()) {
+            return rounded.coefficient().negate();
+        }
+        return rounded.coefficient();
+    }
+
+    @TruffleBoundary
+    static Result quantize(PDecimal decimal, long exponent, PDecimalContext context, DecimalRounding rounding) {
+        DecimalArithmetic work = new DecimalArithmetic(context.getPrecision(), context.getEmin(), context.getEmax(), rounding, context.getClamp());
+        Value operand = value(decimal);
+        Value result = work.checkNaNs(operand);
+        if (result == null) {
+            result = work.quantize(operand, exponent);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result quantize(PDecimal decimal, PDecimal quantum, PDecimalContext context, DecimalRounding rounding) {
+        DecimalArithmetic work = new DecimalArithmetic(context.getPrecision(), context.getEmin(), context.getEmax(), rounding, context.getClamp());
+        Value operand = value(decimal);
+        Value exp = value(quantum);
+        Value result = work.checkNaNs(operand, exp);
+        if (result == null) {
+            if (operand.kind() == Kind.INFINITY && exp.kind() == Kind.INFINITY) {
+                result = operand;
+            } else if (exp.kind() == Kind.INFINITY) {
+                result = work.invalid(INVALID);
+            } else {
+                result = work.quantize(operand, exp.exponent());
+            }
+        }
+        return new Result(result, work.status);
+    }
+
+    private Value quantize(Value operand, long exponent) {
+        long etiny = emin - precision + 1;
+        if (operand.kind() == Kind.INFINITY || exponent < etiny || exponent > emax ||
+                        !isZero(operand) && (adjusted(operand) > emax || adjusted(operand) - exponent + 1 > precision)) {
+            return invalid(INVALID);
+        }
+        Value result = rescale(operand, exponent, rounding);
+        if (digits(result.coefficient()) > precision || adjusted(result) > emax) {
+            return invalid(INVALID);
+        }
+        if (!isZero(operand) && exponent > operand.exponent()) {
+            status |= ROUNDED;
+            if (compare(operand, result) != 0) {
+                status |= INEXACT;
+            }
+        }
+        if (!isZero(result) && adjusted(result) < emin) {
+            status |= SUBNORMAL;
+        }
+        return finish(result);
+    }
+
+    /** Compare non-NaN values without constructing powers for widely separated exponents. */
+    @TruffleBoundary
+    static int compare(Value a, Value b) {
+        boolean azero = isZero(a);
+        boolean bzero = isZero(b);
+        if (azero && bzero) {
+            return 0;
+        }
+        if (a.negative() != b.negative()) {
+            return a.negative() ? -1 : 1;
+        }
+        int magnitude;
+        if (a.kind() == Kind.INFINITY || b.kind() == Kind.INFINITY) {
+            if (a.kind() == b.kind()) {
+                magnitude = 0;
+            } else if (a.kind() == Kind.INFINITY) {
+                magnitude = 1;
+            } else {
+                magnitude = -1;
+            }
+        } else if (azero || bzero) {
+            magnitude = azero ? -1 : 1;
+        } else {
+            magnitude = Long.compare(adjusted(a), adjusted(b));
+            if (magnitude == 0) {
+                String adigits = a.coefficient().toString();
+                String bdigits = b.coefficient().toString();
+                int length = Math.max(adigits.length(), bdigits.length());
+                for (int i = 0; i < length; i++) {
+                    char ac = '0';
+                    if (i < adigits.length()) {
+                        ac = adigits.charAt(i);
+                    }
+                    char bc = '0';
+                    if (i < bdigits.length()) {
+                        bc = bdigits.charAt(i);
+                    }
+                    if (ac != bc) {
+                        magnitude = Character.compare(ac, bc);
+                        break;
+                    }
+                }
+            }
+        }
+        return a.negative() ? -magnitude : magnitude;
+    }
+
     @TruffleBoundary
     static BigInteger toInteger(PDecimal decimal) {
         BigInteger coefficient = decimal.getCoefficient();

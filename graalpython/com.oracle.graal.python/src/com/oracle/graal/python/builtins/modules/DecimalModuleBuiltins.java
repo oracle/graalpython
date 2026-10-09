@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -89,6 +90,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_decimal")
 public final class DecimalModuleBuiltins extends PythonBuiltins {
+    private static final TruffleString T_NUMBERS = tsLiteral("numbers");
+    private static final TruffleString T_NUMBER = tsLiteral("Number");
+    private static final TruffleString T_RATIONAL = tsLiteral("Rational");
+    private static final TruffleString T_REGISTER = tsLiteral("register");
+    private static final TruffleString T_VERSION = tsLiteral("1.70");
+    private static final TruffleString T_LIBMPDEC_VERSION = tsLiteral("2.5.1");
     private static final TruffleString T_DECIMAL_TUPLE = tsLiteral("DecimalTuple");
     private static final TruffleString T_DECIMAL_TUPLE_FIELDS = tsLiteral("sign digits exponent");
     private static final TruffleString T_SIGNAL_DICT = tsLiteral("SignalDict");
@@ -124,8 +131,8 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("HAVE_CONTEXTVAR", true);
 
         // Even _pydecimal exports these constants, despite not being based on libmpdec, so we should do that too
-        addBuiltinConstant("__version__", tsLiteral("1.70"));
-        addBuiltinConstant("__libmpdec_version__", tsLiteral("2.5.1"));
+        addBuiltinConstant("__version__", T_VERSION);
+        addBuiltinConstant("__libmpdec_version__", T_LIBMPDEC_VERSION);
     }
 
     @Override
@@ -172,6 +179,12 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
         module.setAttribute(T_DEFAULT_CONTEXT, state.getDefaultContext());
         module.setAttribute(T_BASIC_CONTEXT, state.getBasicContext());
         module.setAttribute(T_EXTENDED_CONTEXT, state.getExtendedContext());
+
+        PythonModule numbers = AbstractImportNode.importModule(T_NUMBERS);
+        state.setRationalType(numbers.getAttribute(T_RATIONAL));
+        Object register = PyObjectGetAttr.executeUncached(numbers.getAttribute(T_NUMBER), T_REGISTER);
+        CallNode.executeUncached(register, PythonBuiltinClassType.PDecimal);
+
     }
 
     @Builtin(name = "getcontext", minNumOfPositionalArgs = 0)

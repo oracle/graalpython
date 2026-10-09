@@ -73,6 +73,13 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class DecimalNodes {
+    private static final int INVALID = DecimalContextUtils.conditionMask(DecimalExceptionTypes.InvalidOperation);
+    private static final int INEXACT = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Inexact);
+    private static final int ROUNDED = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Rounded);
+    private static final int SUBNORMAL = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Subnormal);
+    private static final int CLAMPED = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Clamped);
+    private static final long HALF_TEN_TO_NINETEEN = 5000000000000000000L;
+
     private DecimalNodes() {
     }
 
@@ -471,7 +478,7 @@ public final class DecimalNodes {
         return create(language, result.value());
     }
 
-    private static boolean isCompactFinite(PDecimal value) {
+    static boolean isCompactFinite(PDecimal value) {
         return value.getKind() == Kind.FINITE && value.isCompact();
     }
 
@@ -569,6 +576,205 @@ public final class DecimalNodes {
             return compact(language, negative, coefficient, exponent);
         }
         return null;
+    }
+
+    /** Apply quantize's precision, exponent limits and flags without BigInteger arithmetic. */
+    private static PDecimal compactQuantize(VirtualFrame frame, PythonLanguage language, PDecimal self, long exponent,
+                    PDecimalContext context, DecimalRounding rounding, RaiseSignalNode raiseSignal) {
+        if (!isCompactFinite(self)) {
+            return null;
+        }
+        long coefficient = self.getCompactCoefficient();
+        long etiny = context.getEmin() - context.getPrecision() + 1;
+        long adjusted = self.getExponent() + DecimalArithmetic.digits(coefficient) - 1;
+        if (exponent < etiny || exponent > context.getEmax() || coefficient != 0 &&
+                        (adjusted > context.getEmax() || adjusted - exponent + 1 > context.getPrecision())) {
+            return invalidQuantize(frame, language, context, raiseSignal);
+        }
+        int status = 0;
+        long shift = self.getExponent() - exponent;
+        if (coefficient != 0) {
+            if (shift >= 0) {
+                coefficient = scaleCompactCoefficient(coefficient, shift);
+                if (coefficient < 0) {
+                    return null;
+                }
+            } else {
+                long places = -shift;
+                long divisor = compactDivisor(places);
+                long remainder = coefficient;
+                long quotient = 0;
+                if (divisor != 0) {
+                    quotient = coefficient / divisor;
+                    remainder = coefficient % divisor;
+                }
+                if (incrementCompact(self.isNegative(), quotient, remainder, divisor, places, rounding)) {
+                    quotient++;
+                }
+                coefficient = quotient;
+                status |= ROUNDED;
+                if (remainder != 0) {
+                    status |= INEXACT;
+                }
+            }
+        }
+        int digits = DecimalArithmetic.digits(coefficient);
+        adjusted = exponent + digits - 1;
+        if (digits > context.getPrecision() || adjusted > context.getEmax()) {
+            return invalidQuantize(frame, language, context, raiseSignal);
+        }
+        if (coefficient != 0 && adjusted < context.getEmin()) {
+            status |= SUBNORMAL;
+        }
+        long etop = context.getEmax() - context.getPrecision() + 1;
+        if (context.getClamp() != 0 && exponent > etop) {
+            coefficient = scaleCompactCoefficient(coefficient, exponent - etop);
+            if (coefficient < 0) {
+                return null;
+            }
+            exponent = etop;
+            status |= CLAMPED;
+        }
+        DecimalContextUtils.addStatus(frame, context, status, raiseSignal);
+        return compact(language, self.isNegative(), coefficient, exponent);
+    }
+
+    private static PDecimal invalidQuantize(VirtualFrame frame, PythonLanguage language, PDecimalContext context, RaiseSignalNode raiseSignal) {
+        DecimalContextUtils.addStatus(frame, context, INVALID, raiseSignal);
+        return PFactory.createDecimal(language, false, 0L, 0, Kind.NAN);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class QuantizeDecimalNode extends Node {
+        public abstract PDecimal execute(VirtualFrame frame, Node inliningTarget, PDecimal self, long exponent, PDecimalContext context, DecimalRounding rounding);
+
+        @Specialization
+        static PDecimal quantize(VirtualFrame frame, Node inliningTarget, PDecimal self, long exponent, PDecimalContext context, DecimalRounding rounding,
+                        @Cached InlinedBranchProfile nonCompactProfile,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PDecimal fast = compactQuantize(frame, language, self, exponent, context, rounding, raiseSignal);
+            if (fast != null) {
+                return fast;
+            }
+            nonCompactProfile.enter(inliningTarget);
+            Result result;
+            try {
+                result = DecimalArithmetic.quantize(self, exponent, context, rounding);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, context, result.status(), raiseSignal);
+            return create(language, result.value());
+        }
+    }
+
+    /** A divisor of zero denotes 10**places outside the compact coefficient range. */
+    private static long compactDivisor(long places) {
+        if (places > 18) {
+            return 0;
+        }
+        long divisor = 1;
+        for (int i = 0; i < places; i++) {
+            divisor *= 10;
+        }
+        return divisor;
+    }
+
+    private static boolean incrementCompact(boolean negative, long quotient, long remainder, long divisor, long places, DecimalRounding rounding) {
+        if (remainder == 0) {
+            return false;
+        }
+        int half = -1;
+        if (divisor != 0) {
+            half = Long.compare(remainder, divisor / 2);
+        } else if (places == 19) {
+            half = Long.compare(remainder, HALF_TEN_TO_NINETEEN);
+        }
+        return switch (rounding) {
+            case ROUND_DOWN -> false;
+            case ROUND_UP -> true;
+            case ROUND_CEILING -> !negative;
+            case ROUND_FLOOR -> negative;
+            case ROUND_05UP -> quotient % 5 == 0;
+            case ROUND_HALF_UP -> half >= 0;
+            case ROUND_HALF_DOWN -> half > 0;
+            case ROUND_HALF_EVEN -> half > 0 || half == 0 && (quotient & 1) != 0;
+        };
+    }
+
+    /** Long.MIN_VALUE indicates that the integer result needs the BigInteger fallback. */
+    static long compactInteger(PDecimal self, DecimalRounding rounding) {
+        if (!self.isCompact()) {
+            return Long.MIN_VALUE;
+        }
+        long coefficient = self.getCompactCoefficient();
+        long exponent = self.getExponent();
+        if (exponent >= 0) {
+            coefficient = scaleCompactCoefficient(coefficient, exponent);
+            if (coefficient < 0) {
+                return Long.MIN_VALUE;
+            }
+        } else {
+            long divisor = compactDivisor(-exponent);
+            long quotient = 0;
+            long remainder = coefficient;
+            if (divisor != 0) {
+                quotient = coefficient / divisor;
+                remainder = coefficient % divisor;
+            }
+            if (incrementCompact(self.isNegative(), quotient, remainder, divisor, -exponent, rounding)) {
+                quotient++;
+            }
+            coefficient = quotient;
+        }
+        if (self.isNegative()) {
+            return -coefficient;
+        }
+        return coefficient;
+    }
+
+    /** Compare finite compact magnitudes by truncating, so scaling cannot overflow. */
+    static int compareCompact(boolean negativeA, long a, long exponentA, boolean negativeB, long b, long exponentB) {
+        if (a == 0 && b == 0) {
+            return 0;
+        }
+        if (negativeA != negativeB) {
+            if (negativeA) {
+                return -1;
+            }
+            return 1;
+        }
+        int result;
+        if (a == 0 || b == 0) {
+            result = Long.compare(a, b);
+        } else {
+            long adjustedA = exponentA + DecimalArithmetic.digits(a) - 1;
+            long adjustedB = exponentB + DecimalArithmetic.digits(b) - 1;
+            result = Long.compare(adjustedA, adjustedB);
+            if (result == 0) {
+                if (exponentA >= exponentB) {
+                    long divisor = compactDivisor(exponentA - exponentB);
+                    result = Long.compare(a, b / divisor);
+                    if (result == 0 && b % divisor != 0) {
+                        result = -1;
+                    }
+                } else {
+                    long divisor = compactDivisor(exponentB - exponentA);
+                    result = Long.compare(a / divisor, b);
+                    if (result == 0 && a % divisor != 0) {
+                        result = 1;
+                    }
+                }
+            }
+        }
+        if (negativeA) {
+            return -result;
+        }
+        return result;
     }
 
     @GenerateInline(false) // Error path

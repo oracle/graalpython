@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -58,9 +60,13 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ComplexValue;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ToComplexValueNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.AbsDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.AddDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivideDecimalNode;
@@ -70,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.GetContextN
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.MinusDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.MultiplyDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.PlusDecimalNode;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.QuantizeDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.RaiseSignalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.RemainderDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.SubtractDecimalNode;
@@ -80,18 +87,21 @@ import com.oracle.graal.python.builtins.objects.decimal.PDecimal.Kind;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyComplexCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -134,6 +144,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDecimal)
 public final class DecimalBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = DecimalBuiltinsSlotsGen.SLOTS;
+    private static final TruffleString T_NUMERATOR = tsLiteral("numerator");
+    private static final TruffleString T_DENOMINATOR = tsLiteral("denominator");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -344,15 +356,40 @@ public final class DecimalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "quantize", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "exp", "rounding", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "quantize", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "exp", "rounding", "context"})
     @GenerateNodeFactory
     public abstract static class QuantizeNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object exp, Object rounding, Object context, PKeyword[] kwargs,
+        static PDecimal quantize(VirtualFrame frame, PDecimal self, Object exp, Object rounding, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached ToDecimalNode toDecimal,
+                        @Cached QuantizeDecimalNode operation,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached GetClassNode getClass,
+                        @Cached TypeNodes.GetNameNode getName,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.quantize.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalRounding actualRounding = actualContext.getRounding();
+            if (!(rounding instanceof PNone)) {
+                actualRounding = DecimalContextUtils.validateRounding(inliningTarget, rounding);
+            }
+            PDecimal quantum = toDecimal.execute(inliningTarget, exp);
+            if (quantum == null) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED,
+                                getName.execute(inliningTarget, getClass.execute(inliningTarget, exp)));
+            }
+            if (quantum.getKind() == Kind.FINITE) {
+                return operation.execute(frame, inliningTarget, self, quantum.getExponent(), actualContext, actualRounding);
+            }
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.quantize(self, quantum, actualContext, actualRounding);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
@@ -776,15 +813,34 @@ public final class DecimalBuiltins extends PythonBuiltins {
         }
     }
 
+    private static Value decimalValue(PDecimal self) {
+        return new Value(self.isNegative(), self.getCoefficient(), self.getExponent(), self.getKind());
+    }
+
+    private static Object toInteger(Node inliningTarget, PDecimal self, DecimalRounding rounding, PRaiseNode raiseNode) {
+        if (self.getKind() == Kind.INFINITY) {
+            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.DECIMAL_INFINITY_TO_INTEGER);
+        }
+        if (self.getKind() != Kind.FINITE) {
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.DECIMAL_NAN_TO_INTEGER);
+        }
+        long compact = DecimalNodes.compactInteger(self, rounding);
+        if (compact != Long.MIN_VALUE) {
+            return compact;
+        }
+        try {
+            return PFactory.createInt(PythonLanguage.get(inliningTarget), DecimalArithmetic.toInteger(self, rounding));
+        } catch (ArithmeticException e) {
+            throw raiseNode.raise(inliningTarget, MemoryError);
+        }
+    }
+
     @Builtin(name = "__copy__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__copy__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal copy(PDecimal self) {
+            return self;
         }
     }
 
@@ -792,11 +848,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DeepcopyNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__deepcopy__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal copy(PDecimal self, @SuppressWarnings("unused") Object memo) {
+            return self;
         }
     }
 
@@ -804,23 +857,46 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FormatNode extends PythonTernaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1, Object arg2,
+        static Object format(VirtualFrame frame, PDecimal self, Object specifier, Object override,
                         @Bind Node inliningTarget,
+                        @Cached PyUnicodeCheckNode unicodeCheck,
+                        @Cached CastToJavaStringNode asString,
+                        @Cached TruffleString.FromJavaStringNode fromJavaString,
+                        @Cached WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__format__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            if (!unicodeCheck.execute(inliningTarget, specifier)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_FORMAT_STRING);
+            }
+            String format = asString.execute(specifier);
+            if (endsWithN(format)) {
+                warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.DECIMAL_FORMAT_N_DEPRECATED, 1);
+            }
+            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            try {
+                return fromJavaString.execute(DecimalFormatting.format(self, format, override, context), TS_ENCODING);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
         }
+
+        @TruffleBoundary
+        private static boolean endsWithN(String format) {
+            return format.endsWith("N");
+        }
+
     }
 
     @Builtin(name = "__reduce__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object reduce(PDecimal self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__reduce__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetClassNode getClass,
+                        @Cached TpStrNode str) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object args = PFactory.createTuple(language, new Object[]{str.execute(null, self)});
+            return PFactory.createTuple(language, new Object[]{getClass.execute(inliningTarget, self), args});
         }
     }
 
@@ -828,11 +904,27 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
+        static Object round(VirtualFrame frame, PDecimal self, Object ndigits,
                         @Bind Node inliningTarget,
+                        @Cached PyLongCheckNode longCheck,
+                        @Cached PyLongAsLongNode asLong,
+                        @Cached QuantizeDecimalNode operation,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__round__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            if (ndigits == PNone.NO_VALUE) {
+                return toInteger(inliningTarget, self, DecimalRounding.ROUND_HALF_EVEN, raiseNode);
+            }
+            if (!longCheck.execute(inliningTarget, ndigits)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_ROUND_DIGITS);
+            }
+            long digits = asLong.execute(frame, inliningTarget, ndigits);
+            long exponent;
+            if (digits == Long.MIN_VALUE) {
+                exponent = Long.MAX_VALUE;
+            } else {
+                exponent = -digits;
+            }
+            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            return operation.execute(frame, inliningTarget, self, exponent, context, context.getRounding());
         }
     }
 
@@ -840,11 +932,10 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CeilNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object round(PDecimal self,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__ceil__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            return toInteger(inliningTarget, self, DecimalRounding.ROUND_CEILING, raiseNode);
         }
     }
 
@@ -852,11 +943,10 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FloorNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object round(PDecimal self,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__floor__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            return toInteger(inliningTarget, self, DecimalRounding.ROUND_FLOOR, raiseNode);
         }
     }
 
@@ -864,11 +954,9 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TruncNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__trunc__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static Object trunc(PDecimal self,
+                        @Cached NbIntNode integer) {
+            return integer.execute(null, self);
         }
     }
 
@@ -876,11 +964,10 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ComplexNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object complex(PDecimal self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__complex__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached NbFloatNode floating) {
+            return PFactory.createComplex(PythonLanguage.get(inliningTarget), (double) floating.execute(null, self), 0.0);
         }
     }
 
@@ -888,11 +975,20 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SizeofNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static long size(PDecimal self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.__sizeof__.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetClassNode getClass,
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSize) {
+            // Report coefficient storage in addition to the object's basic size.
+            return getBasicSize.execute(inliningTarget, getClass.execute(inliningTarget, self)) + coefficientSize(self);
+        }
+
+        @TruffleBoundary
+        private static long coefficientSize(PDecimal self) {
+            if (self.isCompact()) {
+                return Long.BYTES;
+            }
+            return (self.getCoefficient().bitLength() + 31L) / 32 * Integer.BYTES;
         }
     }
 
@@ -900,11 +996,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RealNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.real.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal real(PDecimal self) {
+            return self;
         }
     }
 
@@ -912,11 +1005,9 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ImagNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.imag.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal imag(@SuppressWarnings("unused") PDecimal self,
+                        @Bind PythonLanguage language) {
+            return PFactory.createDecimal(language, 0);
         }
     }
 
@@ -1216,11 +1307,11 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpStrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static TruffleString str(PDecimal self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.tp_str.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached TruffleString.FromJavaStringNode fromJavaString) {
+            boolean capitals = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget).getCapitals();
+            return fromJavaString.execute(self.toScientificString(capitals), TS_ENCODING);
         }
     }
 
@@ -1313,39 +1404,190 @@ public final class DecimalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_getattro, isComplex = true)
-    @GenerateNodeFactory
-    public abstract static class TpGetattroNode extends GetAttrBuiltinNode {
-        @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.tp_getattro.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
-        }
-    }
-
     @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
     public abstract static class TpHashNode extends HashBuiltinNode {
+        // Inverse of 10 modulo 2**61 - 1, as in CPython's _dec_hash.
+        private static final long INVERSE_TEN_HASH = 2075258708292324556L;
+
         @Specialization
-        static long doMock(VirtualFrame frame, Object self,
+        static long hash(PDecimal self,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.tp_hash.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            long hash = self.getHash();
+            if (hash != -1) {
+                return hash;
+            }
+            if (self.getKind() == Kind.SNAN) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_SNAN_HASH);
+            }
+            if (self.getKind() == Kind.NAN) {
+                hash = ObjectBuiltins.HashNode.hash(self);
+            } else if (self.getKind() == Kind.INFINITY) {
+                hash = SysModuleBuiltins.HASH_INF;
+                if (self.isNegative()) {
+                    hash = -hash;
+                }
+            } else if (self.isCompact()) {
+                hash = hashCompact(self.getCompactCoefficient(), self.getExponent());
+                if (self.isNegative()) {
+                    hash = -hash;
+                }
+            } else {
+                hash = hashFinite(self);
+            }
+            hash = hash == -1 ? -2 : hash;
+            self.setHash(hash);
+            return hash;
+        }
+
+        private static long hashCompact(long coefficient, long exponent) {
+            long hash = coefficient % SysModuleBuiltins.HASH_MODULUS;
+            if (hash == 0 || exponent == 0) {
+                return hash;
+            }
+            long base = 10;
+            if (exponent < 0) {
+                base = INVERSE_TEN_HASH;
+                exponent = -exponent;
+            }
+            while (exponent != 0) {
+                if ((exponent & 1) != 0) {
+                    hash = multiplyHashModulus(hash, base);
+                }
+                exponent >>>= 1;
+                if (exponent != 0) {
+                    base = multiplyHashModulus(base, base);
+                }
+            }
+            return hash;
+        }
+
+        private static long multiplyHashModulus(long a, long b) {
+            // Fold the unsigned 128-bit product at bit 61 using 2**61 == 1 (mod p).
+            assert SysModuleBuiltins.HASH_BITS == 61;
+            long low = a * b;
+            long high = Math.multiplyHigh(a, b);
+            long reduced = (low & SysModuleBuiltins.HASH_MODULUS) + ((high << 3) | (low >>> 61));
+            reduced = (reduced & SysModuleBuiltins.HASH_MODULUS) + (reduced >>> 61);
+            if (reduced == SysModuleBuiltins.HASH_MODULUS) {
+                return 0;
+            }
+            return reduced;
+        }
+
+        @TruffleBoundary
+        private static long hashFinite(PDecimal self) {
+            BigInteger modulus = BigInteger.valueOf(SysModuleBuiltins.HASH_MODULUS);
+            BigInteger base = BigInteger.TEN;
+            if (self.getExponent() < 0) {
+                base = base.modInverse(modulus);
+            }
+            BigInteger power = base.modPow(BigInteger.valueOf(self.getExponent()).abs(), modulus);
+            long hash = self.getCoefficient().mod(modulus).multiply(power).mod(modulus).longValue();
+            if (self.isNegative()) {
+                hash = -hash;
+            }
+            return hash == -1 ? -2 : hash;
         }
     }
 
     @Slot(value = SlotKind.tp_richcompare, isComplex = true)
+    @ImportStatic(DecimalNodes.class)
     @GenerateNodeFactory
     public abstract static class TpRichcompareNode extends RichCmpBuiltinNode {
-        @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, RichCmpOp op,
+        @Specialization(guards = {"isCompactFinite(self)", "isCompactFinite(other)"})
+        static boolean compactDecimal(PDecimal self, PDecimal other, RichCmpOp op) {
+            return op.compareResultToBool(DecimalNodes.compareCompact(self.isNegative(), self.getCompactCoefficient(), self.getExponent(),
+                            other.isNegative(), other.getCompactCoefficient(), other.getExponent()));
+        }
+
+        @Specialization(guards = "isCompactFinite(self)")
+        static boolean compactInt(PDecimal self, int other, RichCmpOp op) {
+            return compareInteger(self, other, op);
+        }
+
+        @Specialization(guards = {"isCompactFinite(self)", "fitsCompactLong(other)"})
+        static boolean compactLong(PDecimal self, long other, RichCmpOp op) {
+            return compareInteger(self, other, op);
+        }
+
+        private static boolean compareInteger(PDecimal self, long other, RichCmpOp op) {
+            return op.compareResultToBool(DecimalNodes.compareCompact(self.isNegative(), self.getCompactCoefficient(), self.getExponent(),
+                            other < 0, Math.abs(other), 0));
+        }
+
+        static boolean fitsCompactLong(long value) {
+            return value != Long.MIN_VALUE;
+        }
+
+        @Fallback
+        static Object compare(VirtualFrame frame, PDecimal self, Object other, RichCmpOp op,
                         @Bind Node inliningTarget,
+                        @Cached ToDecimalNode toDecimal,
+                        @Cached PyFloatCheckNode floatCheck,
+                        @Cached PyFloatAsDoubleNode asDouble,
+                        @Cached PyComplexCheckNode complexCheck,
+                        @Cached ToComplexValueNode asComplex,
+                        @Cached PyObjectIsInstanceNode isInstance,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CastToJavaBigIntegerNode asInteger,
+                        @Cached PyLongCheckNode longCheck,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.tp_richcompare.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            Value a = decimalValue(self);
+            Value b;
+            PDecimal converted = toDecimal.execute(inliningTarget, other);
+            if (converted != null) {
+                b = decimalValue(converted);
+            } else if (floatCheck.execute(inliningTarget, other)) {
+                floatOperation(frame, context, op, raiseSignal);
+                b = DecimalUtils.fromFloat(asDouble.execute(frame, inliningTarget, other));
+            } else if (op.isEqOrNe() && complexCheck.execute(inliningTarget, other)) {
+                ComplexValue complex = asComplex.execute(inliningTarget, other);
+                if (complex.getImag() != 0.0) {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                }
+                floatOperation(frame, context, op, raiseSignal);
+                b = DecimalUtils.fromFloat(complex.getReal());
+            } else if (isInstance.execute(frame, other, DecimalContextUtils.getState(inliningTarget).getRationalType())) {
+                Object numerator = getAttr.execute(frame, inliningTarget, other, T_NUMERATOR);
+                if (!longCheck.execute(inliningTarget, numerator)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_INTEGER_ARGUMENT);
+                }
+                b = DecimalUtils.fromInteger(asInteger.execute(inliningTarget, numerator));
+                if (a.kind() == Kind.FINITE) {
+                    Object denominator = getAttr.execute(frame, inliningTarget, other, T_DENOMINATOR);
+                    if (!longCheck.execute(inliningTarget, denominator)) {
+                        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_INTEGER_ARGUMENT);
+                    }
+                    a = multiplyDenominator(a, asInteger.execute(inliningTarget, denominator));
+                }
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            if (a.kind() == Kind.NAN || a.kind() == Kind.SNAN || b.kind() == Kind.NAN || b.kind() == Kind.SNAN) {
+                if (!op.isEqOrNe() || a.kind() == Kind.SNAN || b.kind() == Kind.SNAN) {
+                    DecimalContextUtils.addStatus(frame, context, DecimalContextUtils.conditionMask(DecimalExceptionTypes.InvalidOperation), raiseSignal);
+                }
+                return op.isNe();
+            }
+            return op.compareResultToBool(DecimalArithmetic.compare(a, b));
+        }
+
+        private static void floatOperation(VirtualFrame frame, PDecimalContext context, RichCmpOp op, RaiseSignalNode raiseSignal) {
+            int mask = DecimalContextUtils.mask(DecimalExceptionTypes.FloatOperation);
+            if (op.isEqOrNe()) {
+                context.setFlags(context.getFlags() | mask);
+            } else {
+                DecimalContextUtils.addStatus(frame, context, DecimalContextUtils.conditionMask(DecimalExceptionTypes.FloatOperation), raiseSignal);
+            }
+        }
+
+        @TruffleBoundary
+        private static Value multiplyDenominator(Value value, BigInteger denominator) {
+            return new Value(value.negative() != (denominator.signum() < 0), value.coefficient().multiply(denominator.abs()), value.exponent(), Kind.FINITE);
         }
     }
 
