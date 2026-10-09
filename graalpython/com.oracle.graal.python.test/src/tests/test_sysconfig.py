@@ -60,6 +60,18 @@ def test_platform_sysconfigdata():
     assert sys.abiflags in sysconfig.get_config_var("INCLUDEPY")
 
 
+@unittest.skipIf(sys.platform == "win32", "Windows has no system time zone database")
+def test_tzpath_searches_system_time_zones():
+    import sysconfig
+    tzpath = sysconfig.get_config_var("TZPATH")
+    assert tzpath == "/usr/share/zoneinfo:/usr/lib/zoneinfo:/usr/share/lib/zoneinfo:/etc/zoneinfo", tzpath
+    import os
+    import subprocess
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONTZPATH"}
+    out = subprocess.check_output([sys.executable, "-c", "import zoneinfo; print(':'.join(zoneinfo.TZPATH))"], env=env, text=True)
+    assert out.strip() == tzpath, out
+
+
 @unittest.skipUnless(sys.platform == "win32", "Windows-specific sysconfig behavior")
 def test_windows_libpython_is_not_exposed():
     import sysconfig
