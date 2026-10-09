@@ -1630,6 +1630,7 @@ public abstract class ErrorMessages {
     public static final TruffleString DECIMAL_SNAN_TO_FLOAT = tsLiteral("cannot convert signaling NaN to float");
     public static final TruffleString DECIMAL_SNAN_HASH = tsLiteral("Cannot hash a signaling NaN value");
     public static final TruffleString DECIMAL_INTEGER_ARGUMENT = tsLiteral("argument must be an integer");
+    public static final TruffleString DECIMAL_ARGUMENT = tsLiteral("argument must be a Decimal");
     public static final TruffleString DECIMAL_FROM_FLOAT_ARGUMENT = tsLiteral("argument must be int or float");
     public static final TruffleString DECIMAL_INFINITY_TO_RATIO = tsLiteral("cannot convert Infinity to integer ratio");
     public static final TruffleString DECIMAL_NAN_TO_RATIO = tsLiteral("cannot convert NaN to integer ratio");

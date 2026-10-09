@@ -288,6 +288,21 @@ final class DecimalArithmetic {
         return finite(operand.negative(), coefficient, exponent);
     }
 
+    /** Apply context bounds and rounding without the sign or sNaN rules of unary plus. */
+    @TruffleBoundary
+    static Result applyContext(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic arithmetic = new DecimalArithmetic(context);
+        Value operand = value(self);
+        Value result;
+        if (operand.kind() == Kind.NAN || operand.kind() == Kind.SNAN) {
+            Value nan = arithmetic.fixNaN(operand);
+            result = new Value(nan.negative(), nan.coefficient(), nan.exponent(), operand.kind());
+        } else {
+            result = arithmetic.finish(operand);
+        }
+        return new Result(result, arithmetic.status);
+    }
+
     @TruffleBoundary
     static Result plus(PDecimal self, PDecimalContext context) {
         return applySign(self, context, self.isNegative());

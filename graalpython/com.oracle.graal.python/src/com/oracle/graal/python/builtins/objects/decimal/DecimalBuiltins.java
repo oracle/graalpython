@@ -63,11 +63,11 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ComplexValue;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ToComplexValueNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.AbsDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.AddDecimalNode;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.CreateDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivideDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivideIntDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivmodDecimalNode;
@@ -84,9 +84,7 @@ import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.ToDecimalNo
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.ConversionException;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.Value;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimal.Kind;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -97,19 +95,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.Ric
 import com.oracle.graal.python.lib.PyComplexCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
-import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
-import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -120,19 +113,11 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassE
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -163,6 +148,11 @@ public final class DecimalBuiltins extends PythonBuiltins {
         return DecimalBuiltinsFactory.getFactories();
     }
 
+    static PDecimal finishResult(VirtualFrame frame, Node inliningTarget, PDecimalContext context, DecimalArithmetic.Result result, RaiseSignalNode raiseSignal) {
+        DecimalContextUtils.addStatus(frame, context, result.status(), raiseSignal);
+        return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+    }
+
     @Builtin(name = "exp", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class ExpNode extends PythonBuiltinNode {
@@ -173,14 +163,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doExp(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doExp(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.exp(self, actualContext);
+                result = DecimalArithmetic.exp(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -194,14 +187,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doLn(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLn(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.ln(self, actualContext);
+                result = DecimalArithmetic.ln(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -215,14 +211,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doLog10(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLog10(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.log10(self, actualContext);
+                result = DecimalArithmetic.log10(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -236,14 +235,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doNextMinus(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doNextMinus(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.nextMinus(self, actualContext);
+                result = DecimalArithmetic.nextMinus(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -257,14 +259,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doNextPlus(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doNextPlus(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.nextPlus(self, actualContext);
+                result = DecimalArithmetic.nextPlus(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -278,14 +283,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doNormalize(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doNormalize(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.normalize(self, actualContext);
+                result = DecimalArithmetic.normalize(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -300,14 +308,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             DecimalRounding actualRounding = getRounding(rounding, inliningTarget, actualContext);
-            DecimalArithmetic.Result result;
-            try {
-                result = DecimalArithmetic.toIntegralValue(self, actualContext, actualRounding);
-            } catch (ArithmeticException e) {
-                throw raiseNode.raise(inliningTarget, MemoryError);
-            }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return ToIntegralValueNode.doToIntegralValue(frame, inliningTarget, self, actualContext, actualRounding, raiseSignal, raiseNode);
         }
     }
 
@@ -322,14 +323,18 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             DecimalRounding actualRounding = getRounding(rounding, inliningTarget, actualContext);
+            return doToIntegralExact(frame, inliningTarget, self, actualContext, actualRounding, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doToIntegralExact(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, DecimalRounding rounding, RaiseSignalNode raiseSignal,
+                        PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.toIntegralExact(self, actualContext, actualRounding);
+                result = DecimalArithmetic.toIntegralExact(self, context, rounding);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -344,14 +349,18 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             DecimalRounding actualRounding = getRounding(rounding, inliningTarget, actualContext);
+            return doToIntegralValue(frame, inliningTarget, self, actualContext, actualRounding, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doToIntegralValue(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, DecimalRounding rounding, RaiseSignalNode raiseSignal,
+                        PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.toIntegralValue(self, actualContext, actualRounding);
+                result = DecimalArithmetic.toIntegralValue(self, context, rounding);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -365,14 +374,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doSqrt(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doSqrt(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.sqrt(self, actualContext);
+                result = DecimalArithmetic.sqrt(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -388,14 +400,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doCompare(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doCompare(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.compare(self, operand, actualContext);
+                result = DecimalArithmetic.compare(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -411,14 +426,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doCompareSignal(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doCompareSignal(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.compareSignal(self, operand, actualContext);
+                result = DecimalArithmetic.compareSignal(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -434,14 +452,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doMax(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doMax(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.max(self, operand, actualContext);
+                result = DecimalArithmetic.max(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -457,14 +478,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doMaxMag(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doMaxMag(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.maxMag(self, operand, actualContext);
+                result = DecimalArithmetic.maxMag(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -480,14 +504,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doMin(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doMin(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.min(self, operand, actualContext);
+                result = DecimalArithmetic.min(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -503,14 +530,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doMinMag(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doMinMag(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.minMag(self, operand, actualContext);
+                result = DecimalArithmetic.minMag(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -526,14 +556,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doNextToward(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doNextToward(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.nextToward(self, operand, actualContext);
+                result = DecimalArithmetic.nextToward(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -560,17 +593,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED,
                                 getName.execute(inliningTarget, getClass.execute(inliningTarget, exp)));
             }
-            if (quantum.getKind() == Kind.FINITE) {
-                return operation.execute(frame, inliningTarget, self, quantum.getExponent(), actualContext, actualRounding);
-            }
-            DecimalArithmetic.Result result;
-            try {
-                result = DecimalArithmetic.quantize(self, quantum, actualContext, actualRounding);
-            } catch (ArithmeticException e) {
-                throw raiseNode.raise(inliningTarget, MemoryError);
-            }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return QuantizeDecimalNode.doQuantize(frame, inliningTarget, self, quantum, actualContext, actualRounding, operation, raiseSignal, raiseNode);
         }
     }
 
@@ -586,14 +609,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doRemainderNear(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doRemainderNear(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.remainderNear(self, operand, actualContext);
+                result = DecimalArithmetic.remainderNear(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -610,14 +636,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
             PDecimal addend = convert.execute(inliningTarget, third);
+            return doFma(frame, inliningTarget, self, operand, addend, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doFma(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimal addend, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.fma(self, operand, addend, actualContext);
+                result = DecimalArithmetic.fma(self, operand, addend, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -702,7 +731,11 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetContextNode getContext) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
-            return isNonzeroFinite(self) && adjustedExponent(self) >= actualContext.getEmin();
+            return doCheck(self, actualContext);
+        }
+
+        static boolean doCheck(PDecimal self, PDecimalContext context) {
+            return isNonzeroFinite(self) && adjustedExponent(self) >= context.getEmin();
         }
     }
 
@@ -714,7 +747,11 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetContextNode getContext) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
-            return isNonzeroFinite(self) && adjustedExponent(self) < actualContext.getEmin();
+            return doCheck(self, actualContext);
+        }
+
+        static boolean doCheck(PDecimal self, PDecimalContext context) {
+            return isNonzeroFinite(self) && adjustedExponent(self) < context.getEmin();
         }
     }
 
@@ -751,6 +788,10 @@ public final class DecimalBuiltins extends PythonBuiltins {
         @Specialization
         static PDecimal radix(@SuppressWarnings("unused") PDecimal self,
                         @Bind PythonLanguage language) {
+            return createRadix(language);
+        }
+
+        static PDecimal createRadix(PythonLanguage language) {
             return PFactory.createDecimal(language, 10);
         }
     }
@@ -785,14 +826,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doLogb(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLogb(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.logb(self, actualContext);
+                result = DecimalArithmetic.logb(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -806,14 +850,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return doLogicalInvert(frame, inliningTarget, self, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLogicalInvert(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.logicalInvert(self, actualContext);
+                result = DecimalArithmetic.logicalInvert(self, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -827,6 +874,25 @@ public final class DecimalBuiltins extends PythonBuiltins {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             return numberClass(self, actualContext);
         }
+
+        static TruffleString numberClass(PDecimal self, PDecimalContext context) {
+            if (self.getKind() == Kind.SNAN) {
+                return T_SNAN;
+            }
+            if (self.getKind() == Kind.NAN) {
+                return T_NAN;
+            }
+            if (self.getKind() == Kind.INFINITY) {
+                return self.isNegative() ? T_NEGATIVE_INFINITY : T_POSITIVE_INFINITY;
+            }
+            if (isZero(self)) {
+                return self.isNegative() ? T_NEGATIVE_ZERO : T_POSITIVE_ZERO;
+            }
+            if (adjustedExponent(self) < context.getEmin()) {
+                return self.isNegative() ? T_NEGATIVE_SUBNORMAL : T_POSITIVE_SUBNORMAL;
+            }
+            return self.isNegative() ? T_NEGATIVE_NORMAL : T_POSITIVE_NORMAL;
+        }
     }
 
     @Builtin(name = "to_eng_string", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
@@ -838,7 +904,40 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached GetContextNode getContext,
                         @Cached TruffleString.FromJavaStringNode fromJavaString) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
-            return fromJavaString.execute(engineeringString(self, actualContext.getCapitals()), TS_ENCODING);
+            return doFormat(self, actualContext, fromJavaString);
+        }
+
+        static TruffleString doFormat(PDecimal self, PDecimalContext context, TruffleString.FromJavaStringNode fromJavaString) {
+            return fromJavaString.execute(engineeringString(self, context.getCapitals()), TS_ENCODING);
+        }
+
+        @TruffleBoundary
+        private static String engineeringString(PDecimal self, boolean capitals) {
+            if (self.getKind() != Kind.FINITE || self.getExponent() <= 0 && adjustedExponent(self) >= -6) {
+                return self.toScientificString(capitals);
+            }
+            String digits = self.getCoefficient().toString();
+            long left = self.getExponent() + digits.length();
+            int point;
+            if (isZero(self)) {
+                point = Math.floorMod(left + 1, 3) - 1;
+            } else {
+                point = Math.floorMod(left - 1, 3) + 1;
+            }
+            String significand;
+            if (point <= 0) {
+                significand = "0." + "0".repeat(-point) + digits;
+            } else if (point >= digits.length()) {
+                significand = digits + "0".repeat(point - digits.length());
+            } else {
+                significand = digits.substring(0, point) + "." + digits.substring(point);
+            }
+            long exponent = left - point;
+            String result = (self.isNegative() ? "-" : "") + significand;
+            if (exponent != 0) {
+                result += (capitals ? "E" : "e") + (exponent > 0 ? "+" : "") + exponent;
+            }
+            return result;
         }
     }
 
@@ -854,14 +953,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doCompareTotal(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doCompareTotal(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.compareTotal(self, operand);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -877,14 +979,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doCompareTotalMag(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doCompareTotalMag(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.compareTotalMag(self, operand);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -898,7 +1003,11 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
-            return copySign(PythonLanguage.get(inliningTarget), self, operand.isNegative());
+            return doCopySign(PythonLanguage.get(inliningTarget), self, operand);
+        }
+
+        static PDecimal doCopySign(PythonLanguage language, PDecimal self, PDecimal other) {
+            return copySign(language, self, other.isNegative());
         }
     }
 
@@ -914,6 +1023,16 @@ public final class DecimalBuiltins extends PythonBuiltins {
             PDecimal operand = convert.execute(inliningTarget, other);
             return sameQuantum(self, operand);
         }
+
+        static boolean sameQuantum(PDecimal self, PDecimal other) {
+            if (self.getKind() == Kind.FINITE && other.getKind() == Kind.FINITE) {
+                return self.getExponent() == other.getExponent();
+            }
+            if (self.getKind() == Kind.INFINITY || other.getKind() == Kind.INFINITY) {
+                return self.getKind() == other.getKind();
+            }
+            return self.getKind() != Kind.FINITE && other.getKind() != Kind.FINITE;
+        }
     }
 
     @Builtin(name = "logical_and", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
@@ -928,14 +1047,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doLogicalAnd(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLogicalAnd(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.logicalAnd(self, operand, actualContext);
+                result = DecimalArithmetic.logicalAnd(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -951,14 +1073,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doLogicalOr(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLogicalOr(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.logicalOr(self, operand, actualContext);
+                result = DecimalArithmetic.logicalOr(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -974,14 +1099,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doLogicalXor(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doLogicalXor(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.logicalXor(self, operand, actualContext);
+                result = DecimalArithmetic.logicalXor(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -997,14 +1125,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doRotate(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doRotate(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.rotate(self, operand, actualContext);
+                result = DecimalArithmetic.rotate(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -1020,14 +1151,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doScaleb(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doScaleb(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.scaleb(self, operand, actualContext);
+                result = DecimalArithmetic.scaleb(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -1043,14 +1177,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert) {
             PDecimalContext actualContext = getContext.execute(inliningTarget, context);
             PDecimal operand = convert.execute(inliningTarget, other);
+            return doShift(frame, inliningTarget, self, operand, actualContext, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doShift(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal operand, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
-                result = DecimalArithmetic.shift(self, operand, actualContext);
+                result = DecimalArithmetic.shift(self, operand, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 
@@ -1067,6 +1204,15 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassExactProfile clsProfile,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
+            PDecimal result = fromFloat(frame, inliningTarget, value, longCheck, floatCheck, toDecimal, asDouble, raiseNode);
+            if (clsProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PDecimal)) {
+                return result;
+            }
+            return callNode.execute(frame, cls, result);
+        }
+
+        static PDecimal fromFloat(VirtualFrame frame, Node inliningTarget, Object value, PyLongCheckNode longCheck,
+                        PyFloatCheckNode floatCheck, RequireDecimalNode toDecimal, PyFloatAsDoubleNode asDouble, PRaiseNode raiseNode) {
             PDecimal result;
             if (longCheck.execute(inliningTarget, value)) {
                 result = toDecimal.execute(inliningTarget, value);
@@ -1075,10 +1221,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_FROM_FLOAT_ARGUMENT);
             }
-            if (clsProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PDecimal)) {
-                return result;
-            }
-            return callNode.execute(frame, cls, result);
+            return result;
         }
     }
 
@@ -1150,64 +1293,6 @@ public final class DecimalBuiltins extends PythonBuiltins {
             return PFactory.createDecimal(language, negative, self.getCompactCoefficient(), self.getExponent(), self.getKind());
         }
         return PFactory.createDecimal(language, negative, self.getCoefficient(), self.getExponent(), self.getKind());
-    }
-
-    private static boolean sameQuantum(PDecimal self, PDecimal other) {
-        if (self.getKind() == Kind.FINITE && other.getKind() == Kind.FINITE) {
-            return self.getExponent() == other.getExponent();
-        }
-        if (self.getKind() == Kind.INFINITY || other.getKind() == Kind.INFINITY) {
-            return self.getKind() == other.getKind();
-        }
-        return self.getKind() != Kind.FINITE && other.getKind() != Kind.FINITE;
-    }
-
-    private static TruffleString numberClass(PDecimal self, PDecimalContext context) {
-        if (self.getKind() == Kind.SNAN) {
-            return T_SNAN;
-        }
-        if (self.getKind() == Kind.NAN) {
-            return T_NAN;
-        }
-        if (self.getKind() == Kind.INFINITY) {
-            return self.isNegative() ? T_NEGATIVE_INFINITY : T_POSITIVE_INFINITY;
-        }
-        if (isZero(self)) {
-            return self.isNegative() ? T_NEGATIVE_ZERO : T_POSITIVE_ZERO;
-        }
-        if (adjustedExponent(self) < context.getEmin()) {
-            return self.isNegative() ? T_NEGATIVE_SUBNORMAL : T_POSITIVE_SUBNORMAL;
-        }
-        return self.isNegative() ? T_NEGATIVE_NORMAL : T_POSITIVE_NORMAL;
-    }
-
-    @TruffleBoundary
-    private static String engineeringString(PDecimal self, boolean capitals) {
-        if (self.getKind() != Kind.FINITE || self.getExponent() <= 0 && adjustedExponent(self) >= -6) {
-            return self.toScientificString(capitals);
-        }
-        String digits = self.getCoefficient().toString();
-        long left = self.getExponent() + digits.length();
-        int point;
-        if (isZero(self)) {
-            point = Math.floorMod(left + 1, 3) - 1;
-        } else {
-            point = Math.floorMod(left - 1, 3) + 1;
-        }
-        String significand;
-        if (point <= 0) {
-            significand = "0." + "0".repeat(-point) + digits;
-        } else if (point >= digits.length()) {
-            significand = digits + "0".repeat(point - digits.length());
-        } else {
-            significand = digits.substring(0, point) + "." + digits.substring(point);
-        }
-        long exponent = left - point;
-        String result = (self.isNegative() ? "-" : "") + significand;
-        if (exponent != 0) {
-            result += (capitals ? "E" : "e") + (exponent > 0 ? "+" : "") + exponent;
-        }
-        return result;
     }
 
     @TruffleBoundary
@@ -1463,7 +1548,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
         @Specialization
         static PDecimal construct(VirtualFrame frame, Object cls, Object value, Object context,
                         @Bind Node inliningTarget,
-                        @Cached(inline = true) CreateDecimalNode createDecimal,
+                        @Cached CreateDecimalNode createDecimal,
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached GetContextNode getContext,
                         @Cached InlinedBranchProfile errorProfile,
@@ -1482,253 +1567,6 @@ public final class DecimalBuiltins extends PythonBuiltins {
             }
         }
 
-        @GenerateInline
-        @GenerateCached(false)
-        @GenerateUncached
-        @ImportStatic(PGuards.class)
-        abstract static class CreateDecimalNode extends Node {
-            abstract PDecimal execute(VirtualFrame frame, Node inliningTarget, Object cls, Object value) throws ConversionException;
-
-            @Specialization(guards = "isNoValue(value)")
-            static PDecimal doDefault(@SuppressWarnings("unused") Node inliningTarget, Object cls, @SuppressWarnings("unused") PNone value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return PFactory.createDecimal(cls, getShape.execute(cls), 0L);
-            }
-
-            @Specialization
-            static PDecimal doDecimal(Node inliningTarget, Object cls, PDecimal value,
-                            @Shared @Cached GetClassNode getClass,
-                            @Shared @Cached IsBuiltinClassExactProfile clsProfile,
-                            @Shared @Cached IsBuiltinClassExactProfile valueProfile,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                if (clsProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PDecimal) &&
-                                valueProfile.profileClass(inliningTarget, getClass.execute(inliningTarget, value), PythonBuiltinClassType.PDecimal)) {
-                    return value;
-                }
-                return PFactory.createDecimal(cls, getShape.execute(cls), value);
-            }
-
-            @Specialization(guards = "unicodeCheck.execute(inliningTarget, value)")
-            static PDecimal doString(Node inliningTarget, Object cls, Object value,
-                            @SuppressWarnings("unused") @Shared @Cached PyUnicodeCheckNode unicodeCheck,
-                            @Cached CastToJavaStringNode asString,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
-                return create(cls, DecimalUtils.parse(asString.execute(value)), getShape);
-            }
-
-            @Specialization
-            static PDecimal doInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, int value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return PFactory.createDecimal(cls, getShape.execute(cls), value);
-            }
-
-            @Specialization
-            static PDecimal doLong(@SuppressWarnings("unused") Node inliningTarget, Object cls, long value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return PFactory.createDecimal(cls, getShape.execute(cls), value);
-            }
-
-            @Specialization
-            static PDecimal doPInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, PInt value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return create(cls, DecimalUtils.fromInteger(value.getValue()), getShape);
-            }
-
-            @Specialization(guards = "longCheck.execute(inliningTarget, value)")
-            static PDecimal doIntGeneric(Node inliningTarget, Object cls, Object value,
-                            @SuppressWarnings("unused") @Shared @Cached PyLongCheckNode longCheck,
-                            @Shared @Cached CastToJavaBigIntegerNode asBigInteger,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return create(cls, DecimalUtils.fromInteger(asBigInteger.execute(inliningTarget, value)), getShape);
-            }
-
-            @Specialization
-            static PDecimal doDouble(Node inliningTarget, Object cls, double value,
-                            @Shared @Cached InlinedBranchProfile nonCompactProfile,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return fromDouble(inliningTarget, cls, value, getShape, nonCompactProfile);
-            }
-
-            @Specialization
-            static PDecimal doPFloat(Node inliningTarget, Object cls, PFloat value,
-                            @Shared @Cached InlinedBranchProfile nonCompactProfile,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return fromDouble(inliningTarget, cls, value.getValue(), getShape, nonCompactProfile);
-            }
-
-            @Specialization(guards = "floatCheck.execute(inliningTarget, value)")
-            static PDecimal doFloatGeneric(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
-                            @SuppressWarnings("unused") @Shared @Cached PyFloatCheckNode floatCheck,
-                            @Shared @Cached PyFloatAsDoubleNode asDouble,
-                            @Shared @Cached InlinedBranchProfile nonCompactProfile,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) {
-                return fromDouble(inliningTarget, cls, asDouble.execute(frame, inliningTarget, value), getShape, nonCompactProfile);
-            }
-
-            @Specialization(guards = "tupleCheck.execute(inliningTarget, value)")
-            static PDecimal doTuple(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
-                            @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheck,
-                            @Shared @Cached GetTupleStorage getTupleStorage,
-                            @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
-                SequenceStorage storage = getTupleStorage.execute(inliningTarget, value);
-                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
-                try {
-                    return create(cls, fromSequence(storage), getShape);
-                } finally {
-                    BoundaryCallContext.exit(frame, boundaryCallData, state);
-                }
-            }
-
-            @Specialization(guards = "listCheck.execute(inliningTarget, value)")
-            static PDecimal doList(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
-                            @SuppressWarnings("unused") @Shared @Cached PyListCheckNode listCheck,
-                            @Shared @Cached GetListStorageNode getListStorage,
-                            @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                            @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
-                SequenceStorage storage = getListStorage.execute(inliningTarget, value);
-                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
-                try {
-                    return create(cls, fromSequence(storage), getShape);
-                } finally {
-                    BoundaryCallContext.exit(frame, boundaryCallData, state);
-                }
-            }
-
-            @Fallback
-            static PDecimal doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object cls, Object value,
-                            @Shared @Cached GetClassNode getClass,
-                            @Shared @Cached TypeNodes.GetNameNode getName,
-                            @Shared @Cached PRaiseNode raiseNode) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED,
-                                getName.execute(inliningTarget, getClass.execute(inliningTarget, value)));
-            }
-
-            private static PDecimal create(Object cls, Value value, TypeNodes.GetInstanceShape getShape) {
-                return PFactory.createDecimal(cls, getShape.execute(cls), value.negative(), value.coefficient(), value.exponent(), value.kind());
-            }
-
-            private static PDecimal fromDouble(Node inliningTarget, Object cls, double value, TypeNodes.GetInstanceShape getShape, InlinedBranchProfile nonCompactProfile) {
-                // IEEE 754 binary64 stores the sign in bit 63, an 11-bit biased exponent
-                // in bits 62..52, and a 52-bit fraction in bits 51..0. The masks select
-                long bits = Double.doubleToRawLongBits(value);
-                boolean negative = bits < 0;
-                int exponentBits = (int) ((bits >>> 52) & 0x7ff);
-                long coefficient = bits & 0x000fffffffffffffL;
-                // An all-ones exponent encodes infinity if the fraction is zero, else NaN.
-                if (exponentBits == 0x7ff) {
-                    Kind kind = coefficient == 0 ? Kind.INFINITY : Kind.NAN;
-                    return PFactory.createDecimal(cls, getShape.execute(cls), kind == Kind.INFINITY && negative, 0L, 0, kind);
-                }
-                if (exponentBits == 0 && coefficient == 0) {
-                    return PFactory.createDecimal(cls, getShape.execute(cls), negative, 0L, 0, Kind.FINITE);
-                }
-                int binaryExponent;
-                if (exponentBits == 0) {
-                    // Subnormals have no implicit leading 1. Their integer fraction is
-                    // scaled by 2^(1 - 1023 - 52) = 2^-1074 (bias 1023, 52 fraction bits).
-                    binaryExponent = -1074;
-                } else {
-                    // Normal values have an implicit leading 1 at bit 52. Subtract the
-                    // exponent bias (1023) and fraction width (52) to scale this integer.
-                    coefficient |= 1L << 52;
-                    binaryExponent = exponentBits - 1023 - 52;
-                }
-                // Reduce coefficient * 2^binaryExponent to an odd coefficient.
-                int trailingZeros = Long.numberOfTrailingZeros(coefficient);
-                coefficient >>>= trailingZeros;
-                binaryExponent += trailingZeros;
-                if (binaryExponent >= 0) {
-                    // A compact positive coefficient has 63 usable bits. Check the shift
-                    // count and remaining capacity before multiplying by 2^binaryExponent.
-                    if (binaryExponent < Long.SIZE - 1 && coefficient <= (Long.MAX_VALUE >>> binaryExponent)) {
-                        return PFactory.createDecimal(cls, getShape.execute(cls), negative, coefficient << binaryExponent, 0, Kind.FINITE);
-                    }
-                } else {
-                    // n / 2^k = (n * 5^k) * 10^-k because 2 * 5 = 10, with no decimal
-                    // rounding. Long.MAX_VALUE / 5 is the largest coefficient that can
-                    // survive the next multiplication by 5 without signed-long overflow.
-                    for (int i = 0; i < -binaryExponent; i++) {
-                        if (coefficient > Long.MAX_VALUE / 5) {
-                            nonCompactProfile.enter(inliningTarget);
-                            return create(cls, DecimalUtils.fromFloat(value), getShape);
-                        }
-                        coefficient *= 5;
-                    }
-                    return PFactory.createDecimal(cls, getShape.execute(cls), negative, coefficient, binaryExponent, Kind.FINITE);
-                }
-                nonCompactProfile.enter(inliningTarget);
-                return create(cls, DecimalUtils.fromFloat(value), getShape);
-            }
-
-            @TruffleBoundary
-            private static Value fromSequence(SequenceStorage triple) throws ConversionException {
-                PRaiseNode raiseNode = PRaiseNode.getUncached();
-                // Decimal triples are (sign, digits, exponent), at indices 0, 1, and 2.
-                if (triple.length() != 3) {
-                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SEQUENCE_LENGTH);
-                }
-                Object sign = SequenceStorageNodes.GetItemScalarNode.executeUncached(triple, 0);
-                if (!PyLongCheckNode.executeUncached(sign)) {
-                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SIGN);
-                }
-                long signValue = PyLongAsLongNode.executeUncached(sign);
-                // The tuple format uses 0 for positive and 1 for negative, including zero.
-                if (signValue != 0 && signValue != 1) {
-                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SIGN);
-                }
-                Object exp = SequenceStorageNodes.GetItemScalarNode.executeUncached(triple, 2);
-                Kind kind = Kind.FINITE;
-                long exponent = 0;
-                if (PyUnicodeCheckNode.executeUncached(exp)) {
-                    kind = switch (CastToJavaStringNode.getUncached().execute(exp)) {
-                        case "F" -> Kind.INFINITY;
-                        case "n" -> Kind.NAN;
-                        case "N" -> Kind.SNAN;
-                        default -> throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_SPECIAL_EXPONENT);
-                    };
-                } else {
-                    if (!PyLongCheckNode.executeUncached(exp)) {
-                        throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_EXPONENT);
-                    }
-                    exponent = PyLongAsLongNode.executeUncached(exp);
-                }
-                Object digits = SequenceStorageNodes.GetItemScalarNode.executeUncached(triple, 1);
-                SequenceStorage storage;
-                if (PyTupleCheckNode.executeUncached(digits)) {
-                    storage = GetTupleStorage.executeUncached(digits);
-                } else if (PyListCheckNode.executeUncached(digits)) {
-                    storage = GetListStorageNode.executeUncached(digits);
-                } else {
-                    throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_COEFFICIENT);
-                }
-                StringBuilder coefficient = new StringBuilder(storage.length());
-                for (int i = 0; i < storage.length(); i++) {
-                    Object digit = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
-                    if (!PyLongCheckNode.executeUncached(digit)) {
-                        throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_COEFFICIENT);
-                    }
-                    long n = PyLongAsLongNode.executeUncached(digit);
-                    // Each coefficient element is one base-10 digit, in the range 0..9.
-                    if (n < 0 || n > 9) {
-                        throw raiseNode.raise(null, ValueError, ErrorMessages.DECIMAL_COEFFICIENT);
-                    }
-                    if (kind != Kind.INFINITY) {
-                        coefficient.append((char) ('0' + n));
-                    }
-                }
-                BigInteger integer;
-                if (coefficient.isEmpty()) {
-                    integer = BigInteger.ZERO;
-                } else {
-                    integer = new BigInteger(coefficient.toString());
-                }
-                if (kind == Kind.FINITE) {
-                    return DecimalUtils.finite(signValue != 0, integer, exponent);
-                }
-                return new Value(signValue != 0, integer, 0, kind);
-            }
-        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)
@@ -1756,6 +1594,10 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaString) {
             boolean capitals = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget).getCapitals();
+            return doStr(self, capitals, fromJavaString);
+        }
+
+        static TruffleString doStr(PDecimal self, boolean capitals, TruffleString.FromJavaStringNode fromJavaString) {
             return fromJavaString.execute(self.toScientificString(capitals), TS_ENCODING);
         }
     }
@@ -2133,14 +1975,17 @@ public final class DecimalBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            return doPower(frame, inliningTarget, a, b, modulo, context, raiseSignal, raiseNode);
+        }
+
+        static PDecimal doPower(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimal modulo, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.power(a, b, modulo, context);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
-            DecimalContextUtils.addStatus(frame, context, result.status(), raiseSignal);
-            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
+            return finishResult(frame, inliningTarget, context, result, raiseSignal);
         }
     }
 

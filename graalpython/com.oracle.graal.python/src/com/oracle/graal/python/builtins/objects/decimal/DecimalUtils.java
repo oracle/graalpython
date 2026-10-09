@@ -94,6 +94,7 @@ public final class DecimalUtils {
         return count;
     }
 
+    @TruffleBoundary
     static int digits(BigInteger value) {
         BigInteger magnitude = value.abs();
         int bits = magnitude.bitLength();
