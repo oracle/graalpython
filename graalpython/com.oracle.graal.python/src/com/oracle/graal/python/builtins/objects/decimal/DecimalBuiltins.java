@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.decimal;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -79,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.PlusDecimal
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.QuantizeDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.RaiseSignalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.RemainderDecimalNode;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.RequireDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.SubtractDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.ToDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.ConversionException;
@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -146,213 +147,393 @@ public final class DecimalBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = DecimalBuiltinsSlotsGen.SLOTS;
     private static final TruffleString T_NUMERATOR = tsLiteral("numerator");
     private static final TruffleString T_DENOMINATOR = tsLiteral("denominator");
+    private static final TruffleString T_SNAN = tsLiteral("sNaN");
+    private static final TruffleString T_NAN = tsLiteral("NaN");
+    private static final TruffleString T_NEGATIVE_INFINITY = tsLiteral("-Infinity");
+    private static final TruffleString T_POSITIVE_INFINITY = tsLiteral("+Infinity");
+    private static final TruffleString T_NEGATIVE_ZERO = tsLiteral("-Zero");
+    private static final TruffleString T_POSITIVE_ZERO = tsLiteral("+Zero");
+    private static final TruffleString T_NEGATIVE_SUBNORMAL = tsLiteral("-Subnormal");
+    private static final TruffleString T_POSITIVE_SUBNORMAL = tsLiteral("+Subnormal");
+    private static final TruffleString T_NEGATIVE_NORMAL = tsLiteral("-Normal");
+    private static final TruffleString T_POSITIVE_NORMAL = tsLiteral("+Normal");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DecimalBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "exp", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "exp", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class ExpNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal exp(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.exp.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.exp(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "ln", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "ln", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class LnNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal ln(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.ln.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.ln(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "log10", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "log10", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class Log10Node extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal log10(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.log10.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.log10(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "next_minus", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "next_minus", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class NextMinusNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal nextMinus(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.next_minus.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.nextMinus(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "next_plus", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "next_plus", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class NextPlusNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal nextPlus(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.next_plus.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.nextPlus(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "normalize", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "normalize", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class NormalizeNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal normalize(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.normalize.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.normalize(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "to_integral", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "rounding", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "to_integral", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "rounding", "context"})
     @GenerateNodeFactory
     public abstract static class ToIntegralNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object rounding, Object context, PKeyword[] kwargs,
+        static PDecimal toIntegralValue(VirtualFrame frame, PDecimal self, Object rounding, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.to_integral.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalRounding actualRounding = getRounding(rounding, inliningTarget, actualContext);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.toIntegralValue(self, actualContext, actualRounding);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "to_integral_exact", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "rounding", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "to_integral_exact", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "rounding", "context"})
     @GenerateNodeFactory
     public abstract static class ToIntegralExactNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object rounding, Object context, PKeyword[] kwargs,
+        static PDecimal toIntegralExact(VirtualFrame frame, PDecimal self, Object rounding, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.to_integral_exact.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalRounding actualRounding = getRounding(rounding, inliningTarget, actualContext);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.toIntegralExact(self, actualContext, actualRounding);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "to_integral_value", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "rounding", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "to_integral_value", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "rounding", "context"})
     @GenerateNodeFactory
     public abstract static class ToIntegralValueNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object rounding, Object context, PKeyword[] kwargs,
+        static PDecimal toIntegralValue(VirtualFrame frame, PDecimal self, Object rounding, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.to_integral_value.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalRounding actualRounding = getRounding(rounding, inliningTarget, actualContext);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.toIntegralValue(self, actualContext, actualRounding);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "sqrt", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "sqrt", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class SqrtNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal sqrt(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.sqrt.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.sqrt(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "compare", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "compare", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class CompareNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal compare(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.compare.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.compare(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "compare_signal", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "compare_signal", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class CompareSignalNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal compareSignal(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.compare_signal.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.compareSignal(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "max", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "max", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class MaxNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal max(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.max.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.max(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "max_mag", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "max_mag", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class MaxMagNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal maxMag(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.max_mag.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.maxMag(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "min", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "min", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class MinNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal min(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.min.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.min(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "min_mag", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "min_mag", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class MinMagNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal minMag(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.min_mag.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.minMag(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "next_toward", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "next_toward", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class NextTowardNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal nextToward(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.next_toward.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.nextToward(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
@@ -393,27 +574,50 @@ public final class DecimalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remainder_near", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "remainder_near", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class RemainderNearNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal remainderNear(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.remainder_near.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.remainderNear(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "fma", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "third", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "fma", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "third", "context"})
     @GenerateNodeFactory
     public abstract static class FmaNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object third, Object context, PKeyword[] kwargs,
+        static PDecimal fma(VirtualFrame frame, PDecimal self, Object other, Object third, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.fma.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            PDecimal addend = convert.execute(inliningTarget, third);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.fma(self, operand, addend, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
@@ -421,11 +625,9 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsCanonicalNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_canonical.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            // In CPython, mpd_iscanonical always returns true
+            return true;
         }
     }
 
@@ -433,11 +635,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_finite.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return self.getKind() == Kind.FINITE;
         }
     }
 
@@ -445,11 +644,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsInfiniteNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_infinite.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return self.getKind() == Kind.INFINITY;
         }
     }
 
@@ -457,11 +653,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_nan.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return self.getKind() == Kind.NAN || self.getKind() == Kind.SNAN;
         }
     }
 
@@ -469,11 +662,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsQnanNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_qnan.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return self.getKind() == Kind.NAN;
         }
     }
 
@@ -481,11 +671,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsSnanNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_snan.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return self.getKind() == Kind.SNAN;
         }
     }
 
@@ -493,11 +680,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsSignedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_signed.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return self.isNegative();
         }
     }
 
@@ -505,35 +689,32 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsZeroNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_zero.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static boolean check(PDecimal self) {
+            return isZero(self);
         }
     }
 
-    @Builtin(name = "is_normal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "is_normal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class IsNormalNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static boolean check(PDecimal self, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_normal.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return isNonzeroFinite(self) && adjustedExponent(self) >= actualContext.getEmin();
         }
     }
 
-    @Builtin(name = "is_subnormal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "is_subnormal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class IsSubnormalNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static boolean check(PDecimal self, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.is_subnormal.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return isNonzeroFinite(self) && adjustedExponent(self) < actualContext.getEmin();
         }
     }
 
@@ -541,11 +722,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AdjustedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.adjusted.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static long adjusted(PDecimal self) {
+            return adjustedExponent(self);
         }
     }
 
@@ -553,11 +731,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CanonicalNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.canonical.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal identity(PDecimal self) {
+            return self;
         }
     }
 
@@ -565,11 +740,8 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ConjugateNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.conjugate.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal identity(PDecimal self) {
+            return self;
         }
     }
 
@@ -577,11 +749,9 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RadixNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.radix.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal radix(@SuppressWarnings("unused") PDecimal self,
+                        @Bind PythonLanguage language) {
+            return PFactory.createDecimal(language, 10);
         }
     }
 
@@ -589,11 +759,9 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyAbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.copy_abs.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal copy(PDecimal self,
+                        @Bind PythonLanguage language) {
+            return copySign(language, self, false);
         }
     }
 
@@ -601,179 +769,288 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNegateNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.copy_negate.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+        static PDecimal copy(PDecimal self,
+                        @Bind PythonLanguage language) {
+            return copySign(language, self, !self.isNegative());
         }
     }
 
-    @Builtin(name = "logb", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "logb", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class LogbNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal logb(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.logb.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.logb(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "logical_invert", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "logical_invert", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class LogicalInvertNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static PDecimal logicalInvert(VirtualFrame frame, PDecimal self, Object context,
                         @Bind Node inliningTarget,
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.logical_invert.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.logicalInvert(self, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "number_class", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "number_class", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class NumberClassNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static TruffleString classify(PDecimal self, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.number_class.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return numberClass(self, actualContext);
         }
     }
 
-    @Builtin(name = "to_eng_string", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "to_eng_string", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "context"})
     @GenerateNodeFactory
     public abstract static class ToEngStringNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object context, PKeyword[] kwargs,
+        static TruffleString format(PDecimal self, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.to_eng_string.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached TruffleString.FromJavaStringNode fromJavaString) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            return fromJavaString.execute(engineeringString(self, actualContext.getCapitals()), TS_ENCODING);
         }
     }
 
-    @Builtin(name = "compare_total", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "compare_total", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class CompareTotalNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal compareTotal(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.compare_total.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.compareTotal(self, operand);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "compare_total_mag", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "compare_total_mag", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class CompareTotalMagNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal compareTotalMag(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.compare_total_mag.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.compareTotalMag(self, operand);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "copy_sign", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "copy_sign", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class CopySignNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal apply(PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.copy_sign.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RequireDecimalNode convert) {
+            getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            return copySign(PythonLanguage.get(inliningTarget), self, operand.isNegative());
         }
     }
 
-    @Builtin(name = "same_quantum", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "same_quantum", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class SameQuantumNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static boolean apply(PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.same_quantum.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RequireDecimalNode convert) {
+            getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            return sameQuantum(self, operand);
         }
     }
 
-    @Builtin(name = "logical_and", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "logical_and", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class LogicalAndNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal logicalAnd(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.logical_and.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.logicalAnd(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "logical_or", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "logical_or", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class LogicalOrNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal logicalOr(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.logical_or.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.logicalOr(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "logical_xor", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "logical_xor", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class LogicalXorNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal logicalXor(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.logical_xor.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.logicalXor(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "rotate", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "rotate", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class RotateNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal rotate(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.rotate.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.rotate(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "scaleb", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "scaleb", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class ScalebNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal scaleb(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.scaleb.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.scaleb(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
-    @Builtin(name = "shift", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"}, takesVarKeywordArgs = true)
+    @Builtin(name = "shift", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 1, parameterNames = {"self", "other", "context"})
     @GenerateNodeFactory
     public abstract static class ShiftNode extends PythonBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object other, Object context, PKeyword[] kwargs,
+        static PDecimal shift(VirtualFrame frame, PDecimal self, Object other, Object context,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.shift.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached GetContextNode getContext,
+                        @Cached RaiseSignalNode raiseSignal,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RequireDecimalNode convert) {
+            PDecimalContext actualContext = getContext.execute(inliningTarget, context);
+            PDecimal operand = convert.execute(inliningTarget, other);
+            DecimalArithmetic.Result result;
+            try {
+                result = DecimalArithmetic.shift(self, operand, actualContext);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            DecimalContextUtils.addStatus(frame, actualContext, result.status(), raiseSignal);
+            return DecimalNodes.create(PythonLanguage.get(inliningTarget), result.value());
         }
     }
 
@@ -781,11 +1058,27 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromFloatNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self, Object arg1,
+        static Object convert(VirtualFrame frame, Object cls, Object value,
                         @Bind Node inliningTarget,
+                        @Cached PyLongCheckNode longCheck,
+                        @Cached PyFloatCheckNode floatCheck,
+                        @Cached RequireDecimalNode toDecimal,
+                        @Cached PyFloatAsDoubleNode asDouble,
+                        @Cached IsBuiltinClassExactProfile clsProfile,
+                        @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.from_float.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            PDecimal result;
+            if (longCheck.execute(inliningTarget, value)) {
+                result = toDecimal.execute(inliningTarget, value);
+            } else if (floatCheck.execute(inliningTarget, value)) {
+                result = DecimalNodes.create(PythonLanguage.get(inliningTarget), DecimalUtils.fromFloat(asDouble.execute(frame, inliningTarget, value)));
+            } else {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_FROM_FLOAT_ARGUMENT);
+            }
+            if (clsProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PDecimal)) {
+                return result;
+            }
+            return callNode.execute(frame, cls, result);
         }
     }
 
@@ -793,11 +1086,11 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AsTupleNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object tuple(VirtualFrame frame, PDecimal self,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.as_tuple.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+                        @Cached CallNode callNode) {
+            Object[] args = tupleArguments(PythonLanguage.get(inliningTarget), self);
+            return callNode.execute(frame, DecimalContextUtils.getState(inliningTarget).getDecimalTupleType(), args, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
@@ -805,12 +1098,164 @@ public final class DecimalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AsIntegerRatioNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doMock(VirtualFrame frame, Object self,
+        static Object ratio(PDecimal self,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            // TODO implement Decimal.as_integer_ratio.
-            throw raiseNode.raise(inliningTarget, NotImplementedError);
+            if (self.getKind() == Kind.INFINITY) {
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.DECIMAL_INFINITY_TO_RATIO);
+            }
+            if (self.getKind() != Kind.FINITE) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.DECIMAL_NAN_TO_RATIO);
+            }
+            try {
+                return integerRatio(PythonLanguage.get(inliningTarget), self);
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
         }
+    }
+
+    private static DecimalRounding getRounding(Object rounding, Node inliningTarget, PDecimalContext actualContext) {
+        if (rounding instanceof PNone) {
+            return actualContext.getRounding();
+        } else {
+            return DecimalContextUtils.validateRounding(inliningTarget, rounding);
+        }
+    }
+
+    private static boolean isZero(PDecimal self) {
+        return self.getKind() == Kind.FINITE && self.isCompact() && self.getCompactCoefficient() == 0;
+    }
+
+    private static boolean isNonzeroFinite(PDecimal self) {
+        return self.getKind() == Kind.FINITE && !isZero(self);
+    }
+
+    private static long adjustedExponent(PDecimal self) {
+        if (self.getKind() != Kind.FINITE) {
+            return 0;
+        }
+        long exponent = self.getExponent();
+        int digits;
+        if (self.isCompact()) {
+            digits = DecimalUtils.digits(self.getCompactCoefficient());
+        } else {
+            digits = DecimalUtils.digits(self.getCoefficient());
+        }
+        return exponent + digits - 1;
+    }
+
+    private static PDecimal copySign(PythonLanguage language, PDecimal self, boolean negative) {
+        if (self.isCompact()) {
+            return PFactory.createDecimal(language, negative, self.getCompactCoefficient(), self.getExponent(), self.getKind());
+        }
+        return PFactory.createDecimal(language, negative, self.getCoefficient(), self.getExponent(), self.getKind());
+    }
+
+    private static boolean sameQuantum(PDecimal self, PDecimal other) {
+        if (self.getKind() == Kind.FINITE && other.getKind() == Kind.FINITE) {
+            return self.getExponent() == other.getExponent();
+        }
+        if (self.getKind() == Kind.INFINITY || other.getKind() == Kind.INFINITY) {
+            return self.getKind() == other.getKind();
+        }
+        return self.getKind() != Kind.FINITE && other.getKind() != Kind.FINITE;
+    }
+
+    private static TruffleString numberClass(PDecimal self, PDecimalContext context) {
+        if (self.getKind() == Kind.SNAN) {
+            return T_SNAN;
+        }
+        if (self.getKind() == Kind.NAN) {
+            return T_NAN;
+        }
+        if (self.getKind() == Kind.INFINITY) {
+            return self.isNegative() ? T_NEGATIVE_INFINITY : T_POSITIVE_INFINITY;
+        }
+        if (isZero(self)) {
+            return self.isNegative() ? T_NEGATIVE_ZERO : T_POSITIVE_ZERO;
+        }
+        if (adjustedExponent(self) < context.getEmin()) {
+            return self.isNegative() ? T_NEGATIVE_SUBNORMAL : T_POSITIVE_SUBNORMAL;
+        }
+        return self.isNegative() ? T_NEGATIVE_NORMAL : T_POSITIVE_NORMAL;
+    }
+
+    @TruffleBoundary
+    private static String engineeringString(PDecimal self, boolean capitals) {
+        if (self.getKind() != Kind.FINITE || self.getExponent() <= 0 && adjustedExponent(self) >= -6) {
+            return self.toScientificString(capitals);
+        }
+        String digits = self.getCoefficient().toString();
+        long left = self.getExponent() + digits.length();
+        int point;
+        if (isZero(self)) {
+            point = Math.floorMod(left + 1, 3) - 1;
+        } else {
+            point = Math.floorMod(left - 1, 3) + 1;
+        }
+        String significand;
+        if (point <= 0) {
+            significand = "0." + "0".repeat(-point) + digits;
+        } else if (point >= digits.length()) {
+            significand = digits + "0".repeat(point - digits.length());
+        } else {
+            significand = digits.substring(0, point) + "." + digits.substring(point);
+        }
+        long exponent = left - point;
+        String result = (self.isNegative() ? "-" : "") + significand;
+        if (exponent != 0) {
+            result += (capitals ? "E" : "e") + (exponent > 0 ? "+" : "") + exponent;
+        }
+        return result;
+    }
+
+    @TruffleBoundary
+    private static Object[] tupleArguments(PythonLanguage language, PDecimal self) {
+        String text = self.getCoefficient().toString();
+        Object exponent = self.getExponent();
+        if (self.getKind() == Kind.INFINITY) {
+            text = "0";
+            exponent = tsLiteral("F");
+        } else if (self.getKind() != Kind.FINITE) {
+            if (text.equals("0")) {
+                text = "";
+            }
+            exponent = self.getKind() == Kind.NAN ? tsLiteral("n") : tsLiteral("N");
+        }
+        int[] digits = new int[text.length()];
+        for (int i = 0; i < text.length(); i++) {
+            digits[i] = text.charAt(i) - '0';
+        }
+        return new Object[]{self.isNegative() ? 1 : 0, PFactory.createTuple(language, digits), exponent};
+    }
+
+    @TruffleBoundary
+    private static Object integerRatio(PythonLanguage language, PDecimal self) {
+        BigInteger numerator = self.getCoefficient();
+        BigInteger denominator = BigInteger.ONE;
+        if (numerator.signum() != 0) {
+            if (self.getExponent() >= 0) {
+                numerator = numerator.multiply(DecimalUtils.pow10(self.getExponent()));
+            } else {
+                // Cancel powers of two and five before constructing the denominator.
+                long fives = -self.getExponent();
+                BigInteger five = BigInteger.valueOf(5);
+                while (fives > 0 && numerator.remainder(five).signum() == 0) {
+                    numerator = numerator.divide(five);
+                    fives--;
+                }
+                long twos = -self.getExponent();
+                int shift = (int) Math.min(numerator.getLowestSetBit(), twos);
+                numerator = numerator.shiftRight(shift);
+                twos -= shift;
+                denominator = five.pow(Math.toIntExact(fives)).shiftLeft(Math.toIntExact(twos));
+            }
+        }
+        if (self.isNegative()) {
+            numerator = numerator.negate();
+        }
+        return PFactory.createTuple(language, new Object[]{PFactory.createInt(language, numerator), PFactory.createInt(language, denominator)});
     }
 
     private static Value decimalValue(PDecimal self) {
@@ -1521,7 +1966,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
             return value != Long.MIN_VALUE;
         }
 
-        @Fallback
+        @Specialization
         static Object compare(VirtualFrame frame, PDecimal self, Object other, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Cached ToDecimalNode toDecimal,

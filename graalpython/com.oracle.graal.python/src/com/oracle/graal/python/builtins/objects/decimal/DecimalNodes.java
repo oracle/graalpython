@@ -53,10 +53,12 @@ import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.Value;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimal.Kind;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -159,6 +161,27 @@ public final class DecimalNodes {
 
     static PDecimal create(PythonLanguage language, Value value) {
         return PFactory.createDecimal(language, value.negative(), value.coefficient(), value.exponent(), value.kind());
+    }
+
+    /** Decimal methods accept the same exact operands as slots, but reject unsupported types. */
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class RequireDecimalNode extends Node {
+        public abstract PDecimal execute(Node inliningTarget, Object value);
+
+        @Specialization
+        static PDecimal convert(Node inliningTarget, Object value,
+                        @Cached ToDecimalNode toDecimal,
+                        @Cached GetClassNode getClass,
+                        @Cached TypeNodes.GetNameNode getName,
+                        @Cached PRaiseNode raiseNode) {
+            PDecimal result = toDecimal.execute(inliningTarget, value);
+            if (result == null) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED,
+                                getName.execute(inliningTarget, getClass.execute(inliningTarget, value)));
+            }
+            return result;
+        }
     }
 
     private static PDecimal compact(PythonLanguage language, boolean negative, long coefficient, long exponent) {

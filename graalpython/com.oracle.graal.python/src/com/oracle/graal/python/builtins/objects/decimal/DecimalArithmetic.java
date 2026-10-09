@@ -401,6 +401,759 @@ final class DecimalArithmetic {
         return new ResultWithRemainder(result, result, arithmetic.status);
     }
 
+    @TruffleBoundary
+    static Result normalize(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.normalize(a);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result toIntegralValue(PDecimal self, PDecimalContext context, DecimalRounding rounding) {
+        DecimalArithmetic work = new DecimalArithmetic(context.getPrecision(), context.getEmin(), context.getEmax(), rounding, context.getClamp());
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.integral(a, false);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result toIntegralExact(PDecimal self, PDecimalContext context, DecimalRounding rounding) {
+        DecimalArithmetic work = new DecimalArithmetic(context.getPrecision(), context.getEmin(), context.getEmax(), rounding, context.getClamp());
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.integral(a, true);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result exp(PDecimal self, PDecimalContext context) {
+        // These three transcendental operations always use half-even, including overflow.
+        DecimalArithmetic work = new DecimalArithmetic(context.getPrecision(), context.getEmin(), context.getEmax(), ROUND_HALF_EVEN, context.getClamp());
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.exp(a);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result ln(PDecimal self, PDecimalContext context) {
+        return logarithm(self, context, false);
+    }
+
+    @TruffleBoundary
+    static Result log10(PDecimal self, PDecimalContext context) {
+        return logarithm(self, context, true);
+    }
+
+    private static Result logarithm(PDecimal self, PDecimalContext context, boolean baseTen) {
+        DecimalArithmetic work = new DecimalArithmetic(context.getPrecision(), context.getEmin(), context.getEmax(), ROUND_HALF_EVEN, context.getClamp());
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.logarithm(a, baseTen);
+        }
+        return new Result(result, work.status);
+    }
+
+    private Value exp(Value a) {
+        if (a.kind() == Kind.INFINITY) {
+            return a.negative() ? zero(false, 0) : infinity(false);
+        }
+        if (isZero(a)) {
+            return finite(false, BigInteger.ONE, 0);
+        }
+        status |= INEXACT | ROUNDED;
+        long adjusted = adjusted(a);
+        long etiny = emin - precision + 1;
+        long limit = a.negative() ? -etiny : emax;
+        if (adjusted > digits(3 * (limit + 1))) {
+            long exponent;
+            if (a.negative()) {
+                exponent = etiny - 1;
+            } else {
+                exponent = emax + 1;
+            }
+            return finish(finite(false, BigInteger.ONE, exponent));
+        }
+        // libmpdec's first work context uses precision + 3 and returns exactly one
+        // for abs(a) <= 9 * 10^(-precision-4). In particular, it does not signal
+        // tininess for negative inputs here when Emin is zero.
+        if (compareMagnitude(a, finite(false, BigInteger.valueOf(9), -precision - 4)) <= 0) {
+            return finish(finite(false, pow10(precision - 1), 1 - precision));
+        }
+        if (!a.negative() && adjusted < -precision) {
+            return finish(finite(false, pow10(precision).add(BigInteger.ONE), -precision));
+        }
+        if (a.negative() && adjusted < -precision - 1) {
+            return finish(finite(false, pow10(precision + 1).subtract(BigInteger.ONE), -precision - 1));
+        }
+        for (long extra = 3;; extra += 3) {
+            Value approximation = DecimalPowerMath.exponential(a, precision + extra);
+            Value result = finishTranscendentalInterval(approximation);
+            if (result != null) {
+                return result;
+            }
+        }
+    }
+
+    private Value logarithm(Value a, boolean baseTen) {
+        if (isZero(a)) {
+            // Unlike logb, logarithms of either signed zero do not signal DivisionByZero.
+            return infinity(true);
+        }
+        if (a.negative()) {
+            return invalid(INVALID);
+        }
+        if (a.kind() == Kind.INFINITY) {
+            return infinity(false);
+        }
+        if (a.coefficient().equals(pow10(digits(a.coefficient()) - 1))) {
+            long exponent = adjusted(a);
+            if (baseTen) {
+                return finish(finite(exponent < 0, BigInteger.valueOf(exponent).abs(), 0));
+            }
+            if (exponent == 0) {
+                return zero(false, 0);
+            }
+        }
+        status |= INEXACT | ROUNDED;
+        // The log10 bound is also a conservative bound for ln, since abs(ln(x))
+        // exceeds abs(log10(x)). It retains significant digits for arguments near one.
+        long bound = logExponentBound(a);
+        for (long extra = 3;; extra += 3) {
+            long places = precision - bound + extra;
+            Value approximation;
+            if (baseTen) {
+                approximation = DecimalPowerMath.logarithm10(a.coefficient(), a.exponent(), places);
+            } else {
+                approximation = DecimalPowerMath.logarithm(a.coefficient(), a.exponent(), places);
+            }
+            Value result = finishTranscendentalInterval(approximation);
+            if (result != null) {
+                return result;
+            }
+        }
+    }
+
+    /** Finalize only when both ends of the error interval have identical values and signals. */
+    private Value finishTranscendentalInterval(Value approximation) {
+        DecimalArithmetic low = new DecimalArithmetic(precision, emin, emax, rounding, clamp);
+        DecimalArithmetic high = new DecimalArithmetic(precision, emin, emax, rounding, clamp);
+        low.status = high.status = INEXACT | ROUNDED;
+        Value lower = low.finish(finite(approximation.negative(), approximation.coefficient().subtract(BigInteger.ONE), approximation.exponent()));
+        Value upper = high.finish(finite(approximation.negative(), approximation.coefficient().add(BigInteger.ONE), approximation.exponent()));
+        if ((low.status & SUBNORMAL) != 0) {
+            low.status |= UNDERFLOW;
+        }
+        if ((high.status & SUBNORMAL) != 0) {
+            high.status |= UNDERFLOW;
+        }
+        if (lower.equals(upper) && low.status == high.status) {
+            status |= low.status;
+            return lower;
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    static Result sqrt(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.sqrt(a);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result compare(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result == null) {
+            result = DecimalUtils.fromInteger(BigInteger.valueOf(Integer.signum(compare(a, b))));
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result compareSignal(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result != null) {
+            work.status |= INVALID;
+        }
+        if (result == null) {
+            result = DecimalUtils.fromInteger(BigInteger.valueOf(Integer.signum(compare(a, b))));
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result nextMinus(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.next(a, false);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result nextPlus(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.next(a, true);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result nextToward(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result == null) {
+            result = work.nextToward(a, b);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result remainderNear(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result == null) {
+            result = work.remainderNear(a, b);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result logb(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value result = work.checkNaNs(a);
+        if (result == null) {
+            result = work.logb(a);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result rotate(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result == null) {
+            result = work.rotate(a, b);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result shift(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result == null) {
+            result = work.shift(a, b);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result scaleb(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value a = value(self);
+        Value b = value(other);
+        Value result = work.checkNaNs(a, b);
+        if (result == null) {
+            result = work.scaleb(a, b);
+        }
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result compareTotal(PDecimal self, PDecimal other) {
+        Value result = DecimalUtils.fromInteger(BigInteger.valueOf(compareTotal(value(self), value(other), false)));
+        return new Result(result, 0);
+    }
+
+    @TruffleBoundary
+    static Result compareTotalMag(PDecimal self, PDecimal other) {
+        Value result = DecimalUtils.fromInteger(BigInteger.valueOf(compareTotal(value(self), value(other), true)));
+        return new Result(result, 0);
+    }
+
+    @TruffleBoundary
+    static Result max(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.extremum(value(self), value(other), false, true);
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result maxMag(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.extremum(value(self), value(other), true, true);
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result min(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.extremum(value(self), value(other), false, false);
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result minMag(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.extremum(value(self), value(other), true, false);
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result logicalInvert(PDecimal self, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.logicalInvert(value(self));
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result logicalAnd(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.logicalAnd(value(self), value(other));
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result logicalOr(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.logicalOr(value(self), value(other));
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result logicalXor(PDecimal self, PDecimal other, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.logicalXor(value(self), value(other));
+        return new Result(result, work.status);
+    }
+
+    @TruffleBoundary
+    static Result fma(PDecimal self, PDecimal other, PDecimal third, PDecimalContext context) {
+        DecimalArithmetic work = new DecimalArithmetic(context);
+        Value result = work.fma(value(self), value(other), value(third));
+        return new Result(result, work.status);
+    }
+
+    private Value normalize(Value a) {
+        Value result = finish(a);
+        if (result.kind() != Kind.FINITE) {
+            return result;
+        }
+        if (isZero(result)) {
+            return zero(result.negative(), 0);
+        }
+        long exponent = result.exponent();
+        long maximum = clamp == 0 ? emax : emax - precision + 1;
+        BigInteger coefficient = result.coefficient();
+        while (exponent < maximum && coefficient.remainder(BigInteger.TEN).signum() == 0) {
+            coefficient = coefficient.divide(BigInteger.TEN);
+            exponent++;
+        }
+        return finite(result.negative(), coefficient, exponent);
+    }
+
+    private Value integral(Value a, boolean exact) {
+        if (a.kind() != Kind.FINITE || a.exponent() >= 0) {
+            return a;
+        }
+        Value result = rescale(a, 0, rounding);
+        if (exact && !isZero(a)) {
+            status |= ROUNDED;
+            if (compare(a, result) != 0) {
+                status |= INEXACT;
+            }
+        }
+        return result;
+    }
+
+    private static Value unsigned(Value a) {
+        return new Value(false, a.coefficient(), a.exponent(), a.kind());
+    }
+
+    private static int totalRank(Kind kind) {
+        return switch (kind) {
+            case FINITE -> 0;
+            case INFINITY -> 1;
+            case SNAN -> 2;
+            case NAN -> 3;
+        };
+    }
+
+    private static int compareTotal(Value left, Value right, boolean magnitude) {
+        Value a = magnitude ? unsigned(left) : left;
+        Value b = magnitude ? unsigned(right) : right;
+        if (a.negative() != b.negative()) {
+            return a.negative() ? -1 : 1;
+        }
+        int order = Integer.compare(totalRank(a.kind()), totalRank(b.kind()));
+        if (order == 0) {
+            if (a.kind() == Kind.NAN || a.kind() == Kind.SNAN) {
+                order = a.coefficient().compareTo(b.coefficient());
+            } else {
+                order = compare(unsigned(a), unsigned(b));
+                if (order == 0 && a.kind() == Kind.FINITE) {
+                    order = Long.compare(a.exponent(), b.exponent());
+                }
+            }
+        }
+        return Integer.signum(a.negative() ? -order : order);
+    }
+
+    private Value extremum(Value a, Value b, boolean magnitude, boolean maximum) {
+        // min/max ignore a lone quiet NaN and return the rounded numeric operand.
+        if (a.kind() == Kind.NAN && b.kind() != Kind.NAN && b.kind() != Kind.SNAN) {
+            return finish(b);
+        }
+        if (b.kind() == Kind.NAN && a.kind() != Kind.NAN && a.kind() != Kind.SNAN) {
+            return finish(a);
+        }
+        Value nan = checkNaNs(a, b);
+        if (nan != null) {
+            return nan;
+        }
+        int order = compare(magnitude ? unsigned(a) : a, magnitude ? unsigned(b) : b);
+        if (order == 0) {
+            order = compareTotal(a, b, false);
+        }
+        return finish((order >= 0) == maximum ? a : b);
+    }
+
+    private Value logb(Value a) {
+        if (a.kind() == Kind.INFINITY) {
+            return infinity(false);
+        }
+        if (isZero(a)) {
+            status |= DIVISION_ZERO;
+            return infinity(true);
+        }
+        return finish(DecimalUtils.fromInteger(BigInteger.valueOf(adjusted(a))));
+    }
+
+    private static boolean logicalOperand(Value a) {
+        if (a.kind() != Kind.FINITE || a.negative() || a.exponent() != 0) {
+            return false;
+        }
+        String text = a.coefficient().toString();
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) != '0' && text.charAt(i) != '1') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Value logicalInvert(Value a) {
+        // Logical operands have stricter validation than arithmetic operands, including NaNs.
+        if (!logicalOperand(a)) {
+            return invalid(INVALID);
+        }
+        String left = a.coefficient().toString();
+        int length = Math.toIntExact(precision);
+        char[] result = new char[length];
+        for (int i = 0; i < length; i++) {
+            int x = i < left.length() ? left.charAt(left.length() - 1 - i) - '0' : 0;
+            result[length - 1 - i] = (char) ('0' + (x ^ 1));
+        }
+        return finite(false, new BigInteger(new String(result)), 0);
+    }
+
+    private Value logicalAnd(Value a, Value b) {
+        // Logical operands have stricter validation than arithmetic operands, including NaNs.
+        if (!logicalOperand(a) || !logicalOperand(b)) {
+            return invalid(INVALID);
+        }
+        String left = a.coefficient().toString();
+        String right = b.coefficient().toString();
+        int length = Math.toIntExact(Math.min(precision, Math.max(left.length(), right.length())));
+        char[] result = new char[length];
+        for (int i = 0; i < length; i++) {
+            int x = i < left.length() ? left.charAt(left.length() - 1 - i) - '0' : 0;
+            int y = i < right.length() ? right.charAt(right.length() - 1 - i) - '0' : 0;
+            result[length - 1 - i] = (char) ('0' + (x & y));
+        }
+        return finite(false, new BigInteger(new String(result)), 0);
+    }
+
+    private Value logicalOr(Value a, Value b) {
+        // Logical operands have stricter validation than arithmetic operands, including NaNs.
+        if (!logicalOperand(a) || !logicalOperand(b)) {
+            return invalid(INVALID);
+        }
+        String left = a.coefficient().toString();
+        String right = b.coefficient().toString();
+        int length = Math.toIntExact(Math.min(precision, Math.max(left.length(), right.length())));
+        char[] result = new char[length];
+        for (int i = 0; i < length; i++) {
+            int x = i < left.length() ? left.charAt(left.length() - 1 - i) - '0' : 0;
+            int y = i < right.length() ? right.charAt(right.length() - 1 - i) - '0' : 0;
+            result[length - 1 - i] = (char) ('0' + (x | y));
+        }
+        return finite(false, new BigInteger(new String(result)), 0);
+    }
+
+    private Value logicalXor(Value a, Value b) {
+        // Logical operands have stricter validation than arithmetic operands, including NaNs.
+        if (!logicalOperand(a) || !logicalOperand(b)) {
+            return invalid(INVALID);
+        }
+        String left = a.coefficient().toString();
+        String right = b.coefficient().toString();
+        int length = Math.toIntExact(Math.min(precision, Math.max(left.length(), right.length())));
+        char[] result = new char[length];
+        for (int i = 0; i < length; i++) {
+            int x = i < left.length() ? left.charAt(left.length() - 1 - i) - '0' : 0;
+            int y = i < right.length() ? right.charAt(right.length() - 1 - i) - '0' : 0;
+            result[length - 1 - i] = (char) ('0' + (x ^ y));
+        }
+        return finite(false, new BigInteger(new String(result)), 0);
+    }
+
+    private Value shift(Value a, Value b) {
+        if (b.kind() != Kind.FINITE || b.exponent() != 0 || b.coefficient().compareTo(BigInteger.valueOf(precision)) > 0) {
+            return invalid(INVALID);
+        }
+        if (a.kind() == Kind.INFINITY) {
+            return a;
+        }
+        long count = b.coefficient().longValue() * (b.negative() ? -1 : 1);
+        BigInteger coefficient = a.coefficient();
+        if (digits(coefficient) > precision) {
+            coefficient = coefficient.remainder(pow10(precision));
+        }
+        if (count < 0) {
+            if (-count >= digits(coefficient)) {
+                coefficient = BigInteger.ZERO;
+            } else {
+                coefficient = coefficient.divide(pow10(-count));
+            }
+        } else if (count > 0 && coefficient.signum() != 0) {
+            if (count == precision) {
+                coefficient = BigInteger.ZERO;
+            } else {
+                coefficient = coefficient.multiply(pow10(count));
+                if (digits(coefficient) > precision) {
+                    coefficient = coefficient.remainder(pow10(precision));
+                }
+            }
+        }
+        return finite(a.negative(), coefficient, a.exponent());
+    }
+
+    private Value rotate(Value a, Value b) {
+        if (b.kind() != Kind.FINITE || b.exponent() != 0 || b.coefficient().compareTo(BigInteger.valueOf(precision)) > 0) {
+            return invalid(INVALID);
+        }
+        if (a.kind() == Kind.INFINITY) {
+            return a;
+        }
+        long count = b.coefficient().longValue() * (b.negative() ? -1 : 1);
+        BigInteger coefficient = a.coefficient();
+        if (digits(coefficient) > precision) {
+            coefficient = coefficient.remainder(pow10(precision));
+        }
+        if (count != 0 && Math.abs(count) != precision && coefficient.signum() != 0) {
+            long left = count > 0 ? count : precision + count;
+            long pivot = precision - left;
+            if (pivot >= digits(coefficient)) {
+                coefficient = coefficient.multiply(pow10(left));
+            } else {
+                BigInteger[] parts = coefficient.divideAndRemainder(pow10(pivot));
+                BigInteger lower;
+                if (parts[1].signum() == 0) {
+                    lower = BigInteger.ZERO;
+                } else {
+                    lower = parts[1].multiply(pow10(left));
+                }
+                coefficient = lower.add(parts[0]);
+            }
+        }
+        return finite(a.negative(), coefficient, a.exponent());
+    }
+
+    private Value scaleb(Value a, Value b) {
+        if (b.kind() != Kind.FINITE || b.exponent() != 0 || b.coefficient().compareTo(BigInteger.valueOf(2 * (emax + precision))) > 0) {
+            return invalid(INVALID);
+        }
+        if (a.kind() == Kind.INFINITY) {
+            return a;
+        }
+        long count = b.coefficient().longValue() * (b.negative() ? -1 : 1);
+        return finish(finite(a.negative(), a.coefficient(), a.exponent() + count));
+    }
+
+    private Value next(Value a, boolean up) {
+        if (a.kind() == Kind.INFINITY) {
+            if (a.negative() != up) {
+                return a;
+            }
+            return finite(a.negative(), pow10(precision).subtract(BigInteger.ONE), emax - precision + 1);
+        }
+        DecimalArithmetic directed = new DecimalArithmetic(precision, emin, emax,
+                        up ? DecimalRounding.ROUND_CEILING : ROUND_FLOOR, clamp);
+        Value rounded = directed.finish(a);
+        if (compare(rounded, a) != 0) {
+            return rounded;
+        }
+        // A tiny signed increment requests the neighboring value with directed rounding.
+        return directed.add(a, finite(!up, BigInteger.ONE, emin - precision));
+    }
+
+    private Value nextToward(Value a, Value b) {
+        int order = compare(a, b);
+        if (order == 0) {
+            return new Value(b.negative(), a.coefficient(), a.exponent(), a.kind());
+        }
+        Value result = next(a, order < 0);
+        if (result.kind() == Kind.INFINITY && a.kind() != Kind.INFINITY) {
+            status |= OVERFLOW | INEXACT | ROUNDED;
+        } else if (result.kind() == Kind.FINITE && adjusted(result) < emin) {
+            status |= UNDERFLOW | SUBNORMAL | INEXACT | ROUNDED;
+            if (isZero(result)) {
+                status |= CLAMPED;
+            }
+        }
+        return result;
+    }
+
+    private Value remainderNear(Value a, Value b) {
+        if (a.kind() == Kind.INFINITY) {
+            return invalid(INVALID);
+        }
+        if (isZero(b)) {
+            return invalid(isZero(a) ? DIVISION_UNDEFINED : INVALID);
+        }
+        if (b.kind() == Kind.INFINITY) {
+            return finish(a);
+        }
+        long exponent = Math.min(a.exponent(), b.exponent());
+        if (isZero(a)) {
+            return finish(zero(a.negative(), exponent));
+        }
+        long difference = adjusted(a) - adjusted(b);
+        if (difference > precision) {
+            return invalid(DIVISION_IMPOSSIBLE);
+        }
+        if (difference <= -2) {
+            // Retain a discarded zero to preserve Rounded without enormous coefficient shifts.
+            long target = Math.max(exponent, a.exponent() - Math.max(0, precision - digits(a.coefficient()) + 1));
+            return finish(rescale(a, target, rounding));
+        }
+        BigInteger numerator = a.coefficient().multiply(pow10(a.exponent() - exponent));
+        BigInteger denominator = b.coefficient().multiply(pow10(b.exponent() - exponent));
+        BigInteger[] parts = numerator.divideAndRemainder(denominator);
+        BigInteger quotient = parts[0];
+        BigInteger remainder = parts[1];
+        int half = remainder.shiftLeft(1).compareTo(denominator);
+        if (half > 0 || half == 0 && quotient.testBit(0)) {
+            quotient = quotient.add(BigInteger.ONE);
+            remainder = remainder.subtract(denominator);
+        }
+        if (digits(quotient) > precision) {
+            return invalid(DIVISION_IMPOSSIBLE);
+        }
+        return finish(finite(a.negative() ^ remainder.signum() < 0, remainder.abs(), exponent));
+    }
+
+    private Value fma(Value a, Value b, Value c) {
+        // The multiplication is exact. Its invalid operations take precedence over the addend.
+        if (a.kind() == Kind.SNAN || b.kind() == Kind.SNAN) {
+            return checkNaNs(a, b);
+        }
+        Value product;
+        if (a.kind() == Kind.NAN || b.kind() == Kind.NAN) {
+            product = a.kind() == Kind.NAN ? a : b;
+        } else if (a.kind() == Kind.INFINITY || b.kind() == Kind.INFINITY) {
+            if (isZero(a) || isZero(b)) {
+                return invalid(INVALID);
+            }
+            product = infinity(a.negative() ^ b.negative());
+        } else {
+            product = finite(a.negative() ^ b.negative(), a.coefficient().multiply(b.coefficient()), a.exponent() + b.exponent());
+        }
+        Value nan = checkNaNs(product, c);
+        return nan == null ? add(product, c) : nan;
+    }
+
+    private Value sqrt(Value a) {
+        if (a.kind() == Kind.INFINITY && !a.negative()) {
+            return a;
+        }
+        // Square root always rounds half even, independently of the context rounding mode.
+        DecimalArithmetic work = new DecimalArithmetic(precision, emin, emax, ROUND_HALF_EVEN, clamp);
+        Value result;
+        if (isZero(a)) {
+            result = work.finish(zero(a.negative(), Math.floorDiv(a.exponent(), 2)));
+        } else if (a.negative()) {
+            return invalid(INVALID);
+        } else {
+            long ideal = Math.floorDiv(a.exponent(), 2);
+            BigInteger coefficient = a.coefficient();
+            if ((a.exponent() & 1) != 0) {
+                coefficient = coefficient.multiply(BigInteger.TEN);
+            }
+            BigInteger[] exactRoot = coefficient.sqrtAndRemainder();
+            if (exactRoot[1].signum() == 0) {
+                // Exact roots retain their preferred exponent without expanding to precision.
+                result = work.finish(finite(false, exactRoot[0], ideal));
+                status |= work.status;
+                return result;
+            }
+            long shift = precision + 1 - (digits(coefficient) + 1L) / 2;
+            if (shift >= 0) {
+                coefficient = coefficient.multiply(pow10(2 * shift));
+            } else {
+                coefficient = coefficient.divide(pow10(-2 * shift));
+            }
+            BigInteger root = coefficient.sqrt();
+            long exponent = ideal - shift;
+            if (root.remainder(FIVE).signum() == 0) {
+                // Keep a sticky digit so final context rounding cannot mistake a tie.
+                root = root.add(BigInteger.ONE);
+            }
+            result = work.finish(finite(false, root, exponent));
+        }
+        status |= work.status;
+        return result;
+    }
+
     private Value add(Value a, Value b) {
         if (a.kind() == Kind.INFINITY || b.kind() == Kind.INFINITY) {
             if (a.kind() == b.kind() && a.negative() != b.negative()) {
@@ -702,7 +1455,13 @@ final class DecimalArithmetic {
         long etiny = emin - precision + 1;
         long limit = growing ? emax : -etiny;
         if (bound > digits(limit)) {
-            return finish(finite(negative, BigInteger.ONE, growing ? emax + 1 : etiny - 1));
+            long exponent;
+            if (growing) {
+                exponent = emax + 1;
+            } else {
+                exponent = etiny - 1;
+            }
+            return finish(finite(negative, BigInteger.ONE, exponent));
         }
         if (integerExponent) {
             return integerPower(a, b, negative);
@@ -763,7 +1522,10 @@ final class DecimalArithmetic {
 
     /** Match libmpdec's integer-power working precision and rounding of intermediate values. */
     private Value integerPower(Value base, Value exponent, boolean negative) {
-        long workPrecision = precision + digits(exponent.coefficient()) + exponent.exponent() + 2 + (exponent.negative() ? 1 : 0);
+        long workPrecision = precision + digits(exponent.coefficient()) + exponent.exponent() + 2;
+        if (exponent.negative()) {
+            workPrecision++;
+        }
         DecimalArithmetic work = new DecimalArithmetic(workPrecision, emin, emax, ROUND_HALF_EVEN, 0);
         Value positiveBase = finite(false, base.coefficient(), base.exponent());
         if (exponent.negative()) {

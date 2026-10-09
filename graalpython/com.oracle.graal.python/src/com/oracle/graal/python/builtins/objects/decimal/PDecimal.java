@@ -165,7 +165,11 @@ public final class PDecimal extends PythonBuiltinObject {
             digits = largeCoefficient.toString();
         }
         if (kind != Kind.FINITE) {
-            return sign + (kind == Kind.NAN ? "NaN" : "sNaN") + (digits.equals("0") ? "" : digits);
+            String result = sign + (kind == Kind.NAN ? "NaN" : "sNaN");
+            if (!digits.equals("0")) {
+                result += digits;
+            }
+            return result;
         }
         // Moving the decimal point after the first digit adds digits.length() - 1
         // to the stored exponent, giving the exponent of the most significant digit.
@@ -187,6 +191,10 @@ public final class PDecimal extends PythonBuiltinObject {
         if (digits.length() != 1) {
             significand = digits.charAt(0) + "." + digits.substring(1);
         }
-        return sign + significand + (capitals ? "E" : "e") + (adjustedExponent >= 0 ? "+" : "") + adjustedExponent;
+        String result = sign + significand + (capitals ? "E" : "e");
+        if (adjustedExponent >= 0) {
+            result += "+";
+        }
+        return result + adjustedExponent;
     }
 }

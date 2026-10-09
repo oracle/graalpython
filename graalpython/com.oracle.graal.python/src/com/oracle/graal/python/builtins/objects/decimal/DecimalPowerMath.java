@@ -209,6 +209,32 @@ final class DecimalPowerMath {
         return new Value(approximation.signum() < 0, approximation.abs(), -places, Kind.FINITE);
     }
 
+    /** Approximate 10^places * log10(c * 10^e), with absolute error at most one. */
+    static Value logarithm10(BigInteger c, long e, long places) {
+        long p = places + 2;
+        long f = e + digits(c);
+        if (f >= 1) {
+            f--;
+        }
+        BigInteger approximation;
+        if (p > 0) {
+            BigInteger scale = pow10(p);
+            long shift = e + p - f;
+            BigInteger scaled;
+            if (shift >= 0) {
+                scaled = c.multiply(pow10(shift));
+            } else {
+                scaled = nearestDiv(c, pow10(-shift));
+            }
+            BigInteger logSignificand = nearestDiv(integerLog(scaled, scale, p + 1).multiply(scale), logTen(p));
+            approximation = BigInteger.valueOf(f).multiply(scale).add(logSignificand);
+        } else {
+            approximation = nearestDiv(BigInteger.valueOf(f), pow10(-p));
+        }
+        approximation = nearestDiv(approximation, HUNDRED);
+        return new Value(approximation.signum() < 0, approximation.abs(), -places, Kind.FINITE);
+    }
+
     static Value exponential(Value argument, long precision) {
         BigInteger coefficient = argument.coefficient();
         if (argument.negative()) {
