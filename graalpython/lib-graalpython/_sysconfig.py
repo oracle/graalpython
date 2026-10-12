@@ -38,6 +38,9 @@
 # SOFTWARE.
 
 
+_DEFAULT_TZPATH = "/usr/share/zoneinfo:/usr/lib/zoneinfo:/usr/share/lib/zoneinfo:/etc/zoneinfo"
+
+
 def _append_flags(g, key, flags):
     value = g.get(key, "")
     parts = value.split()
@@ -102,4 +105,8 @@ def _update_posix_vars(config_vars=None):
     _setdefault(config_vars, 'LIBDIR', __graalpython__.capi_home)
     _setdefault(config_vars, 'LIBDEST', __graalpython__.capi_home)
     _setdefault(config_vars, 'LIBPL', __graalpython__.capi_home.replace(os.path.sep, '/'))
+    if not win32_native:
+        # zoneinfo searches the system time zone database in TZPATH; use the
+        # locations CPython's configure uses by default (--with-tzpath)
+        _setdefault(config_vars, 'TZPATH', _DEFAULT_TZPATH)
     return config_vars
