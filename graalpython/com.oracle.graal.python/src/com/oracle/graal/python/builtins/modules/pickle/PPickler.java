@@ -746,9 +746,9 @@ public class PPickler extends PythonBuiltinObject {
             return constructListNode.execute(frame, iterable);
         }
 
-        public void opcodeBoundary(VirtualFrame frame, PPickler pickler) {
+        public boolean opcodeBoundary(VirtualFrame frame, PPickler pickler) {
             if (!pickler.isFraming() || pickler.frameStart == -1) {
-                return;
+                return false;
             }
             int frameLen = pickler.outputLen - pickler.frameStart - PickleUtils.FRAME_HEADER_SIZE;
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, frameLen >= PickleUtils.FRAME_SIZE_TARGET)) {
@@ -760,8 +760,10 @@ public class PPickler extends PythonBuiltinObject {
                 if (pickler.write != null) {
                     flushToFile(frame, pickler);
                     pickler.clearBuffer();
+                    return true;
                 }
             }
+            return false;
         }
 
         public static void handleError(PPickler pickler) {
@@ -1913,7 +1915,7 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         private void batchListExact(VirtualFrame frame, PPickler pickler, PList obj) {
-            final SequenceStorage storage = obj.getSequenceStorage();
+            SequenceStorage storage = obj.getSequenceStorage();
             if (pickler.persFunc == null) {
                 if (storage instanceof IntSequenceStorage intStorage) {
                     profileSeen(SEEN_INT_STORAGE);
@@ -1953,77 +1955,103 @@ public class PPickler extends PythonBuiltinObject {
                     }
                 }
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
+                // It could have been mutated as a side effect of the reduce calls or the file write
+                storage = obj.getSequenceStorage();
             } while (total < storage.length());
             LoopNode.reportLoopCount(this, total);
         }
 
         private void batchIntList(VirtualFrame frame, PPickler pickler, IntSequenceStorage storage) {
+            opcodeBoundary(frame, pickler);
             int proto = pickler.getProto();
-            if (storage.length() == 1) {
-                opcodeBoundary(frame, pickler);
+            int length = storage.length();
+
+            if (length == 1) {
                 saveLong(pickler, proto, storage.getIntItemNormalized(0));
                 pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
-            int length = storage.length();
             for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
                 int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
-                    opcodeBoundary(frame, pickler);
+                    boolean didFlush = opcodeBoundary(frame, pickler);
+                    // To make sure we don't go out-of-bounds if the file write mutated the list
+                    if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, didFlush && length != storage.length())) {
+                        length = storage.length();
+                        batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
+                        if (i >= batchEnd) {
+                            break;
+                        }
+                    }
                     saveLong(pickler, proto, storage.getIntItemNormalized(i));
                 }
-                LoopNode.reportLoopCount(this, batchEnd - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
-            LoopNode.reportLoopCount(this, length / PickleUtils.BATCHSIZE + (length % PickleUtils.BATCHSIZE == 0 ? 0 : 1));
+            LoopNode.reportLoopCount(this, length);
         }
 
         private void batchLongList(VirtualFrame frame, PPickler pickler, LongSequenceStorage storage) {
+            opcodeBoundary(frame, pickler);
             int proto = pickler.getProto();
-            if (storage.length() == 1) {
-                opcodeBoundary(frame, pickler);
+            int length = storage.length();
+
+            if (length == 1) {
                 saveLong(pickler, proto, storage.getLongItemNormalized(0));
                 pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
-            int length = storage.length();
             for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
                 int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
-                    opcodeBoundary(frame, pickler);
+                    boolean didFlush = opcodeBoundary(frame, pickler);
+                    // To make sure we don't go out-of-bounds if the file write mutated the list
+                    if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, didFlush && length != storage.length())) {
+                        length = storage.length();
+                        batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
+                        if (i >= batchEnd) {
+                            break;
+                        }
+                    }
                     saveLong(pickler, proto, storage.getLongItemNormalized(i));
                 }
-                LoopNode.reportLoopCount(this, batchEnd - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
-            LoopNode.reportLoopCount(this, length / PickleUtils.BATCHSIZE + (length % PickleUtils.BATCHSIZE == 0 ? 0 : 1));
+            LoopNode.reportLoopCount(this, length);
         }
 
         private void batchDoubleList(VirtualFrame frame, PPickler pickler, DoubleSequenceStorage storage) {
+            opcodeBoundary(frame, pickler);
             int proto = pickler.getProto();
-            if (storage.length() == 1) {
-                opcodeBoundary(frame, pickler);
+            int length = storage.length();
+
+            if (length == 1) {
                 saveFloat(pickler, proto, storage.getDoubleItemNormalized(0));
                 pickler.write(this, PickleUtils.OPCODE_APPEND);
                 return;
             }
 
-            int length = storage.length();
             for (int batchStart = 0; batchStart < length; batchStart += PickleUtils.BATCHSIZE) {
                 int batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_MARK);
                 for (int i = batchStart; i < batchEnd; i++) {
-                    opcodeBoundary(frame, pickler);
+                    boolean didFlush = opcodeBoundary(frame, pickler);
+                    // To make sure we don't go out-of-bounds if the file write mutated the list
+                    if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, didFlush && length != storage.length())) {
+                        length = storage.length();
+                        batchEnd = batchStart + Math.min(PickleUtils.BATCHSIZE, length - batchStart);
+                        if (i >= batchEnd) {
+                            break;
+                        }
+                    }
                     saveFloat(pickler, proto, storage.getDoubleItemNormalized(i));
                 }
-                LoopNode.reportLoopCount(this, batchEnd - batchStart);
                 pickler.write(this, PickleUtils.OPCODE_APPENDS);
             }
-            LoopNode.reportLoopCount(this, length / PickleUtils.BATCHSIZE + (length % PickleUtils.BATCHSIZE == 0 ? 0 : 1));
+            LoopNode.reportLoopCount(this, length);
         }
 
         private void batchList(VirtualFrame frame, PPickler pickler, int proto, Object iterator) {
