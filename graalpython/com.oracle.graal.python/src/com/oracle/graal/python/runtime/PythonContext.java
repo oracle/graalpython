@@ -190,6 +190,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -509,7 +510,12 @@ public final class PythonContext extends Python3Core {
         }
 
         public PContextVarsContext getContextVarsContext(Node node) {
+            return getContextVarsContext(node, InlinedBranchProfile.getUncached());
+        }
+
+        public PContextVarsContext getContextVarsContext(Node node, InlinedBranchProfile initializeProfile) {
             if (contextVarsContext == null) {
+                initializeProfile.enter(node);
                 contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
             }
             return contextVarsContext;

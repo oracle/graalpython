@@ -51,6 +51,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class DecimalModuleState {
@@ -138,11 +139,16 @@ public final class DecimalModuleState {
     }
 
     public PDecimalContext getCurrentContext(Node node) {
+        return getCurrentContext(node, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached());
+    }
+
+    public PDecimalContext getCurrentContext(Node node, InlinedBranchProfile initializeContextVarsProfile, InlinedBranchProfile initializeDecimalContextProfile) {
         PythonContext context = PythonContext.get(node);
         PythonLanguage language = context.getLanguage(node);
         PythonContext.PythonThreadState threadState = context.getThreadState(language);
-        Object value = currentContext.getValue(node, threadState);
+        Object value = currentContext.getValue(node, threadState, initializeContextVarsProfile);
         if (value == null) {
+            initializeDecimalContextProfile.enter(node);
             PDecimalContext initial = copyContext(language, defaultContext);
             initial.setFlags(0);
             currentContext.setValue(node, threadState, initial);

@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalContextUtils;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalExceptionTypes;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalModuleState;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.GetCurrentContextNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalRounding;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils;
 import com.oracle.graal.python.builtins.objects.decimal.PDecimalContext;
@@ -191,8 +192,9 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetcontextNode extends PythonBuiltinNode {
         @Specialization
-        static PDecimalContext get(@Bind Node inliningTarget) {
-            return DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+        static PDecimalContext get(@Bind Node inliningTarget,
+                        @Cached GetCurrentContextNode getCurrentContext) {
+            return getCurrentContext.execute(inliningTarget);
         }
     }
 
@@ -219,12 +221,13 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
                         PKeyword[] kwargs,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             if (kwargs.length != 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_INVALID_LOCALCONTEXT_KEYWORD, kwargs[0].getName());
             }
             DecimalModuleState state = DecimalContextUtils.getState(inliningTarget);
-            PDecimalContext outer = state.getCurrentContext(inliningTarget);
+            PDecimalContext outer = getCurrentContext.execute(inliningTarget);
             PDecimalContext source = outer;
             if (!(ctx instanceof PNone)) {
                 if (!(ctx instanceof PDecimalContext decimalContext)) {

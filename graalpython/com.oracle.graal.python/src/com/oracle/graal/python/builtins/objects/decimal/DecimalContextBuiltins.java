@@ -495,10 +495,11 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
                         @Cached RequireDecimalNode convert,
                         @Cached DecimalNodes.QuantizeDecimalNode operation,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached InlinedBranchProfile nonFiniteQuantumProfile) {
             PDecimal operand = convert.execute(inliningTarget, a);
             PDecimal other = convert.execute(inliningTarget, b);
-            return DecimalNodes.QuantizeDecimalNode.doQuantize(frame, inliningTarget, operand, other, self, self.getRounding(), operation, raiseSignal, raiseNode);
+            return DecimalNodes.QuantizeDecimalNode.doQuantize(frame, inliningTarget, operand, other, self, self.getRounding(), operation, raiseSignal, raiseNode, nonFiniteQuantumProfile);
         }
     }
 

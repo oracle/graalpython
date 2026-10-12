@@ -109,6 +109,20 @@ public final class DecimalNodes {
     private DecimalNodes() {
     }
 
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class GetCurrentContextNode extends Node {
+        public abstract PDecimalContext execute(Node inliningTarget);
+
+        @Specialization
+        static PDecimalContext get(Node inliningTarget,
+                        @Cached InlinedBranchProfile initializeContextVarsProfile,
+                        @Cached InlinedBranchProfile initializeDecimalContextProfile) {
+            return DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget, initializeContextVarsProfile, initializeDecimalContextProfile);
+        }
+    }
+
     /** Resolve an optional context argument, matching CPython's CONTEXT_CHECK_VA. */
     @GenerateInline
     @GenerateCached(false)
@@ -122,8 +136,9 @@ public final class DecimalNodes {
         }
 
         @Specialization
-        static PDecimalContext doDefault(Node inliningTarget, @SuppressWarnings("unused") PNone context) {
-            return DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+        static PDecimalContext doDefault(Node inliningTarget, @SuppressWarnings("unused") PNone context,
+                        @Cached GetCurrentContextNode getCurrentContext) {
+            return getCurrentContext.execute(inliningTarget);
         }
 
         @Fallback
@@ -550,8 +565,9 @@ public final class DecimalNodes {
         static PDecimal plus(VirtualFrame frame, Node inliningTarget, PDecimal self,
                         @Cached InlinedBranchProfile nonCompactProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doPlus(frame, inliningTarget, self, context, nonCompactProfile, raiseSignal, raiseNode);
         }
 
@@ -583,8 +599,9 @@ public final class DecimalNodes {
         static PDecimal minus(VirtualFrame frame, Node inliningTarget, PDecimal self,
                         @Cached InlinedBranchProfile nonCompactProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doMinus(frame, inliningTarget, self, context, nonCompactProfile, raiseSignal, raiseNode);
         }
 
@@ -616,8 +633,9 @@ public final class DecimalNodes {
         static PDecimal abs(VirtualFrame frame, Node inliningTarget, PDecimal self,
                         @Cached InlinedBranchProfile nonCompactProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doAbs(frame, inliningTarget, self, context, nonCompactProfile, raiseSignal, raiseNode);
         }
 
@@ -652,13 +670,14 @@ public final class DecimalNodes {
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached InlinedBranchProfile nonCompactProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doAdd(frame, inliningTarget, a, b, context, nonCompactProfile, raiseSignal, raiseNode);
         }
 
@@ -692,13 +711,14 @@ public final class DecimalNodes {
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached InlinedBranchProfile nonCompactProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doSubtract(frame, inliningTarget, a, b, context, nonCompactProfile, raiseSignal, raiseNode);
         }
 
@@ -732,13 +752,14 @@ public final class DecimalNodes {
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached InlinedBranchProfile nonCompactProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doMultiply(frame, inliningTarget, a, b, context, nonCompactProfile, raiseSignal, raiseNode);
         }
 
@@ -771,13 +792,14 @@ public final class DecimalNodes {
                         @Cached ToDecimalNode toRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doDivide(frame, inliningTarget, a, b, context, raiseSignal, raiseNode);
         }
 
@@ -803,13 +825,14 @@ public final class DecimalNodes {
                         @Cached ToDecimalNode toRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doDivideInt(frame, inliningTarget, a, b, context, raiseSignal, raiseNode);
         }
 
@@ -835,13 +858,14 @@ public final class DecimalNodes {
                         @Cached ToDecimalNode toRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doRemainder(frame, inliningTarget, a, b, context, raiseSignal, raiseNode);
         }
 
@@ -867,13 +891,14 @@ public final class DecimalNodes {
                         @Cached ToDecimalNode toRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached RaiseSignalNode raiseSignal,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCurrentContextNode getCurrentContext) {
             PDecimal a = toLeft.execute(inliningTarget, left);
             PDecimal b = toRight.execute(inliningTarget, right);
             if (notImplementedProfile.profile(inliningTarget, a == null || b == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDecimalContext context = DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget);
+            PDecimalContext context = getCurrentContext.execute(inliningTarget);
             return doDivmod(frame, inliningTarget, a, b, context, raiseSignal, raiseNode);
         }
 
@@ -1091,10 +1116,11 @@ public final class DecimalNodes {
         }
 
         static PDecimal doQuantize(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimal quantum, PDecimalContext context, DecimalRounding rounding, QuantizeDecimalNode operation,
-                        RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
+                        RaiseSignalNode raiseSignal, PRaiseNode raiseNode, InlinedBranchProfile nonFiniteQuantumProfile) {
             if (quantum.getKind() == Kind.FINITE) {
                 return operation.execute(frame, inliningTarget, self, quantum.getExponent(), context, rounding);
             }
+            nonFiniteQuantumProfile.enter(inliningTarget);
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.quantize(self, quantum, context, rounding);
