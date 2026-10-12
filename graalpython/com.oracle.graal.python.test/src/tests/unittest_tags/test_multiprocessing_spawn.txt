@@ -137,7 +137,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_n
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_notify_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_notify_n @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_connection @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_connection @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_context @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_duplex_false @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_fd_transfer @ win32-AMD64,win32-AMD64-github
