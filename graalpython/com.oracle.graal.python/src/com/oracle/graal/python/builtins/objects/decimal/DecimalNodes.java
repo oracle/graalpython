@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.decimal;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
 
@@ -95,6 +96,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class DecimalNodes {
     private static final int INVALID = DecimalContextUtils.conditionMask(DecimalExceptionTypes.InvalidOperation);
@@ -232,6 +234,18 @@ public final class DecimalNodes {
             return PFactory.createDecimal(cls, getShape.execute(cls), value);
         }
 
+        @Specialization
+        static PDecimal doTruffleString(@SuppressWarnings("unused") Node inliningTarget, Object cls, TruffleString value,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node read,
+                        @Cached TruffleString.ToJavaStringNode toJavaString,
+                        @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
+            PDecimal result = fromCompactString(cls, value, read, getShape);
+            if (result != null) {
+                return result;
+            }
+            return createDecimal(cls, DecimalUtils.parse(toJavaString.execute(value)), getShape);
+        }
+
         @Specialization(guards = "unicodeCheck.execute(inliningTarget, value)")
         static PDecimal doString(Node inliningTarget, Object cls, Object value,
                         @SuppressWarnings("unused") @Shared @Cached PyUnicodeCheckNode unicodeCheck,
@@ -330,6 +344,75 @@ public final class DecimalNodes {
 
         private static PDecimal createDecimal(Object cls, Value value, TypeNodes.GetInstanceShape getShape) {
             return PFactory.createDecimal(cls, getShape.execute(cls), value.negative(), value.coefficient(), value.exponent(), value.kind());
+        }
+
+        private static PDecimal fromCompactString(Object cls, TruffleString text, TruffleString.CodePointAtIndexUTF32Node read, TypeNodes.GetInstanceShape getShape) {
+            int length = text.byteLength(TS_ENCODING) / Integer.BYTES;
+            // At most 18 characters guarantee a coefficient below 10^18 and an explicit
+            // exponent below 10^16 (the coefficient and 'e' take at least two characters).
+            // Neither long overflow nor libmpdec's exponent limits are possible here.
+            if (length == 0 || length > 18) {
+                return null;
+            }
+            int pos = 0;
+            int ch = read.execute(text, pos);
+            boolean negative = ch == '-';
+            if (negative || ch == '+') {
+                pos++;
+            }
+            long coefficient = 0;
+            int digits = 0;
+            int fractionalDigits = 0;
+            boolean point = false;
+            while (pos < length) {
+                ch = read.execute(text, pos);
+                if (ch >= '0' && ch <= '9') {
+                    coefficient = coefficient * 10 + ch - '0';
+                    digits++;
+                    if (point) {
+                        fractionalDigits++;
+                    }
+                } else if (ch == '.' && !point) {
+                    point = true;
+                } else {
+                    break;
+                }
+                pos++;
+            }
+            if (digits == 0) {
+                return null;
+            }
+            long exponent = 0;
+            if (pos < length && (ch == 'e' || ch == 'E')) {
+                pos++;
+                boolean negativeExponent = false;
+                if (pos < length) {
+                    ch = read.execute(text, pos);
+                    negativeExponent = ch == '-';
+                    if (negativeExponent || ch == '+') {
+                        pos++;
+                    }
+                }
+                int exponentStart = pos;
+                while (pos < length) {
+                    ch = read.execute(text, pos);
+                    if (ch < '0' || ch > '9') {
+                        return null;
+                    }
+                    exponent = exponent * 10 + ch - '0';
+                    pos++;
+                }
+                if (pos == exponentStart) {
+                    return null;
+                }
+                if (negativeExponent) {
+                    exponent = -exponent;
+                }
+            }
+            if (pos != length) {
+                return null;
+            }
+            return PFactory.createDecimal(cls, getShape.execute(cls), negative, coefficient, exponent - fractionalDigits, Kind.FINITE);
         }
 
         private static PDecimal fromDouble(Node inliningTarget, Object cls, double value, TypeNodes.GetInstanceShape getShape, InlinedBranchProfile nonCompactProfile) {
