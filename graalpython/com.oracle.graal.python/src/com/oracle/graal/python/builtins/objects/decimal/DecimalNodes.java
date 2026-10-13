@@ -96,7 +96,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class DecimalNodes {
     private static final int INVALID = DecimalContextUtils.conditionMask(DecimalExceptionTypes.InvalidOperation);
@@ -145,6 +148,68 @@ public final class DecimalNodes {
         static PDecimalContext doInvalid(Node inliningTarget, @SuppressWarnings("unused") Object context,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OPTIONAL_DECIMAL_CONTEXT);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class DecimalToStringNode extends Node {
+        public abstract TruffleString execute(Node inliningTarget, PDecimal self, boolean capitals);
+
+        @Specialization
+        static TruffleString format(Node inliningTarget, PDecimal self, boolean capitals,
+                        @Cached InlinedConditionProfile fixedProfile,
+                        @Cached TruffleString.FromLongNode fromLong,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePoint,
+                        @Cached TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstring,
+                        @Cached TruffleStringBuilder.AppendLongNumberNode appendLong,
+                        @Cached TruffleStringBuilder.ToStringNode toString,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            // The node specialization profiles
+            if (self.isCompact() && self.getKind() == Kind.FINITE) {
+                TruffleString digits = fromLong.execute(self.getCompactCoefficient(), TS_ENCODING, false);
+                int length = digits.byteLength(TS_ENCODING) / Integer.BYTES;
+                long exponent = self.getExponent();
+                long adjustedExponent = exponent + length - 1;
+                // Compact coefficients have at most 19 digits. Both fixed and scientific
+                // notation fit in 48 characters, even with an exponent of magnitude 10^18.
+                TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32(48);
+                if (self.isNegative()) {
+                    appendCodePoint.execute(builder, '-');
+                }
+                if (fixedProfile.profile(inliningTarget, exponent <= 0 && adjustedExponent >= -6)) {
+                    int point = (int) (length + exponent);
+                    if (point <= 0) {
+                        appendCodePoint.execute(builder, '0');
+                        appendCodePoint.execute(builder, '.');
+                        if (point < 0) {
+                            appendCodePoint.execute(builder, '0', -point, false);
+                        }
+                        appendSubstring.execute(builder, digits, 0, length * Integer.BYTES);
+                    } else if (point < length) {
+                        appendSubstring.execute(builder, digits, 0, point * Integer.BYTES);
+                        appendCodePoint.execute(builder, '.');
+                        appendSubstring.execute(builder, digits, point * Integer.BYTES, (length - point) * Integer.BYTES);
+                    } else {
+                        appendSubstring.execute(builder, digits, 0, length * Integer.BYTES);
+                    }
+                } else {
+                    appendSubstring.execute(builder, digits, 0, Integer.BYTES);
+                    if (length > 1) {
+                        appendCodePoint.execute(builder, '.');
+                        appendSubstring.execute(builder, digits, Integer.BYTES, (length - 1) * Integer.BYTES);
+                    }
+                    appendCodePoint.execute(builder, capitals ? 'E' : 'e');
+                    if (adjustedExponent >= 0) {
+                        appendCodePoint.execute(builder, '+');
+                    }
+                    appendLong.execute(builder, adjustedExponent);
+                }
+                return toString.execute(builder);
+            } else {
+                return fromJavaStringNode.execute(self.toScientificString(capitals), TS_ENCODING);
+            }
         }
     }
 
@@ -250,11 +315,13 @@ public final class DecimalNodes {
         }
 
         @Specialization
-        static PDecimal doTruffleString(@SuppressWarnings("unused") Node inliningTarget, Object cls, TruffleString value,
+        static PDecimal doTruffleString(Node inliningTarget, Object cls, TruffleString value,
                         @Cached TruffleString.CodePointAtIndexUTF32Node read,
                         @Cached TruffleString.ToJavaStringNode toJavaString,
+                        @Cached InlinedLoopConditionProfile coefficientLoopProfile,
+                        @Cached InlinedLoopConditionProfile exponentLoopProfile,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
-            PDecimal result = fromCompactString(cls, value, read, getShape);
+            PDecimal result = fromCompactString(inliningTarget, cls, value, read, getShape, coefficientLoopProfile, exponentLoopProfile);
             if (result != null) {
                 return result;
             }
@@ -361,7 +428,8 @@ public final class DecimalNodes {
             return PFactory.createDecimal(cls, getShape.execute(cls), value.negative(), value.coefficient(), value.exponent(), value.kind());
         }
 
-        private static PDecimal fromCompactString(Object cls, TruffleString text, TruffleString.CodePointAtIndexUTF32Node read, TypeNodes.GetInstanceShape getShape) {
+        private static PDecimal fromCompactString(Node inliningTarget, Object cls, TruffleString text, TruffleString.CodePointAtIndexUTF32Node read, TypeNodes.GetInstanceShape getShape,
+                        InlinedLoopConditionProfile coefficientLoopProfile, InlinedLoopConditionProfile exponentLoopProfile) {
             int length = text.byteLength(TS_ENCODING) / Integer.BYTES;
             // At most 18 characters guarantee a coefficient below 10^18 and an explicit
             // exponent below 10^16 (the coefficient and 'e' take at least two characters).
@@ -379,7 +447,7 @@ public final class DecimalNodes {
             int digits = 0;
             int fractionalDigits = 0;
             boolean point = false;
-            while (pos < length) {
+            while (coefficientLoopProfile.profile(inliningTarget, pos < length)) {
                 ch = read.execute(text, pos);
                 if (ch >= '0' && ch <= '9') {
                     coefficient = coefficient * 10 + ch - '0';
@@ -409,7 +477,7 @@ public final class DecimalNodes {
                     }
                 }
                 int exponentStart = pos;
-                while (pos < length) {
+                while (exponentLoopProfile.profile(inliningTarget, pos < length)) {
                     ch = read.execute(text, pos);
                     if (ch < '0' || ch > '9') {
                         return null;

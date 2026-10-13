@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ToComple
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.AbsDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.AddDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.CreateDecimalNode;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DecimalToStringNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivideDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivideIntDecimalNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalNodes.DivmodDecimalNode;
@@ -1597,15 +1598,12 @@ public final class DecimalBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString str(PDecimal self,
                         @Bind Node inliningTarget,
-                        @Cached TruffleString.FromJavaStringNode fromJavaString,
+                        @Cached DecimalToStringNode toString,
                         @Cached GetCurrentContextNode getCurrentContext) {
             boolean capitals = getCurrentContext.execute(inliningTarget).getCapitals();
-            return doStr(self, capitals, fromJavaString);
+            return toString.execute(inliningTarget, self, capitals);
         }
 
-        static TruffleString doStr(PDecimal self, boolean capitals, TruffleString.FromJavaStringNode fromJavaString) {
-            return fromJavaString.execute(self.toScientificString(capitals), TS_ENCODING);
-        }
     }
 
     @Slot(value = SlotKind.nb_negative, isComplex = true)

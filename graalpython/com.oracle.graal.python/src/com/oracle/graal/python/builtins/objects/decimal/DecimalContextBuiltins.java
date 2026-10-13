@@ -846,9 +846,9 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
         static TruffleString format(PDecimalContext self, Object a,
                         @Bind Node inliningTarget,
                         @Cached RequireDecimalNode convert,
-                        @Cached TruffleString.FromJavaStringNode fromJavaString) {
+                        @Cached DecimalNodes.DecimalToStringNode toString) {
             PDecimal operand = convert.execute(inliningTarget, a);
-            return DecimalBuiltins.TpStrNode.doStr(operand, self.getCapitals(), fromJavaString);
+            return toString.execute(inliningTarget, operand, self.getCapitals());
         }
     }
 
