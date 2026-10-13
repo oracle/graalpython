@@ -85,6 +85,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     /** Learns the capacities reached by successful calls at one builtin node. */
     private static final class PicklerSizeProfile {
         private static final int SHIFT = 3;
+        private static final long MAX_ESTIMATE = (16L * 1024 * 1024) << SHIFT;
 
         @CompilationFinal private long outputEstimate = (long) PickleUtils.WRITE_BUF_SIZE << SHIFT;
         @CompilationFinal private long memoEstimate = (long) MemoTable.INITIAL_CAPACITY << SHIFT;
@@ -112,7 +113,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
 
         private static long update(long shiftedEstimate, int capacity) {
             long estimate = shiftedEstimate >> SHIFT;
-            return shiftedEstimate + capacity - estimate;
+            return Math.min(shiftedEstimate + capacity - estimate, MAX_ESTIMATE);
         }
     }
 
