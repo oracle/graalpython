@@ -52,12 +52,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -73,6 +75,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.LoopNode;
 
 public abstract class TupleNodes {
 
@@ -99,6 +102,23 @@ public abstract class TupleNodes {
                         @Bind PythonLanguage language,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
             return PFactory.createTuple(language, copyNode.execute(inliningTarget, iterable.getSequenceStorage()));
+        }
+
+        @Specialization
+        static PTuple range(PIntRange range,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language) {
+            int start = range.getIntStart();
+            int step = range.getIntStep();
+            int len = range.getIntLength();
+            int[] array = new int[len];
+            int value = start;
+            for (int i = 0; i < len; i++) {
+                array[i] = value;
+                value += step;
+            }
+            LoopNode.reportLoopCount(inliningTarget, len);
+            return PFactory.createTuple(language, new IntSequenceStorage(array));
         }
 
         @Specialization(guards = "isNativeTuple(iterable)")
