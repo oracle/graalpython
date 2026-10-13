@@ -174,15 +174,14 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
         PythonClass signalDict = PFactory.createPythonClassAndFixupSlots(null, language, T_SIGNAL_DICT, mixin, new PythonAbstractClass[]{mixin, mapping});
         signalDict.setAttribute(T___MODULE__, T_DECIMAL);
 
-        DecimalModuleState state = new DecimalModuleState(exceptionTypes, decimalTuple, signalDict);
+        PythonModule numbers = AbstractImportNode.importModule(T_NUMBERS);
+        DecimalModuleState state = new DecimalModuleState(language, exceptionTypes, decimalTuple, signalDict, numbers.getAttribute(T_RATIONAL));
         module.setModuleState(state);
-        state.initializeContexts(language);
+        core.getContext().setDecimalModuleState(state);
         module.setAttribute(T_DEFAULT_CONTEXT, state.getDefaultContext());
         module.setAttribute(T_BASIC_CONTEXT, state.getBasicContext());
         module.setAttribute(T_EXTENDED_CONTEXT, state.getExtendedContext());
 
-        PythonModule numbers = AbstractImportNode.importModule(T_NUMBERS);
-        state.setRationalType(numbers.getAttribute(T_RATIONAL));
         Object register = PyObjectGetAttr.executeUncached(numbers.getAttribute(T_NUMBER), T_REGISTER);
         CallNode.executeUncached(register, PythonBuiltinClassType.PDecimal);
 

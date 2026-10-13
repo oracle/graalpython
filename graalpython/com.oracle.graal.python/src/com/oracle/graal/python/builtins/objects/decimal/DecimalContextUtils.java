@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.decimal;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DECIMAL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -116,7 +115,7 @@ public final class DecimalContextUtils {
     }
 
     public static DecimalModuleState getState(Node node) {
-        return PythonContext.get(node).lookupBuiltinModule(T__DECIMAL).getModuleState(DecimalModuleState.class);
+        return PythonContext.get(node).getDecimalModuleState();
     }
 
     public static int signalMask(Node node, PRaiseNode raiseNode, Object key) {

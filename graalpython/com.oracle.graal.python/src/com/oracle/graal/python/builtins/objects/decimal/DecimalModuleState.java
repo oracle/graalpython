@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -61,17 +63,29 @@ public final class DecimalModuleState {
     private final PythonClass decimalTupleType;
     private final PythonClass signalDictType;
 
-    private Object rationalType;
+    private final Object rationalType;
 
-    private PDecimalContext defaultContext;
-    private PDecimalContext basicContext;
-    private PDecimalContext extendedContext;
-    private PContextVar currentContext;
+    private final PDecimalContext defaultContext;
+    private final PDecimalContext basicContext;
+    private final PDecimalContext extendedContext;
+    private final PContextVar currentContext;
 
-    public DecimalModuleState(PythonClass[] exceptionTypes, PythonClass decimalTupleType, PythonClass signalDictType) {
+    public DecimalModuleState(PythonLanguage language, PythonClass[] exceptionTypes, PythonClass decimalTupleType, PythonClass signalDictType, Object rationalType) {
         this.exceptionTypes = exceptionTypes;
         this.decimalTupleType = decimalTupleType;
         this.signalDictType = signalDictType;
+        this.rationalType = rationalType;
+        currentContext = PFactory.createContextVar(language, T_DECIMAL_CONTEXT, PContextVar.NO_DEFAULT);
+        Object cls = PythonBuiltinClassType.PDecimalContext;
+        Shape shape = PythonBuiltinClassType.PDecimalContext.getInstanceShape(language);
+        defaultContext = createContext(cls, shape);
+        basicContext = newContext(cls, shape);
+        basicContext.setPrecision(9);
+        basicContext.setRounding(ROUND_HALF_UP);
+        basicContext.setTraps(DecimalContextUtils.DEFAULT_TRAPS | DecimalContextUtils.mask(DecimalExceptionTypes.Underflow) | DecimalContextUtils.mask(DecimalExceptionTypes.Clamped));
+        extendedContext = newContext(cls, shape);
+        extendedContext.setPrecision(9);
+        extendedContext.setTraps(0);
     }
 
     public PythonClass getExceptionType(DecimalExceptionTypes type) {
@@ -90,24 +104,6 @@ public final class DecimalModuleState {
         return rationalType;
     }
 
-    public void setRationalType(Object rationalType) {
-        this.rationalType = rationalType;
-    }
-
-    public void initializeContexts(PythonLanguage language) {
-        currentContext = PFactory.createContextVar(language, T_DECIMAL_CONTEXT, PContextVar.NO_DEFAULT);
-        Object cls = PythonBuiltinClassType.PDecimalContext;
-        Shape shape = PythonBuiltinClassType.PDecimalContext.getInstanceShape(language);
-        defaultContext = newContext(cls, shape);
-        basicContext = newContext(cls, shape);
-        basicContext.setPrecision(9);
-        basicContext.setRounding(ROUND_HALF_UP);
-        basicContext.setTraps(DecimalContextUtils.DEFAULT_TRAPS | DecimalContextUtils.mask(DecimalExceptionTypes.Underflow) | DecimalContextUtils.mask(DecimalExceptionTypes.Clamped));
-        extendedContext = newContext(cls, shape);
-        extendedContext.setPrecision(9);
-        extendedContext.setTraps(0);
-    }
-
     public PDecimalContext getDefaultContext() {
         return defaultContext;
     }
@@ -121,12 +117,15 @@ public final class DecimalModuleState {
     }
 
     public PDecimalContext newContext(Object cls, Shape shape) {
+        PDecimalContext result = createContext(cls, shape);
+        result.copyFrom(defaultContext);
+        // Context.__new__ inherits arithmetic settings and signals, but not capitals.
+        result.setCapitals(true);
+        return result;
+    }
+
+    private PDecimalContext createContext(Object cls, Shape shape) {
         PDecimalContext result = PFactory.createDecimalContext(cls, shape);
-        if (defaultContext != null) {
-            result.copyFrom(defaultContext);
-            // Context.__new__ inherits arithmetic settings and signals, but not capitals.
-            result.setCapitals(true);
-        }
         result.setSignalDicts(PFactory.createDecimalSignalDict(signalDictType, signalDictType.getInstanceShape(), result, false),
                         PFactory.createDecimalSignalDict(signalDictType, signalDictType.getInstanceShape(), result, true));
         return result;
@@ -139,22 +138,28 @@ public final class DecimalModuleState {
     }
 
     public PDecimalContext getCurrentContext(Node node) {
-        return getCurrentContext(node, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached());
+        return getCurrentContext(node, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached());
     }
 
-    public PDecimalContext getCurrentContext(Node node, InlinedBranchProfile initializeContextVarsProfile, InlinedBranchProfile initializeDecimalContextProfile) {
+    public PDecimalContext getCurrentContext(Node node, InlinedBranchProfile initializeContextVarsProfile, InlinedBranchProfile initializeDecimalContextProfile,
+                    InlinedBranchProfile contextVarCacheMissProfile) {
         PythonContext context = PythonContext.get(node);
         PythonLanguage language = context.getLanguage(node);
         PythonContext.PythonThreadState threadState = context.getThreadState(language);
-        Object value = currentContext.getValue(node, threadState, initializeContextVarsProfile);
-        if (value == null) {
+        Object value = currentContext.getValue(node, threadState, initializeContextVarsProfile, contextVarCacheMissProfile);
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, value == null)) {
             initializeDecimalContextProfile.enter(node);
-            PDecimalContext initial = copyContext(language, defaultContext);
-            initial.setFlags(0);
-            currentContext.setValue(node, threadState, initial);
-            return initial;
+            return initializeCurrentContext(node, language, threadState);
         }
         return (PDecimalContext) value;
+    }
+
+    @TruffleBoundary
+    private PDecimalContext initializeCurrentContext(Node node, PythonLanguage language, PythonContext.PythonThreadState threadState) {
+        PDecimalContext initial = copyContext(language, defaultContext);
+        initial.setFlags(0);
+        currentContext.setValue(node, threadState, initial);
+        return initial;
     }
 
     public void setCurrentContext(Node node, PDecimalContext value) {
