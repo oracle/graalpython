@@ -946,13 +946,11 @@ public final class DecimalNodes {
         if (shift > 18) {
             return -1;
         }
-        for (int i = 0; i < shift; i++) {
-            if (coefficient > Long.MAX_VALUE / 10) {
-                return -1;
-            }
-            coefficient *= 10;
+        int index = (int) shift;
+        if (coefficient > DecimalUtils.LONG_SCALE_LIMITS[index]) {
+            return -1;
         }
-        return coefficient;
+        return coefficient * DecimalUtils.LONG_POWERS_OF_TEN[index];
     }
 
     private static PDecimal compactAdd(PythonLanguage language, PDecimal a, PDecimal b, PDecimalContext context, boolean rightNegative) {
@@ -1136,11 +1134,7 @@ public final class DecimalNodes {
         if (places > 18) {
             return 0;
         }
-        long divisor = 1;
-        for (int i = 0; i < places; i++) {
-            divisor *= 10;
-        }
-        return divisor;
+        return DecimalUtils.LONG_POWERS_OF_TEN[(int) places];
     }
 
     private static boolean incrementCompact(boolean negative, long quotient, long remainder, long divisor, long places, DecimalRounding rounding) {

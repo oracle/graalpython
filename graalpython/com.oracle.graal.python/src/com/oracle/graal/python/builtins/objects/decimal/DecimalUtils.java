@@ -47,6 +47,7 @@ import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 
 import com.oracle.graal.python.builtins.objects.decimal.PDecimal.Kind;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /** Exact conversions, independent of the arithmetic context's precision and rounding. */
@@ -64,6 +65,26 @@ public final class DecimalUtils {
 
     // Bound retained storage independently of the user's precision and exponent limits.
     private static final BigInteger[] SMALL_POWERS_OF_TEN = createSmallPowersOfTen();
+
+    @CompilationFinal(dimensions = 1) static final long[] LONG_POWERS_OF_TEN = createLongPowersOfTen();
+    @CompilationFinal(dimensions = 1) static final long[] LONG_SCALE_LIMITS = createLongScaleLimits();
+
+    private static long[] createLongPowersOfTen() {
+        long[] powers = new long[19];
+        powers[0] = 1;
+        for (int i = 1; i < powers.length; i++) {
+            powers[i] = powers[i - 1] * 10;
+        }
+        return powers;
+    }
+
+    private static long[] createLongScaleLimits() {
+        long[] limits = new long[LONG_POWERS_OF_TEN.length];
+        for (int i = 0; i < limits.length; i++) {
+            limits[i] = Long.MAX_VALUE / LONG_POWERS_OF_TEN[i];
+        }
+        return limits;
+    }
 
     private DecimalUtils() {
     }
@@ -87,11 +108,13 @@ public final class DecimalUtils {
 
     static int digits(long coefficient) {
         assert coefficient >= 0;
-        int count = 1;
-        for (long c = coefficient; c >= 10; c /= 10) {
-            count++;
+        if (coefficient < 10) {
+            return 1;
         }
-        return count;
+        // 1233 / 4096 approximates log10(2). For a signed long, the bit-length
+        // estimate is either the digit count or one less; one comparison corrects it.
+        int estimate = ((Long.SIZE - Long.numberOfLeadingZeros(coefficient)) * 1233) >>> 12;
+        return coefficient >= LONG_POWERS_OF_TEN[estimate] ? estimate + 1 : estimate;
     }
 
     @TruffleBoundary
