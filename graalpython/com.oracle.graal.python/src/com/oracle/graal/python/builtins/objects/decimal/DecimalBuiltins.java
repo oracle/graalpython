@@ -927,20 +927,26 @@ public final class DecimalBuiltins extends PythonBuiltins {
             } else {
                 point = Math.floorMod(left - 1, 3) + 1;
             }
-            String significand;
+            StringBuilder result = new StringBuilder();
+            if (self.isNegative()) {
+                result.append('-');
+            }
             if (point <= 0) {
-                significand = "0." + "0".repeat(-point) + digits;
+                result.append("0.").append("0".repeat(-point)).append(digits);
             } else if (point >= digits.length()) {
-                significand = digits + "0".repeat(point - digits.length());
+                result.append(digits).append("0".repeat(point - digits.length()));
             } else {
-                significand = digits.substring(0, point) + "." + digits.substring(point);
+                result.append(digits, 0, point).append('.').append(digits, point, digits.length());
             }
             long exponent = left - point;
-            String result = (self.isNegative() ? "-" : "") + significand;
             if (exponent != 0) {
-                result += (capitals ? "E" : "e") + (exponent > 0 ? "+" : "") + exponent;
+                result.append(capitals ? 'E' : 'e');
+                if (exponent > 0) {
+                    result.append('+');
+                }
+                result.append(exponent);
             }
-            return result;
+            return result.toString();
         }
     }
 

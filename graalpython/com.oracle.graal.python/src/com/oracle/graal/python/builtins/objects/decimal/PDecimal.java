@@ -154,9 +154,12 @@ public final class PDecimal extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String toScientificString(boolean capitals) {
-        String sign = negative ? "-" : "";
+        StringBuilder result = new StringBuilder();
+        if (negative) {
+            result.append('-');
+        }
         if (kind == Kind.INFINITY) {
-            return sign + "Infinity";
+            return result.append("Infinity").toString();
         }
         String digits;
         if (isCompact()) {
@@ -165,11 +168,11 @@ public final class PDecimal extends PythonBuiltinObject {
             digits = largeCoefficient.toString();
         }
         if (kind != Kind.FINITE) {
-            String result = sign + (kind == Kind.NAN ? "NaN" : "sNaN");
+            result.append(kind == Kind.NAN ? "NaN" : "sNaN");
             if (!digits.equals("0")) {
-                result += digits;
+                result.append(digits);
             }
-            return result;
+            return result.toString();
         }
         // Moving the decimal point after the first digit adds digits.length() - 1
         // to the stored exponent, giving the exponent of the most significant digit.
@@ -180,21 +183,22 @@ public final class PDecimal extends PythonBuiltinObject {
         if (exponent <= 0 && adjustedExponent >= -6) {
             int point = (int) (digits.length() + exponent);
             if (point <= 0) {
-                return sign + "0." + "0".repeat(-point) + digits;
+                return result.append("0.").append("0".repeat(-point)).append(digits).toString();
             } else if (point < digits.length()) {
-                return sign + digits.substring(0, point) + "." + digits.substring(point);
+                return result.append(digits, 0, point).append('.').append(digits, point, digits.length()).toString();
             }
-            return sign + digits;
+            return result.append(digits).toString();
         }
         // Scientific notation puts exactly one coefficient digit before the point.
-        String significand = digits;
         if (digits.length() != 1) {
-            significand = digits.charAt(0) + "." + digits.substring(1);
+            result.append(digits.charAt(0)).append('.').append(digits, 1, digits.length());
+        } else {
+            result.append(digits);
         }
-        String result = sign + significand + (capitals ? "E" : "e");
+        result.append(capitals ? 'E' : 'e');
         if (adjustedExponent >= 0) {
-            result += "+";
+            result.append('+');
         }
-        return result + adjustedExponent;
+        return result.append(adjustedExponent).toString();
     }
 }

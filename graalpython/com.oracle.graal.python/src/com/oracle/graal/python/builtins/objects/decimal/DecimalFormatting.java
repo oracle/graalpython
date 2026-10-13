@@ -126,7 +126,7 @@ final class DecimalFormatting {
             separator = String.valueOf(symbols.getGroupingSeparator());
             grouping = "";
             if (numberFormat instanceof DecimalFormat df && df.isGroupingUsed()) {
-                grouping = String.valueOf((char) df.getGroupingSize()) + "\000";
+                grouping = String.valueOf((char) df.getGroupingSize()) + '\000';
             }
             type = type == 'N' ? 'G' : 'g';
             lowerType = 'g';
@@ -152,7 +152,7 @@ final class DecimalFormatting {
                 body = body.substring(1);
             }
             if (type == '%') {
-                body += '%';
+                body = body + '%';
             }
             if (zeroPad) {
                 fill = " ";
@@ -207,28 +207,24 @@ final class DecimalFormatting {
             fraction = digits.substring((int) point);
         }
         long exponent = leftDigits - point;
-        String suffix = "";
+        StringBuilder suffix = new StringBuilder();
         if (!fraction.isEmpty() || alternate) {
-            suffix = dot + fraction;
+            suffix.append(dot).append(fraction);
         }
         if (exponent != 0 || lowerType == 'e') {
-            if (Character.isUpperCase(type)) {
-                suffix += "E";
-            } else {
-                suffix += "e";
-            }
+            suffix.append(Character.isUpperCase(type) ? 'E' : 'e');
             if (exponent >= 0) {
-                suffix += "+";
+                suffix.append('+');
             }
-            suffix += exponent;
+            suffix.append(exponent);
         }
         if (type == '%') {
-            suffix += '%';
+            suffix.append('%');
         }
         String signString = sign(value.negative() && !(zero && noNegativeZero), sign);
         long minWidth = 0;
         if (zeroPad) {
-            minWidth = width - length(suffix) - signString.length();
+            minWidth = width - suffix.codePointCount(0, suffix.length()) - signString.length();
         }
         integer = group(integer, separator, grouping, minWidth);
         return align(signString, integer + suffix, fill, align, width);
@@ -317,11 +313,12 @@ final class DecimalFormatting {
 
     private static String align(String sign, String body, String fill, char align, long width) {
         int padding = Math.toIntExact(Math.max(0, width - sign.length() - length(body)));
+        StringBuilder result = new StringBuilder();
         return switch (align) {
-            case '<' -> sign + body + fill.repeat(padding);
-            case '=' -> sign + fill.repeat(padding) + body;
-            case '^' -> fill.repeat(padding / 2) + sign + body + fill.repeat(padding - padding / 2);
-            default -> fill.repeat(padding) + sign + body;
+            case '<' -> result.append(sign).append(body).append(fill.repeat(padding)).toString();
+            case '=' -> result.append(sign).append(fill.repeat(padding)).append(body).toString();
+            case '^' -> result.append(fill.repeat(padding / 2)).append(sign).append(body).append(fill.repeat(padding - padding / 2)).toString();
+            default -> result.append(fill.repeat(padding)).append(sign).append(body).toString();
         };
     }
 
@@ -344,7 +341,7 @@ final class DecimalFormatting {
             previous = size;
             int count = (int) Math.min(Math.max(Math.max(end, width), 1), size);
             int start = Math.max(0, end - count);
-            groups.add(zeros(count - (end - start)) + digits.substring(start, end));
+            groups.add(new StringBuilder().append(zeros(count - (end - start))).append(digits, start, end).toString());
             end = start;
             width -= count;
             if (end == 0 && width <= 0) {
