@@ -197,7 +197,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setBufferCallback(inliningTarget, raiseNode, bufferCallback);
             dumpNode.execute(frame, pickler, obj);
-            Object result = pickler.getString(language);
+            Object result = pickler.getString(language, false);
             reportSizes(pickler);
             return result;
         }

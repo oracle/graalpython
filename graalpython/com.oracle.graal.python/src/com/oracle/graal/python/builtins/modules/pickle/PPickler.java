@@ -368,7 +368,6 @@ public class PPickler extends PythonBuiltinObject {
     }
 
     public void clearBuffer() {
-        this.outputBuffer = new byte[this.outputBuffer.length];
         this.outputLen = 0;
         this.frameStart = -1;
     }
@@ -389,9 +388,12 @@ public class PPickler extends PythonBuiltinObject {
         frameStart = -1;
     }
 
-    public PBytes getString(PythonLanguage language) {
-        commitFrame();
-        return PFactory.createBytes(language, outputBuffer, outputLen);
+    public PBytes getString(PythonLanguage language, boolean copy) {
+        if (copy || outputBuffer.length > outputLen * 5 / 4) {
+            return PFactory.createBytes(language, PythonUtils.arrayCopyOf(outputBuffer, outputLen));
+        } else {
+            return PFactory.createBytes(language, outputBuffer, outputLen);
+        }
     }
 
     private void writeASCII(Node node, TruffleString string, TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -2648,7 +2650,7 @@ public class PPickler extends PythonBuiltinObject {
                         @Cached CallNode callNode) {
             assert pickler.write != null;
             // This will commit the frame first
-            PBytes output = pickler.getString(language);
+            PBytes output = pickler.getString(language, true);
             callNode.execute(frame, pickler.write, output);
         }
     }
