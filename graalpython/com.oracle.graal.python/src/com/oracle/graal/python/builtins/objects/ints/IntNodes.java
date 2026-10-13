@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -181,10 +181,14 @@ public final class IntNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateUncached
     public abstract static class PyLongFromByteArray extends Node {
-        public abstract Object execute(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed);
+        public abstract Object execute(Node inliningTarget, byte[] data, int offset, int length, boolean littleEndian, boolean signed);
 
-        public final Object executeCached(byte[] data, boolean littleEndian, boolean signed) {
-            return execute(this, data, littleEndian, signed);
+        public final Object execute(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed) {
+            return execute(inliningTarget, data, 0, data.length, littleEndian, signed);
+        }
+
+        public final Object executeCached(byte[] data, int offset, int length, boolean littleEndian, boolean signed) {
+            return execute(this, data, offset, length, littleEndian, signed);
         }
 
         public static Object executeUncached(byte[] data, boolean littleEndian, boolean signed) {
@@ -192,37 +196,65 @@ public final class IntNodes {
         }
 
         @Specialization
-        static Object doOther(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed,
+        static Object doOther(Node inliningTarget, byte[] data, int offset, int length, boolean littleEndian, boolean signed,
                         @Cached InlinedBranchProfile fastPath1,
                         @Cached InlinedBranchProfile fastPath2,
                         @Cached InlinedBranchProfile fastPath4,
                         @Cached InlinedBranchProfile fastPath8,
+                        @Cached InlinedBranchProfile variablePath,
+                        @Cached InlinedBranchProfile fastPathVariable,
+                        @Cached InlinedBranchProfile overlong,
                         @Cached InlinedBranchProfile generic,
                         @Cached PRaiseNode raiseNode) {
             NumericSupport support = littleEndian ? NumericSupport.littleEndian() : NumericSupport.bigEndian();
             if (signed) {
-                switch (data.length) {
+                switch (length) {
                     case 1 -> {
                         fastPath1.enter(inliningTarget);
-                        return (int) support.getByte(data, 0);
+                        return (int) support.getByte(data, offset);
                     }
                     case 2 -> {
                         fastPath2.enter(inliningTarget);
-                        return (int) support.getShort(data, 0);
+                        return (int) support.getShort(data, offset);
                     }
                     case 4 -> {
                         fastPath4.enter(inliningTarget);
-                        return support.getInt(data, 0);
+                        return support.getInt(data, offset);
                     }
                     case 8 -> {
                         fastPath8.enter(inliningTarget);
-                        return support.getLong(data, 0);
+                        return support.getLong(data, offset);
                     }
                 }
             }
+            variablePath.enter(inliningTarget);
+            int remaining = length;
+            int index = littleEndian ? offset + length - 1 : offset;
+            int step = littleEndian ? -1 : 1;
+            boolean negative = signed && length > 0 && data[index] < 0;
+            if (remaining > Long.BYTES) {
+                overlong.enter(inliningTarget);
+                // Ignore redundant sign or zero extension beyond the width of a long.
+                byte padding = (byte) (negative ? -1 : 0);
+                while (remaining > Long.BYTES && data[index] == padding) {
+                    index += step;
+                    remaining--;
+                }
+            }
+            // For eight bytes, the remaining sign bit must agree with the original sign.
+            // This also excludes unsigned values greater than Long.MAX_VALUE.
+            if (remaining < Long.BYTES || (remaining == Long.BYTES && (data[index] < 0) == negative)) {
+                fastPathVariable.enter(inliningTarget);
+                long value = negative ? -1L : 0L;
+                for (int i = 0; i < remaining; i++) {
+                    value = (value << Byte.SIZE) | (data[index] & 0xffL);
+                    index += step;
+                }
+                return value;
+            }
             generic.enter(inliningTarget);
             try {
-                BigInteger integer = support.getBigInteger(data, signed);
+                BigInteger integer = support.getBigInteger(data, offset, length, signed);
                 if (PInt.bigIntegerFitsInLong(integer)) {
                     long longValue = PInt.longValue(integer);
                     return PInt.isIntRange(longValue) ? (int) longValue : longValue;

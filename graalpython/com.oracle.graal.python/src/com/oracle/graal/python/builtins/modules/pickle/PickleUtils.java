@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.pickle;
 
-import static com.oracle.graal.python.builtins.modules.pickle.PPickler.BasePickleWriteNode.NEW_LINE_BYTE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -53,8 +52,6 @@ import org.graalvm.collections.Pair;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -62,10 +59,9 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -218,37 +214,8 @@ public final class PickleUtils {
     public static final TruffleString T_PROTO_LE2_TRUE = tsLiteral("I01\n");
     public static final TruffleString T_PROTO_LE2_FALSE = tsLiteral("I00\n");
 
-    @ExplodeLoop
     public static void writeSize64(byte[] out, int start, int value) {
-        final int sizeofSizeT = Integer.BYTES;
-        for (int i = 0; i < sizeofSizeT; i++) {
-            out[start + i] = (byte) ((value >> (8 * i)) & 0xff);
-        }
-        for (int i = sizeofSizeT; i < 8; i++) {
-            out[start + i] = 0;
-        }
-    }
-
-    public static byte[] resize(byte[] src, int newSize) {
-        byte[] newBytes = new byte[newSize];
-        if (src != null) {
-            PythonUtils.arraycopy(src, 0, newBytes, 0, Math.min(newSize, src.length));
-        }
-        return newBytes;
-    }
-
-    private static int arrayCopyWithNewLine(byte[] dst, int offset, byte[] src) {
-        PythonUtils.arraycopy(src, 0, dst, offset, src.length);
-        int len = src.length + 2;
-        dst[len - 1] = NEW_LINE_BYTE;
-        return len;
-    }
-
-    public static int toAsciiBytesWithNewLine(byte[] dst, int offset, long value, TruffleString.FromLongNode fromLongNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        TruffleString s = fromLongNode.execute(value, TruffleString.Encoding.US_ASCII, true);
-        byte[] buf = new byte[s.byteLength(TruffleString.Encoding.US_ASCII)];
-        copyToByteArrayNode.execute(s, 0, buf, 0, buf.length, TruffleString.Encoding.US_ASCII);
-        return arrayCopyWithNewLine(dst, offset, buf);
+        NumericSupport.littleEndian().putLong(out, start, Integer.toUnsignedLong(value));
     }
 
     public static int getStringSize(byte[] bytes) {
@@ -295,23 +262,6 @@ public final class PickleUtils {
         }
     }
 
-    public static byte[] encodeUTF8Strict(TruffleString str, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    TruffleString.GetCodeRangeNode getCodeRangeNode) {
-        return encodeStrict(str, switchEncodingNode, TruffleString.Encoding.UTF_8, copyToByteArrayNode, getCodeRangeNode);
-    }
-
-    public static byte[] encodeStrict(TruffleString ts, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.Encoding encoding, TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    TruffleString.GetCodeRangeNode getCodeRangeNode) {
-        // TODO: [GR-39571] TruffleStrings: allow preservation of UTF-16 surrogate
-        if (getCodeRangeNode.execute(ts, TS_ENCODING) == TruffleString.CodeRange.BROKEN) {
-            return null;
-        }
-        TruffleString s = switchEncodingNode.execute(ts, encoding);
-        byte[] buf = new byte[s.byteLength(encoding)];
-        copyToByteArrayNode.execute(s, 0, buf, 0, buf.length, encoding);
-        return buf;
-    }
-
     public static TruffleString decodeUTF8Strict(byte[] data, int len, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
         return decodeStrict(data, len, fromByteArrayNode, TruffleString.Encoding.UTF_8, switchEncodingNode);
     }
@@ -324,39 +274,6 @@ public final class PickleUtils {
                     TruffleString.SwitchEncodingNode switchEncodingNode) {
         TruffleString ret = fromByteArrayNode.execute(data, 0, len, encoding, true);
         return switchEncodingNode.execute(ret, TS_ENCODING);
-    }
-
-    public static byte[] rawUnicodeEscape(TruffleString unicode, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
-        int len = codePointLengthNode.execute(unicode, TS_ENCODING);
-        ByteArrayBuffer buffer = new ByteArrayBuffer(len);
-        for (int i = 0; i < len; i++) {
-            final int ch = codePointAtIndexNode.execute(unicode, i);
-            if (ch >= 0x10000) {
-                // Map 32-bit characters to \Uxxxxxxxx
-                buffer.append('\\');
-                buffer.append('U');
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 28) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 24) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 20) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 16) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 12) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 8) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 4) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[ch & 15]);
-            } else if (ch >= 256 || ch == '\\' || ch == 0 || ch == '\n' || ch == '\r' || ch == 0x1a) {
-                // Map 16-bit characters, \\ and \n to \Uxxxx
-                buffer.append('\\');
-                buffer.append('u');
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 12) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 8) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[(ch >> 4) & 0xf]);
-                buffer.append((char) BytesUtils.HEXDIGITS[ch & 15]);
-            } else {
-                // Copy everything else as-is
-                buffer.append((char) ch);
-            }
-        }
-        return buffer.getByteArray();
     }
 
     public static Pair<Object, Object> initMethodRef(VirtualFrame frame, Node inliningTarget, PyObjectLookupAttr lookup, Object receiver, TruffleString identifier) {

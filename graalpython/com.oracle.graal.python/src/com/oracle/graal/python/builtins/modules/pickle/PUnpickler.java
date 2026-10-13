@@ -111,12 +111,15 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.OPCODE
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.PICKLE_PROTOCOL_HIGHEST;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.PREFETCH;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.READ_WHOLE_LINE;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_IMPORT_MAPPING;
+import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_PEEK;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_PERSISTENT_LOAD;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_READ;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_READINTO;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_READLINE;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.getValidIntString;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ADD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXTEND;
@@ -126,11 +129,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ASCII_UPPERCASE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -166,6 +172,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
@@ -174,7 +181,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -183,6 +190,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -361,7 +369,7 @@ public class PUnpickler extends PythonBuiltinObject {
     }
 
     public void memoPut(int idx, Object value) {
-        if (idx >= memo.length) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, idx >= memo.length)) {
             resizeMemoList(idx * 2);
             assert idx < memo.length;
         }
@@ -396,6 +404,8 @@ public class PUnpickler extends PythonBuiltinObject {
 
     // inner nodes
     public abstract static class BasePickleReadNode extends PicklerNodes.BasePickleNode {
+        @Child private CastToTruffleStringNode castToTruffleStringNode;
+        @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private PyMemoryViewFromObject memoryViewNode;
         @Child private MemoryViewBuiltins.ToReadonlyNode toReadonlyNode;
         @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
@@ -405,9 +415,69 @@ public class PUnpickler extends PythonBuiltinObject {
 
         @Child private TruffleString.ParseIntNode tsParseIntNode;
 
+        @CompilationFinal private boolean seenFileRead;
+
         // we only need the reference, doesn't matter that the object may not yet be fully
         // constructed
-        @SuppressWarnings("this-escape") private InteropCallData interopCallData = InteropCallData.createFor(this);
+        @SuppressWarnings("this-escape") private final InteropCallData interopCallData = InteropCallData.createFor(this);
+
+        protected TruffleString castToString(Object value) {
+            if (castToTruffleStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToTruffleStringNode = insert(CastToTruffleStringNode.create());
+            }
+            return castToTruffleStringNode.executeCached(value);
+        }
+
+        private PyObjectReprAsTruffleStringNode getReprNode() {
+            if (reprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reprNode = insert(PyObjectReprAsTruffleStringNode.create());
+            }
+            return reprNode;
+        }
+
+        public Object getattribute(VirtualFrame frame, Object obj, TruffleString name, boolean allowQualname) {
+            if (allowQualname) {
+                TruffleString[] dottedPath = getDottedPath(obj, name);
+                Pair<Object, Object> result = getDeepAttribute(frame, getLookupGlobalAttrNode(), obj, dottedPath);
+                if (result != null) {
+                    return result.getLeft();
+                } else {
+                    throw raise(AttributeError, ErrorMessages.CANT_GET_ATTRIBUTE_S_ON_S, name, getReprNode().execute(frame, null, obj));
+                }
+            } else {
+                Object attr = getLookupGlobalAttrNode().execute(frame, obj, name);
+                if (attr == NO_VALUE) {
+                    throw raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
+                }
+                return attr;
+            }
+        }
+
+        protected Pair<TruffleString, TruffleString> get2To3Mapping(VirtualFrame frame, Python3Core core, TruffleString moduleName, TruffleString globalName) {
+            PickleState state = getGlobalState(core);
+            return getMapping(frame, state.nameMapping2To3, state.importMapping2To3, T_CP_NAME_MAPPING, T_CP_IMPORT_MAPPING, moduleName, globalName);
+        }
+
+        public Object findClass(VirtualFrame frame, Python3Core core, PUnpickler self, Object moduleName, Object globalName) {
+            return findClass(frame, core, self, castToString(moduleName), castToString(globalName));
+        }
+
+        public Object findClass(VirtualFrame frame, Python3Core core, PUnpickler self, TruffleString moduleName, TruffleString globalName) {
+            // Try to map the old names used in Python 2.x to the new ones used in Python 3.x. We do
+            // this only with old pickle protocols and when the user has not disabled the feature.
+            TruffleString mName = moduleName;
+            TruffleString gName = globalName;
+            if (self.getProto() < 3 && self.isFixImports()) {
+                final Pair<TruffleString, TruffleString> to3Mapping = get2To3Mapping(frame, core, mName, gName);
+                mName = to3Mapping.getLeft();
+                gName = to3Mapping.getRight();
+            }
+
+            Object module = importModule(frame, PythonContext.get(this), mName);
+            return getattribute(frame, module, gName, self.getProto() >= 4);
+        }
 
         protected TruffleString.ParseLongNode ensureTsParseLongNode() {
             if (tsParseLongNode == null) {
@@ -534,19 +604,24 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         protected byte read(VirtualFrame frame, PUnpickler self) {
-            return read(frame, self, 1).get(0);
+            int offset = read(frame, self, 1);
+            return self.inputBuffer[offset];
         }
 
-        protected ByteArrayView read(VirtualFrame frame, PUnpickler self, int n) {
-            if (n <= self.inputLen - self.nextReadIdx) {
-                ByteArrayView bytesView = new ByteArrayView(self.inputBuffer, self.nextReadIdx);
+        protected int read(VirtualFrame frame, PUnpickler self, int n) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.FASTPATH_PROBABILITY, n <= self.inputLen - self.nextReadIdx)) {
+                int offset = self.nextReadIdx;
                 self.nextReadIdx += n;
-                return bytesView;
+                return offset;
+            }
+            if (!seenFileRead) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenFileRead = true;
             }
             return readImpl(frame, self, n);
         }
 
-        private ByteArrayView readImpl(VirtualFrame frame, PUnpickler self, int n) {
+        private int readImpl(VirtualFrame frame, PUnpickler self, int n) {
             int numRead;
             // TODO: when GR-24978 is completed we should use PY_SSIZE_T_MAX
             if (self.nextReadIdx > Integer.MAX_VALUE - 1) {
@@ -563,7 +638,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 throw badReadLine();
             }
             self.nextReadIdx = n;
-            return new ByteArrayView(self.inputBuffer);
+            return 0;
         }
 
         protected int readInto(VirtualFrame frame, PUnpickler self, byte[] buffer) {
@@ -676,13 +751,84 @@ public class PUnpickler extends PythonBuiltinObject {
         public abstract Object execute(VirtualFrame frame, PUnpickler unpickler, TruffleString module, TruffleString name);
 
         @Specialization
-        Object find(VirtualFrame frame, PUnpickler unpickler, TruffleString module, TruffleString name,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            return findClass(frame, boundaryCallData, PythonContext.get(this).getCore(), unpickler, module, name);
+        Object find(VirtualFrame frame, PUnpickler unpickler, TruffleString module, TruffleString name) {
+            return findClass(frame, PythonContext.get(this).getCore(), unpickler, module, name);
         }
     }
 
     public abstract static class LoadNode extends BasePickleReadNode {
+        private static final int SEEN_NONE = 0;
+        private static final int SEEN_BININT = 1;
+        private static final int SEEN_BININT1 = 2;
+        private static final int SEEN_BININT2 = 3;
+        private static final int SEEN_INT = 4;
+        private static final int SEEN_LONG = 5;
+        private static final int SEEN_LONG1 = 6;
+        private static final int SEEN_LONG4 = 7;
+        private static final int SEEN_FLOAT = 8;
+        private static final int SEEN_BINFLOAT = 9;
+        private static final int SEEN_SHORT_BINBYTES = 10;
+        private static final int SEEN_BINBYTES = 11;
+        private static final int SEEN_BINBYTES8 = 12;
+        private static final int SEEN_BYTEARRAY8 = 13;
+        private static final int SEEN_NEXT_BUFFER = 14;
+        private static final int SEEN_READONLY_BUFFER = 15;
+        private static final int SEEN_SHORT_BINSTRING = 16;
+        private static final int SEEN_BINSTRING = 17;
+        private static final int SEEN_STRING = 18;
+        private static final int SEEN_UNICODE = 19;
+        private static final int SEEN_SHORT_BINUNICODE = 20;
+        private static final int SEEN_BINUNICODE = 21;
+        private static final int SEEN_BINUNICODE8 = 22;
+        private static final int SEEN_EMPTY_TUPLE = 23;
+        private static final int SEEN_TUPLE1 = 24;
+        private static final int SEEN_TUPLE2 = 25;
+        private static final int SEEN_TUPLE3 = 26;
+        private static final int SEEN_TUPLE = 27;
+        private static final int SEEN_EMPTY_LIST = 28;
+        private static final int SEEN_LIST = 29;
+        private static final int SEEN_EMPTY_DICT = 30;
+        private static final int SEEN_DICT = 31;
+        private static final int SEEN_EMPTY_SET = 32;
+        private static final int SEEN_ADDITEMS = 33;
+        private static final int SEEN_FROZENSET = 34;
+        private static final int SEEN_OBJ = 35;
+        private static final int SEEN_INST = 36;
+        private static final int SEEN_NEWOBJ = 37;
+        private static final int SEEN_NEWOBJ_EX = 38;
+        private static final int SEEN_GLOBAL = 39;
+        private static final int SEEN_STACK_GLOBAL = 40;
+        private static final int SEEN_APPEND = 41;
+        private static final int SEEN_APPENDS = 42;
+        private static final int SEEN_BUILD = 43;
+        private static final int SEEN_DUP = 44;
+        private static final int SEEN_BINGET = 45;
+        private static final int SEEN_LONG_BINGET = 46;
+        private static final int SEEN_GET = 47;
+        private static final int SEEN_MARK = 48;
+        private static final int SEEN_BINPUT = 49;
+        private static final int SEEN_LONG_BINPUT = 50;
+        private static final int SEEN_PUT = 51;
+        private static final int SEEN_MEMOIZE = 52;
+        private static final int SEEN_POP = 53;
+        private static final int SEEN_POP_MARK = 54;
+        private static final int SEEN_SETITEM = 55;
+        private static final int SEEN_SETITEMS = 56;
+        private static final int SEEN_PERSID = 57;
+        private static final int SEEN_BINPERSID = 58;
+        private static final int SEEN_REDUCE = 59;
+        private static final int SEEN_PROTO = 60;
+        private static final int SEEN_FRAME = 61;
+        private static final int SEEN_EXT1 = 62;
+        private static final int SEEN_EXT2 = 63;
+        private static final int SEEN_EXT4 = 64;
+        private static final int SEEN_NEWTRUE = 65;
+        private static final int SEEN_NEWFALSE = 66;
+        private static final int SEEN_STOP = 67;
+
+        @CompilationFinal private long seenOpcodes0;
+        @CompilationFinal private long seenOpcodes1;
+
         @Child private PData.PDataPushNode pDataPushNode;
         @Child private PData.PDataPopNode pDataPopNode;
         @Child private PData.PDataPopTupleNode pDataPopTupleNode;
@@ -697,6 +843,22 @@ public class PUnpickler extends PythonBuiltinObject {
         @Child private PyTupleCheckNode.CachedNode tupleCheck;
 
         public abstract Object execute(VirtualFrame frame, PUnpickler self);
+
+        private void profileSeen(int seen) {
+            if (seen < Long.SIZE) {
+                long mask = 1L << seen;
+                if ((seenOpcodes0 & mask) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    seenOpcodes0 |= mask;
+                }
+            } else {
+                long mask = 1L << (seen - Long.SIZE);
+                if ((seenOpcodes1 & mask) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    seenOpcodes1 |= mask;
+                }
+            }
+        }
 
         protected HashingStorageCopy ensureHashingStorageCopy() {
             if (hashCopy == null) {
@@ -722,12 +884,12 @@ public class PUnpickler extends PythonBuiltinObject {
             return tupleCheck.execute(object);
         }
 
-        protected Object longFromBytes(byte[] data, boolean littleEndian) {
+        protected Object longFromBytes(byte[] data, int offset, int length, boolean littleEndian) {
             if (pyLongFromByteArray == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 pyLongFromByteArray = insert(IntNodesFactory.PyLongFromByteArrayNodeGen.create());
             }
-            return pyLongFromByteArray.executeCached(data, littleEndian, true);
+            return pyLongFromByteArray.executeCached(data, offset, length, littleEndian, true);
         }
 
         protected void setAttribute(VirtualFrame frame, Object object, Object key, Object value) {
@@ -809,11 +971,11 @@ public class PUnpickler extends PythonBuiltinObject {
             pDataPush(self, PNone.NONE);
         }
 
-        private static long calcBinInt(ByteArrayView s, int nBytes) {
+        private static long calcBinInt(byte[] s, int offset, int nBytes) {
             long x = 0;
 
             for (int i = 0; i < nBytes; i++) {
-                x |= (long) s.getUnsigned(i) << (8 * i);
+                x |= (long) (s[offset + i] & 0xff) << (8 * i);
             }
 
             // Unlike BININT1 and BININT2, BININT (more accurately BININT4) is signed, so on a box
@@ -826,7 +988,7 @@ public class PUnpickler extends PythonBuiltinObject {
             return x;
         }
 
-        private int calcBinSize(ByteArrayView s, int nbytes) {
+        private int calcBinSize(byte[] s, int offset, int nbytes) {
             int i;
             int x = 0;
             int n = nbytes;
@@ -836,7 +998,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 // Check for integer overflow. BINBYTES8 and BINUNICODE8 opcodes have 64-bit size
                 // that can't be represented on 32-bit platform.
                 for (i = Integer.BYTES; i < n; i++) {
-                    if (s.get(i) != 0) {
+                    if (s[offset + i] != 0) {
                         throw raise(PythonBuiltinClassType.OverflowError);
                     }
                 }
@@ -844,7 +1006,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             for (i = 0; i < n; i++) {
-                x |= s.getUnsigned(i) << (8 * i);
+                x |= (s[offset + i] & 0xff) << (8 * i);
             }
 
             // TODO: GR-24978 check for PY_SSIZE_T_MAX (see: _cpickle.c:calc_binsize)
@@ -855,24 +1017,24 @@ public class PUnpickler extends PythonBuiltinObject {
             return x;
         }
 
-        private void loadBinIntX(PUnpickler self, ByteArrayView s, int size) {
-            long x = calcBinInt(s, size);
+        private void loadBinIntX(PUnpickler self, int offset, int size) {
+            long x = calcBinInt(self.inputBuffer, offset, size);
             pDataPush(self, x);
         }
 
         private void loadBinInt(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 4);
-            loadBinIntX(self, s, 4);
+            int offset = read(frame, self, 4);
+            loadBinIntX(self, offset, 4);
         }
 
         private void loadBinInt1(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 1);
-            loadBinIntX(self, s, 1);
+            int offset = read(frame, self, 1);
+            loadBinIntX(self, offset, 1);
         }
 
         private void loadBinInt2(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 2);
-            loadBinIntX(self, s, 2);
+            int offset = read(frame, self, 2);
+            loadBinIntX(self, offset, 2);
         }
 
         private void loadInt(VirtualFrame frame, PUnpickler self) {
@@ -922,8 +1084,8 @@ public class PUnpickler extends PythonBuiltinObject {
         private void loadCountedLong(VirtualFrame frame, PUnpickler self, int n) {
             assert n == 1 || n == 4;
             int size = n;
-            final ByteArrayView nbytes = read(frame, self, size);
-            size = (int) calcBinInt(nbytes, size);
+            int sizeOffset = read(frame, self, size);
+            size = (int) calcBinInt(self.inputBuffer, sizeOffset, size);
 
             Object value;
 
@@ -935,8 +1097,8 @@ public class PUnpickler extends PythonBuiltinObject {
                 value = 0L;
             } else {
                 // Read the raw little-endian bytes and convert.
-                final ByteArrayView pdata = read(frame, self, size);
-                value = longFromBytes(pdata.getBytes(size), true);
+                int dataOffset = read(frame, self, size);
+                value = longFromBytes(self.inputBuffer, dataOffset, size, true);
             }
             pDataPush(self, value);
         }
@@ -956,15 +1118,15 @@ public class PUnpickler extends PythonBuiltinObject {
 
         private void loadBinFloat(VirtualFrame frame, PUnpickler self) {
             Object value;
-            ByteArrayView s = read(frame, self, 8);
+            int offset = read(frame, self, 8);
 
-            value = NumericSupport.bigEndian().getDouble(s.getBytes(Double.BYTES), 0);
+            value = NumericSupport.bigEndian().getDouble(self.inputBuffer, offset);
             pDataPush(self, value);
         }
 
         private void loadCountedBinBytes(VirtualFrame frame, PUnpickler self, int nbytes) {
-            final ByteArrayView s = read(frame, self, nbytes);
-            int size = calcBinSize(s, nbytes);
+            int offset = read(frame, self, nbytes);
+            int size = calcBinSize(self.inputBuffer, offset, nbytes);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BINBYTES", Integer.MAX_VALUE);
             }
@@ -977,8 +1139,8 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadCountedByteArray(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 8);
-            int size = calcBinSize(s, 8);
+            int offset = read(frame, self, 8);
+            int size = calcBinSize(self.inputBuffer, offset, 8);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BYTEARRAY8", Integer.MAX_VALUE);
             }
@@ -1025,18 +1187,18 @@ public class PUnpickler extends PythonBuiltinObject {
 
         private void loadCountedBinString(VirtualFrame frame, PUnpickler self, int nbytes) {
             Object obj;
-            ByteArrayView s = read(frame, self, nbytes);
+            int offset = read(frame, self, nbytes);
 
-            int size = calcBinSize(s, nbytes);
+            int size = calcBinSize(self.inputBuffer, offset, nbytes);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BINSTRING", Integer.MAX_VALUE);
             }
 
-            s = read(frame, self, size);
+            offset = read(frame, self, size);
 
             // Convert Python 2.x strings to bytes if the *encoding* given to the Unpickler was
             // 'bytes'. Otherwise, convert them to unicode.
-            final PBytes bytes = PFactory.createBytes(PythonLanguage.get(this), s.getBytes(size), size);
+            final PBytes bytes = PFactory.createBytes(PythonLanguage.get(this), PythonUtils.arrayCopyOfRange(self.inputBuffer, offset, offset + size));
             if (ensureTsEqualNode().execute(self.encoding, T_CODEC_BYTES, TS_ENCODING)) {
                 obj = bytes;
             } else {
@@ -1095,16 +1257,16 @@ public class PUnpickler extends PythonBuiltinObject {
 
         private void loadBinCountedUnicode(VirtualFrame frame, PUnpickler self, int nbytes) {
             Object str;
-            ByteArrayView s = read(frame, self, nbytes);
+            int offset = read(frame, self, nbytes);
 
-            int size = calcBinSize(s, nbytes);
+            int size = calcBinSize(self.inputBuffer, offset, nbytes);
             if (size < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "BINUNICODE", Integer.MAX_VALUE);
             }
 
-            s = read(frame, self, size);
+            offset = read(frame, self, size);
 
-            str = decodeUTF8(frame, s, size, T_ERRORS_SURROGATEPASS);
+            str = decodeUTF8(frame, self.inputBuffer, offset, size, T_ERRORS_SURROGATEPASS);
             pDataPush(self, str);
         }
 
@@ -1149,13 +1311,14 @@ public class PUnpickler extends PythonBuiltinObject {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.ODD_NR_ITEMS_FOR_S, "DICT");
             }
 
-            HashingStorage storage = EmptyStorage.INSTANCE;
+            HashingStorage storage = PDict.createNewStorage((j - i) / 2);
             for (k = i + 1; k < j; k += 2) {
                 key = self.stack.data[k - 1];
                 value = self.stack.data[k];
                 storage = setHashingStorageItem(frame, storage, key, value);
             }
 
+            LoopNode.reportLoopCount(this, (j - i) / 2);
             self.stack.clear(i);
             pDataPush(self, PFactory.createDict(PythonLanguage.get(this), storage));
         }
@@ -1235,7 +1398,7 @@ public class PUnpickler extends PythonBuiltinObject {
             pDataPush(self, obj);
         }
 
-        private void loadInst(VirtualFrame frame, Node inliningTarget, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self, PyObjectCallMethodObjArgs callMethod) {
+        private void loadInst(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PUnpickler self, PyObjectCallMethodObjArgs callMethod) {
             Object cls = null;
             Object obj = null;
             int i = marker(self);
@@ -1255,7 +1418,7 @@ public class PUnpickler extends PythonBuiltinObject {
                     throw badReadLine();
                 }
                 Object className = decodeASCII(frame, s, s.length - 1, T_ERRORS_STRICT);
-                cls = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, className);
+                cls = findClass(frame, ctx.getCore(), self, moduleName, className);
             }
 
             assert cls != null;
@@ -1355,7 +1518,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
         }
 
-        private void loadGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self) {
+        private void loadGlobal(VirtualFrame frame, PythonContext ctx, PUnpickler self) {
             Object global = null;
             TruffleString globalName;
             byte[] s = readLine(frame, self);
@@ -1371,14 +1534,14 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
                 globalName = PickleUtils.decodeUTF8Strict(s, s.length - 1, ensureTsFromByteArray(), ensureTsSwitchEncodingNode());
                 if (globalName != null) {
-                    global = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, globalName);
+                    global = findClass(frame, ctx.getCore(), self, moduleName, globalName);
                 }
             }
 
             pDataPush(self, global);
         }
 
-        private void loadStackGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self) {
+        private void loadStackGlobal(VirtualFrame frame, PythonContext ctx, PUnpickler self) {
             Object globalName = null;
             Object moduleName = null;
             try {
@@ -1390,7 +1553,7 @@ public class PUnpickler extends PythonBuiltinObject {
             if (!PGuards.isString(moduleName) || !PGuards.isString(globalName)) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_REQ_STR, "STACK_GLOBAL");
             }
-            Object global = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, globalName);
+            Object global = findClass(frame, ctx.getCore(), self, moduleName, globalName);
             pDataPush(self, global);
         }
 
@@ -1499,8 +1662,8 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadLongBinGet(VirtualFrame frame, PUnpickler self) {
-            ByteArrayView s = read(frame, self, 4);
-            int idx = calcBinSize(s, 4);
+            int offset = read(frame, self, 4);
+            int idx = calcBinSize(self.inputBuffer, offset, 4);
 
             Object value = self.memoGet(idx);
             if (value == null) {
@@ -1559,13 +1722,13 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadLongBinPut(VirtualFrame frame, PUnpickler self) {
-            ByteArrayView s = read(frame, self, 4);
+            int offset = read(frame, self, 4);
             if (self.stack.size <= self.stack.fence) {
                 throw pDataStackRaiseUnderflow(self);
             }
 
             Object value = self.stack.data[self.stack.size - 1];
-            int idx = calcBinSize(s, 4);
+            int idx = calcBinSize(self.inputBuffer, offset, 4);
             if (idx < 0) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.NEG_S_ARG, "LONG_BINPUT");
             }
@@ -1646,6 +1809,9 @@ public class PUnpickler extends PythonBuiltinObject {
 
             Object dict = self.stack.data[x - 1];
             final boolean isBuiltinDict = dict instanceof PDict pDict && PGuards.isBuiltinDict(pDict);
+            if (isBuiltinDict && ((PDict) dict).getDictStorage() == EmptyStorage.INSTANCE) {
+                ((PDict) dict).setDictStorage(PDict.createNewStorage((len - x) / 2));
+            }
             for (i = x + 1; i < len; i += 2) {
                 key = self.stack.data[i - 1];
                 value = self.stack.data[i];
@@ -1656,6 +1822,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
             }
 
+            LoopNode.reportLoopCount(this, (len - x) / 2);
             self.stack.clear(x);
         }
 
@@ -1717,9 +1884,9 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadProto(VirtualFrame frame, PUnpickler self) {
-            final ByteArrayView s = read(frame, self, 1);
+            int offset = read(frame, self, 1);
 
-            int i = s.getUnsigned(0);
+            int i = self.inputBuffer[offset] & 0xff;
             if (i <= PICKLE_PROTOCOL_HIGHEST) {
                 self.proto = i;
                 return;
@@ -1729,25 +1896,25 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadFrame(VirtualFrame frame, PUnpickler self) {
-            ByteArrayView s = read(frame, self, 8);
+            int offset = read(frame, self, 8);
 
-            int frameLen = calcBinSize(s, 8);
+            int frameLen = calcBinSize(self.inputBuffer, offset, 8);
             if (frameLen < 0) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.S_EXCEEDS_MAX_SIZE_N_BYTES, "FRAME", Integer.MAX_VALUE);
             }
 
-            s = read(frame, self, frameLen);
+            read(frame, self, frameLen);
 
             // Rewind to start of frame
             self.nextReadIdx -= frameLen;
         }
 
-        private void loadExtension(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PUnpickler self, int nbytes) {
+        private void loadExtension(VirtualFrame frame, PythonContext ctx, PUnpickler self, int nbytes) {
             assert (nbytes == 1 || nbytes == 2 || nbytes == 4);
             // the nbytes bytes after the opcode
-            ByteArrayView codebytes = read(frame, self, nbytes);
+            int codeOffset = read(frame, self, nbytes);
             // calc_binint returns long
-            long code = calcBinInt(codebytes, nbytes);
+            long code = calcBinInt(self.inputBuffer, codeOffset, nbytes);
 
             if (code <= 0) {
                 // note that 0 is forbidden
@@ -1788,7 +1955,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             // Load the object.
-            obj = findClass(frame, boundaryCallData, ctx.getCore(), self, moduleName, className);
+            obj = findClass(frame, ctx.getCore(), self, moduleName, className);
 
             // Cache code -> obj.
             setDictItem(frame, st.extensionCache, code, obj);
@@ -1802,7 +1969,6 @@ public class PUnpickler extends PythonBuiltinObject {
         @Specialization
         public Object load(VirtualFrame frame, PUnpickler self,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached CallSlotTpNewNode callNew,
                         @Cached ExecutePositionalStarargsNode expandArgs,
@@ -1828,207 +1994,275 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
                 switch (s) {
                     case OPCODE_NONE:
+                        profileSeen(SEEN_NONE);
                         loadNone(self);
                         continue;
                     case OPCODE_BININT:
+                        profileSeen(SEEN_BININT);
                         loadBinInt(frame, self);
                         continue;
                     case OPCODE_BININT1:
+                        profileSeen(SEEN_BININT1);
                         loadBinInt1(frame, self);
                         continue;
                     case OPCODE_BININT2:
+                        profileSeen(SEEN_BININT2);
                         loadBinInt2(frame, self);
                         continue;
                     case OPCODE_INT:
+                        profileSeen(SEEN_INT);
                         loadInt(frame, self);
                         continue;
                     case OPCODE_LONG:
+                        profileSeen(SEEN_LONG);
                         loadLong(frame, self);
                         continue;
                     case OPCODE_LONG1:
+                        profileSeen(SEEN_LONG1);
                         loadCountedLong(frame, self, 1);
                         continue;
                     case OPCODE_LONG4:
+                        profileSeen(SEEN_LONG4);
                         loadCountedLong(frame, self, 4);
                         continue;
                     case OPCODE_FLOAT:
+                        profileSeen(SEEN_FLOAT);
                         loadFloat(frame, self);
                         continue;
                     case OPCODE_BINFLOAT:
+                        profileSeen(SEEN_BINFLOAT);
                         loadBinFloat(frame, self);
                         continue;
                     case OPCODE_SHORT_BINBYTES:
+                        profileSeen(SEEN_SHORT_BINBYTES);
                         loadCountedBinBytes(frame, self, 1);
                         continue;
                     case OPCODE_BINBYTES:
+                        profileSeen(SEEN_BINBYTES);
                         loadCountedBinBytes(frame, self, 4);
                         continue;
                     case OPCODE_BINBYTES8:
+                        profileSeen(SEEN_BINBYTES8);
                         loadCountedBinBytes(frame, self, 8);
                         continue;
                     case OPCODE_BYTEARRAY8:
+                        profileSeen(SEEN_BYTEARRAY8);
                         loadCountedByteArray(frame, self);
                         continue;
                     case OPCODE_NEXT_BUFFER:
+                        profileSeen(SEEN_NEXT_BUFFER);
                         loadNextBuffer(frame, self);
                         continue;
                     case OPCODE_READONLY_BUFFER:
+                        profileSeen(SEEN_READONLY_BUFFER);
                         loadReadOnlyBuffer(frame, self);
                         continue;
                     case OPCODE_SHORT_BINSTRING:
+                        profileSeen(SEEN_SHORT_BINSTRING);
                         loadCountedBinString(frame, self, 1);
                         continue;
                     case OPCODE_BINSTRING:
+                        profileSeen(SEEN_BINSTRING);
                         loadCountedBinString(frame, self, 4);
                         continue;
                     case OPCODE_STRING:
+                        profileSeen(SEEN_STRING);
                         loadString(frame, self);
                         continue;
                     case OPCODE_UNICODE:
+                        profileSeen(SEEN_UNICODE);
                         loadUnicode(frame, self);
                         continue;
                     case OPCODE_SHORT_BINUNICODE:
+                        profileSeen(SEEN_SHORT_BINUNICODE);
                         loadBinCountedUnicode(frame, self, 1);
                         continue;
                     case OPCODE_BINUNICODE:
+                        profileSeen(SEEN_BINUNICODE);
                         loadBinCountedUnicode(frame, self, 4);
                         continue;
                     case OPCODE_BINUNICODE8:
+                        profileSeen(SEEN_BINUNICODE8);
                         loadBinCountedUnicode(frame, self, 8);
                         continue;
                     case OPCODE_EMPTY_TUPLE:
+                        profileSeen(SEEN_EMPTY_TUPLE);
                         loadCountedTuple(self, 0);
                         continue;
                     case OPCODE_TUPLE1:
+                        profileSeen(SEEN_TUPLE1);
                         loadCountedTuple(self, 1);
                         continue;
                     case OPCODE_TUPLE2:
+                        profileSeen(SEEN_TUPLE2);
                         loadCountedTuple(self, 2);
                         continue;
                     case OPCODE_TUPLE3:
+                        profileSeen(SEEN_TUPLE3);
                         loadCountedTuple(self, 3);
                         continue;
                     case OPCODE_TUPLE:
+                        profileSeen(SEEN_TUPLE);
                         loadTuple(self);
                         continue;
                     case OPCODE_EMPTY_LIST:
+                        profileSeen(SEEN_EMPTY_LIST);
                         loadEmptyList(self);
                         continue;
                     case OPCODE_LIST:
+                        profileSeen(SEEN_LIST);
                         loadList(self);
                         continue;
                     case OPCODE_EMPTY_DICT:
+                        profileSeen(SEEN_EMPTY_DICT);
                         loadEmptyDict(self);
                         continue;
                     case OPCODE_DICT:
+                        profileSeen(SEEN_DICT);
                         loadDict(frame, self);
                         continue;
                     case OPCODE_EMPTY_SET:
+                        profileSeen(SEEN_EMPTY_SET);
                         loadEmptySet(self);
                         continue;
                     case OPCODE_ADDITEMS:
+                        profileSeen(SEEN_ADDITEMS);
                         loadAddItems(frame, self);
                         continue;
                     case OPCODE_FROZENSET:
+                        profileSeen(SEEN_FROZENSET);
                         loadFrozenSet(frame, self);
                         continue;
                     case OPCODE_OBJ:
+                        profileSeen(SEEN_OBJ);
                         loadObj(frame, inliningTarget, self, callMethod);
                         continue;
                     case OPCODE_INST:
-                        loadInst(frame, inliningTarget, boundaryCallData, ctx, self, callMethod);
+                        profileSeen(SEEN_INST);
+                        loadInst(frame, inliningTarget, ctx, self, callMethod);
                         continue;
                     case OPCODE_NEWOBJ:
+                        profileSeen(SEEN_NEWOBJ);
                         loadNewObj(frame, inliningTarget, self, getSlots, callNew, expandArgs);
                         continue;
                     case OPCODE_NEWOBJ_EX:
+                        profileSeen(SEEN_NEWOBJ_EX);
                         loadNewObjEx(frame, inliningTarget, self, getSlots, callNew, expandArgs, expandKwargs);
                         continue;
                     case OPCODE_GLOBAL:
-                        loadGlobal(frame, boundaryCallData, ctx, self);
+                        profileSeen(SEEN_GLOBAL);
+                        loadGlobal(frame, ctx, self);
                         continue;
                     case OPCODE_STACK_GLOBAL:
-                        loadStackGlobal(frame, boundaryCallData, ctx, self);
+                        profileSeen(SEEN_STACK_GLOBAL);
+                        loadStackGlobal(frame, ctx, self);
                         continue;
                     case OPCODE_APPEND:
+                        profileSeen(SEEN_APPEND);
                         loadAppend(frame, self);
                         continue;
                     case OPCODE_APPENDS:
+                        profileSeen(SEEN_APPENDS);
                         loadAppends(frame, self);
                         continue;
                     case OPCODE_BUILD:
+                        profileSeen(SEEN_BUILD);
                         loadBuild(frame, self);
                         continue;
                     case OPCODE_DUP:
+                        profileSeen(SEEN_DUP);
                         loadDup(self);
                         continue;
                     case OPCODE_BINGET:
+                        profileSeen(SEEN_BINGET);
                         loadBinGet(frame, self);
                         continue;
                     case OPCODE_LONG_BINGET:
+                        profileSeen(SEEN_LONG_BINGET);
                         loadLongBinGet(frame, self);
                         continue;
                     case OPCODE_GET:
+                        profileSeen(SEEN_GET);
                         loadGet(frame, self);
                         continue;
                     case OPCODE_MARK:
+                        profileSeen(SEEN_MARK);
                         loadMark(self);
                         continue;
                     case OPCODE_BINPUT:
+                        profileSeen(SEEN_BINPUT);
                         loadBinPut(frame, self);
                         continue;
                     case OPCODE_LONG_BINPUT:
+                        profileSeen(SEEN_LONG_BINPUT);
                         loadLongBinPut(frame, self);
                         continue;
                     case OPCODE_PUT:
+                        profileSeen(SEEN_PUT);
                         loadPut(frame, self);
                         continue;
                     case OPCODE_MEMOIZE:
+                        profileSeen(SEEN_MEMOIZE);
                         loadMemoize(self);
                         continue;
                     case OPCODE_POP:
+                        profileSeen(SEEN_POP);
                         loadPop(self);
                         continue;
                     case OPCODE_POP_MARK:
+                        profileSeen(SEEN_POP_MARK);
                         loadPopMark(self);
                         continue;
                     case OPCODE_SETITEM:
+                        profileSeen(SEEN_SETITEM);
                         loadSetItem(frame, self);
                         continue;
                     case OPCODE_SETITEMS:
+                        profileSeen(SEEN_SETITEMS);
                         loadSetItems(frame, self);
                         continue;
                     case OPCODE_PERSID:
+                        profileSeen(SEEN_PERSID);
                         loadPersId(frame, self);
                         continue;
                     case OPCODE_BINPERSID:
+                        profileSeen(SEEN_BINPERSID);
                         loadBinPersId(frame, self);
                         continue;
                     case OPCODE_REDUCE:
+                        profileSeen(SEEN_REDUCE);
                         loadReduce(frame, self);
                         continue;
                     case OPCODE_PROTO:
+                        profileSeen(SEEN_PROTO);
                         loadProto(frame, self);
                         continue;
                     case OPCODE_FRAME:
+                        profileSeen(SEEN_FRAME);
                         loadFrame(frame, self);
                         continue;
                     case OPCODE_EXT1:
-                        loadExtension(frame, boundaryCallData, ctx, self, 1);
+                        profileSeen(SEEN_EXT1);
+                        loadExtension(frame, ctx, self, 1);
                         continue;
                     case OPCODE_EXT2:
-                        loadExtension(frame, boundaryCallData, ctx, self, 2);
+                        profileSeen(SEEN_EXT2);
+                        loadExtension(frame, ctx, self, 2);
                         continue;
                     case OPCODE_EXT4:
-                        loadExtension(frame, boundaryCallData, ctx, self, 4);
+                        profileSeen(SEEN_EXT4);
+                        loadExtension(frame, ctx, self, 4);
                         continue;
                     case OPCODE_NEWTRUE:
+                        profileSeen(SEEN_NEWTRUE);
                         loadBool(self, true);
                         continue;
                     case OPCODE_NEWFALSE:
+                        profileSeen(SEEN_NEWFALSE);
                         loadBool(self, false);
                         continue;
                     case OPCODE_STOP:
+                        profileSeen(SEEN_STOP);
                         break;
                     default:
                         if (0x20 <= s && s <= 0x7e && s != '\'' && s != '\\') {

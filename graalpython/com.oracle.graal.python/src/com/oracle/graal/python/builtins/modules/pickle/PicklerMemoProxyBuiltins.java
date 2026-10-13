@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.pickle.MemoTable.MemoIterator;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -106,11 +105,12 @@ public class PicklerMemoProxyBuiltins extends PythonBuiltins {
     public static PDict picklerMemoCopyImpl(MemoTable memoTable) {
         PythonLanguage language = PythonLanguage.get(null);
         LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
-        MemoIterator iterator = memoTable.iterator();
-        while (iterator.advance()) {
-            copy.put(System.identityHashCode(iterator.key()),
-                            PFactory.createTuple(language, new Object[]{iterator.value(), iterator.key()}));
-
+        for (int i = 0; i < memoTable.capacity(); i++) {
+            Object key = memoTable.getKeyAt(i);
+            if (key != null) {
+                copy.put(System.identityHashCode(key),
+                                PFactory.createTuple(language, new Object[]{memoTable.getValueAt(i), key}));
+            }
         }
         return PFactory.createDictFromMapGeneric(language, copy);
     }
