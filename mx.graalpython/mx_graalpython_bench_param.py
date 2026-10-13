@@ -64,6 +64,7 @@ WARMUP_2 = ['-w', '2']
 MICRO_BENCHMARKS = {
     'arith-binop': ITER_10 + ['5'],
     'arith-modulo-sized': ITER_10 + ['500'],
+    'attribute-access-megamorphic': ITER_10 + ['200'],
     'attribute-access-polymorphic': ITER_10 + ['1000'],
     'attribute-access': ITER_15 + ['5000'],
     'attribute-access-super': ITER_20 + ['5_000'],
@@ -161,6 +162,7 @@ MICRO_BENCHMARKS_SMALL = {
     'if-generic': ITER_10 + WARMUP_2 + ['500000'],
     'if-generic-non-builtin': ITER_10 + WARMUP_2 + ['500000'],
     'if-polymorph': ITER_10 + WARMUP_2 + ['1000000'],
+    'attribute-access-megamorphic': ITER_6 + WARMUP_2 + ['13'],
     'attribute-access-polymorphic': ITER_6 + WARMUP_2 + ['20'],
     'attribute-access': ITER_6 + WARMUP_2 + ['100'],
     'attribute-access-super': ITER_6 + WARMUP_2 + ['40'],
