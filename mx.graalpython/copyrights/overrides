@@ -33,6 +33,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/meso/spectralnorm3.py,benc
 graalpython/com.oracle.graal.python.benchmarks/python/meso/threadring.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/arith-binop.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/arith-modulo-sized.py,zippy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access-megamorphic.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access-polymorphic.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-bool.py,zippy.copyright
