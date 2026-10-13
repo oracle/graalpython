@@ -77,16 +77,16 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
-import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.CallerFlags;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -175,8 +175,8 @@ public final class PythonCextCEvalBuiltins {
         // setBuiltinsInGlobals(globals, setBuiltins, builtins, lib);
         PArguments.setGlobals(pArguments, globals);
 
-        RootCallTarget rootCallTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
-        Object result = CallDispatchers.SimpleIndirectInvokeNode.executeUncached(rootCallTarget, pArguments);
+        PBytecodeDSLRootNode root = CodeNodes.GetCodeRootAndInitCallTargetNode.executeUncached(code);
+        Object result = CallDispatchers.SimpleIndirectInvokeNode.executeUncachedPFunction(root, pArguments);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 

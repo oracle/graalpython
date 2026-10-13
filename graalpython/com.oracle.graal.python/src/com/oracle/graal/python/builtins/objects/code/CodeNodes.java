@@ -57,11 +57,11 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -183,24 +183,32 @@ public abstract class CodeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class GetCodeCallTargetNode extends PNodeWithContext {
+    public abstract static class GetCodeRootAndInitCallTargetNode extends PNodeWithContext {
 
-        public abstract RootCallTarget execute(Node inliningTarget, PCode code);
+        public abstract PBytecodeDSLRootNode execute(Node inliningTarget, PCode code);
 
         @TruffleBoundary
-        public static RootCallTarget executeUncached(PCode code) {
-            return CodeNodesFactory.GetCodeCallTargetNodeGen.getUncached().execute(null, code);
+        public static PBytecodeDSLRootNode executeUncached(PCode code) {
+            return CodeNodesFactory.GetCodeRootAndInitCallTargetNodeGen.getUncached().execute(null, code);
         }
 
-        @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
-        static RootCallTarget doCachedCode(@SuppressWarnings("unused") PCode code,
+        // We just want to run this on specialization activation time:
+        @Idempotent
+        static boolean initCallTarget(PCode code) {
+            code.initializeCallTarget();
+            return true;
+        }
+
+        @Specialization(guards = {"cachedCode == code", "isSingleContext()", "initCallTarget(cachedCode)"}, limit = "2")
+        static PBytecodeDSLRootNode doCachedCode(@SuppressWarnings("unused") PCode code,
                         @Cached(value = "code", weak = true) PCode cachedCode) {
-            return cachedCode.getRootCallTarget();
+            return cachedCode.getRootNode();
         }
 
         @Specialization(replaces = "doCachedCode")
-        static RootCallTarget doGeneric(PCode code) {
-            return code.getRootCallTarget();
+        static PBytecodeDSLRootNode doGeneric(PCode code) {
+            code.initializeCallTarget();
+            return code.getRootNode();
         }
     }
 

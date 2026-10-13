@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -1533,10 +1534,10 @@ public final class CApiContext {
      * {@link TruffleObject} and so it is assumed to be context-specific although our wrapper
      * doesn't contain any data and is just used for executing code.
      */
-    private final ConcurrentHashMap<RootCallTarget, PyCFunctionWrapper> pyCFunctionWrappers = new ConcurrentHashMap<>(4);
+    private final ConcurrentHashMap<BuiltinFunctionRootNode, PyCFunctionWrapper> pyCFunctionWrappers = new ConcurrentHashMap<>(4);
 
     @TruffleBoundary
-    public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(RootCallTarget ct, Function<RootCallTarget, PyCFunctionWrapper> cons) {
-        return pyCFunctionWrappers.computeIfAbsent(ct, cons);
+    public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(BuiltinFunctionRootNode root, Function<BuiltinFunctionRootNode, PyCFunctionWrapper> cons) {
+        return pyCFunctionWrappers.computeIfAbsent(root, cons);
     }
 }

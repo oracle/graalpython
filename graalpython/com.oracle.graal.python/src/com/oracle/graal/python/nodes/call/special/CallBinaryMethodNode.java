@@ -68,7 +68,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
@@ -84,12 +83,6 @@ public abstract class CallBinaryMethodNode extends AbstractCallMethodNode {
     public static CallBinaryMethodNode getUncached() {
         return CallBinaryMethodNodeGen.getUncached();
     }
-
-    public abstract boolean executeBool(Frame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
-
-    public abstract int executeInt(Frame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
-
-    public abstract long executeLong(Frame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
 
     public abstract Object executeObject(Frame frame, Object callable, Object arg1, Object arg2);
 
