@@ -1044,6 +1044,59 @@ class DecimalNumericSlotsTests(unittest.TestCase):
             self.assertEqual(enabled_flags(context), ["Inexact", "Overflow", "Rounded"])
             self.assertEqual(repr(result), "Decimal('-" + "9" * 84 + "." + "9" * 16 + "')")
 
+    def test_max_precision_exact_division(self):
+        cases = (("1", "1", "1"), ("1", "2", "0.5"), ("1.00", "2", "0.50"),
+                 ("1", "40", "0.025"), ("3", "6", "0.5"), ("1", "1024", "0.0009765625"),
+                 ("1E+100", "2", "5E+99"), ("-1", "2", "-0.5"), ("1", "-2", "-0.5"))
+        for bounds in (dict(Emin=decimal.MIN_EMIN, Emax=decimal.MAX_EMAX), dict(clamp=1)):
+            with decimal.localcontext(prec=decimal.MAX_PREC, **bounds) as context:
+                context.clear_flags()
+                for a, b, expected in cases:
+                    a, b = decimal.Decimal(a), decimal.Decimal(b)
+                    self.assertEqual(str(a / b), expected)
+                    self.assertEqual(str(context.divide(a, b)), expected)
+                if not bounds.get("clamp"):
+                    self.assertEqual(str(decimal.Decimal(2) ** -1), "0.5")
+                    self.assertEqual(str(decimal.Decimal(2) ** -10), "0.0009765625")
+                self.assertEqual(enabled_flags(context), [])
+                with self.assertRaises(MemoryError):
+                    context.divide(decimal.Decimal(1), decimal.Decimal(3))
+        with decimal.localcontext(prec=decimal.MAX_PREC, Emin=0, Emax=99) as context:
+            # The bounded retry is accepted only when it raises no signals, even for
+            # a terminating quotient that would be subnormal in the retry context.
+            with self.assertRaises(MemoryError):
+                context.divide(decimal.Decimal(1), decimal.Decimal(2))
+
+    def test_power_of_one_clamping(self):
+        # CPython's powers-of-one shortcut preserves the quantum without finalization.
+        cases = (("1", "3", "1", []), ("-1", "3", "-1", []),
+                 ("1.0", "1", "1.0", []), ("-1.0", "1", "-1.0", []),
+                 ("1.0", "-1", "1", []), ("-1.0", "-1", "-1", []),
+                 ("1.00", "2", "1.00", ["Rounded"]))
+        for rounding in ROUNDINGS:
+            with decimal.localcontext(prec=3, Emin=-9, Emax=1, clamp=1, rounding=rounding) as context:
+                context.traps[decimal.Clamped] = True
+                for a, b, expected, flags in cases:
+                    a, b = decimal.Decimal(a), decimal.Decimal(b)
+                    for operation in (operator.pow, context.power):
+                        context.clear_flags()
+                        self.assertEqual(str(operation(a, b)), expected)
+                        self.assertEqual(enabled_flags(context), flags)
+
+    def test_power_of_one_preferred_exponent(self):
+        # libmpdec rounds the preferred digit count in the context before limiting it.
+        for rounding in ROUNDINGS:
+            with decimal.localcontext(prec=19, Emin=0, Emax=0, rounding=rounding) as context:
+                context.clear_flags()
+                a, b = decimal.Decimal("1.0"), decimal.Decimal("15.0")
+                self.assertEqual(str(a ** b), "1." + "0" * 18)
+                self.assertEqual(enabled_flags(context), ["Rounded"])
+                context.traps[decimal.Rounded] = True
+                context.clear_flags()
+                with self.assertRaises(decimal.Rounded):
+                    context.power(a, b)
+                self.assertEqual(enabled_flags(context), ["Rounded"])
+
     def test_large_context_and_zero_exponents(self):
         with decimal.localcontext(prec=decimal.MAX_PREC, Emin=decimal.MIN_EMIN, Emax=decimal.MAX_EMAX) as context:
             context.clear_flags()

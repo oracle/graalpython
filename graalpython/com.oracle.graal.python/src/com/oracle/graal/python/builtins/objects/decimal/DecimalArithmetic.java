@@ -1243,6 +1243,27 @@ final class DecimalArithmetic {
         if (isZero(a)) {
             return finish(zero(negative, idealExponent));
         }
+        int initialStatus = status;
+        try {
+            return divideFinite(a, b, negative, idealExponent);
+        } catch (ArithmeticException e) {
+            // Like mpd_qdiv, retry at a bounded precision when the requested coefficient
+            // cannot be represented. An exact quotient needs at most this many digits.
+            long exactPrecision = digits(a.coefficient()) + 4L * digits(b.coefficient());
+            if (exactPrecision >= precision) {
+                throw e;
+            }
+            DecimalArithmetic exact = new DecimalArithmetic(exactPrecision, emin, emax, rounding, clamp);
+            Value result = exact.divideFinite(a, b, negative, idealExponent);
+            if (exact.status != 0) {
+                throw e;
+            }
+            status = initialStatus;
+            return result;
+        }
+    }
+
+    private Value divideFinite(Value a, Value b, boolean negative, long idealExponent) {
         long shift = digits(b.coefficient()) - digits(a.coefficient()) + precision + 1;
         BigInteger numerator = a.coefficient();
         BigInteger denominator = b.coefficient();
@@ -1437,27 +1458,27 @@ final class DecimalArithmetic {
             if (!integerExponent) {
                 status |= INEXACT | ROUNDED;
                 exponent = 1 - precision;
-            } else if (b.negative() || a.exponent() == 0) {
+            } else if (b.negative()) {
                 exponent = 0;
             } else {
-                Value parts = integralParts(b);
-                BigInteger multiplier = parts.coefficient();
-                // Only need to distinguish the ideal quantum from the precision floor.
-                if (adjusted(b) >= digits(precision)) {
-                    multiplier = BigInteger.valueOf(precision);
+                // _qcheck_pow_one calculates the preferred digit count in the user's
+                // context, but discards the multiplication's rounding and range signals.
+                DecimalArithmetic work = new DecimalArithmetic(precision, emin, emax, rounding, clamp);
+                Value preferred = work.multiply(b, DecimalUtils.fromInteger(BigInteger.valueOf(-a.exponent())));
+                long shift;
+                if (!integral(preferred) || !isZero(preferred) && adjusted(preferred) > 18) {
+                    shift = Long.MAX_VALUE;
                 } else {
-                    multiplier = multiplier.multiply(pow10(parts.exponent()));
+                    shift = rescale(preferred, 0, DecimalRounding.ROUND_DOWN).coefficient().min(BigInteger.valueOf(Long.MAX_VALUE)).longValue();
                 }
-                BigInteger ideal = BigInteger.valueOf(a.exponent()).multiply(multiplier);
-                long floor = 1 - precision;
-                if (ideal.compareTo(BigInteger.valueOf(floor)) < 0) {
+                if (shift > precision - 1) {
                     status |= ROUNDED;
-                    exponent = floor;
-                } else {
-                    exponent = ideal.longValueExact();
+                    shift = precision - 1;
                 }
+                exponent = -shift;
             }
-            return finish(finite(negative, pow10(-exponent), exponent));
+            // Powers of one return directly in libmpdec, without context clamping.
+            return finite(negative, pow10(-exponent), exponent);
         }
         if (b.kind() == Kind.INFINITY) {
             if ((comparedToOne > 0) != b.negative()) {
