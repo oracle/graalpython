@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.decimal;
 
+import static com.oracle.graal.python.util.PythonUtils.internString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.truffle.api.strings.TruffleString;
@@ -58,7 +59,7 @@ public enum DecimalRounding {
     private final TruffleString pythonName;
 
     DecimalRounding() {
-        pythonName = tsLiteral(name());
+        pythonName = internString(tsLiteral(name()));
     }
 
     public TruffleString getPythonName() {
