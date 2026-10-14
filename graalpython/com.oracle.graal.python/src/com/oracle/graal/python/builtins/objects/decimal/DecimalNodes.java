@@ -295,16 +295,16 @@ public final class DecimalNodes {
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class CreateDecimalNode extends Node {
-        public abstract PDecimal execute(VirtualFrame frame, Node inliningTarget, Object cls, Object value) throws ConversionException;
+        public abstract PDecimal execute(VirtualFrame frame, Node inliningTarget, Object cls, Object value, boolean exact) throws ConversionException;
 
         @Specialization(guards = "isNoValue(value)")
-        static PDecimal doDefault(@SuppressWarnings("unused") Node inliningTarget, Object cls, @SuppressWarnings("unused") PNone value,
+        static PDecimal doDefault(@SuppressWarnings("unused") Node inliningTarget, Object cls, @SuppressWarnings("unused") PNone value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
             return PFactory.createDecimal(cls, getShape.execute(cls), 0L);
         }
 
         @Specialization
-        static PDecimal doDecimal(Node inliningTarget, Object cls, PDecimal value,
+        static PDecimal doDecimal(Node inliningTarget, Object cls, PDecimal value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached GetClassNode getClass,
                         @Shared @Cached IsBuiltinClassExactProfile clsProfile,
                         @Shared @Cached IsBuiltinClassExactProfile valueProfile,
@@ -317,7 +317,7 @@ public final class DecimalNodes {
         }
 
         @Specialization
-        static PDecimal doTruffleString(Node inliningTarget, Object cls, TruffleString value,
+        static PDecimal doTruffleString(Node inliningTarget, Object cls, TruffleString value, boolean exact,
                         @Cached TruffleString.CodePointAtIndexUTF32Node read,
                         @Cached TruffleString.ToJavaStringNode toJavaString,
                         @Cached InlinedLoopConditionProfile coefficientLoopProfile,
@@ -327,37 +327,37 @@ public final class DecimalNodes {
             if (result != null) {
                 return result;
             }
-            return createDecimal(cls, DecimalUtils.parse(toJavaString.execute(value)), getShape);
+            return createDecimal(cls, DecimalUtils.parse(toJavaString.execute(value), exact), getShape);
         }
 
         @Specialization(guards = "unicodeCheck.execute(inliningTarget, value)")
-        static PDecimal doString(Node inliningTarget, Object cls, Object value,
+        static PDecimal doString(Node inliningTarget, Object cls, Object value, boolean exact,
                         @SuppressWarnings("unused") @Shared @Cached PyUnicodeCheckNode unicodeCheck,
                         @Cached CastToJavaStringNode asString,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) throws ConversionException {
-            return createDecimal(cls, DecimalUtils.parse(asString.execute(value)), getShape);
+            return createDecimal(cls, DecimalUtils.parse(asString.execute(value), exact), getShape);
         }
 
         @Specialization
-        static PDecimal doInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, int value,
+        static PDecimal doInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, int value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
             return PFactory.createDecimal(cls, getShape.execute(cls), value);
         }
 
         @Specialization
-        static PDecimal doLong(@SuppressWarnings("unused") Node inliningTarget, Object cls, long value,
+        static PDecimal doLong(@SuppressWarnings("unused") Node inliningTarget, Object cls, long value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
             return PFactory.createDecimal(cls, getShape.execute(cls), value);
         }
 
         @Specialization
-        static PDecimal doPInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, PInt value,
+        static PDecimal doPInt(@SuppressWarnings("unused") Node inliningTarget, Object cls, PInt value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
             return createDecimal(cls, DecimalUtils.fromInteger(value.getValue()), getShape);
         }
 
         @Specialization(guards = "longCheck.execute(inliningTarget, value)")
-        static PDecimal doIntGeneric(Node inliningTarget, Object cls, Object value,
+        static PDecimal doIntGeneric(Node inliningTarget, Object cls, Object value, @SuppressWarnings("unused") boolean exact,
                         @SuppressWarnings("unused") @Shared @Cached PyLongCheckNode longCheck,
                         @Shared @Cached CastToJavaBigIntegerNode asBigInteger,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
@@ -365,21 +365,21 @@ public final class DecimalNodes {
         }
 
         @Specialization
-        static PDecimal doDouble(Node inliningTarget, Object cls, double value,
+        static PDecimal doDouble(Node inliningTarget, Object cls, double value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached InlinedBranchProfile nonCompactProfile,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
             return fromDouble(inliningTarget, cls, value, getShape, nonCompactProfile);
         }
 
         @Specialization
-        static PDecimal doPFloat(Node inliningTarget, Object cls, PFloat value,
+        static PDecimal doPFloat(Node inliningTarget, Object cls, PFloat value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached InlinedBranchProfile nonCompactProfile,
                         @Shared @Cached TypeNodes.GetInstanceShape getShape) {
             return fromDouble(inliningTarget, cls, value.getValue(), getShape, nonCompactProfile);
         }
 
         @Specialization(guards = "floatCheck.execute(inliningTarget, value)")
-        static PDecimal doFloatGeneric(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
+        static PDecimal doFloatGeneric(VirtualFrame frame, Node inliningTarget, Object cls, Object value, @SuppressWarnings("unused") boolean exact,
                         @SuppressWarnings("unused") @Shared @Cached PyFloatCheckNode floatCheck,
                         @Shared @Cached PyFloatAsDoubleNode asDouble,
                         @Shared @Cached InlinedBranchProfile nonCompactProfile,
@@ -388,7 +388,7 @@ public final class DecimalNodes {
         }
 
         @Specialization(guards = "tupleCheck.execute(inliningTarget, value)")
-        static PDecimal doTuple(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
+        static PDecimal doTuple(VirtualFrame frame, Node inliningTarget, Object cls, Object value, boolean exact,
                         @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheck,
                         @Shared @Cached GetTupleStorage getTupleStorage,
                         @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
@@ -396,14 +396,14 @@ public final class DecimalNodes {
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, value);
             Object state = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return createDecimal(cls, fromSequence(storage), getShape);
+                return createDecimal(cls, fromSequence(storage, exact), getShape);
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, state);
             }
         }
 
         @Specialization(guards = "listCheck.execute(inliningTarget, value)")
-        static PDecimal doList(VirtualFrame frame, Node inliningTarget, Object cls, Object value,
+        static PDecimal doList(VirtualFrame frame, Node inliningTarget, Object cls, Object value, boolean exact,
                         @SuppressWarnings("unused") @Shared @Cached PyListCheckNode listCheck,
                         @Shared @Cached GetListStorageNode getListStorage,
                         @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
@@ -411,14 +411,14 @@ public final class DecimalNodes {
             SequenceStorage storage = getListStorage.execute(inliningTarget, value);
             Object state = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return createDecimal(cls, fromSequence(storage), getShape);
+                return createDecimal(cls, fromSequence(storage, exact), getShape);
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, state);
             }
         }
 
         @Fallback
-        static PDecimal doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object cls, Object value,
+        static PDecimal doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object cls, Object value, @SuppressWarnings("unused") boolean exact,
                         @Shared @Cached GetClassNode getClass,
                         @Shared @Cached TypeNodes.GetNameNode getName,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -554,7 +554,7 @@ public final class DecimalNodes {
         }
 
         @TruffleBoundary
-        private static Value fromSequence(SequenceStorage triple) throws ConversionException {
+        private static Value fromSequence(SequenceStorage triple, boolean exact) throws ConversionException {
             PRaiseNode raiseNode = PRaiseNode.getUncached();
             // Decimal triples are (sign, digits, exponent), at indices 0, 1, and 2.
             if (triple.length() != 3) {
@@ -616,9 +616,9 @@ public final class DecimalNodes {
                 integer = new BigInteger(coefficient.toString());
             }
             if (kind == Kind.FINITE) {
-                return DecimalUtils.finite(signValue != 0, integer, exponent);
+                return DecimalUtils.finite(signValue != 0, integer, exponent, exact);
             }
-            return new Value(signValue != 0, integer, 0, kind);
+            return new Value(signValue != 0, integer, exponent, kind);
         }
     }
 

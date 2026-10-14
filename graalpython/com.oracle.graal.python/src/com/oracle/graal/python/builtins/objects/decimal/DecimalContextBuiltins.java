@@ -1091,7 +1091,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
                 if (unicodeCheck.execute(inliningTarget, value) && invalidContextString(asString.castKnownString(inliningTarget, value), codePointLengthNode, codePointAtIndexNode)) {
                     throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);
                 }
-                PDecimal operand = createDecimal.execute(frame, inliningTarget, PythonBuiltinClassType.PDecimal, value);
+                PDecimal operand = createDecimal.execute(frame, inliningTarget, PythonBuiltinClassType.PDecimal, value, false);
                 if ((operand.getKind() == Kind.NAN || operand.getKind() == Kind.SNAN) &&
                                 operand.getCoefficient().signum() != 0 && DecimalUtils.digits(operand.getCoefficient()) > self.getPrecision() - self.getClamp()) {
                     throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);

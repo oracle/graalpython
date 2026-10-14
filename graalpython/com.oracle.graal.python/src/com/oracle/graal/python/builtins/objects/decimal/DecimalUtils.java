@@ -166,7 +166,7 @@ public final class DecimalUtils {
     }
 
     @TruffleBoundary
-    static Value parse(String input) throws ConversionException {
+    static Value parse(String input, boolean exact) throws ConversionException {
         int start = 0;
         int end = input.length();
         while (start < end && StringUtils.isUnicodeWhitespace(input.codePointAt(start))) {
@@ -246,7 +246,7 @@ public final class DecimalUtils {
         if (coefficient.isEmpty()) {
             throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);
         }
-        long exponent = 0;
+        BigInteger exponent = BigInteger.ZERO;
         if (pos < text.length() && (text.charAt(pos) == 'e' || text.charAt(pos) == 'E')) {
             int exponentStart = ++pos;
             if (pos < text.length() && (text.charAt(pos) == '+' || text.charAt(pos) == '-')) {
@@ -259,29 +259,36 @@ public final class DecimalUtils {
             if (pos == digitsStart || pos != text.length()) {
                 throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);
             }
-            try {
-                exponent = new BigInteger(text.substring(exponentStart)).longValueExact();
-            } catch (ArithmeticException e) {
-                throw new ConversionException(DecimalExceptionTypes.InvalidOperation);
-            }
+            exponent = new BigInteger(text.substring(exponentStart));
         }
         if (pos != text.length()) {
             throw new ConversionException(DecimalExceptionTypes.ConversionSyntax);
         }
+        exponent = exponent.subtract(BigInteger.valueOf(fractionalDigits));
+        if (!exact) {
+            // String exponents need not fit in a long. Saturate only after accounting for
+            // fractional digits, so context conversion can still signal overflow/underflow.
+            exponent = exponent.max(BigInteger.valueOf(MIN_ETINY - 1)).min(BigInteger.valueOf(MAX_EMAX + 1));
+        }
         try {
-            exponent = Math.subtractExact(exponent, fractionalDigits);
+            return finite(negative, new BigInteger(coefficient.toString()), exponent.longValueExact(), exact);
         } catch (ArithmeticException e) {
             throw new ConversionException(DecimalExceptionTypes.InvalidOperation);
         }
-        return finite(negative, new BigInteger(coefficient.toString()), exponent);
     }
 
     @TruffleBoundary
-    static Value finite(boolean negative, BigInteger coefficient, long exponent) throws ConversionException {
+    static Value finite(boolean negative, BigInteger coefficient, long exponent, boolean exact) throws ConversionException {
         // The adjusted exponent locates the most significant digit: exponent + digits - 1.
         // Both the stored exponent and the adjusted exponent must fit libmpdec's limits.
-        if (exponent < MIN_ETINY || exponent > MAX_EMAX || exponent + digits(coefficient) - 1 > MAX_EMAX) {
-            throw new ConversionException(DecimalExceptionTypes.InvalidOperation);
+        if (exact) {
+            if (exponent < MIN_ETINY || exponent > MAX_EMAX || exponent + digits(coefficient) - 1 > MAX_EMAX) {
+                throw new ConversionException(DecimalExceptionTypes.InvalidOperation);
+            }
+        } else {
+            // Preserve overflow/underflow for context conversion, but keep subsequent
+            // exponent arithmetic within long bounds even for Long.MIN_VALUE/MAX_VALUE.
+            exponent = Math.max(MIN_ETINY - 1, Math.min(exponent, MAX_EMAX + 1));
         }
         return new Value(negative, coefficient, exponent, Kind.FINITE);
     }

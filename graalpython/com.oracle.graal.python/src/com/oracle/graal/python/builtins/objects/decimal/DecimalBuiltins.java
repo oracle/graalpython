@@ -1570,7 +1570,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
                 DecimalContextUtils.addStatus(frame, decimalContext, DecimalContextUtils.conditionMask(DecimalExceptionTypes.FloatOperation), raiseSignal);
             }
             try {
-                return createDecimal.execute(frame, inliningTarget, cls, value);
+                return createDecimal.execute(frame, inliningTarget, cls, value, true);
             } catch (ConversionException e) {
                 errorProfile.enter(inliningTarget);
                 DecimalContextUtils.addStatus(frame, decimalContext, DecimalContextUtils.conditionMask(e.condition), raiseSignal);
