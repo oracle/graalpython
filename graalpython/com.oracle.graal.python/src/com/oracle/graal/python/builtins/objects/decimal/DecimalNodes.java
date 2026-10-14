@@ -97,6 +97,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -1163,8 +1164,10 @@ public final class DecimalNodes {
         @Specialization
         static PDecimal quantize(VirtualFrame frame, Node inliningTarget, PDecimal self, long exponent, PDecimalContext context, DecimalRounding rounding,
                         @Cached InlinedBranchProfile nonCompactProfile,
+                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile roundingProfile,
                         @Cached RaiseSignalNode raiseSignal,
                         @Cached PRaiseNode raiseNode) {
+            rounding = roundingProfile.profile(rounding);
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PDecimal fast = compactQuantize(frame, language, self, exponent, context, rounding, raiseSignal);
             if (fast != null) {
