@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltinsClinicProviders.ContextVarNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextVarNodes.GetValueNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -119,13 +120,20 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         static Object get(PContextVar self, Object def,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile defIsNoValueProfile,
+                        @Cached GetValueNode getValue,
                         @Cached PRaiseNode raiseNode) {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
             PythonContext context = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            Object value = self.get(inliningTarget, threadState, defValue);
+            Object value = getValue.execute(inliningTarget, self, threadState);
             if (value != null) {
                 return value;
+            }
+            if (defValue != PContextVar.NO_DEFAULT) {
+                return defValue;
+            }
+            if (self.getDefault() != PContextVar.NO_DEFAULT) {
+                return self.getDefault();
             }
             throw raiseNode.raise(inliningTarget, LookupError);
         }

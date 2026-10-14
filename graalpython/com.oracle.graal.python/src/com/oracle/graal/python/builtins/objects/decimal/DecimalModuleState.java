@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextVarNodes.GetValueNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -137,16 +138,11 @@ public final class DecimalModuleState {
         return copy;
     }
 
-    public PDecimalContext getCurrentContext(Node node) {
-        return getCurrentContext(node, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached());
-    }
-
-    public PDecimalContext getCurrentContext(Node node, InlinedBranchProfile initializeContextVarsProfile, InlinedBranchProfile initializeDecimalContextProfile,
-                    InlinedBranchProfile contextVarCacheMissProfile) {
+    public PDecimalContext getCurrentContext(Node node, InlinedBranchProfile initializeDecimalContextProfile, GetValueNode getValue) {
         PythonContext context = PythonContext.get(node);
         PythonLanguage language = context.getLanguage(node);
         PythonContext.PythonThreadState threadState = context.getThreadState(language);
-        Object value = currentContext.getValue(node, threadState, initializeContextVarsProfile, contextVarCacheMissProfile);
+        Object value = getValue.execute(node, currentContext, threadState);
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, value == null)) {
             initializeDecimalContextProfile.enter(node);
             return initializeCurrentContext(node, language, threadState);

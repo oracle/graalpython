@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.test.builtin.modules;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -78,6 +79,26 @@ public class HamtTests {
         hamt = hamt.withEntry(new Hamt.Entry(0, 0, 0));
         assertEquals(0, hamt.lookup(0, 0));
         assertEquals(1, hamt.lookup(1, 1));
+    }
+
+    @Test
+    public void testLookupEntry() {
+        Hamt.Entry first = new Hamt.Entry(1, 1, 42);
+        Hamt.Entry collision = new Hamt.Entry(2, 1, 99);
+        Hamt.Entry otherBranch = new Hamt.Entry(3, 32, 88);
+        Hamt empty = new Hamt();
+        assertNull(empty.lookupEntry(1, 1));
+        Hamt values = empty.withEntry(first).withEntry(collision).withEntry(otherBranch);
+        assertSame(first, values.lookupEntry(1, 1));
+        assertSame(collision, values.lookupEntry(2, 1));
+        assertSame(otherBranch, values.lookupEntry(3, 32));
+        assertNull(values.lookupEntry(4, 1));
+        Hamt.Entry replacement = new Hamt.Entry(3, 32, 89);
+        Hamt changed = values.withEntry(replacement);
+        assertSame(replacement, changed.lookupEntry(3, 32));
+        assertSame(first, values.lookupEntry(1, 1));
+        assertEquals(89, changed.lookup(3, 32));
+        assertEquals(88, values.lookup(3, 32));
     }
 
     @Test

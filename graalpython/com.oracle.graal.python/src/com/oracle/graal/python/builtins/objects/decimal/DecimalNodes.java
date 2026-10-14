@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextVarNodes.GetValueNode;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalArithmetic.Result;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.ConversionException;
 import com.oracle.graal.python.builtins.objects.decimal.DecimalUtils.Value;
@@ -121,9 +122,9 @@ public final class DecimalNodes {
 
         @Specialization
         static PDecimalContext get(Node inliningTarget,
-                        @Cached InlinedBranchProfile initializeContextVarsProfile,
-                        @Cached InlinedBranchProfile initializeDecimalContextProfile) {
-            return DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget, initializeContextVarsProfile, initializeDecimalContextProfile);
+                        @Cached InlinedBranchProfile initializeDecimalContextProfile,
+                        @Cached GetValueNode getValue) {
+            return DecimalContextUtils.getState(inliningTarget).getCurrentContext(inliningTarget, initializeDecimalContextProfile, getValue);
         }
     }
 

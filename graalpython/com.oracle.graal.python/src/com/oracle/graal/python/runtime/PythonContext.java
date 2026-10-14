@@ -515,11 +515,16 @@ public final class PythonContext extends Python3Core {
         }
 
         public PContextVarsContext getContextVarsContext(Node node, InlinedBranchProfile initializeProfile) {
-            if (contextVarsContext == null) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, contextVarsContext == null)) {
                 initializeProfile.enter(node);
-                contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
+                initializeContextVarsContext(node);
             }
             return contextVarsContext;
+        }
+
+        @TruffleBoundary
+        private void initializeContextVarsContext(Node node) {
+            contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
         }
 
         public void setContextVarsContext(PContextVarsContext contextVarsContext) {
