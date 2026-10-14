@@ -1069,7 +1069,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_decimal", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "create_decimal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"self", "num"})
     @GenerateNodeFactory
     public abstract static class CreateDecimalNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -1107,7 +1107,7 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_decimal_from_float", minNumOfPositionalArgs = 2)
+    @Builtin(name = "create_decimal_from_float", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"self", "f"})
     @GenerateNodeFactory
     public abstract static class CreateDecimalFromFloatNode extends PythonBinaryBuiltinNode {
         @Specialization

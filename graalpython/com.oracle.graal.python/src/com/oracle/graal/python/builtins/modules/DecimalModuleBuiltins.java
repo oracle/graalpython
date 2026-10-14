@@ -197,7 +197,7 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setcontext", minNumOfPositionalArgs = 1)
+    @Builtin(name = "setcontext", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"context"})
     @GenerateNodeFactory
     public abstract static class SetcontextNode extends PythonUnaryBuiltinNode {
         @Specialization
