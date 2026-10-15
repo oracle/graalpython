@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -66,13 +69,15 @@ public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
     }
 
     @Specialization(replaces = "toLong")
+    @TruffleBoundary
     protected static long toLongOverflow(PInt x) {
-        if (x.compareTo(PInt.MAX_LONG) > 0) {
+        BigInteger value = x.getValue();
+        if (PInt.bigIntegerFitsInLong(value)) {
+            return value.longValue();
+        } else if (value.signum() > 0) {
             return Long.MAX_VALUE;
-        } else if (x.compareTo(PInt.MIN_LONG) < 0) {
-            return Long.MIN_VALUE;
         } else {
-            return x.longValue();
+            return Long.MIN_VALUE;
         }
     }
 }

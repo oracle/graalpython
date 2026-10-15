@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -59,15 +59,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
-
-    public static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
-    public static final BigInteger MIN_INT = BigInteger.valueOf(Integer.MIN_VALUE);
-    public static final BigInteger MAX_LONG = BigInteger.valueOf(Long.MAX_VALUE);
-    public static final BigInteger MIN_LONG = BigInteger.valueOf(Long.MIN_VALUE);
-    private static final BigInteger MAX_BYTE = BigInteger.valueOf(Byte.MAX_VALUE);
-    private static final BigInteger MIN_BYTE = BigInteger.valueOf(Byte.MIN_VALUE);
-    private static final BigInteger MAX_SHORT = BigInteger.valueOf(Short.MAX_VALUE);
-    private static final BigInteger MIN_SHORT = BigInteger.valueOf(Short.MIN_VALUE);
 
     private final BigInteger value;
 
@@ -133,7 +124,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
-            return fitsIn(MIN_BYTE, MAX_BYTE);
+            return fitsInSignedBits(value, Byte.SIZE);
         } else {
             return false;
         }
@@ -162,7 +153,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
-            return fitsIn(MIN_SHORT, MAX_SHORT);
+            return fitsInSignedBits(value, Short.SIZE);
         } else {
             return false;
         }
@@ -191,7 +182,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
-            return fitsIn(MIN_INT, MAX_INT);
+            return bigIntegerFitsInInt(value);
         } else {
             return false;
         }
@@ -220,7 +211,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
-            return fitsIn(MIN_LONG, MAX_LONG);
+            return bigIntegerFitsInLong(value);
         } else {
             return false;
         }
@@ -439,7 +430,11 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     public static boolean bigIntegerFitsInLong(BigInteger x) {
-        return fitsIn(x, MIN_LONG, MAX_LONG);
+        return fitsInSignedBits(x, Long.SIZE);
+    }
+
+    public static boolean bigIntegerFitsInInt(BigInteger x) {
+        return fitsInSignedBits(x, Integer.SIZE);
     }
 
     public PInt max(PInt val) {
@@ -501,26 +496,10 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     public static int intValueExact(BigInteger x) throws OverflowException {
-        if (!fitsIn(x, MIN_INT, MAX_INT)) {
+        if (!bigIntegerFitsInInt(x)) {
             throw OverflowException.INSTANCE;
         }
         return intValue(x);
-    }
-
-    public static char charValueExact(int val) throws OverflowException {
-        char t = (char) val;
-        if (t != val) {
-            throw OverflowException.INSTANCE;
-        }
-        return t;
-    }
-
-    public static char charValueExact(long val) throws OverflowException {
-        char t = (char) val;
-        if (t != val) {
-            throw OverflowException.INSTANCE;
-        }
-        return t;
     }
 
     public static boolean isByteRange(int val) {
@@ -674,12 +653,8 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary(allowInlining = true)
-    public static boolean fitsIn(BigInteger value, BigInteger left, BigInteger right) {
-        return value.compareTo(left) >= 0 && value.compareTo(right) <= 0;
-    }
-
-    public boolean fitsIn(BigInteger left, BigInteger right) {
-        return fitsIn(value, left, right);
+    private static boolean fitsInSignedBits(BigInteger value, int bits) {
+        return value.bitLength() < bits;
     }
 
     /**
