@@ -387,7 +387,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             BytecodeDSLCodeUnit co = self.getCodeUnit();
             if (co != null) {
-                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
+                PBytecodeDSLRootNode rootNode = self.getRootNode();
                 List<PTuple> lines = computeLinesForBytecodeDSLInterpreter(rootNode);
                 tuple = PFactory.createTuple(language, lines.toArray());
             } else {
@@ -494,7 +494,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             BytecodeDSLCodeUnit co = self.getCodeUnit();
             if (co != null) {
                 List<PTuple> lines = new ArrayList<>();
-                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
+                PBytecodeDSLRootNode rootNode = self.getRootNode();
                 BytecodeNode bytecodeNode = rootNode.getBytecodeNode();
                 if (!bytecodeNode.hasSourceInformation()) {
                     bytecodeNode = bytecodeNode.ensureSourceInformation();

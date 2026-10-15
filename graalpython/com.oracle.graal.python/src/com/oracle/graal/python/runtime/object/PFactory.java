@@ -239,7 +239,6 @@ import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -265,7 +264,6 @@ import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.tools.profiler.CPUSampler;
@@ -1138,21 +1136,26 @@ public final class PFactory {
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct.getRootNode(), Signature.fromCallTarget(ct),
+        return createCode(language, (PBytecodeDSLRootNode) ct.getRootNode(), filename);
+    }
+
+    public static PCode createCode(PythonLanguage language, PBytecodeDSLRootNode rootNode, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, rootNode.getSignature(),
                         -1, -1, -1, null, null, null, null, null, filename, null, null, -1, null);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct.getRootNode(), Signature.fromCallTarget(ct),
+        PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) ct.getRootNode();
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, rootNode.getSignature(),
                         -1, -1, flags, null, null, null, null, null, filename, null, null, firstlineno, linetable);
     }
 
-    public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
+    public static PCode createCode(PythonLanguage language, PBytecodeDSLRootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature,
                         codeUnit.varnames.length, -1, -1, null, null, null, null, null, filename, codeUnit.name, codeUnit.qualname, -1, null);
     }
 
-    public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, int nlocals,
+    public static PCode createCode(PythonLanguage language, PBytecodeDSLRootNode rootNode, Signature signature, int nlocals,
                     int stacksize, int flags, Object[] constants,
                     TruffleString[] names, TruffleString[] varnames,
                     TruffleString[] freevars, TruffleString[] cellvars,

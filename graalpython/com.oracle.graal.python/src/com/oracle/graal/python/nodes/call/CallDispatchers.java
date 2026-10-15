@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchersFactory.FunctionIndirectInvokeNodeGen;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -76,7 +77,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public class CallDispatchers {
@@ -397,7 +397,7 @@ public class CallDispatchers {
         // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
         @Specialization(guards = {"callee.getCode().getRootNode() == rootNode"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
         static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments,
-                        @SuppressWarnings("unused") @Cached(value = "callee.getCode().getRootNode()", adopt = false) RootNode rootNode,
+                        @SuppressWarnings("unused") @Cached(value = "callee.getCode().getRootNode()", adopt = false) PBytecodeDSLRootNode rootNode,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached FunctionDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, callee, arguments);
@@ -438,7 +438,7 @@ public class CallDispatchers {
         // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
         @Specialization(guards = {"callee.getCode().getRootNode() == rootNode"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
         static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached(value = "callee.getCode().getRootNode()", adopt = false) RootNode rootNode,
+                        @SuppressWarnings("unused") @Cached(value = "callee.getCode().getRootNode()", adopt = false) PBytecodeDSLRootNode rootNode,
                         @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached FunctionDirectInvokeNode invoke) {

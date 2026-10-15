@@ -72,6 +72,52 @@ public class ParseWithArgumentsInstrumentTests {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void parsedModuleCodeReexecutionReturnsFunction() {
+        try (Engine engine = Engine.create();
+                        Context context = Context.newBuilder("python").engine(engine).allowExperimentalOptions(true).allowAllAccess(true).build()) {
+            context.eval("python", """
+                            import sys
+                            parsed_module_codes = []
+                            def capture_module_code(frame, event, arg):
+                                # Capture the synthetic module while it defines execute(x). By the
+                                # time the supplied source runs inside execute, this frame has returned.
+                                if event == 'call' and frame.f_code.co_filename == 'parse-with-arguments.py' and frame.f_code.co_name == '<module>':
+                                    parsed_module_codes.append(frame.f_code)
+                            sys.setprofile(capture_module_code)
+                            """);
+            Function<org.graalvm.polyglot.Source, Void> registrar = engine.getInstruments().get(TEST_INSTRUMENT_ID).lookup(Function.class);
+            context.enter();
+            try {
+                // The polyglot entry point still runs the module and then calls execute(41), returning 42.
+                registrar.apply(org.graalvm.polyglot.Source.newBuilder("python", "x + 1", "parse-with-arguments.py").buildLiteral());
+            } finally {
+                context.leave();
+            }
+            assertEquals(42, context.eval("python", """
+                            sys.setprofile(None)
+                            assert len(parsed_module_codes) == 1
+                            module_code = parsed_module_codes[0]
+                            # Previously this code object stored RootNodeWithArguments: its target
+                            # included both module execution and the subsequent call to execute(x).
+                            # eval() actually crashed with ClassCastException because Python's call
+                            # machinery expects a PRootNode, which that wrapper is not.
+                            # Storing the module root changes the code object's executable target:
+                            # re-execution now only defines and returns execute, without calling it.
+                            function = eval(module_code, {})
+                            assert callable(function)
+                            assert function.__code__ in module_code.co_consts
+                            assert module_code.co_argcount == 0
+                            assert function.__code__.co_argcount == 1
+                            assert function.__code__.co_varnames[0] == 'x'
+                            # co_code was empty for the wrapper; it now exposes the module bytecode.
+                            assert module_code.co_code
+                            function(41)
+                            """).asInt());
+        }
+    }
+
     @TruffleInstrument.Registration(id = TEST_INSTRUMENT_ID, services = Function.class)
     public static final class ParseWithArgumentsInitializationInstrument extends TruffleInstrument {
         private final ContextLocal<boolean[]> parsed = locals.createContextLocal((ctx) -> new boolean[1]);
@@ -109,7 +155,7 @@ public class ParseWithArgumentsInstrumentTests {
                         }
                         seen[0] = true;
                         try {
-                            env.parse(source, "x").call(41);
+                            assertEquals(42, env.parse(source, "x").call(41));
                         } catch (IOException e) {
                             throw new AssertionError(e);
                         }
