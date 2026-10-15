@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,7 @@
 # SOFTWARE.
 import unittest
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, assert_raises
 
 
 def _reference_classmethod(args):
@@ -47,6 +47,88 @@ def _reference_classmethod(args):
     raise TypeError
 
 class TestDescrObject(unittest.TestCase):
+
+    def test_shared_wrapper_pointer_and_closure_isolation(self):
+        def make_type(name, marker):
+            return CPyExtType(
+                name,
+                r'''
+                static PyObject* shared(PyObject* self, PyObject* arg) {
+                    if (arg == Py_False) {
+                        PyErr_SetString(PyExc_ValueError, "pointer MARKER");
+                        return NULL;
+                    }
+                    return Py_BuildValue("iO", MARKER, arg);
+                }
+                static PyObject* get_value(PyObject* self, void* closure) {
+                    assert((intptr_t)closure == MARKER);
+                    PyObject* value = ((TYPEObject*)self)->value;
+                    if (!value) {
+                        PyErr_SetString(PyExc_AttributeError, "closure MARKER absent");
+                        return NULL;
+                    }
+                    if (value == Py_False) {
+                        PyErr_SetString(PyExc_ValueError, "closure MARKER get");
+                        return NULL;
+                    }
+                    return Py_NewRef(value);
+                }
+                static int set_value(PyObject* self, PyObject* value, void* closure) {
+                    assert((intptr_t)closure == MARKER);
+                    if (value == Py_False) {
+                        PyErr_SetString(PyExc_ValueError, "closure MARKER set");
+                        return -1;
+                    }
+                    /* A deleted property is NULL; a stored None remains a real object. */
+                    Py_XINCREF(value);
+                    Py_XSETREF(((TYPEObject*)self)->value, value);
+                    return 0;
+                }
+                static PyObject* shared_noargs(PyObject* self, PyObject* ignored) {
+                    assert(ignored == NULL);
+                    return PyLong_FromLong(MARKER);
+                }
+                '''.replace('TYPE', name).replace('MARKER', str(marker)),
+                includes='#undef NDEBUG\n#include <assert.h>\n#include <stdint.h>',
+                cmembers='PyObject* value;',
+                tp_methods='''
+                {"shared", shared, METH_O, ""},
+                {"shared_noargs", shared_noargs, METH_NOARGS, ""}
+                ''',
+                tp_getset='{"value", get_value, set_value, "", (void*)%d}' % marker,
+            )
+
+        left_type = make_type('SharedWrapperLeft', 11)
+        right_type = make_type('SharedWrapperRight', 29)
+        left, right = left_type(), right_type()
+        left_value, right_value = object(), object()
+        for _ in range(5):
+            for obj, typ, marker, value in ((left, left_type, 11, left_value), (right, right_type, 29, right_value)):
+                received_marker, received_value = obj.shared(value)
+                assert received_marker == marker
+                assert received_value is value
+                assert obj.shared_noargs() == marker
+                with self.assertRaisesRegex(ValueError, '^pointer %d$' % marker):
+                    obj.shared(False)
+                assert obj.shared(value)[1] is value
+                obj.value = value
+                assert obj.value is value
+                assert typ.value.__get__(obj, typ) is value
+                with self.assertRaisesRegex(ValueError, '^closure %d set$' % marker):
+                    obj.value = False
+                assert obj.value is value
+                obj.value = None
+                assert obj.value is None
+                del obj.value
+                with self.assertRaisesRegex(AttributeError, '^closure %d absent$' % marker):
+                    _ = obj.value
+                obj.value = value
+                assert obj.value is value
+            assert left.value is left_value
+            assert right.value is right_value
+        assert_raises(TypeError, left_type.shared, right, left_value)
+        assert_raises(TypeError, left_type.value.__get__, right, right_type)
+        assert_raises(TypeError, left_type.value.__set__, right, left_value)
 
     def test_new_classmethod(self):
 

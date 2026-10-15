@@ -60,8 +60,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -116,39 +116,28 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(MethodDescriptorWrapper.class);
 
     @TruffleBoundary
-    static PRootNode getOrCreateRootNode(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
-        Class<? extends PRootNode> nodeKlass;
-        Function<PythonLanguage, PRootNode> rootNodeFunction = switch (sig) {
-            case KEYWORDS -> {
-                nodeKlass = MethKeywordsRoot.class;
-                yield l -> new MethKeywordsRoot(l, name, isStatic, sig);
-            }
-            case VARARGS -> {
-                nodeKlass = MethVarargsRoot.class;
-                yield (l -> new MethVarargsRoot(l, name, isStatic, sig));
-            }
-            case NOARGS -> {
-                nodeKlass = MethNoargsRoot.class;
-                yield (l -> new MethNoargsRoot(l, name, isStatic, sig));
-            }
-            case O -> {
-                nodeKlass = MethORoot.class;
-                yield (l -> new MethORoot(l, name, isStatic, sig));
-            }
-            case FASTCALL -> {
-                nodeKlass = MethFastcallRoot.class;
-                yield (l -> new MethFastcallRoot(l, name, isStatic, sig));
-            }
-            case FASTCALL_WITH_KEYWORDS -> {
-                nodeKlass = MethFastcallWithKeywordsRoot.class;
-                yield (l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig));
-            }
-            case METHOD -> {
-                nodeKlass = MethMethodRoot.class;
-                yield (l -> new MethMethodRoot(l, name, isStatic, sig));
-            }
+    static BuiltinFunctionRootNode getOrCreateRootNode(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
+        ExternalFunctionWrapperFactory factory = createFactory(sig, name, isStatic);
+        return language.createCachedExternalFunWrapperRootNode(factory::createRoot, factory.getNodeClass(), sig, name, true, isStatic);
+    }
+
+    static ExternalFunctionWrapperFactory createFactory(MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
+        return switch (sig) {
+            case KEYWORDS -> new ExternalFunctionWrapperFactory(MethKeywordsRoot.class, MethKeywordsRoot.SIGNATURE, name,
+                            () -> new MethKeywordsRoot(name, isStatic, sig));
+            case VARARGS -> new ExternalFunctionWrapperFactory(MethVarargsRoot.class, MethVarargsRoot.SIGNATURE, name,
+                            () -> new MethVarargsRoot(name, isStatic, sig));
+            case NOARGS -> new ExternalFunctionWrapperFactory(MethNoargsRoot.class, MethNoargsRoot.SIGNATURE, name,
+                            () -> new MethNoargsRoot(name, isStatic, sig));
+            case O -> new ExternalFunctionWrapperFactory(MethORoot.class, MethORoot.SIGNATURE, name,
+                            () -> new MethORoot(name, isStatic, sig));
+            case FASTCALL -> new ExternalFunctionWrapperFactory(MethFastcallRoot.class, MethFastcallRoot.SIGNATURE, name,
+                            () -> new MethFastcallRoot(name, isStatic, sig));
+            case FASTCALL_WITH_KEYWORDS -> new ExternalFunctionWrapperFactory(MethFastcallWithKeywordsRoot.class, MethFastcallWithKeywordsRoot.SIGNATURE, name,
+                            () -> new MethFastcallWithKeywordsRoot(name, isStatic, sig));
+            case METHOD -> new ExternalFunctionWrapperFactory(MethMethodRoot.class, MethMethodRoot.SIGNATURE, name,
+                            () -> new MethMethodRoot(name, isStatic, sig));
         };
-        return language.createCachedExternalFunWrapperRootNode(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
     }
 
     /**

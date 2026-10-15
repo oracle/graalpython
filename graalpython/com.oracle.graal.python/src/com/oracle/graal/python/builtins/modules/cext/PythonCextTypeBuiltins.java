@@ -75,12 +75,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags;
-import com.oracle.graal.python.builtins.objects.cext.capi.WrapperDescriptorRootNodesGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -111,6 +108,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -121,7 +119,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -438,15 +435,13 @@ public final class PythonCextTypeBuiltins {
     }
 
     @TruffleBoundary
-    private static PRootNode getterRootNode(TruffleString name, PythonLanguage lang) {
-        Function<PythonLanguage, PRootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.GETTER);
-        return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true, false);
+    private static BuiltinFunctionRootNode getterRootNode(TruffleString name, PythonLanguage lang) {
+        return PExternalFunctionWrapper.getOrCreateRootNode(PExternalFunctionWrapper.GETTER, lang, name);
     }
 
     @TruffleBoundary
-    private static PRootNode setterRootNode(TruffleString name, PythonLanguage lang) {
-        Function<PythonLanguage, PRootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.SETTER);
-        return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
+    private static BuiltinFunctionRootNode setterRootNode(TruffleString name, PythonLanguage lang) {
+        return PExternalFunctionWrapper.getOrCreateRootNode(PExternalFunctionWrapper.SETTER, lang, name);
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonClassNode.class, long.class})
