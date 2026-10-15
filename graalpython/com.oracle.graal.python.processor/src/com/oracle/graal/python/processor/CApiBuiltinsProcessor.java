@@ -1157,6 +1157,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             w.append("""
                             // @formatter:off
                             // Checkstyle: stop
+                            // JaCoCo Exclude
                             package %s;
 
                             import java.util.Set;
