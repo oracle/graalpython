@@ -1223,7 +1223,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }
 
-    public <T extends RootNode> T createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, int memberIndex) {
+    public BuiltinFunctionRootNode createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, BuiltinFunctionRootNode> rootNodeFunction, int memberIndex) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
     }
 

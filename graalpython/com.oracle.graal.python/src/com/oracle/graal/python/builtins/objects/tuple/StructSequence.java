@@ -45,9 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
@@ -55,13 +53,13 @@ import java.util.List;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.GetStructMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -74,14 +72,16 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -228,8 +228,10 @@ public class StructSequence {
     }
 
     private static void createMember(PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
-        GetStructMemberNode rootNode = language.createStructSeqIndexedMemberAccessCachedRootNode((l) -> new GetStructMemberNode(l, idx), idx);
-        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, 0, rootNode);
+        BuiltinFunctionRootNode rootNode = language.createStructSeqIndexedMemberAccessCachedRootNode(
+                        l -> new BuiltinFunctionRootNode(l, GetStructMemberNode.BUILTIN, new PrototypeNodeFactory<>(GetStructMemberNodeGen.create(idx)), true), idx);
+        int flags = PBuiltinFunction.getFlags(GetStructMemberNode.BUILTIN, rootNode.getSignature());
+        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, flags, rootNode);
         GetSetDescriptor callable = PFactory.createGetSetDescriptor(language, getter, null, name, klass, false);
         if (doc != null) {
             callable.setAttribute(T___DOC__, doc);
@@ -237,38 +239,23 @@ public class StructSequence {
         WriteAttributeToObjectNode.getUncached().execute(klass, name, callable);
     }
 
-    private static class GetStructMemberNode extends PRootNode {
-        public static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("$self"), EMPTY_TRUFFLESTRING_ARRAY);
+    @Builtin(name = "structseq_get_member", minNumOfPositionalArgs = 1, parameterNames = "$self")
+    abstract static class GetStructMemberNode extends PythonUnaryBuiltinNode {
+        private static final Builtin BUILTIN = GetStructMemberNode.class.getAnnotation(Builtin.class);
         private final int fieldIdx;
 
-        GetStructMemberNode(PythonLanguage language, int fieldIdx) {
-            super(language);
+        GetStructMemberNode(int fieldIdx) {
             this.fieldIdx = fieldIdx;
         }
 
-        @Override
-        public Object execute(VirtualFrame frame) {
-            PTuple self = (PTuple) PArguments.getArgument(frame, 0);
+        @Specialization
+        Object getMember(PTuple self) {
             if (self.getSequenceStorage() instanceof NativeSequenceStorage && fieldIdx >= self.getSequenceStorage().length()) {
                 throw PRaiseNode.raiseStatic(this, NotImplementedError, ErrorMessages.UNSUPPORTED_ACCESS_OF_STRUCT_SEQUENCE_NATIVE_STORAGE);
             }
             return SequenceStorageNodes.GetItemScalarNode.executeUncached(self.getSequenceStorage(), fieldIdx);
         }
 
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @Override
-        public boolean isInternal() {
-            return true;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
-        }
     }
 
     static TruffleString getTpName(Object cls) {
