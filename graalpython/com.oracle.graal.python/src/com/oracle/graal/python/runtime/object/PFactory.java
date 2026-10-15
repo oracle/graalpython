@@ -242,6 +242,7 @@ import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -566,29 +567,29 @@ public final class PFactory {
         return new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption);
     }
 
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode) {
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, BuiltinFunctionRootNode rootNode) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, rootNode.getSignature(), null, null);
     }
 
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode) {
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, BuiltinFunctionRootNode rootNode) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, rootNode,
                         rootNode.getSignature(), null, null);
     }
 
-    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode, TpSlot slot,
+    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, BuiltinFunctionRootNode rootNode, TpSlot slot,
                     PExternalFunctionWrapper slotWrapper) {
         return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, rootNode.getSignature(), slot, slotWrapper);
     }
 
-    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode,
+    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, BuiltinFunctionRootNode rootNode,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
                         rootNode, rootNode.getSignature(), slot, slotWrapper);
     }
 
-    public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, PRootNode rootNode, TpSlot slot) {
+    public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, BuiltinFunctionRootNode rootNode, TpSlot slot) {
         PBuiltinFunction func = createWrapperDescriptor(language, T___NEW__, type, defaults, kwdefaults, PyMethodFlags.METH_VARARGS | PyMethodFlags.METH_KEYWORDS, rootNode, slot,
                         PExternalFunctionWrapper.NEW);
         return createBuiltinMethod(language, type, func);

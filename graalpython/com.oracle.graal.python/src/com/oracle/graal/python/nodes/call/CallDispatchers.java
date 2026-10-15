@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchersFactory.FunctionIndirectInvokeNodeGen;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -195,7 +196,7 @@ public class CallDispatchers {
 
         @Specialization(guards = "callee.getFunctionRootNode() == rootNode", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
-                        @SuppressWarnings("unused") @Cached(value = "callee.getFunctionRootNode()", adopt = false) RootNode rootNode,
+                        @SuppressWarnings("unused") @Cached(value = "callee.getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, arguments);
@@ -235,7 +236,7 @@ public class CallDispatchers {
 
         @Specialization(guards = "callee.getFunctionRootNode() == rootNode", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached(value = "callee.getFunctionRootNode()", adopt = false) RootNode rootNode,
+                        @SuppressWarnings("unused") @Cached(value = "callee.getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                         @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
@@ -293,7 +294,7 @@ public class CallDispatchers {
         @Specialization(guards = "function.getFunctionRootNode() == rootNode", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinMethodCached")
         static Object callBuiltinMethodCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
                         @Bind("callee.getBuiltinFunction()") PBuiltinFunction function,
-                        @SuppressWarnings("unused") @Cached(value = "function.getFunctionRootNode()", adopt = false) RootNode rootNode,
+                        @SuppressWarnings("unused") @Cached(value = "function.getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                         @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(function)") DirectCallNode callNode,
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {

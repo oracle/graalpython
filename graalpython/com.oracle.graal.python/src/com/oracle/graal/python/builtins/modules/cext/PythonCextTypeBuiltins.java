@@ -107,7 +107,6 @@ import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -416,7 +415,7 @@ public final class PythonCextTypeBuiltins {
         PBuiltinFunction get = null;
         PythonLanguage language = PythonLanguage.get(null);
         if (getter != NULLPTR) {
-            PRootNode getterRoot = getterRootNode(name, language);
+            BuiltinFunctionRootNode getterRoot = getterRootNode(name, language);
             NativeFunctionPointer getterFun = CExtCommonNodes.bindFunctionPointer(getter, PExternalFunctionWrapper.GETTER);
             get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getterFun, closure), 0, getterRoot);
         }
@@ -424,7 +423,7 @@ public final class PythonCextTypeBuiltins {
         PBuiltinFunction set = null;
         boolean hasSetter = setter != NULLPTR;
         if (hasSetter) {
-            PRootNode setterRoot = setterRootNode(name, language);
+            BuiltinFunctionRootNode setterRoot = setterRootNode(name, language);
             NativeFunctionPointer setterFun = CExtCommonNodes.bindFunctionPointer(setter, PExternalFunctionWrapper.SETTER);
             set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setterFun, closure), 0, setterRoot);
         }

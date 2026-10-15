@@ -433,7 +433,7 @@ public abstract class ExternalFunctionNodes {
         @TruffleBoundary
         public static PythonBuiltinObject createDescrWrapperFunction(TruffleString name, NativeFunctionPointer callable, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createDescrWrapperFunction(%s, %s)", name, callable));
-            PRootNode rootNode = getOrCreateRootNode(sig, language, name);
+            BuiltinFunctionRootNode rootNode = getOrCreateRootNode(sig, language, name);
 
             // ensure that 'callable' is executable via InteropLibrary
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(callable);

@@ -160,7 +160,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
             return null;
         }
 
-        PRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, PyMethodFlags.isMethStatic(flags));
+        BuiltinFunctionRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, PyMethodFlags.isMethStatic(flags));
 
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.bindFunctionPointer(callable, methodDescriptorWrapper));
 
