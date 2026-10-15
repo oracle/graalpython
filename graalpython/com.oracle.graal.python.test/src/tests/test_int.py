@@ -169,6 +169,22 @@ def test_floordiv():
     assert -234 // (-92233720368547394651) == 0
     assert 234 // (-92233720368547394651) == -1
 
+
+def test_bigint_floordiv_small_quotient():
+    for bits in (128, 129, 130, 256, 1024, 8192):
+        for divisor in (1 << (bits - 1),
+                        (1 << (bits - 1)) + (1 << (bits - 32)) - 1,
+                        (1 << bits) - 1):
+            for quotient in (0, 1, 2, 3, 9, 31, (1 << 30) - 1, 1 << 30, (1 << 31) - 1, 1 << 31):
+                for remainder in (0, 1, divisor >> 1, divisor - 1):
+                    dividend = quotient * divisor + remainder
+                    negative_quotient = -quotient - (remainder != 0)
+                    assert dividend // divisor == quotient
+                    assert -dividend // -divisor == quotient
+                    assert -dividend // divisor == negative_quotient
+                    assert dividend // -divisor == negative_quotient
+
+
 def test_pow():
     assert 2 ** 10 == 1024
     assert type(2 ** -1) is float

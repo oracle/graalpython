@@ -892,6 +892,33 @@ public final class IntBuiltins extends PythonBuiltins {
         static BigInteger op(BigInteger left, BigInteger right) {
             // Math.floorDiv for BigInteger
             int leftSign = left.signum();
+            if (leftSign > 0 && right.signum() > 0) {
+                int rightBits = right.bitLength();
+                int bitDifference = left.bitLength() - rightBits;
+                if (rightBits > 128 && bitDifference >= 0 && bitDifference < 31) {
+                    /*
+                     * Keep 32 leading divisor bits and at most 62 dividend bits. If these truncated
+                     * operands are u and v, the exact floor-division quotient is between u / (v + 1) and u / v.
+                     * When both bounds agree, no full-width arithmetic is needed. Otherwise, a single multiplication
+                     * and comparison determine the exact quotient.
+                     */
+                    int shift = rightBits - 32;
+                    long u = left.shiftRight(shift).longValue();
+                    long v = right.shiftRight(shift).longValue();
+                    long lower = u / (v + 1);
+                    long upper = u / v;
+                    if (lower == upper) {
+                        return BigInteger.valueOf(lower);
+                    } else {
+                        assert upper == lower + 1;
+                        if (left.compareTo(right.multiply(BigInteger.valueOf(upper))) < 0) {
+                            return BigInteger.valueOf(lower);
+                        } else {
+                            return BigInteger.valueOf(upper);
+                        }
+                    }
+                }
+            }
             if (leftSign == 0 || leftSign == right.signum()) {
                 return left.divide(right);
             }
