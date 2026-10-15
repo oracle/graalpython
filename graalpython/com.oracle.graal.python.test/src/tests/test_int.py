@@ -150,6 +150,20 @@ def test_bigint_mul():
     assert 99999937497465632974931 * 1223432423545234234123123 == 122343165886896325043539375228725106116626429513
     assert 99999937497465632974931 * (2**100) == 126764980791447734004805377032945185921379990352429056
 
+
+def test_bigint_mul_powers_of_two():
+    for shift in (0, 1, 31, 32, 63, 64, 127, 1024, 8192):
+        power = 1 << shift
+        for value in (0, 1, -1, 3, -3, (1 << 100) + 7, -((1 << 100) + 7)):
+            expected = value << shift
+            assert value * power == expected
+            assert power * value == expected
+            assert value * -power == -expected
+            assert value * (power + 1) == expected + value
+            assert value * (power - 1) == expected - value
+            assert value * -(power + 1) == -expected - value
+
+
 def test_floordiv():
     assert 0 // (-92233720368547394651) == 0
     assert -234 // (-92233720368547394651) == 0

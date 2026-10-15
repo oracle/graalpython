@@ -1224,8 +1224,8 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public static BigInteger mul(BigInteger a, BigInteger b) {
-            if (!BigInteger.ZERO.equals(b) && b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
-                return bigIntegerShift(a, b.getLowestSetBit());
+            if (b.signum() > 0 && b.getLowestSetBit() == b.bitLength() - 1) {
+                return bigIntegerShift(a, b.bitLength() - 1);
             } else {
                 return bigIntegerMul(a, b);
             }
