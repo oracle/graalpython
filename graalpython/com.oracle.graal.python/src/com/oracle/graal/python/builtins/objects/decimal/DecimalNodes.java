@@ -109,6 +109,9 @@ public final class DecimalNodes {
     private static final int ROUNDED = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Rounded);
     private static final int SUBNORMAL = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Subnormal);
     private static final int CLAMPED = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Clamped);
+    private static final int UNDERFLOW = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Underflow);
+    private static final int OVERFLOW = DecimalContextUtils.conditionMask(DecimalExceptionTypes.Overflow);
+    private static final int DIVISION_IMPOSSIBLE = DecimalContextUtils.conditionMask(DecimalExceptionTypes.DivisionImpossible);
     private static final long HALF_TEN_TO_NINETEEN = 5000000000000000000L;
 
     private DecimalNodes() {
@@ -644,7 +647,7 @@ public final class DecimalNodes {
         static PDecimal doPlus(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, InlinedBranchProfile nonCompactProfile, RaiseSignalNode raiseSignal,
                         PRaiseNode raiseNode) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PDecimal fast = compactUnary(language, self, context, self.isNegative());
+            PDecimal fast = compactUnary(frame, language, self, context, self.isNegative(), raiseSignal);
             if (fast != null) {
                 return fast;
             }
@@ -678,7 +681,7 @@ public final class DecimalNodes {
         static PDecimal doMinus(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, InlinedBranchProfile nonCompactProfile, RaiseSignalNode raiseSignal,
                         PRaiseNode raiseNode) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PDecimal fast = compactUnary(language, self, context, !self.isNegative());
+            PDecimal fast = compactUnary(frame, language, self, context, !self.isNegative(), raiseSignal);
             if (fast != null) {
                 return fast;
             }
@@ -712,7 +715,7 @@ public final class DecimalNodes {
         static PDecimal doAbs(VirtualFrame frame, Node inliningTarget, PDecimal self, PDecimalContext context, InlinedBranchProfile nonCompactProfile, RaiseSignalNode raiseSignal,
                         PRaiseNode raiseNode) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PDecimal fast = compactUnary(language, self, context, false);
+            PDecimal fast = compactUnary(frame, language, self, context, false, raiseSignal);
             if (fast != null) {
                 return fast;
             }
@@ -754,7 +757,7 @@ public final class DecimalNodes {
         static PDecimal doAdd(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, InlinedBranchProfile nonCompactProfile, RaiseSignalNode raiseSignal,
                         PRaiseNode raiseNode) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PDecimal fast = compactAdd(language, a, b, context, b.isNegative());
+            PDecimal fast = compactAdd(frame, language, a, b, context, b.isNegative(), raiseSignal);
             if (fast != null) {
                 return fast;
             }
@@ -795,7 +798,7 @@ public final class DecimalNodes {
         static PDecimal doSubtract(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, InlinedBranchProfile nonCompactProfile, RaiseSignalNode raiseSignal,
                         PRaiseNode raiseNode) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PDecimal fast = compactAdd(language, a, b, context, !b.isNegative());
+            PDecimal fast = compactAdd(frame, language, a, b, context, !b.isNegative(), raiseSignal);
             if (fast != null) {
                 return fast;
             }
@@ -836,7 +839,7 @@ public final class DecimalNodes {
         static PDecimal doMultiply(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, InlinedBranchProfile nonCompactProfile, RaiseSignalNode raiseSignal,
                         PRaiseNode raiseNode) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PDecimal fast = compactMultiply(language, a, b, context);
+            PDecimal fast = compactMultiply(frame, language, a, b, context, raiseSignal);
             if (fast != null) {
                 return fast;
             }
@@ -874,6 +877,13 @@ public final class DecimalNodes {
         }
 
         static PDecimal doDivide(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
+            if (isCompactFinite(a) && isCompactFinite(b) && b.getCompactCoefficient() != 0 && a.getCompactCoefficient() % b.getCompactCoefficient() == 0) {
+                PDecimal fast = finishCompact(frame, PythonLanguage.get(inliningTarget), a.isNegative() ^ b.isNegative(),
+                                a.getCompactCoefficient() / b.getCompactCoefficient(), a.getExponent() - b.getExponent(), context, raiseSignal);
+                if (fast != null) {
+                    return fast;
+                }
+            }
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.divide(a, b, context);
@@ -907,6 +917,10 @@ public final class DecimalNodes {
         }
 
         static PDecimal doDivideInt(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
+            Object fast = compactDivmod(frame, PythonLanguage.get(inliningTarget), a, b, context, true, false, raiseSignal);
+            if (fast != null) {
+                return (PDecimal) fast;
+            }
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.divideInt(a, b, context);
@@ -940,6 +954,10 @@ public final class DecimalNodes {
         }
 
         static PDecimal doRemainder(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
+            Object fast = compactDivmod(frame, PythonLanguage.get(inliningTarget), a, b, context, false, true, raiseSignal);
+            if (fast != null) {
+                return (PDecimal) fast;
+            }
             DecimalArithmetic.Result result;
             try {
                 result = DecimalArithmetic.remainder(a, b, context);
@@ -973,6 +991,10 @@ public final class DecimalNodes {
         }
 
         static Object doDivmod(VirtualFrame frame, Node inliningTarget, PDecimal a, PDecimal b, PDecimalContext context, RaiseSignalNode raiseSignal, PRaiseNode raiseNode) {
+            Object fast = compactDivmod(frame, PythonLanguage.get(inliningTarget), a, b, context, true, true, raiseSignal);
+            if (fast != null) {
+                return fast;
+            }
             DecimalArithmetic.ResultWithRemainder result;
             try {
                 result = DecimalArithmetic.divmod(a, b, context);
@@ -996,14 +1018,158 @@ public final class DecimalNodes {
         return value.getKind() == Kind.FINITE && value.isCompact();
     }
 
-    private static PDecimal compactUnary(PythonLanguage language, PDecimal self, PDecimalContext context, boolean negative) {
-        if (!isCompactFinite(self) || !DecimalArithmetic.fitsContext(self.getCompactCoefficient() == 0, self.getExponent(), DecimalArithmetic.digits(self.getCompactCoefficient()), context)) {
+    private static PDecimal compactUnary(VirtualFrame frame, PythonLanguage language, PDecimal self, PDecimalContext context, boolean negative, RaiseSignalNode raiseSignal) {
+        if (!isCompactFinite(self)) {
             return null;
         }
         if (self.getCompactCoefficient() == 0 && context.getRounding() != DecimalRounding.ROUND_FLOOR) {
             negative = false;
         }
-        return compact(language, negative, self.getCompactCoefficient(), self.getExponent());
+        return finishCompact(frame, language, negative, self.getCompactCoefficient(), self.getExponent(), context, raiseSignal);
+    }
+
+    private record CompactResult(long coefficient, long exponent, Kind kind, int status) {
+    }
+
+    private static PDecimal createCompact(PythonLanguage language, boolean negative, CompactResult result) {
+        return PFactory.createDecimal(language, negative, result.coefficient(), result.exponent(), result.kind());
+    }
+
+    private static PDecimal finishCompact(VirtualFrame frame, PythonLanguage language, boolean negative, long coefficient, long exponent,
+                    PDecimalContext context, RaiseSignalNode raiseSignal) {
+        if (DecimalArithmetic.fitsContext(coefficient == 0, exponent, DecimalArithmetic.digits(coefficient), context)) {
+            return compact(language, negative, coefficient, exponent);
+        }
+        CompactResult result = finalizeCompact(negative, coefficient, exponent, context);
+        if (result == null) {
+            return null;
+        }
+        DecimalContextUtils.addStatus(frame, context, result.status(), raiseSignal);
+        return createCompact(language, negative, result);
+    }
+
+    /** Finalize without changing the context, so divmod can combine both results' signals. */
+    private static CompactResult finalizeCompact(boolean negative, long coefficient, long exponent, PDecimalContext context) {
+        long precision = context.getPrecision();
+        long emin = context.getEmin();
+        long emax = context.getEmax();
+        long etiny = emin - precision + 1;
+        long etop = emax - precision + 1;
+        if (coefficient == 0) {
+            long maximum = context.getClamp() == 0 ? emax : etop;
+            long clamped = Math.min(Math.max(exponent, etiny), maximum);
+            return new CompactResult(0, clamped, Kind.FINITE, clamped == exponent ? 0 : CLAMPED);
+        }
+        int length = DecimalArithmetic.digits(coefficient);
+        long adjusted = exponent + length - 1;
+        if (adjusted > emax) {
+            return compactOverflow(negative, context, 0);
+        }
+        boolean subnormal = adjusted < emin;
+        int status = subnormal ? SUBNORMAL : 0;
+        long targetExponent = Math.max(exponent + length - precision, etiny);
+        if (exponent < targetExponent) {
+            long places = targetExponent - exponent;
+            long divisor = compactDivisor(places);
+            long quotient = 0;
+            long remainder = coefficient;
+            if (divisor != 0) {
+                quotient = coefficient / divisor;
+                remainder = coefficient % divisor;
+            }
+            status |= ROUNDED;
+            if (remainder != 0) {
+                status |= INEXACT;
+                if (subnormal) {
+                    status |= UNDERFLOW;
+                }
+            }
+            if (incrementCompact(negative, quotient, remainder, divisor, places, context.getRounding())) {
+                quotient++;
+            }
+            coefficient = quotient;
+            exponent = targetExponent;
+            length = DecimalArithmetic.digits(coefficient);
+            if (length > precision) {
+                coefficient /= 10;
+                exponent++;
+                length--;
+            }
+            if (exponent + length - 1 > emax) {
+                return compactOverflow(negative, context, status);
+            }
+            if (coefficient == 0) {
+                status |= CLAMPED;
+            }
+        }
+        if (context.getClamp() != 0 && exponent > etop) {
+            coefficient = scaleCompactCoefficient(coefficient, exponent - etop);
+            if (coefficient < 0) {
+                return null;
+            }
+            exponent = etop;
+            status |= CLAMPED;
+        }
+        return new CompactResult(coefficient, exponent, Kind.FINITE, status);
+    }
+
+    private static CompactResult compactOverflow(boolean negative, PDecimalContext context, int status) {
+        status |= OVERFLOW | INEXACT | ROUNDED;
+        boolean finite = switch (context.getRounding()) {
+            case ROUND_DOWN, ROUND_05UP -> true;
+            case ROUND_CEILING -> negative;
+            case ROUND_FLOOR -> !negative;
+            case ROUND_UP, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_HALF_EVEN -> false;
+        };
+        if (finite) {
+            long precision = context.getPrecision();
+            if (precision > 18) {
+                return null;
+            }
+            return new CompactResult(DecimalUtils.LONG_POWERS_OF_TEN[(int) precision] - 1, context.getEmax() - precision + 1, Kind.FINITE, status);
+        }
+        return new CompactResult(0, 0, Kind.INFINITY, status);
+    }
+
+    private static Object compactDivmod(VirtualFrame frame, PythonLanguage language, PDecimal a, PDecimal b, PDecimalContext context,
+                    boolean quotientNeeded, boolean remainderNeeded, RaiseSignalNode raiseSignal) {
+        if (!isCompactFinite(a) || !isCompactFinite(b) || b.getCompactCoefficient() == 0) {
+            return null;
+        }
+        long exponent = Math.min(a.getExponent(), b.getExponent());
+        long quotient = 0;
+        long remainder = 0;
+        if (a.getCompactCoefficient() != 0) {
+            long numerator = scaleCompactCoefficient(a.getCompactCoefficient(), a.getExponent() - exponent);
+            long denominator = scaleCompactCoefficient(b.getCompactCoefficient(), b.getExponent() - exponent);
+            if (numerator < 0 || denominator < 0) {
+                return null;
+            }
+            quotient = numerator / denominator;
+            if (remainderNeeded) {
+                remainder = numerator % denominator;
+            }
+        }
+        if (DecimalArithmetic.digits(quotient) > context.getPrecision()) {
+            DecimalContextUtils.addStatus(frame, context, DIVISION_IMPOSSIBLE, raiseSignal);
+            PDecimal nan = PFactory.createDecimal(language, false, 0L, 0, Kind.NAN);
+            return quotientNeeded && remainderNeeded ? PFactory.createTuple(language, new Object[]{nan, nan}) : nan;
+        }
+        boolean negative = a.isNegative() ^ b.isNegative();
+        CompactResult q = quotientNeeded ? finalizeCompact(negative, quotient, 0, context) : null;
+        CompactResult r = remainderNeeded ? finalizeCompact(a.isNegative(), remainder, exponent, context) : null;
+        if (quotientNeeded && q == null || remainderNeeded && r == null) {
+            return null;
+        }
+        DecimalContextUtils.addStatus(frame, context, (q == null ? 0 : q.status()) | (r == null ? 0 : r.status()), raiseSignal);
+        if (!quotientNeeded) {
+            return createCompact(language, a.isNegative(), r);
+        }
+        PDecimal result = createCompact(language, negative, q);
+        if (!remainderNeeded) {
+            return result;
+        }
+        return PFactory.createTuple(language, new Object[]{result, createCompact(language, a.isNegative(), r)});
     }
 
     /** Scale a nonnegative coefficient, or return -1 if it no longer fits a signed long. */
@@ -1023,7 +1189,7 @@ public final class DecimalNodes {
         return coefficient * DecimalUtils.LONG_POWERS_OF_TEN[index];
     }
 
-    private static PDecimal compactAdd(PythonLanguage language, PDecimal a, PDecimal b, PDecimalContext context, boolean rightNegative) {
+    private static PDecimal compactAdd(VirtualFrame frame, PythonLanguage language, PDecimal a, PDecimal b, PDecimalContext context, boolean rightNegative, RaiseSignalNode raiseSignal) {
         if (!isCompactFinite(a) || !isCompactFinite(b)) {
             return null;
         }
@@ -1066,13 +1232,10 @@ public final class DecimalNodes {
         } else {
             negative = sum < 0;
         }
-        if (DecimalArithmetic.fitsContext(coefficient == 0, exponent, DecimalArithmetic.digits(coefficient), context)) {
-            return compact(language, negative, coefficient, exponent);
-        }
-        return null;
+        return finishCompact(frame, language, negative, coefficient, exponent, context, raiseSignal);
     }
 
-    private static PDecimal compactMultiply(PythonLanguage language, PDecimal a, PDecimal b, PDecimalContext context) {
+    private static PDecimal compactMultiply(VirtualFrame frame, PythonLanguage language, PDecimal a, PDecimal b, PDecimalContext context, RaiseSignalNode raiseSignal) {
         if (!isCompactFinite(a) || !isCompactFinite(b)) {
             return null;
         }
@@ -1084,10 +1247,7 @@ public final class DecimalNodes {
         }
         long exponent = a.getExponent() + b.getExponent();
         boolean negative = a.isNegative() ^ b.isNegative();
-        if (DecimalArithmetic.fitsContext(coefficient == 0, exponent, DecimalArithmetic.digits(coefficient), context)) {
-            return compact(language, negative, coefficient, exponent);
-        }
-        return null;
+        return finishCompact(frame, language, negative, coefficient, exponent, context, raiseSignal);
     }
 
     /** Apply quantize's precision, exponent limits and flags without BigInteger arithmetic. */

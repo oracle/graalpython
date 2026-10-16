@@ -896,6 +896,54 @@ class DecimalNumericSlotsTests(unittest.TestCase):
                 self.check_binary(left, right, operation, prec=rng.choice((1, 3, 7, 28, 50)),
                                   rounding=rng.choice(ROUNDINGS), clamp=i % 2)
 
+    def test_zero_remainder_with_large_exponent(self):
+        for exponent in (2147483648, decimal.MAX_EMAX, decimal.MIN_ETINY):
+            for sign in ('', '-'):
+                for right in ('1', '-3e-2', '7e+2', '9223372036854775808'):
+                    for operation in (operator.floordiv, operator.mod, divmod):
+                        self.check_binary(f'{sign}0e{exponent}', right, operation,
+                                          prec=3, emin=-3, emax=3, clamp=1)
+
+    def test_compact_context_finalization(self):
+        pairs = (('123456789', '9'), ('999', '1'), ('9995e-4', '0'),
+                 ('5000000000000000000e-19', '1'), ('9223372036854775807e-19', '1'),
+                 ('10e-5', '1e-5'), ('9995e-7', '1e-7'), ('0e+20', '0e-20'))
+        settings = ((9, -20, 20, 0), (1, 0, 0, 0), (3, -3, 3, 0),
+                    (3, -3, 3, 1), (28, -5, 5, 1))
+        for rounding in ROUNDINGS:
+            for prec, emin, emax, clamp in settings:
+                for a, b in pairs:
+                    for left_sign, right_sign in (('', ''), ('-', ''), ('', '-'), ('-', '-')):
+                        for operation in (operator.add, operator.sub, operator.mul):
+                            self.check_binary(left_sign + a, right_sign + b, operation, prec=prec,
+                                              rounding=rounding, emin=emin, emax=emax, clamp=clamp)
+
+    def test_compact_division_and_remainder(self):
+        pairs = (('123456789', '97'), ('100', '2'), ('100.00', '2'), ('12.3', '0.2'),
+                 ('99999', '3'), ('9223372036854775807', '7'), ('1e-8', '3e-8'),
+                 ('123e-8', '122e-8'), ('9e+18', '1'), ('1', '9e+18'))
+        for rounding in ROUNDINGS:
+            for prec, emin, emax, clamp in ((28, -999999, 999999, 0), (3, -3, 1, 1), (1, 0, 0, 0)):
+                for a, b in pairs:
+                    for left_sign, right_sign in (('', ''), ('-', ''), ('', '-'), ('-', '-')):
+                        for operation in (operator.truediv, operator.floordiv, operator.mod, divmod):
+                            self.check_binary(left_sign + a, right_sign + b, operation, prec=prec,
+                                              rounding=rounding, emin=emin, emax=emax, clamp=clamp)
+
+    def test_compact_divmod_combines_signals_before_trapping(self):
+        with decimal.localcontext(prec=3, Emin=-3, Emax=1, clamp=1) as context:
+            context.clear_traps()
+            context.clear_flags()
+            context.traps[decimal.Inexact] = True
+            with self.assertRaises(decimal.Inexact):
+                divmod(decimal.Decimal('123e-8'), decimal.Decimal('122e-8'))
+            self.assertEqual(enabled_flags(context), ['Clamped', 'Inexact', 'Rounded', 'Subnormal', 'Underflow'])
+
+    def test_exact_division_with_many_trailing_zeros(self):
+        for prec in (1, 3, 28, 2048):
+            for a, b in (('1', '2'), ('1.00', '40'), ('3', '6'), ('1', '1024')):
+                self.check_binary(a, b, operator.truediv, prec=prec, emin=-5000, emax=5000)
+
     def test_coefficient_digit_boundaries(self):
         # Check both sides of decimal and binary magnitude boundaries, including the compact
         # coefficient limit and the small-power cache limit. Precision makes a one-digit error
@@ -1472,6 +1520,15 @@ class DecimalMethodTests(unittest.TestCase):
                     for other in ("0", "-0", "1E-8", "-1E-8", "1", "-1", "3.14", "1E+8"):
                         for name in ("next_toward", "remainder_near", "max", "min", "max_mag", "min_mag"):
                             self.check_method(name, value, other, prec=3, Emin=-3, Emax=4, rounding=rounding, clamp=clamp)
+
+    def test_normalize_many_trailing_zeros(self):
+        for coefficient in ('1', '16', '125', '999'):
+            for zeros in (1, 3, 18, 128, 1024):
+                value = coefficient + '0' * zeros + f'e-{zeros}'
+                for clamp in (0, 1):
+                    self.check_method('normalize', value, prec=zeros + 5, Emin=-2000, Emax=2000, clamp=clamp)
+        for coefficient in ('2000', '1600', '2500', '8000'):
+            self.check_method('normalize', coefficient + 'e-3', prec=5, Emin=-3, Emax=0, clamp=1)
 
     def test_digit_operations(self):
         for prec in (1, 3, 9, 28):

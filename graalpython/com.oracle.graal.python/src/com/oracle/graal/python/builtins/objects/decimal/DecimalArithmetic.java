@@ -795,14 +795,39 @@ final class DecimalArithmetic {
         if (isZero(result)) {
             return zero(result.negative(), 0);
         }
-        long exponent = result.exponent();
         long maximum = clamp == 0 ? emax : emax - precision + 1;
-        BigInteger coefficient = result.coefficient();
-        while (exponent < maximum && coefficient.remainder(BigInteger.TEN).signum() == 0) {
-            coefficient = coefficient.divide(BigInteger.TEN);
-            exponent++;
+        return stripTrailingZeros(result, maximum);
+    }
+
+    /** Remove a bounded number of trailing decimal zeros with one coefficient division. */
+    private static Value stripTrailingZeros(Value operand, long maximumExponent) {
+        BigInteger coefficient = operand.coefficient();
+        // Every factor of ten requires a factor of two. This bounds both the search and
+        // the size of its powers of ten by the coefficient, even for huge exponent limits.
+        long high = Math.min(maximumExponent - operand.exponent(), coefficient.getLowestSetBit());
+        if (high <= 0 || coefficient.remainder(BigInteger.TEN).signum() != 0) {
+            return operand;
         }
-        return finite(result.negative(), coefficient, exponent);
+        long low = 1;
+        BigInteger divisor = BigInteger.TEN;
+        BigInteger candidate = pow10(high);
+        if (coefficient.remainder(candidate).signum() == 0) {
+            low = high;
+            divisor = candidate;
+        } else {
+            high--;
+            while (low < high) {
+                long middle = low + (high - low + 1) / 2;
+                candidate = pow10(middle);
+                if (coefficient.remainder(candidate).signum() == 0) {
+                    low = middle;
+                    divisor = candidate;
+                } else {
+                    high = middle - 1;
+                }
+            }
+        }
+        return finite(operand.negative(), coefficient.divide(divisor), operand.exponent() + low);
     }
 
     private Value integral(Value a, boolean exact) {
@@ -1281,10 +1306,7 @@ final class DecimalArithmetic {
                 coefficient = coefficient.add(BigInteger.ONE);
             }
         } else {
-            while (exponent < idealExponent && coefficient.remainder(BigInteger.TEN).signum() == 0) {
-                coefficient = coefficient.divide(BigInteger.TEN);
-                exponent++;
-            }
+            return finish(stripTrailingZeros(finite(negative, coefficient, exponent), idealExponent));
         }
         return finish(finite(negative, coefficient, exponent));
     }
@@ -1321,7 +1343,7 @@ final class DecimalArithmetic {
                 BigInteger r;
                 if (isZero(a) || expdiff < 0 && compareMagnitude(a, b) < 0) {
                     q = BigInteger.ZERO;
-                    if (remainderNeeded) {
+                    if (remainderNeeded && !isZero(a)) {
                         r = a.coefficient().multiply(pow10(a.exponent() - exponent));
                     } else {
                         r = BigInteger.ZERO;
