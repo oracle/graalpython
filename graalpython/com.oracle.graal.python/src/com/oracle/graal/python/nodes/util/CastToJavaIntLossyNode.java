@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -79,12 +81,13 @@ public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
     @TruffleBoundary
     @Specialization(replaces = "toIntPInt")
     protected static int toIntOverflow(PInt x) {
-        if (x.compareTo(PInt.MAX_INT) > 0) {
+        BigInteger value = x.getValue();
+        if (PInt.bigIntegerFitsInInt(value)) {
+            return value.intValue();
+        } else if (value.signum() > 0) {
             return Integer.MAX_VALUE;
-        } else if (x.compareTo(PInt.MIN_INT) < 0) {
-            return Integer.MIN_VALUE;
         } else {
-            return x.intValue();
+            return Integer.MIN_VALUE;
         }
     }
 }

@@ -1262,6 +1262,7 @@ public abstract class Python3Core {
     }
 
     private void populateBuiltins() {
+        sysModule = builtinModules.get(T_SYS);
         assert PythonBuiltinClassType.verifySlotsConventions(builtins);
         for (PythonBuiltins builtin : builtins) {
             builtin.initialize(this);
@@ -1292,7 +1293,6 @@ public abstract class Python3Core {
         }
 
         // core machinery
-        sysModule = builtinModules.get(T_SYS);
         sysModules = (PDict) sysModule.getAttribute(T_MODULES);
     }
 

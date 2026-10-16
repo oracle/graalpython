@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,11 +74,12 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
     static Object narrowBigInteger(Node inliningTarget, BigInteger x,
                     @Cached InlinedConditionProfile fitsIntProfile,
                     @Cached InlinedConditionProfile fitsLongProfile) {
-        if (fitsIntProfile.profile(inliningTarget, PInt.fitsIn(x, PInt.MIN_INT, PInt.MAX_INT))) {
-            return PInt.intValue(x);
-        }
-        if (fitsLongProfile.profile(inliningTarget, PInt.fitsIn(x, PInt.MIN_LONG, PInt.MAX_LONG))) {
-            return PInt.longValue(x);
+        if (fitsLongProfile.profile(inliningTarget, PInt.bigIntegerFitsInLong(x))) {
+            long l = PInt.longValue(x);
+            if (fitsIntProfile.profile(inliningTarget, PInt.fitsInInt(l))) {
+                return (int) l;
+            }
+            return l;
         }
         return PFactory.createInt(PythonLanguage.get(inliningTarget), x);
     }

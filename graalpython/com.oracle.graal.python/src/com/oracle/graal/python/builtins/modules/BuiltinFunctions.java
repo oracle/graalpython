@@ -191,9 +191,9 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetAIter;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
@@ -232,6 +232,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -283,7 +284,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -1575,14 +1575,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
         @Child private ReadAttributeFromModuleNode readStdout;
-        @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
         @SuppressWarnings("unused")
         PNone printNoKeywords(VirtualFrame frame, Object[] values, PNone sep, PNone end, PNone file, PNone flush,
                         @Bind Node inliningTarget,
-                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
-                        @Shared("callWrite") @Cached CallNode callWrite,
+                        @Shared("getWriteMethod") @Cached PyObjectGetMethod getWriteMethod,
+                        @Shared("callWrite") @Cached CallBinaryMethodNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
@@ -1596,23 +1595,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         static PNone printAllGiven(VirtualFrame frame, Object[] values, TruffleString sep, TruffleString end, Object file, boolean flush,
                         @Bind Node inliningTarget,
-                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
-                        @Shared("callWrite") @Cached CallNode callWrite,
+                        @Shared("getWriteMethod") @Cached PyObjectGetMethod getWriteMethod,
+                        @Shared("callWrite") @Cached CallBinaryMethodNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             int lastValue = values.length - 1;
-            // Note: the separate lookup is necessary due to different __getattr__ treatment than
-            // method lookup
+            // Resolve write once, before converting the values to strings.
             Object writeMethod = getWriteMethod.execute(frame, inliningTarget, file, T_WRITE);
             for (int i = 0; i < lastValue; i++) {
-                callWrite.execute(frame, writeMethod, strNode.execute(frame, inliningTarget, values[i]));
-                callWrite.execute(frame, writeMethod, sep);
+                callWrite.executeObject(frame, writeMethod, file, strNode.execute(frame, inliningTarget, values[i]));
+                callWrite.executeObject(frame, writeMethod, file, sep);
             }
             LoopNode.reportLoopCount(inliningTarget, values.length == 0 ? 0 : values.length - 1);
             if (lastValue >= 0) {
-                callWrite.execute(frame, writeMethod, strNode.execute(frame, inliningTarget, values[lastValue]));
+                callWrite.executeObject(frame, writeMethod, file, strNode.execute(frame, inliningTarget, values[lastValue]));
             }
-            callWrite.execute(frame, writeMethod, end);
+            callWrite.executeObject(frame, writeMethod, file, end);
             if (flush) {
                 callFlush.execute(frame, inliningTarget, file, T_FLUSH);
             }
@@ -1626,8 +1624,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castSep,
                         @Cached CastToTruffleStringNode castEnd,
                         @Cached PyObjectIsTrueNode castFlush,
-                        @Exclusive @Cached PyObjectGetAttr getWriteMethod,
-                        @Exclusive @Cached CallNode callWrite,
+                        @Exclusive @Cached PyObjectGetMethod getWriteMethod,
+                        @Exclusive @Cached CallBinaryMethodNode callWrite,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callFlush,
                         @Exclusive @Cached PyObjectStrAsObjectNode strNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1665,20 +1663,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getStdout() {
-            PythonModule sys;
-            if (getLanguage().isSingleContext()) {
-                if (cachedSys == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = getContext().lookupBuiltinModule(T_SYS);
-                }
-                sys = cachedSys;
-            } else {
-                if (cachedSys != null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = null;
-                }
-                sys = getContext().lookupBuiltinModule(T_SYS);
-            }
+            PythonModule sys = getContext().getSysModule();
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readStdout = insert(ReadAttributeFromModuleNode.create());

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.IOException;
@@ -93,7 +92,7 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         PythonContext context = PythonContext.get(inliningTarget);
         try {
-            PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
+            PythonModule sysModule = context.getSysModule();
             Object unraisablehook = lookup.execute(frame, inliningTarget, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(inliningTarget, exception);
             Object traceback = getTracebackNode.execute(inliningTarget, exception);

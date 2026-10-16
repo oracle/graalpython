@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__WARNINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
@@ -405,7 +404,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 getDictNode = insert(GetOrCreateDictNode.create());
             }
-            return getDictNode.executeCached(getContext().lookupBuiltinModule(T_SYS));
+            return getDictNode.executeCached(getContext().getSysModule());
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel, TruffleString[] skipFilePrefixes) {
@@ -520,7 +519,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             } else {
-                Object sys = context.lookupBuiltinModule(T_SYS);
+                Object sys = context.getSysModule();
                 Object modules = lookup.executeCached(frame, sys, T_MODULES);
                 try {
                     warningsModule = callMethod.executeCached(frame, modules, T_GET, T_WARNINGS, PNone.NONE);

@@ -94,7 +94,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_PYTHONBREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UNRAISABLEHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BREAKPOINTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___DISPLAYHOOK__;
@@ -614,7 +613,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     public void postInitialize0(Python3Core core) {
         super.postInitialize(core);
-        PythonModule sys = core.lookupBuiltinModule(T_SYS);
+        PythonModule sys = core.getSysModule();
         PythonContext context = core.getContext();
         PythonLanguage language = core.getLanguage();
         String[] args = context.getEnv().getApplicationArguments();
@@ -761,7 +760,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         postInitialize0(core);
         initStd(core);
-        PythonModule sys = core.lookupBuiltinModule(T_SYS);
+        PythonModule sys = core.getSysModule();
         core.getContext().registerCApiHook(() -> {
             sys.setAttribute(toTruffleStringUncached("_dllhandle_name"), toTruffleStringUncached(core.getContext().getCApiContext().getLibraryName()));
         });
@@ -777,7 +776,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         TruffleString stdioEncoding = gp.getStdIOEncoding();
         TruffleString stdioError = gp.getStdIOError();
         PosixSupport posixSupport = context.getPosixSupport();
-        PythonModule sysModule = core.lookupBuiltinModule(T_SYS);
+        PythonModule sysModule = core.getSysModule();
 
         // Note that stdin is always buffered, this only applies to stdout and stderr
         boolean buffering = !context.getOption(PythonOptions.UnbufferedIO);

@@ -42,7 +42,6 @@ package com.oracle.graal.python.runtime.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -251,7 +250,7 @@ public final class ExceptionUtils {
         Object type = GetClassNode.executeUncached(pythonException);
         Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
 
-        Object hook = context.lookupBuiltinModule(T_SYS).getAttribute(BuiltinNames.T_EXCEPTHOOK);
+        Object hook = context.getSysModule().getAttribute(BuiltinNames.T_EXCEPTHOOK);
         if (hook != PNone.NO_VALUE) {
             try {
                 // Note: it is important to pass frame 'null' because that will cause the
