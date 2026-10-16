@@ -165,45 +165,55 @@ public final class DecimalNodes {
         @Specialization
         static TruffleString format(Node inliningTarget, PDecimal self, boolean capitals,
                         @Cached InlinedConditionProfile fixedProfile,
-                        @Cached TruffleString.FromLongNode fromLong,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePoint,
-                        @Cached TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstring,
                         @Cached TruffleStringBuilder.AppendLongNumberNode appendLong,
                         @Cached TruffleStringBuilder.ToStringNode toString,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             // The node specialization profiles
             if (self.isCompact() && self.getKind() == Kind.FINITE) {
-                TruffleString digits = fromLong.execute(self.getCompactCoefficient(), TS_ENCODING, false);
-                int length = digits.byteLength(TS_ENCODING) / Integer.BYTES;
+                long coefficient = self.getCompactCoefficient();
+                int length = DecimalUtils.digits(coefficient);
                 long exponent = self.getExponent();
                 long adjustedExponent = exponent + length - 1;
-                // Compact coefficients have at most 19 digits. Both fixed and scientific
-                // notation fit in 48 characters, even with an exponent of magnitude 10^18.
-                TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32(48);
+                boolean fixed = fixedProfile.profile(inliningTarget, exponent <= 0 && adjustedExponent >= -6);
+                int point = 0;
+                int resultLength;
+                if (fixed) {
+                    point = (int) (length + exponent);
+                    resultLength = point <= 0 ? 2 - point + length : length + (point < length ? 1 : 0);
+                } else {
+                    resultLength = length + (length > 1 ? 1 : 0) + 2 + DecimalUtils.digits(Math.abs(adjustedExponent));
+                }
+                // Exact capacity lets ToStringNode reuse the buffer without trimming it.
+                TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32(resultLength + (self.isNegative() ? 1 : 0));
                 if (self.isNegative()) {
                     appendCodePoint.execute(builder, '-');
                 }
-                if (fixedProfile.profile(inliningTarget, exponent <= 0 && adjustedExponent >= -6)) {
-                    int point = (int) (length + exponent);
+                if (fixed) {
                     if (point <= 0) {
                         appendCodePoint.execute(builder, '0');
                         appendCodePoint.execute(builder, '.');
                         if (point < 0) {
                             appendCodePoint.execute(builder, '0', -point, false);
                         }
-                        appendSubstring.execute(builder, digits, 0, length * Integer.BYTES);
+                        appendLong.execute(builder, coefficient);
                     } else if (point < length) {
-                        appendSubstring.execute(builder, digits, 0, point * Integer.BYTES);
+                        int fractionalDigits = length - point;
+                        long divisor = DecimalUtils.LONG_POWERS_OF_TEN[fractionalDigits];
+                        appendLong.execute(builder, coefficient / divisor);
                         appendCodePoint.execute(builder, '.');
-                        appendSubstring.execute(builder, digits, point * Integer.BYTES, (length - point) * Integer.BYTES);
+                        appendFraction(builder, coefficient % divisor, fractionalDigits, appendCodePoint, appendLong);
                     } else {
-                        appendSubstring.execute(builder, digits, 0, length * Integer.BYTES);
+                        appendLong.execute(builder, coefficient);
                     }
                 } else {
-                    appendSubstring.execute(builder, digits, 0, Integer.BYTES);
                     if (length > 1) {
+                        long divisor = DecimalUtils.LONG_POWERS_OF_TEN[length - 1];
+                        appendLong.execute(builder, coefficient / divisor);
                         appendCodePoint.execute(builder, '.');
-                        appendSubstring.execute(builder, digits, Integer.BYTES, (length - 1) * Integer.BYTES);
+                        appendFraction(builder, coefficient % divisor, length - 1, appendCodePoint, appendLong);
+                    } else {
+                        appendLong.execute(builder, coefficient);
                     }
                     appendCodePoint.execute(builder, capitals ? 'E' : 'e');
                     if (adjustedExponent >= 0) {
@@ -215,6 +225,15 @@ public final class DecimalNodes {
             } else {
                 return fromJavaStringNode.execute(self.toScientificString(capitals), TS_ENCODING);
             }
+        }
+
+        private static void appendFraction(TruffleStringBuilderUTF32 builder, long coefficient, int width,
+                        TruffleStringBuilder.AppendCodePointNode appendCodePoint, TruffleStringBuilder.AppendLongNumberNode appendLong) {
+            int padding = width - DecimalUtils.digits(coefficient);
+            if (padding > 0) {
+                appendCodePoint.execute(builder, '0', padding, false);
+            }
+            appendLong.execute(builder, coefficient);
         }
     }
 
