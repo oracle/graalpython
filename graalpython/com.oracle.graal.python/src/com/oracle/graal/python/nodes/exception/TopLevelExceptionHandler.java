@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.exception;
 
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -194,7 +193,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             Object type = GetClassNode.executeUncached(pythonException);
             Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
 
-            PythonModule sys = getContext().lookupBuiltinModule(T_SYS);
+            PythonModule sys = getContext().getSysModule();
             sys.setAttribute(BuiltinNames.T_LAST_TYPE, type);
             sys.setAttribute(BuiltinNames.T_LAST_VALUE, pythonException);
             sys.setAttribute(BuiltinNames.T_LAST_TRACEBACK, tb);

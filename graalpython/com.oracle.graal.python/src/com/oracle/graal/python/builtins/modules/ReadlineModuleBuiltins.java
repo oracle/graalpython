@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_READLINE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -115,7 +114,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         module.setAttribute(T_BACKEND, T_JLINE);
         LocalData moduleState = new LocalData();
         module.setModuleState(moduleState);
-        Object consoleHandler = core.lookupBuiltinModule(T_SYS).getAttribute(T__CONSOLE_HANDLER);
+        Object consoleHandler = core.getSysModule().getAttribute(T__CONSOLE_HANDLER);
         if (consoleHandler != PNone.NO_VALUE) {
             InteropLibrary lib = InteropLibrary.getUncached(consoleHandler);
             try {

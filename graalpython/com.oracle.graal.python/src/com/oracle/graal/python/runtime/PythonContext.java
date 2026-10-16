@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
@@ -1281,7 +1280,7 @@ public final class PythonContext extends Python3Core {
         if (!getOption(PythonOptions.SafePathFlag)) {
             TruffleString path0 = computeSysPath0();
             if (path0 != null) {
-                PythonModule sys = lookupBuiltinModule(T_SYS);
+                PythonModule sys = getSysModule();
                 Object path = sys.getAttribute(T_PATH);
                 PyObjectCallMethodObjArgs.executeUncached(path, T_INSERT, 0, path0);
             }

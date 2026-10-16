@@ -284,7 +284,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -1576,7 +1575,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
         @Child private ReadAttributeFromModuleNode readStdout;
-        @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
         @SuppressWarnings("unused")
@@ -1665,20 +1663,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getStdout() {
-            PythonModule sys;
-            if (getLanguage().isSingleContext()) {
-                if (cachedSys == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = getContext().lookupBuiltinModule(T_SYS);
-                }
-                sys = cachedSys;
-            } else {
-                if (cachedSys != null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = null;
-                }
-                sys = getContext().lookupBuiltinModule(T_SYS);
-            }
+            PythonModule sys = getContext().getSysModule();
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readStdout = insert(ReadAttributeFromModuleNode.create());

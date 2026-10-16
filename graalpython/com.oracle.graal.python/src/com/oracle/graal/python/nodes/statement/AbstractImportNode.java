@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.T__INITIALIZING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL;
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
@@ -142,7 +141,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
     @TruffleBoundary
     public static PythonModule lookupImportedModule(PythonContext context, TruffleString name) {
-        PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
+        PythonModule sysModule = context.getSysModule();
         Object modules = sysModule.getAttribute(T_MODULES);
         if (modules == PNone.NO_VALUE) {
             throw PRaiseNode.raiseStatic(null, RuntimeError, ErrorMessages.UNABLE_TO_GET_S, "sys.modules");

@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -87,7 +86,7 @@ public final class PythonCextSysBuiltins {
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached PyObjectSetAttr setAttrNode) {
             try {
-                PythonModule sys = getCore().lookupBuiltinModule(T_SYS);
+                PythonModule sys = getCore().getSysModule();
                 Object value = lookupNode.execute(null, inliningTarget, sys, name);
                 if (value == PNone.NO_VALUE) {
                     return NATIVE_NULL;
@@ -109,7 +108,7 @@ public final class PythonCextSysBuiltins {
     private static Object selectOut(int fd) {
         CompilerAsserts.neverPartOfCompilation();
         Object file;
-        PythonModule sys = PythonContext.get(null).lookupBuiltinModule(T_SYS);
+        PythonModule sys = PythonContext.get(null).getSysModule();
         if (fd == 0) {
             file = sys.getAttribute(T_STDOUT);
         } else {
