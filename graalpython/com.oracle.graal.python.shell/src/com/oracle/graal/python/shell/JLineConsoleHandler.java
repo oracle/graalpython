@@ -98,7 +98,9 @@ public class JLineConsoleHandler extends ConsoleHandler {
         Terminal terminal;
         Object[] signalHandlers = stashSignalHandlers();
         try {
-            terminal = TerminalBuilder.builder().streams(inputStream, outputStream).system(true).build();
+            // The grapheme capability probe consumes pending input, including commands sent through
+            // a pseudo-terminal before readline is initialized (GR-80639).
+            terminal = TerminalBuilder.builder().streams(inputStream, outputStream).system(true).graphemeCluster(false).build();
         } catch (IOException ex) {
             throw new RuntimeException("unexpected error opening console reader", ex);
         } finally {

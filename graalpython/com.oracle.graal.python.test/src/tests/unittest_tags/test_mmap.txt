@@ -14,12 +14,12 @@ test.test_mmap.MmapTests.test_find_does_not_access_beyond_buffer @ darwin-arm64,
 test.test_mmap.MmapTests.test_find_end @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_flush_return_value @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_length_0_large_offset @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
-test.test_mmap.MmapTests.test_length_0_offset @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_mmap.MmapTests.test_length_0_offset @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_offset @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_prot_readonly @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_read_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_read_invalid_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_mmap.MmapTests.test_resize_down_anonymous_mapping @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_mmap.MmapTests.test_resize_down_anonymous_mapping @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_resize_up_anonymous_mapping @ darwin-arm64,win32-AMD64,win32-AMD64-github
 test.test_mmap.MmapTests.test_resize_up_private_anonymous_mapping @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_mmap.MmapTests.test_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
