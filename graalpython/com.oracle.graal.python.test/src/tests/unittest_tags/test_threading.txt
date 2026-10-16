@@ -167,3 +167,4 @@ test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_
 test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading.ThreadingExceptionTests.test_start_thread_again @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading.TimerTests.test_init_immutable_default_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_threading.ThreadTests.test_frame_tstate_tracing @ linux-x86_64

@@ -7,8 +7,10 @@ import select
 import threading
 import time
 import unittest
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import (
-    cpython_only, requires_subprocess, requires_working_socket, requires_resource
+    requires_subprocess, requires_working_socket, requires_resource
 )
 from test.support import threading_helper
 from test.support.os_helper import TESTFN
@@ -170,7 +172,8 @@ class PollTests(unittest.TestCase):
         self.assertRaises(ValueError, pollster.modify, 1, -1)
         self.assertRaises(OverflowError, pollster.modify, 1, 1 << 64)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_poll_c_limits(self):
         try:
             from _testcapi import USHRT_MAX, INT_MAX, UINT_MAX

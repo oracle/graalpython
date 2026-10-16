@@ -80,6 +80,30 @@ class TestSupport(unittest.TestCase, ExtraAssertions):
             messages = [str(w.message) for w in warning_objs]
         self.assertEqual(len(messages), 0, messages)
 
+    # GraalPy change: availability guards preserve unittest method/class skips.
+    def test_requires_testcapi(self):
+        def test_method(self):
+            self.fail("a skipped test must not execute")
+
+        class TestCase(unittest.TestCase):
+            test = test_method
+
+        with support.swap_item(sys.modules, '_testcapi', object()):
+            self.assertIs(support.requires_testcapi(test_method), test_method)
+            self.assertIs(support.requires_testcapi(TestCase), TestCase)
+
+        with support.swap_item(sys.modules, '_testcapi', None):
+            method = support.requires_testcapi(test_method)
+            self.assertTrue(method.__unittest_skip__)
+            self.assertEqual(method.__unittest_skip_why__, 'requires _testcapi')
+            skipped_class = support.requires_testcapi(TestCase)
+            result = unittest.TestResult()
+            skipped_class('test').run(result)
+            self.assertEqual(result.testsRun, 1)
+            self.assertEqual(len(result.skipped), 1)
+            self.assertFalse(result.errors)
+            self.assertFalse(result.failures)
+
     def test_import_module(self):
         import_helper.import_module("ftplib")
         self.assertRaises(unittest.SkipTest,

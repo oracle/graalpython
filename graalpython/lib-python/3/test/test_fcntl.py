@@ -7,8 +7,10 @@ import os
 import struct
 import sys
 import unittest
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import (
-    cpython_only, get_pagesize, is_apple, requires_subprocess, verbose
+    get_pagesize, is_apple, requires_subprocess, verbose
 )
 from test.support.import_helper import import_module
 from test.support.os_helper import TESTFN, unlink, make_bad_fd
@@ -116,7 +118,8 @@ class TestFcntl(unittest.TestCase):
         with self.assertRaises(TypeError):
             fcntl.fcntl(BadFile('spam'), fcntl.F_SETFL, os.O_NONBLOCK)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_fcntl_bad_file_overflow(self):
         _testcapi = import_module("_testcapi")
         INT_MAX = _testcapi.INT_MAX
@@ -195,7 +198,8 @@ class TestFcntl(unittest.TestCase):
         fcntl.lockf(self.f, fcntl.LOCK_UN)
         self.assertEqual(p.exitcode, 0)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_flock_overflow(self):
         _testcapi = import_module("_testcapi")
         self.assertRaises(OverflowError, fcntl.flock, _testcapi.INT_MAX+1,

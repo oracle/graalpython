@@ -244,6 +244,8 @@ class StructureTestCase(unittest.TestCase):
              "_pack_": -1}
         self.assertRaises(ValueError, type(Structure), "X", (Structure,), d)
 
+    # GraalPy change: the _pack_ cutoff follows CPython C int storage.
+    @support.requires_testcapi
     @support.cpython_only
     def test_packed_c_limits(self):
         # Issue 15989

@@ -26,7 +26,8 @@ class Str(str):
 
 class CAPITest(unittest.TestCase):
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_new(self):
         """Test PyUnicode_New()"""
@@ -87,7 +88,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES fill(NULL, 0, 0, 0x78)
         # TODO: Test PyUnicode_Fill() with non-modifiable unicode.
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_writechar(self):
         """Test PyUnicode_WriteChar()"""
@@ -118,7 +119,7 @@ class CAPITest(unittest.TestCase):
         # TODO: Test PyUnicode_WriteChar() with non-modifiable and legacy
         # unicode.
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_resize(self):
         """Test PyUnicode_Resize()"""
@@ -144,7 +145,7 @@ class CAPITest(unittest.TestCase):
         # TODO: Test PyUnicode_Resize() with non-modifiable and legacy unicode
         # and with NULL as the address.
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_append(self):
         """Test PyUnicode_Append()"""
@@ -172,7 +173,7 @@ class CAPITest(unittest.TestCase):
         # and with NULL as the address.
         # TODO: Check reference counts.
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_appendanddel(self):
         """Test PyUnicode_AppendAndDel()"""
@@ -199,7 +200,7 @@ class CAPITest(unittest.TestCase):
         # and with NULL as the address.
         # TODO: Check reference counts.
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_fromstringandsize(self):
         """Test PyUnicode_FromStringAndSize()"""
@@ -224,7 +225,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(SystemError, fromstringandsize, NULL, 3)
         self.assertRaises(SystemError, fromstringandsize, NULL, PY_SSIZE_T_MAX)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_fromstring(self):
         """Test PyUnicode_FromString()"""
@@ -240,7 +241,8 @@ class CAPITest(unittest.TestCase):
 
         # CRASHES fromstring(NULL)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_fromkindanddata(self):
         """Test PyUnicode_FromKindAndData()"""
@@ -276,7 +278,8 @@ class CAPITest(unittest.TestCase):
         # CRASHES fromkindanddata(1, NULL, 1)
         # CRASHES fromkindanddata(4, b'\xff\xff\xff\xff')
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_substring(self):
         """Test PyUnicode_Substring()"""
@@ -300,7 +303,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES substring([], 0, 0)
         # CRASHES substring(NULL, 0, 0)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_getlength(self):
         """Test PyUnicode_GetLength()"""
@@ -314,7 +317,8 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, getlength, [])
         # CRASHES getlength(NULL)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_readchar(self):
         """Test PyUnicode_ReadChar()"""
@@ -333,7 +337,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, readchar, [], 0)
         # CRASHES readchar(NULL, 0)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_fromobject(self):
         """Test PyUnicode_FromObject()"""
@@ -744,7 +748,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaisesRegex(SystemError, 'invalid format string',
             PyUnicode_FromFormat, b'%+i', c_int(10))
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_interninplace(self):
         """Test PyUnicode_InternInPlace()"""
@@ -757,7 +761,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES interninplace(b'abc')
         # CRASHES interninplace(NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_internfromstring(self):
         """Test PyUnicode_InternFromString()"""
@@ -771,7 +775,8 @@ class CAPITest(unittest.TestCase):
 
         # CRASHES internfromstring(NULL)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_fromwidechar(self):
         """Test PyUnicode_FromWideChar()"""
@@ -806,7 +811,8 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(SystemError, fromwidechar, NULL, -2)
         self.assertRaises(SystemError, fromwidechar, NULL, PY_SSIZE_T_MIN)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_aswidechar(self):
         """Test PyUnicode_AsWideChar()"""
@@ -854,7 +860,8 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, unicode_aswidechar_null, [], 10)
         self.assertRaises(SystemError, unicode_aswidechar_null, NULL, 10)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_aswidecharstring(self):
         """Test PyUnicode_AsWideCharString()"""
@@ -889,7 +896,8 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, unicode_aswidecharstring_null, [])
         self.assertRaises(SystemError, unicode_aswidecharstring_null, NULL)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_asucs4(self):
         """Test PyUnicode_AsUCS4()"""
@@ -914,7 +922,8 @@ class CAPITest(unittest.TestCase):
         # CRASHES unicode_asucs4(NULL, 1, 0)
         # CRASHES unicode_asucs4(NULL, 1, 1)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_asucs4copy(self):
         """Test PyUnicode_AsUCS4Copy()"""
@@ -930,7 +939,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES asucs4copy([])
         # CRASHES asucs4copy(NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_fromordinal(self):
         """Test PyUnicode_FromOrdinal()"""
@@ -943,7 +952,8 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(ValueError, fromordinal, 0x110000)
         self.assertRaises(ValueError, fromordinal, -1)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_asutf8(self):
         """Test PyUnicode_AsUTF8()"""
@@ -977,7 +987,7 @@ class CAPITest(unittest.TestCase):
             pass
 
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_asutf8andsize(self):
         """Test PyUnicode_AsUTF8AndSize()"""
@@ -1000,7 +1010,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES unicode_asutf8andsize(NULL, 0)
         # CRASHES unicode_asutf8andsize_null(NULL, 0)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_getdefaultencoding(self):
         """Test PyUnicode_GetDefaultEncoding()"""
@@ -1028,7 +1038,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(SystemError, transform_decimal, [])
         # CRASHES transform_decimal(NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_concat(self):
         """Test PyUnicode_Concat()"""
@@ -1049,7 +1059,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES concat(NULL, 'def')
         # CRASHES concat('abc', NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_split(self):
         """Test PyUnicode_Split()"""
@@ -1077,7 +1087,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, split, [], '|')
         # CRASHES split(NULL, '|')
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_rsplit(self):
         """Test PyUnicode_RSplit()"""
@@ -1106,7 +1116,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, rsplit, [], '|')
         # CRASHES rsplit(NULL, '|')
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_partition(self):
         """Test PyUnicode_Partition()"""
@@ -1126,7 +1136,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES partition(NULL, '|')
         # CRASHES partition('a|b|c', NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_rpartition(self):
         """Test PyUnicode_RPartition()"""
@@ -1146,7 +1156,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES rpartition(NULL, '|')
         # CRASHES rpartition('a|b|c', NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_splitlines(self):
         """Test PyUnicode_SplitLines()"""
@@ -1164,7 +1174,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, splitlines, b'a\nb\rc\r\nd')
         # CRASHES splitlines(NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_translate(self):
         """Test PyUnicode_Translate()"""
@@ -1189,7 +1199,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(LookupError, translate, 'abc', {ord('b'): None}, 'foo')
         # CRASHES translate(NULL, [])
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_join(self):
         """Test PyUnicode_Join()"""
@@ -1207,7 +1217,8 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, join, '|', 123)
         self.assertRaises(SystemError, join, '|', NULL)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_count(self):
         """Test PyUnicode_Count()"""
@@ -1238,7 +1249,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES unicode_count(NULL, '!', 0, len(str))
         # CRASHES unicode_count(str, NULL, 0, len(str))
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_tailmatch(self):
         """Test PyUnicode_Tailmatch()"""
@@ -1273,7 +1284,8 @@ class CAPITest(unittest.TestCase):
         # CRASHES tailmatch(NULL, 'aba', 0, len(str), -1)
         # CRASHES tailmatch(str, NULL, 0, len(str), -1)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_find(self):
         """Test PyUnicode_Find()"""
@@ -1314,7 +1326,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES find(NULL, '!', 0, len(str), 1)
         # CRASHES find(str, NULL, 0, len(str), 1)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_findchar(self):
         """Test PyUnicode_FindChar()"""
@@ -1350,7 +1362,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES unicode_findchar([], ord('!'), 0, len(str), 1)
         # CRASHES unicode_findchar(NULL, ord('!'), 0, len(str), 1), 1)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_replace(self):
         """Test PyUnicode_Replace()"""
@@ -1381,7 +1393,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES replace('a', NULL, '=')
         # CRASHES replace(NULL, 'a', '=')
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_compare(self):
         """Test PyUnicode_Compare()"""
@@ -1403,7 +1415,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES compare(NULL, 'abc')
         # CRASHES compare('abc', NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_comparewithasciistring(self):
         """Test PyUnicode_CompareWithASCIIString()"""
@@ -1420,7 +1432,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES comparewithasciistring([], b'abc')
         # CRASHES comparewithasciistring(NULL, b'abc')
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_equaltoutf8(self):
         # Test PyUnicode_EqualToUTF8()
@@ -1466,7 +1478,8 @@ class CAPITest(unittest.TestCase):
         self.assertEqual(equaltoutf8('\ud801',
                             '\ud801'.encode("utf8", "surrogatepass")), 0)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_equaltoutf8andsize(self):
         # Test PyUnicode_EqualToUTF8AndSize()
@@ -1535,7 +1548,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES equaltoutf8andsize(NULL, b'abc')
         # CRASHES equaltoutf8andsize('abc', NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_richcompare(self):
         """Test PyUnicode_RichCompare()"""
@@ -1563,7 +1576,7 @@ class CAPITest(unittest.TestCase):
             # CRASHES richcompare(NULL, 'abc', op)
             # CRASHES richcompare('abc', NULL, op)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_format(self):
         """Test PyUnicode_Format()"""
@@ -1576,7 +1589,7 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(SystemError, format, 'x=%d!', NULL)
         self.assertRaises(SystemError, format, NULL, 42)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_contains(self):
         """Test PyUnicode_Contains()"""
@@ -1598,7 +1611,7 @@ class CAPITest(unittest.TestCase):
         # CRASHES contains(NULL, 'b')
         # CRASHES contains('abcd', NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_isidentifier(self):
         """Test PyUnicode_IsIdentifier()"""

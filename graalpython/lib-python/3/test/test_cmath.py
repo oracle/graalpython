@@ -1,4 +1,6 @@
-from test.support import requires_IEEE_754, cpython_only, import_helper
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
+from test.support import requires_IEEE_754, import_helper
 from test.support.testcase import ComplexesAreIdenticalMixin
 from test.test_math import parse_testfile, test_file
 import test.test_math as test_math
@@ -394,7 +396,8 @@ class CMathTests(ComplexesAreIdenticalMixin, unittest.TestCase):
     def test_polar(self):
         self.check_polar(polar)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_polar_errno(self):
         # Issue #24489: check a previously set C errno doesn't disturb polar()
         _testcapi = import_helper.import_module('_testcapi')

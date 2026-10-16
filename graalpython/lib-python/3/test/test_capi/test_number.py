@@ -4,7 +4,9 @@ import sys
 import unittest
 import warnings
 
-from test.support import cpython_only, import_helper
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
+from test.support import import_helper
 
 _testcapi = import_helper.import_module('_testcapi')
 from _testcapi import PY_SSIZE_T_MAX, PY_SSIZE_T_MIN
@@ -251,7 +253,8 @@ class CAPITest(unittest.TestCase):
         # XXX: In-place power doesn't pass the third arg to __ipow__.
         self.assertEqual(inplacepower(x, 11, 5), (x, 11))
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_rshift_print(self):
         # This tests correct syntax hint for py2 redirection (>>).
         rshift = _testcapi.number_rshift

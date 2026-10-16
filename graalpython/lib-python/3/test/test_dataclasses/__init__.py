@@ -3720,7 +3720,8 @@ class TestSlots(unittest.TestCase):
         self.assertEqual(A().__dict__, {})
         A()
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_dataclass_slot_dict_ctype(self):
         # https://github.com/python/cpython/issues/123935
         from test.support import import_helper

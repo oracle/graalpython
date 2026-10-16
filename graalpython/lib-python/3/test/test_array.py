@@ -1196,7 +1196,8 @@ class BaseTest:
             a = array.array(self.typecode, array.array('u', 'foo'))
             a = array.array(self.typecode, array.array('w', 'foo'))
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_obsolete_write_lock(self):
         _testcapi = import_helper.import_module('_testcapi')
         a = array.array('B', b"")

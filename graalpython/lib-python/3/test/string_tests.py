@@ -1480,6 +1480,8 @@ class StringLikeTest(BaseTest):
         class X(object): pass
         self.checkraises(TypeError, 'abc', '__mod__', X())
 
+    # GraalPy change: formatting limits follow CPython C integer storage.
+    @support.requires_testcapi
     @support.cpython_only
     def test_formatting_c_limits(self):
         _testcapi = import_helper.import_module('_testcapi')

@@ -2367,7 +2367,8 @@ class ClassPropertiesAndMethods(unittest.TestCase, ExtraAssertions):
             prop2 = property(fset=setter)
             self.assertEqual(prop2.__doc__, None)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_testcapi_no_segfault(self):
         # this segfaulted in 2.5b2
         try:

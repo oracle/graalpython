@@ -139,6 +139,8 @@ try:
     import ctypes
 except ImportError:
     ctypes = None
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import (cpython_only,
                           check_impl_detail, requires_debug_ranges,
                           gc_collect, Py_GIL_DISABLED,
@@ -177,7 +179,8 @@ def external_getitem(self, i):
 
 class CodeTest(unittest.TestCase):
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_newempty(self):
         _testcapi = import_helper.import_module("_testcapi")
         co = _testcapi.code_newempty("filename", "funcname", 15)

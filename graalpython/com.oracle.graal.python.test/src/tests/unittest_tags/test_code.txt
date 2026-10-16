@@ -4,3 +4,4 @@ test.test_code.CodeTest.test_constructor @ darwin-arm64,linux-aarch64,linux-aarc
 test.test_code.CodeTest.test_qualname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_code.CodeTest.test_replace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_code.CodeTest.test_shrinking_localsplus @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_code.CodeTest.test_newempty @ linux-x86_64

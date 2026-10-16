@@ -1673,7 +1673,8 @@ class TraceTestCase(unittest.TestCase):
             (10, 'return'),
         ])
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_no_line_event_after_creating_generator(self):
         # Spurious line events before call events only show up with C tracer
 
@@ -1769,7 +1770,8 @@ class TraceTestCase(unittest.TestCase):
         finally:
             sys.settrace(None)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_testcapi_settrace_error(self):
 
         # Skip this test if the _testcapi module isn't available.

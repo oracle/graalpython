@@ -1368,7 +1368,8 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual('t' in sys.abiflags, support.Py_GIL_DISABLED)
 
 
-@test.support.cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@test.support.requires_testcapi
 class UnraisableHookTest(unittest.TestCase):
     def test_original_unraisablehook(self):
         _testcapi = import_helper.import_module('_testcapi')
@@ -1403,6 +1404,8 @@ class UnraisableHookTest(unittest.TestCase):
             self.assertEqual(lines[0], 'Traceback (most recent call last):')
             self.assertEqual(lines[-1], 'ValueError: 42')
 
+    # GraalPy change: this test requires immediate reference-counted destruction.
+    @support.impl_detail("finalization", graalpy=False)
     def test_original_unraisablehook_err(self):
         # bpo-22836: PyErr_WriteUnraisable() should give sensible reports
         class BrokenDel:

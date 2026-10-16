@@ -1660,6 +1660,8 @@ class StrTest(string_tests.StringLikeTest,
         self.assertEqual('lhs %% %r' % SubclassedStr('rhs'),
                          "Success, self.__rmod__('lhs %% %r') was called")
 
+    # GraalPy change: the precision cutoff follows CPython C int storage.
+    @support.requires_testcapi
     @support.cpython_only
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_formatting_huge_precision_c_limits(self):

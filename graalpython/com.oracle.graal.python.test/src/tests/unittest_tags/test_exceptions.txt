@@ -65,3 +65,7 @@ test.test_exceptions.SyntaxErrorTests.test_encodings @ darwin-arm64,linux-aarch6
 test.test_exceptions.SyntaxErrorTests.test_range_of_offsets @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.SyntaxErrorTests.test_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.SyntaxErrorTests.test_syntax_error_memory_leak @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.ExceptionTests.testSettingException @ linux-x86_64
+test.test_exceptions.ExceptionTests.test_MemoryError @ linux-x86_64
+test.test_exceptions.ExceptionTests.test_exception_with_doc @ linux-x86_64
+test.test_exceptions.ExceptionTests.test_memory_error_cleanup @ linux-x86_64

@@ -477,6 +477,8 @@ class FormatTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             format(c, ".%sf" % (sys.maxsize + 1))
 
+    # GraalPy change: the precision cutoff follows CPython C int storage.
+    @support.requires_testcapi
     @support.cpython_only
     def test_precision_c_limits(self):
         _testcapi = import_module("_testcapi")

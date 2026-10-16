@@ -253,6 +253,8 @@ class UnicodeNamesTest(unittest.TestCase):
             str, b"\\NSPACE", 'unicode-escape', 'strict'
         )
 
+    # GraalPy change: this boundary targets CPython Unicode-name length arithmetic.
+    @support.requires_testcapi
     @support.cpython_only
     @unittest.skipUnless(INT_MAX < PY_SSIZE_T_MAX, "needs UINT_MAX < SIZE_MAX")
     @support.bigmemtest(size=UINT_MAX + 1, memuse=2 + 1, dry_run=False)

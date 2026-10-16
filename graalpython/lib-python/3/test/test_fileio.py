@@ -9,8 +9,10 @@ from array import array
 from weakref import proxy
 from functools import wraps
 
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import (
-    cpython_only, swap_attr, gc_collect, is_emscripten, is_wasi,
+    swap_attr, gc_collect, is_emscripten, is_wasi,
     infinite_recursion,
 )
 from test.support.os_helper import (
@@ -599,7 +601,8 @@ class COtherFileTests(OtherFileTests, unittest.TestCase):
     modulename = '_io'
     open = _io.open
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def testInvalidFd_overflow(self):
         # Issue 15989
         _testcapi = import_module("_testcapi")

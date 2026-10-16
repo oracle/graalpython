@@ -40,3 +40,4 @@ test.test_support.TestSupport.test_temp_dir__existing_dir__quiet_true @ darwin-a
 test.test_support.TestSupport.test_temp_dir__path_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_unlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_unload @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_support.TestSupport.test_requires_testcapi @ linux-x86_64

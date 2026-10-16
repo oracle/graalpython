@@ -30,3 +30,4 @@ test.test_cmath.IsCloseTests.test_near_zero @ darwin-arm64,linux-aarch64,linux-a
 test.test_cmath.IsCloseTests.test_negative_tolerances @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.IsCloseTests.test_reject_complex_tolerances @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.IsCloseTests.test_zero_tolerance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_cmath.CMathTests.test_polar_errno @ linux-x86_64

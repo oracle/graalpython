@@ -970,7 +970,8 @@ class PosixTester(unittest.TestCase):
         except OSError:
             pass
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @unittest.skipUnless(hasattr(os, 'pipe2'), "test needs os.pipe2()")
     @support.requires_linux_version(2, 6, 27)
     def test_pipe2_c_limits(self):

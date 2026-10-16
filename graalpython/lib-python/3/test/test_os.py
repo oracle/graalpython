@@ -232,7 +232,8 @@ class FileTests(unittest.TestCase):
             self.assertEqual(type(s), bytes)
             self.assertEqual(s, b"spam")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     # Skip the test on 32-bit platforms: the number of bytes must fit in a
     # Py_ssize_t type
     @unittest.skipUnless(INT_MAX < PY_SSIZE_T_MAX,

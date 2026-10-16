@@ -11,6 +11,8 @@ from codecs import BOM_UTF8
 from itertools import product
 from textwrap import dedent
 
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import (captured_stderr, check_impl_detail,
                           cpython_only, gc_collect,
                           no_tracing, script_helper,
@@ -338,7 +340,8 @@ class ExceptionTests(unittest.TestCase):
         with self.assertRaisesRegex(OverflowError, "Parser column offset overflow"):
             compile(src, '<fragment>', 'exec')
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def testSettingException(self):
         # test that setting an exception at the C level works even if the
         # exception object can't be constructed.
@@ -1466,7 +1469,8 @@ class ExceptionTests(unittest.TestCase):
         self.assertIn(b'ResourceWarning', err)
         self.assertIn(b'Done.', out)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(_testcapi is None, "requires _testcapi")
     @force_not_colorized
     def test_recursion_normalizing_infinite_exception(self):
@@ -1560,7 +1564,8 @@ class ExceptionTests(unittest.TestCase):
             rc, out, err = script_helper.assert_python_failure("-c", code)
             self.assertIn(b'MemoryError', err)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(_testcapi is None, "requires _testcapi")
     def test_MemoryError(self):
         # PyErr_NoMemory always raises the same exception instance.
@@ -1580,7 +1585,8 @@ class ExceptionTests(unittest.TestCase):
         tb2 = raiseMemError()
         self.assertEqual(tb1, tb2)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(_testcapi is None, "requires _testcapi")
     def test_exception_with_doc(self):
         doc2 = "This is a test docstring."
@@ -1620,7 +1626,8 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(error5.a, 1)
         self.assertEqual(error5.__doc__, "")
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(_testcapi is None, "requires _testcapi")
     def test_memory_error_cleanup(self):
         # Issue #5437: preallocated MemoryError instances should not keep
