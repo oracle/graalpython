@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -124,11 +124,11 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
 
             // LC_NUMERIC
             Locale numericLocale = currentPythonLocale.category(LC_NUMERIC);
-            NumberFormat numericLocaleNumFormat = NumberFormat.getInstance(numericLocale);
+            NumberFormat numericLocaleNumFormat = LocaleUtils.getNumberFormat(numericLocale);
             DecimalFormatSymbols decimalFormatSymbols = getDecimalFormatSymbols(numericLocale, numericLocaleNumFormat);
 
             dict.put("decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getDecimalSeparator(), TS_ENCODING));
-            dict.put("thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
+            dict.put("thousands_sep", toTruffleStringUncached(numericLocaleNumFormat.isGroupingUsed() ? String.valueOf(decimalFormatSymbols.getGroupingSeparator()) : ""));
             dict.put("grouping", getDecimalFormatGrouping(language, numericLocaleNumFormat));
 
             // LC_MONETARY
@@ -162,7 +162,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
         }
 
         private static PList getDecimalFormatGrouping(PythonLanguage language, NumberFormat numberFormat) {
-            if (numberFormat instanceof DecimalFormat decimalFormat) {
+            if (numberFormat instanceof DecimalFormat decimalFormat && decimalFormat.isGroupingUsed() && decimalFormat.getGroupingSize() > 0) {
                 // TODO: this does not support groupings with variable size groups like in India
                 // Possible approach: decimalFormat.toPattern() gives a generic pattern (e.g.,
                 // #,#00.0#) that would have to be parsed to extract the group sizes from it

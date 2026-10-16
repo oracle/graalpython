@@ -221,7 +221,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
                     setGroupingAndGroupSize(format);
                     DecimalFormatSymbols symbols = format.getDecimalFormatSymbols();
                     if (lenPoint > 0) {
-                        result.setCharAt(lenWhole, symbols.getDecimalSeparator());
+                        result.setCharAt(start + lenSign + lenWhole, symbols.getDecimalSeparator());
                     }
                 }
                 break;

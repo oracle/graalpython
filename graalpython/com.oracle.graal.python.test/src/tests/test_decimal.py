@@ -44,6 +44,7 @@ import copy
 import decimal as public_decimal
 import gc
 import inspect
+import locale
 import math
 import numbers
 import operator
@@ -1369,6 +1370,21 @@ class DecimalDunderTests(unittest.TestCase):
             spec = f"{rng.randrange(5, 50)}.{rng.randrange(0, 20)}{rng.choice('eEfFgG%')}"
             self.assertEqual(format(decimal.Decimal(text), spec), format(reference.Decimal(text), spec), (text, spec))
 
+    def test_format_c_locale(self):
+        saved_locale = locale.setlocale(locale.LC_NUMERIC)
+        try:
+            locale.setlocale(locale.LC_NUMERIC, "C")
+            value = decimal.Decimal("1234567.89")
+            for spec, expected in (("n", "1234567.89"), ("020n", "00000000001234567.89"),
+                                   (".8n", "1234567.9"), (",f", "1,234,567.89")):
+                self.assertEqual(format(value, spec), expected, spec)
+            self.assertEqual(value.__format__("n", {"decimal_point": "@", "thousands_sep": "_", "grouping": "\3\2\0"}),
+                             "12_34_567@89")
+            self.assertEqual(value.__format__("n", {"thousands_sep": "_"}), "1234567.89")
+            self.assertEqual(value.__format__("n", {"grouping": "\3\0"}), "1234567.89")
+        finally:
+            locale.setlocale(locale.LC_NUMERIC, saved_locale)
+
     def test_format_errors_and_overrides(self):
         value = decimal.Decimal("1234567.89")
         self.assertEqual(value.__format__("n", {"decimal_point": "@", "thousands_sep": "_", "grouping": "\3\2\0"}),
@@ -1392,6 +1408,16 @@ class DecimalDunderTests(unittest.TestCase):
                 value.__format__("f", override)
         with self.assertRaises(ValueError):
             format(value, f"{decimal.MAX_PREC + 1}f")
+
+    def test_format_override_defaults(self):
+        value = decimal.Decimal("1234567.89")
+        for spec in ("", "f", "g", "e", "%"):
+            for override in ({}, {"thousands_sep": "_"}, {"grouping": "\3\0"}):
+                with self.assertRaises(ValueError):
+                    value.__format__(spec, override)
+        self.assertEqual(value.__format__("f", {"decimal_point": "@", "thousands_sep": "_"}), "1234567@89")
+        self.assertEqual(value.__format__(",f", {}), "1,234,567.89")
+        self.assertEqual(value.__format__(",f", {"thousands_sep": "_"}), "1_234_567.89")
 
     def test_rational_attribute_validation(self):
         class Index:

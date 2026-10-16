@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.locale.LocaleUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -112,20 +113,22 @@ final class DecimalFormatting {
         if (precision == 0 && (lowerType == 'g' || lowerType == 'n')) {
             precision = 1;
         }
-        String dot = ".";
         String separator = groupOrDefault(match, "sep", "");
-        String grouping = "\003\000";
+        // libmpdec leaves locale settings empty unless grouping or 'n' is requested.
+        String dot = separator.isEmpty() ? "" : ".";
+        String grouping = separator.isEmpty() ? "" : "\003\000";
         if (lowerType == 'n') {
             if (!separator.isEmpty()) {
                 throw PRaiseNode.getUncached().raise(null, ValueError, ErrorMessages.DECIMAL_FORMAT_INVALID);
             }
             Locale locale = PythonContext.get(null).getCurrentLocale().category(LC_NUMERIC);
-            NumberFormat numberFormat = NumberFormat.getInstance(locale);
+            NumberFormat numberFormat = LocaleUtils.getNumberFormat(locale);
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(locale);
             dot = String.valueOf(symbols.getDecimalSeparator());
-            separator = String.valueOf(symbols.getGroupingSeparator());
+            separator = "";
             grouping = "";
             if (numberFormat instanceof DecimalFormat df && df.isGroupingUsed()) {
+                separator = String.valueOf(symbols.getGroupingSeparator());
                 grouping = String.valueOf((char) df.getGroupingSize()) + '\000';
             }
             type = type == 'N' ? 'G' : 'g';
@@ -142,6 +145,9 @@ final class DecimalFormatting {
                             !isAscii(grouping)) {
                 throw PRaiseNode.getUncached().raise(null, ValueError, ErrorMessages.DECIMAL_FORMAT_OVERRIDE);
             }
+        }
+        if (dot.isEmpty()) {
+            dot = ".";
         }
         if (width > DecimalUtils.MAX_PREC || self.getKind() == Kind.FINITE && precision > DecimalUtils.MAX_PREC) {
             throw PRaiseNode.getUncached().raise(null, ValueError, ErrorMessages.DECIMAL_FORMAT_LIMITS);

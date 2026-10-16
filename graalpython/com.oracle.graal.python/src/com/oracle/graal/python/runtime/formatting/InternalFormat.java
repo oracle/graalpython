@@ -21,6 +21,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.locale.LocaleUtils;
 import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
@@ -214,7 +215,7 @@ public class InternalFormat {
 
         protected static DecimalFormat getCurrentDecimalFormat() {
             Locale currLocale = PythonContext.get(null).getCurrentLocale().category(PythonLocale.LC_NUMERIC);
-            NumberFormat numberFormat = NumberFormat.getInstance(currLocale);
+            NumberFormat numberFormat = LocaleUtils.getNumberFormat(currLocale);
             return numberFormat instanceof DecimalFormat ? (DecimalFormat) numberFormat : null;
         }
 

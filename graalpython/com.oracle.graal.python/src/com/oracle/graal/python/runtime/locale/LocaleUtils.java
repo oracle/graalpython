@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.runtime.locale;
 
 import java.nio.charset.Charset;
+import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,6 +59,17 @@ public final class LocaleUtils {
     private static final Pattern LOCALE_PATTERN = Pattern.compile("([a-zA-Z]{2,})(_(\\w{2,}))?(\\.([^@]*))?(@.*)?");
 
     private LocaleUtils() {
+    }
+
+    /** Returns a number format with POSIX numeric locale conventions applied. */
+    public static NumberFormat getNumberFormat(Locale locale) {
+        CompilerAsserts.neverPartOfCompilation();
+        NumberFormat format = NumberFormat.getInstance(locale);
+        // Java's root locale groups by thousands, but the POSIX C locale never groups.
+        if (locale.equals(Locale.ROOT)) {
+            format.setGroupingUsed(false);
+        }
+        return format;
     }
 
     public static Locale fromPosix(String posixLocaleId, Locale defaultLocale) {
