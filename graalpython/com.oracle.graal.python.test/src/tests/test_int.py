@@ -451,6 +451,13 @@ def test_create_int_from_string():
         assert False, "expected TypeError"
 
 
+def test_int_from_unicode_whitespace():
+    # Py_UNICODE_ISSPACE includes NO-BREAK SPACE (U+00A0), unlike Java Character.isWhitespace
+    assert int("\xa0123") == 123
+    assert int("123\xa0") == 123
+
+
+
 def test_create_int_from_float():
     assert int(123.0) == 123
     assert int(123.4) == 123
