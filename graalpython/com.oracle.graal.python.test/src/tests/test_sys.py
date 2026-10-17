@@ -133,3 +133,9 @@ class WindowsVersionTests(unittest.TestCase):
                     capture_output=True, text=True, check=True,
                 )
                 self.assertEqual(result.stdout.splitlines(), [str(expected), str(expected)])
+
+
+class SysFlagsTests(unittest.TestCase):
+    def test_debug_is_zero_by_default(self):
+        # CPython sets sys.flags.debug only when -d is given, not from -O.
+        self.assertEqual(sys.flags.debug, 0)
