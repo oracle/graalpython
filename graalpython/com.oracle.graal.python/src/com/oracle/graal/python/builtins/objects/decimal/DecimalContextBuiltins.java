@@ -87,6 +87,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1278,9 +1280,15 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TpInitNode extends PythonBuiltinNode {
         @Specialization
-        static Object initialize(PDecimalContext self, Object prec, Object rounding, Object emin, Object emax, Object capitals, Object clamp, Object flags, Object traps,
-                        @Bind Node inliningTarget) {
-            DecimalContextUtils.setAttributes(inliningTarget, self, prec, rounding, emin, emax, capitals, clamp, flags, traps);
+        static Object initialize(VirtualFrame frame, PDecimalContext self, Object prec, Object rounding, Object emin, Object emax, Object capitals, Object clamp, Object flags, Object traps,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                DecimalContextUtils.setAttributes(inliningTarget, self, prec, rounding, emin, emax, capitals, clamp, flags, traps);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, state);
+            }
             return PNone.NONE;
         }
     }
@@ -1324,14 +1332,24 @@ public final class DecimalContextBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringChecked1Node castName,
                         @Cached TruffleString.EqualNode equal,
                         @Cached PRaiseNode raiseNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached ObjectBuiltins.SetattrNode genericSet) {
             TruffleString key = castName.cast(inliningTarget, name, ATTR_NAME_MUST_BE_STRING, name);
             if (value == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.CANT_DELETE_ATTRIBUTE);
-            } else if (equal.execute(key, T_FLAGS, TS_ENCODING)) {
-                self.setFlags(DecimalContextUtils.signalsFromObject(inliningTarget, value, false));
-            } else if (equal.execute(key, T_TRAPS, TS_ENCODING)) {
-                self.setTraps(DecimalContextUtils.signalsFromObject(inliningTarget, value, false));
+            } else if (equal.execute(key, T_FLAGS, TS_ENCODING) || equal.execute(key, T_TRAPS, TS_ENCODING)) {
+                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+                int signals;
+                try {
+                    signals = DecimalContextUtils.signalsFromObject(inliningTarget, value, false);
+                } finally {
+                    BoundaryCallContext.exit(frame, boundaryCallData, state);
+                }
+                if (equal.execute(key, T_FLAGS, TS_ENCODING)) {
+                    self.setFlags(signals);
+                } else {
+                    self.setTraps(signals);
+                }
             } else {
                 genericSet.execute(frame, self, key, value);
             }

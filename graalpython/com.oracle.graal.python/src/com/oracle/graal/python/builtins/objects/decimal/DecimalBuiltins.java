@@ -115,6 +115,8 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassE
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -1403,6 +1405,7 @@ public final class DecimalBuiltins extends PythonBuiltins {
                         @Cached TruffleString.FromJavaStringNode fromJavaString,
                         @Cached WarnNode warnNode,
                         @Cached PRaiseNode raiseNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached GetCurrentContextNode getCurrentContext) {
             if (!unicodeCheck.execute(inliningTarget, specifier)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_FORMAT_STRING);
@@ -1412,10 +1415,13 @@ public final class DecimalBuiltins extends PythonBuiltins {
                 warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.DECIMAL_FORMAT_N_DEPRECATED, 1);
             }
             PDecimalContext context = getCurrentContext.execute(inliningTarget);
+            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 return fromJavaString.execute(DecimalFormatting.format(self, format, override, context), TS_ENCODING);
             } catch (ArithmeticException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, state);
             }
         }
 

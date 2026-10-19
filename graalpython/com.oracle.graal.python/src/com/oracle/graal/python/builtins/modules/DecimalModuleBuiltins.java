@@ -80,12 +80,15 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -216,11 +219,12 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LocalcontextNode extends PythonBuiltinNode {
         @Specialization
-        static PDecimalContextManager local(Object ctx, Object prec, Object rounding, Object emin, Object emax, Object capitals, Object clamp, Object flags, Object traps,
+        static PDecimalContextManager local(VirtualFrame frame, Object ctx, Object prec, Object rounding, Object emin, Object emax, Object capitals, Object clamp, Object flags, Object traps,
                         PKeyword[] kwargs,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached GetCurrentContextNode getCurrentContext) {
             if (kwargs.length != 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DECIMAL_INVALID_LOCALCONTEXT_KEYWORD, kwargs[0].getName());
@@ -235,7 +239,12 @@ public final class DecimalModuleBuiltins extends PythonBuiltins {
                 source = decimalContext;
             }
             PDecimalContext local = state.copyContext(language, source);
-            DecimalContextUtils.setAttributes(inliningTarget, local, prec, rounding, emin, emax, capitals, clamp, flags, traps);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                DecimalContextUtils.setAttributes(inliningTarget, local, prec, rounding, emin, emax, capitals, clamp, flags, traps);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             return PFactory.createDecimalContextManager(language, outer, local);
         }
     }
