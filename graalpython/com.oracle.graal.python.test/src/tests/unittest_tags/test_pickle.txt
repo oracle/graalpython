@@ -297,6 +297,7 @@ test.test_pickle.CPicklingErrorTests.test_evil_pickler_mutating_collection @ dar
 test.test_pickle.CPicklingErrorTests.test_global_lookup_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pickle.CPicklingErrorTests.test_local_lookup_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pickle.CPicklingErrorTests.test_nested_lookup_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_pickle.CPicklingErrorTests.test_nonencodable_global_name_error @ linux-x86_64-github
 test.test_pickle.CPicklingErrorTests.test_nonencodable_module_name_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pickle.CPicklingErrorTests.test_reduce_None @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pickle.CPicklingErrorTests.test_reduce_ex_None @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
