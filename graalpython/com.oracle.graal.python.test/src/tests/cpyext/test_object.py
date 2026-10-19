@@ -327,7 +327,7 @@ class TestObject(unittest.TestCase):
             tp_alloc="test_alloc",
             tp_traverse="test_traverse",
             tp_methods='{"call_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_O | METH_STATIC, ""}',
-            tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC',
+            tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC',
             tp_free='PyObject_GC_Del',
             ready_code="ClassWithTpAllocType.tp_new = PyBaseObject_Type.tp_new;"
         )
