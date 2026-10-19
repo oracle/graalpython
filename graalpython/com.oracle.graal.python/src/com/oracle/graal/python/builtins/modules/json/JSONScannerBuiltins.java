@@ -15,7 +15,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -26,6 +25,7 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.json.PJSONScanner.KeyMemo;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -174,6 +174,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         @Cached PyLongFromUnicodeObject pyLongFromUnicodeObject,
                         @Cached TruffleString.MaterializeNode materializeNode,
                         @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.RegionEqualByteIndexNode regionEqualByteIndexNode,
                         @Cached TruffleString.SubstringByteIndexNode substringByteIndexNode,
@@ -210,6 +211,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                 hashingStorageSetItem,
                                 pyLongFromUnicodeObject,
                                 hashCodeNode,
+                                equalNode,
                                 codePointAtIndexNode,
                                 regionEqualByteIndexNode,
                                 substringByteIndexNode,
@@ -232,6 +234,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                 hashingStorageSetItem,
                                 pyLongFromUnicodeObject,
                                 hashCodeNode,
+                                equalNode,
                                 codePointAtIndexNode,
                                 regionEqualByteIndexNode,
                                 substringByteIndexNode,
@@ -374,7 +377,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         private Object scanOnceUnicodeCutoff(VirtualFrame frame, BoundaryCallData boundaryCallData, Node inliningTarget, TruffleString string, int idx, IntRef nextIdx,
-                        HashMap<TruffleString, TruffleString> memo,
+                        KeyMemo memo,
                         boolean strict,
                         Object objectHook,
                         Object objectPairsHook,
@@ -385,6 +388,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         HashingStorageSetItem hashingStorageSetItem,
                         PyLongFromUnicodeObject pyLongFromUnicodeObject,
                         TruffleString.HashCodeNode hashCodeNode,
+                        TruffleString.EqualNode equalNode,
                         TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         TruffleString.RegionEqualByteIndexNode regionEqualByteIndexNode,
                         TruffleString.SubstringByteIndexNode substringByteIndexNode,
@@ -401,7 +405,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                             parseInt,
                             parseConstant,
                             errorProfile,
-                            hashingStorageSetItem, pyLongFromUnicodeObject, hashCodeNode,
+                            hashingStorageSetItem, pyLongFromUnicodeObject, hashCodeNode, equalNode,
                             codePointAtIndexNode,
                             regionEqualByteIndexNode,
                             substringByteIndexNode,
@@ -414,7 +418,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         }
 
         private Object scanOnceUnicode(VirtualFrame frame, BoundaryCallData boundaryCallData, Node inliningTarget, TruffleString string, int idx, IntRef nextIdx,
-                        HashMap<TruffleString, TruffleString> memo,
+                        KeyMemo memo,
                         boolean strict,
                         Object objectHook,
                         Object objectPairsHook,
@@ -425,6 +429,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         HashingStorageSetItem hashingStorageSetItem,
                         PyLongFromUnicodeObject pyLongFromUnicodeObject,
                         TruffleString.HashCodeNode hashCodeNode,
+                        TruffleString.EqualNode equalNode,
                         TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         TruffleString.RegionEqualByteIndexNode regionEqualByteIndexNode,
                         TruffleString.SubstringByteIndexNode substringByteIndexNode,
@@ -551,13 +556,8 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                         substringByteIndexNode,
                                         appendCodePointNode,
                                         appendSubstringByteIndexNode, builderToStringNode);
-                        /* force hash computation */
-                        hashCodeNode.execute(newKey, TS_ENCODING);
-                        TruffleString key = memoPutIfAbsent(memo, newKey);
-                        if (key == null) {
-                            key = newKey;
-                        }
-                        propertyKey = key;
+                        int hash = hashCodeNode.execute(newKey, TS_ENCODING);
+                        propertyKey = memo.intern(newKey, hash, equalNode);
                         idx = nextIdx.value;
                         /*
                          * skip whitespace between key and : delimiter, read :, skip whitespace
@@ -698,11 +698,6 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                 commaIndex = idx;
                 idx++;
             }
-        }
-
-        @TruffleBoundary
-        private static TruffleString memoPutIfAbsent(HashMap<TruffleString, TruffleString> memo, TruffleString newKey) {
-            return memo.putIfAbsent(newKey, newKey);
         }
 
         private static final TruffleString[] DOUBLE_CONSTANTS = {
