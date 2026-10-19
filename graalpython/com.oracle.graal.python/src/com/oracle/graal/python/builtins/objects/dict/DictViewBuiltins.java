@@ -193,7 +193,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Bind PythonLanguage language) {
             HashingStorage storage = self.getWrappedStorage();
-            return PFactory.createDictKeyIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return PFactory.createDictReverseKeyIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
 
         @Specialization
@@ -203,7 +203,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Bind PythonLanguage language) {
             HashingStorage storage = self.getWrappedStorage();
-            return PFactory.createDictItemIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return PFactory.createDictReverseItemIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
