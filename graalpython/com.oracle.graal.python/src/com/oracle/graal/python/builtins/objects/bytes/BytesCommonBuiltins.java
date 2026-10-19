@@ -203,9 +203,15 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         static Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
                         @Bind Node inliningTarget,
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Cached InlinedConditionProfile emptyStringProfile,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PRaiseNode raiseNode) {
+            // like CPython's PyUnicode_FromEncodedObject: no codec lookup for empty input
+            if (emptyStringProfile.profile(inliningTarget, getBytesStorage.execute(inliningTarget, self).length() == 0)) {
+                return T_EMPTY_STRING;
+            }
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
             if (!unicodeCheckNode.execute(inliningTarget, result)) {
                 throw raiseNode.raise(inliningTarget, TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);

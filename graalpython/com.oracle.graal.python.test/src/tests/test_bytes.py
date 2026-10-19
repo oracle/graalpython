@@ -89,6 +89,16 @@ def test_bytes_with_encoding_does_not_call_dunder_bytes():
     assert_raises(TypeError, bytes, errors="strict")
 
 
+def test_decode_empty_skips_codec_lookup():
+    assert str(b'', 'x') == ''
+    assert str(bytearray(), 'x', 'y') == ''
+    assert str(memoryview(b''), 'x') == ''
+    assert b''.decode('x') == ''
+    assert bytearray().decode('x') == ''
+    assert_raises(LookupError, str, b'a', 'x')
+    assert_raises(TypeError, str, 1, 'x')
+
+
 def test_from_ssize():
     assert bytes(0) == b''
     assert bytes(1) == b'\x00'
