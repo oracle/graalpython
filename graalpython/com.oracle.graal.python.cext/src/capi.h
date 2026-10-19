@@ -335,7 +335,7 @@ PY_TRUFFLE_TYPE(PyClassMethodDescr_Type,         "classmethod_descriptor",     &
 PY_TRUFFLE_TYPE(PyCode_Type,                     "code",                       &PyType_Type, sizeof(PyTypeObject)) \
 PY_TRUFFLE_TYPE(PyCmpWrapper_Type,               "KeyWrapper",                 &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyComplex_Type,                  "complex",                    &PyType_Type, sizeof(PyComplexObject)) \
-PY_TRUFFLE_TYPE(PyContext_Type,                  "Context",                    &PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyContext_Type,                  "_contextvars.Context",       &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyContextToken_Type,             "Token",                      &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyContextVar_Type,               "ContextVar",                 &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(_PyCoroWrapper_Type,             "coroutine_wrapper",          &PyType_Type, sizeof(PyObject)) \
