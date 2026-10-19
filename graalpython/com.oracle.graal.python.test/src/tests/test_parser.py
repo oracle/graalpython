@@ -42,6 +42,15 @@ import ast
 import types
 
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 def test_incomplete_input_error():
     flags = 0x4000 | 0x200  # PyCF_ALLOW_INCOMPLETE_INPUT | PyCF_DONT_IMPLY_DEDENT
 
@@ -150,6 +159,16 @@ def test_single_input_non_interactive():
         assert got_value == 6
     finally:
         sys.displayhook = oldhook
+
+
+def test_compile_checks_mode_before_source():
+    assert_raises(ValueError, compile, None, "<input>", "x")
+    assert_raises(ValueError, compile, "\x00", "<input>", "x")
+    assert_raises(ValueError, compile, b"\xff", "<input>", "x")
+    assert_raises(ValueError, compile, b"\x00", "<input>", "x")
+    assert_raises(ValueError, compile, None, "<input>", "x", ast.PyCF_ONLY_AST)
+    assert_raises(ValueError, compile, None, "<input>", "func_type")
+    assert_raises(ValueError, compile, ast.parse("1"), "<input>", "func_type")
 
 
 def test_underscore_in_numbers():
