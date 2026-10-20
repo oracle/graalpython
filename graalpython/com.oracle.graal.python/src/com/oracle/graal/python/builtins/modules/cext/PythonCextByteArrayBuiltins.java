@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;

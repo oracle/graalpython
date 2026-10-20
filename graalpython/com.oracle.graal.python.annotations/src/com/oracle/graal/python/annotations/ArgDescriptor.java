@@ -38,9 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
-
-import com.oracle.graal.python.annotations.NativeSimpleType;
+package com.oracle.graal.python.annotations;
 
 /** C signature and native type metadata, independent of Java/native conversion nodes. */
 public enum ArgDescriptor {

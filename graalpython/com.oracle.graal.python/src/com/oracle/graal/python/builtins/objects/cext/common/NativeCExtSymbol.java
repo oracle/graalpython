@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.annotations.NativeSimpleType;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;

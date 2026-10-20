@@ -82,6 +82,7 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.annotations.CApiConstant;
 import com.oracle.graal.python.annotations.CApiConstants;
 import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
@@ -100,7 +101,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final String PYTHON_CONTEXT = "com.oracle.graal.python.runtime.PythonContext";
     private static final String TARGET_PACKAGE = "com.oracle.graal.python.builtins.modules.cext";
 
-    private static class ArgDescriptorsTreeScanner extends TreePathScanner<Object, Trees> {
+    private static class InitializersTreeScanner extends TreePathScanner<Object, Trees> {
         private Map<String, String> initializerMap;
 
         @Override
@@ -113,31 +114,13 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private Map<String, String> signatureToArgDescriptor = new HashMap<>();
-    private Map<String, String> argDescriptorToInitializer = new HashMap<>();
+    private final Map<String, String> signatureToArgDescriptor = Arrays.stream(ArgDescriptor.values()).collect(
+                    Collectors.toMap(ArgDescriptor::getCSignature, ArgDescriptor::name, (first, second) -> first));
 
     private Map<String, String> externalFunctionSignatureToInitializer = new HashMap<>();
     private Map<String, String> nativeCAPISymbolToInitializer = new HashMap<>();
 
     private Trees trees;
-
-    private String getFieldInitializer(VariableElement theField) {
-        if (trees == null) {
-            return "";
-        }
-        if (argDescriptorToInitializer.isEmpty()) {
-            // lazily initialize all arg descriptors in a single scan
-            var codeScanner = new ArgDescriptorsTreeScanner();
-            var tp = trees.getPath(theField.getEnclosingElement());
-            codeScanner.initializerMap = argDescriptorToInitializer;
-            codeScanner.scan(tp, this.trees);
-            for (var e : argDescriptorToInitializer.entrySet()) {
-                var signature = getCSignature(e.getValue());
-                signatureToArgDescriptor.putIfAbsent(signature, e.getKey());
-            }
-        }
-        return argDescriptorToInitializer.get(name(theField));
-    }
 
     private String getExternalFunctionSignatureInitializer(VariableElement theField) {
         if (trees == null) {
@@ -145,7 +128,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
         if (externalFunctionSignatureToInitializer.isEmpty()) {
             // lazily initialize all external function signatures in a single scan
-            var codeScanner = new ArgDescriptorsTreeScanner();
+            var codeScanner = new InitializersTreeScanner();
             var tp = trees.getPath(theField.getEnclosingElement());
             codeScanner.initializerMap = externalFunctionSignatureToInitializer;
             codeScanner.scan(tp, this.trees);
@@ -159,7 +142,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             return "";
         }
         if (nativeCAPISymbolToInitializer.isEmpty()) {
-            var codeScanner = new ArgDescriptorsTreeScanner();
+            var codeScanner = new InitializersTreeScanner();
             var tp = trees.getPath(theField.getEnclosingElement());
             codeScanner.initializerMap = nativeCAPISymbolToInitializer;
             codeScanner.scan(tp, this.trees);
@@ -180,17 +163,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private String getCSignature(VariableElement obj) {
-        return getCSignature(getFieldInitializer(obj));
-    }
-
-    private static String getCSignature(String initializer) {
-        // assumes that the C signature is the first literal string in the initializer
-        var parts = initializer.split("\"");
-        if (parts.length < 2) {
-            return "";
-        } else {
-            return initializer.split("\"")[1];
-        }
+        return ArgDescriptor.valueOf(name(obj)).getCSignature();
     }
 
     private static String[] splitInitializerArgs(String initializer) {
@@ -270,12 +243,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private String capiTypeToLogicalType(VariableElement element) {
-        var init = getFieldInitializer(element);
-        String prefix = "NativeSimpleType.";
-        int start = init.indexOf(prefix);
-        NativeSimpleType type = start < 0 ? NativeSimpleType.SINT64 : NativeSimpleType.valueOf(init.substring(start + prefix.length(), init.indexOf(',', start)));
-        return switch (type) {
+    private static String capiTypeToLogicalType(VariableElement element) {
+        return capiTypeToLogicalType(ArgDescriptor.valueOf(name(element)));
+    }
+
+    private static String capiTypeToLogicalType(ArgDescriptor descriptor) {
+        return switch (descriptor.getNativeSimpleType()) {
             case VOID -> "void";
             case DOUBLE -> "double";
             case FLOAT -> "float";
@@ -287,11 +260,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         };
     }
 
-    private boolean isVoid(VariableElement element) {
+    private static boolean isVoid(VariableElement element) {
         return capiTypeToLogicalType(element).equals("void");
     }
 
-    private String capiTypeToErrorValue(VariableElement element) {
+    private static String capiTypeToErrorValue(VariableElement element) {
         if (capiTypeToLogicalType(element).equals("pointer")) {
             return "0";
         } else {
@@ -299,12 +272,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private String capiTypeToJavaPrimitiveType(VariableElement element) {
+    private static String capiTypeToJavaPrimitiveType(VariableElement element) {
         var type = capiTypeToLogicalType(element);
         return type.equals("pointer") ? "long" : type;
     }
 
-    private String capiTypeToForeignPrimitiveType(VariableElement element) {
+    private static String capiTypeToForeignPrimitiveType(VariableElement element) {
         String type = capiTypeToJavaPrimitiveType(element);
         return type.equals("void") ? "void" : ("j" + type);
     }
@@ -766,7 +739,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private Map<String, VariableElement> getArgDescriptorsByName() {
-        TypeElement argDescriptorType = processingEnv.getElementUtils().getTypeElement("com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor");
+        TypeElement argDescriptorType = processingEnv.getElementUtils().getTypeElement(ArgDescriptor.class.getCanonicalName());
         if (argDescriptorType == null) {
             processingEnv.getMessager().printError("Could not resolve ArgDescriptor while generating C API helper declarations.");
             return Map.of();
@@ -1074,7 +1047,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
                         import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
                         import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
-                        import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+                        import com.oracle.graal.python.annotations.ArgDescriptor;
                         import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
                         import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
                         import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -1456,27 +1429,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    /**
-     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor} to
-     * the native Java carrier type.
-     */
+    /** Maps an {@link ArgDescriptor} to the native Java carrier type. */
     private String toJavaNfiType(String argDescriptor) {
-        // TODO: types should be inferred with: 'ArgDescriptor.nativeSimpleType'
-        return switch (argDescriptor) {
-            case "Void" -> "void";
-            case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
-            case "Double" -> "double";
-            case "Float" -> "float";
-            case "Py_hash_t", "Py_ssize_t", "PrimitiveResult64", "INT64_T", "INT64_T_PTR", "INTPTR_T_PTR", "SIZE_T", "UINTPTR_T", "Long", "UNSIGNED_LONG", "UINT64_T",
-                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyObjectPtr", "PyTypeObject", "ConstPyLongObject", "PyThreadState", "PyThreadStatePtr",
-                            "CharPtrAsTruffleString", "IterResult", "Pointer", "CHAR_PTR", "ConstCharPtr", "INT8_T_PTR", "PY_BUFFER_PTR", "PY_CAPSULE_DESTRUCTOR", "PY_SSIZE_T_PTR", "VA_LIST",
-                            "visitproc" ->
-                "long";
-            default -> {
-                processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
-                yield null;
-            }
-        };
+        String type = capiTypeToLogicalType(ArgDescriptor.valueOf(argDescriptor));
+        return type.equals("pointer") ? "long" : type;
     }
 
     private static String getSimpleName(TypeMirror typeMirror) {
