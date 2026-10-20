@@ -241,6 +241,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final String name;
         public final VariableElement[] arguments;
         public final VariableElement returnType;
+        /** Conversion metadata is absent for signature-only declarations in CApiFunction. */
+        public final TypeMirror retConversion;
+        public final List<TypeMirror> argConversions;
         public final boolean acquireGil;
         public final boolean canRaise;
         public final String call;
@@ -249,12 +252,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final Set<String> abis;
         public int id;
 
-        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, boolean acquireGil, boolean canRaise, String call, String factory,
-                        Set<String> abis) {
+        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, TypeMirror retConversion, List<TypeMirror> argConversions,
+                        boolean acquireGil, boolean canRaise, String call, String factory, Set<String> abis) {
             this.origin = origin;
             this.name = name;
             this.returnType = returnType;
             this.arguments = arguments;
+            this.retConversion = retConversion;
+            this.argConversions = List.copyOf(argConversions);
             this.acquireGil = acquireGil;
             this.canRaise = canRaise;
             this.call = call;
@@ -507,8 +512,13 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     // boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
                     if (element instanceof TypeElement te && te.getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
-                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, canRaise, call, null, abis));
+                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, null, List.of(), acquireGil, canRaise, call, null, abis));
                     } else {
+                        TypeMirror retConversion = findValue(builtin, "retConversion", TypeMirror.class);
+                        List<TypeMirror> argConversions = findValues(builtin, "argConversions", TypeMirror.class);
+                        if (!verifyBuiltinConversions(element, builtin, name, args.length, retConversion, argConversions)) {
+                            continue;
+                        }
                         if (!isValidReturnType(ret)) {
                             processingEnv.getMessager().printError(
                                             String.format("Invalid @CApiBuiltin %s: %s is not an allowed return type, use PyObjectTransfer or PyObjectBorrow variants", name, ret));
@@ -538,7 +548,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         } else {
                             verifyStaticMethod((ExecutableElement) element, builtin);
                         }
-                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, canRaise, call, genName, abis));
+                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, retConversion, argConversions, acquireGil, canRaise, call, genName, abis));
                     }
                 }
             }
@@ -547,6 +557,53 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (int i = 0; i < javaBuiltins.size(); i++) {
             javaBuiltins.get(i).id = i;
         }
+    }
+
+    private boolean verifyBuiltinConversions(Element origin, AnnotationMirror annotation, String builtinName, int argumentCount, TypeMirror retConversion, List<TypeMirror> argConversions) {
+        Set<String> explicitParameters = annotation.getElementValues().keySet().stream().map(CApiBuiltinsProcessor::name).collect(Collectors.toSet());
+        boolean valid = true;
+        for (String parameter : List.of("retConversion", "argConversions")) {
+            if (!explicitParameters.contains(parameter)) {
+                processingEnv.getMessager().printMessage(Kind.ERROR, String.format("Invalid @CApiBuiltin %s: %s must be explicitly specified", builtinName, parameter), origin, annotation);
+                valid = false;
+            }
+        }
+        if (!valid) {
+            return false;
+        }
+        if (argConversions.size() != argumentCount) {
+            processingEnv.getMessager().printMessage(Kind.ERROR,
+                            String.format("Invalid @CApiBuiltin %s: expected %d argument conversion classes but got %d", builtinName, argumentCount, argConversions.size()), origin, annotation);
+            valid = false;
+        }
+        if (!isValidConversionClass(retConversion, true)) {
+            processingEnv.getMessager().printMessage(Kind.ERROR,
+                            String.format("Invalid @CApiBuiltin %s: retConversion must be a primitive class, void.class, or a CExtToNativeNode subclass, but was %s", builtinName, retConversion),
+                            origin, annotation);
+            valid = false;
+        }
+        for (int i = 0; i < argConversions.size(); i++) {
+            TypeMirror conversion = argConversions.get(i);
+            if (!isValidConversionClass(conversion, false)) {
+                processingEnv.getMessager().printMessage(Kind.ERROR,
+                                String.format("Invalid @CApiBuiltin %s: argConversions[%d] must be a primitive class or a CExtToJavaNode subclass, but was %s", builtinName, i, conversion),
+                                origin, annotation);
+                valid = false;
+            }
+        }
+        return valid;
+    }
+
+    private boolean isValidConversionClass(TypeMirror conversion, boolean returnConversion) {
+        if (conversion.getKind().isPrimitive() || returnConversion && conversion.getKind() == TypeKind.VOID) {
+            return true;
+        }
+        if (conversion.getKind() != TypeKind.DECLARED) {
+            return false;
+        }
+        String nodeClass = returnConversion ? "CExtToNativeNode" : "CExtToJavaNode";
+        TypeElement nodeType = processingEnv.getElementUtils().getTypeElement("com.oracle.graal.python.builtins.objects.cext.common." + nodeClass);
+        return processingEnv.getTypeUtils().isSubtype(conversion, nodeType.asType());
     }
 
     private void verifyStaticMethod(ExecutableElement e, AnnotationMirror annotation) {
