@@ -1440,6 +1440,11 @@ _PyUnicode_Dump(PyObject *op)
 PyObject *
 PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
 {
+    /* Optimization for empty strings */
+    if (size == 0) {
+        return unicode_get_empty();
+    }
+
     // GraalPy change: different implementation
     int kind;
     int is_ascii;
