@@ -235,7 +235,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private static String capiTypeToLogicalType(ArgDescriptor descriptor) {
+    /** Maps an {@link ArgDescriptor} to the native Java carrier type. */
+    private static String capiTypeToJavaPrimitiveType(ArgDescriptor descriptor) {
         return switch (descriptor.getNativeSimpleType()) {
             case VOID -> "void";
             case DOUBLE -> "double";
@@ -243,31 +244,20 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case SINT32 -> "int";
             case SINT16 -> "short";
             case SINT8 -> "byte";
-            case POINTER -> "pointer";
-            case SINT64 -> "long";
+            case POINTER, SINT64 -> "long";
         };
     }
 
-    private static boolean isVoid(ArgDescriptor element) {
-        return capiTypeToLogicalType(element).equals("void");
+    private static boolean isVoid(ArgDescriptor descriptor) {
+        return descriptor.getNativeSimpleType() == NativeSimpleType.VOID;
     }
 
-    private static String capiTypeToErrorValue(ArgDescriptor element) {
-        if (capiTypeToLogicalType(element).equals("pointer")) {
-            return "0";
-        } else {
-            return "-1";
-        }
+    private static String capiTypeToErrorValue(ArgDescriptor descriptor) {
+        return descriptor.getNativeSimpleType() == NativeSimpleType.POINTER ? "0" : "-1";
     }
 
-    private static String capiTypeToJavaPrimitiveType(ArgDescriptor element) {
-        var type = capiTypeToLogicalType(element);
-        return type.equals("pointer") ? "long" : type;
-    }
-
-    private static String capiTypeToForeignPrimitiveType(ArgDescriptor element) {
-        String type = capiTypeToJavaPrimitiveType(element);
-        return type.equals("void") ? "void" : ("j" + type);
+    private static String capiTypeToForeignPrimitiveType(ArgDescriptor descriptor) {
+        return isVoid(descriptor) ? "void" : ("j" + capiTypeToJavaPrimitiveType(descriptor));
     }
 
     private static final String CAPI_BUILTIN = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin";
@@ -1106,18 +1096,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
             lines.add("    public static " + capiTypeToJavaPrimitiveType(builtin.returnType) + " upcall_" + builtin.name + "(" + argString + ") {");
             String paramString = IntStream.range(0, builtin.arguments.length).mapToObj(i -> argName(i)).collect(Collectors.joining(", "));
-            String retString = capiTypeToJavaPrimitiveType(builtin.returnType);
-            if (retString.equals("void")) {
-                retString = "";
-            } else {
-                retString = "return (" + retString + ")";
-            }
+            boolean isVoidReturn = isVoid(builtin.returnType);
             if (builtin.origin instanceof TypeElement) {
+                String retString = isVoidReturn ? "" : "return (" + capiTypeToJavaPrimitiveType(builtin.returnType) + ")";
                 lines.add("        " + retString + builtin.name + ".getCallTarget().call(" + paramString + ");");
             } else {
-                if (!retString.isEmpty()) {
-                    retString = "return ";
-                }
+                String retString = isVoidReturn ? "" : "return ";
                 assert builtin.canRaise;
                 lines.add("        try {");
                 lines.add("            try " + (builtin.acquireGil ? "(GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) " : "") + "{");
@@ -1128,7 +1112,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 lines.add("            }");
                 lines.add("        } catch (PException pe) {");
                 lines.add("            TransformPExceptionToNativeNode.executeUncached(pe);");
-                if (!retString.isEmpty()) {
+                if (!isVoidReturn) {
                     lines.add("            return " + capiTypeToErrorValue(builtin.returnType) + ";");
                 }
                 lines.add("        }");
@@ -1401,12 +1385,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    /** Maps an {@link ArgDescriptor} to the native Java carrier type. */
-    private String toJavaNfiType(ArgDescriptor argDescriptor) {
-        String type = capiTypeToLogicalType(argDescriptor);
-        return type.equals("pointer") ? "long" : type;
-    }
-
     private static String getSimpleName(TypeMirror typeMirror) {
         if (typeMirror.getKind() == TypeKind.DECLARED) {
             return ((DeclaredType) typeMirror).asElement().getSimpleName().toString();
@@ -1488,10 +1466,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (CApiExternalFunctionSignatureDesc sig : signatures) {
             assert sig.returnType != null;
             assert sig.argumentTypes != null;
-            String returnType = toJavaNfiType(sig.returnType);
-            List<String> argTypes = Arrays.stream(sig.argumentTypes).map(this::toJavaNfiType).toList();
+            String returnType = capiTypeToJavaPrimitiveType(sig.returnType);
+            List<String> argTypes = Arrays.stream(sig.argumentTypes).map(CApiBuiltinsProcessor::capiTypeToJavaPrimitiveType).toList();
 
-            boolean isVoidReturn = "void".equals(returnType);
+            boolean isVoidReturn = isVoid(sig.returnType);
 
             List<String> invokeArgs = new LinkedList<>();
             if (sig.cannotRaise) {
