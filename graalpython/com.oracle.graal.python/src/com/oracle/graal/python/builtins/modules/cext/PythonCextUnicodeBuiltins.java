@@ -141,11 +141,10 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -739,32 +738,22 @@ public final class PythonCextUnicodeBuiltins {
                     NativeToPythonNode.class, long.class, long.class, int.class})
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Tailmatch extends CApi5BuiltinNode {
-        @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Shared @Cached PySliceNew sliceNode,
-                        @Shared @Cached CallNode callNode,
-                        @Cached EndsWithNode endsWith,
+        @Specialization(guards = {"direction > 0", "isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
+        static long tailmatchEnd(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Exclusive @Cached PrefixSuffixNode endsWith,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
-            Object slice = callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
-            return (boolean) endsWith.execute(null, slice, substring, start, end) ? 1 : 0;
+            return endsWith.endsWith(string, substring, castLong(start), castLong(end)) ? 1 : 0;
         }
 
-        @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Shared @Cached PySliceNew sliceNode,
-                        @Shared @Cached CallNode callNode,
-                        @Cached StartsWithNode startsWith,
+        @Specialization(guards = {"direction <= 0", "isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
+        static long tailmatchStart(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Exclusive @Cached PrefixSuffixNode startsWith,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
-            Object slice = callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
-            return (boolean) startsWith.execute(null, slice, substring, start, end) ? 1 : 0;
+            return startsWith.startsWith(string, substring, castLong(start), castLong(end)) ? 1 : 0;
         }
 
         @SuppressWarnings("unused")
