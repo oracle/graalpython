@@ -803,7 +803,8 @@ public final class PythonCextBuiltins {
     /**
      * Builtin implementations in the C API (or helpers for implementing builtins with C code) are
      * marked with this annotation. The information in the annotation allows code generation,
-     * argument conversions (based on {@link ArgDescriptor}s), and verification of the C API
+     * argument and return value conversions (specified by {@link CApiBuiltin#argConversions()} and
+     * {@link CApiBuiltin#retConversion()}), and verification of the C API
      * implementation in general.
      * <p>
      * Apart from being placed on classes that implement {@link CApiBuiltinNode}, this annotation is
@@ -835,8 +836,8 @@ public final class PythonCextBuiltins {
 
         /**
          * Native-to-Java argument conversion node classes, in the same order as {@link #args()}.
-         * A Java primitive class specifies pass-through conversion for that argument. The empty
-         * default temporarily allows existing declarations to compile during migration.
+         * A Java primitive class specifies pass-through conversion for that argument. The default
+         * is for signature-only declarations; builtin implementations must specify this explicitly.
          * Conversion node classes must provide public static no-argument {@code create()} and
          * {@code getUncached()} methods returning an instance of the specified node class.
          */

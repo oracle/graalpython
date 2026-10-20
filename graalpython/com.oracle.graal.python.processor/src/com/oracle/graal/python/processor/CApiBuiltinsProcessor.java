@@ -203,16 +203,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return name(obj).equals("VARARGS");
     }
 
-    private boolean isValidReturnType(VariableElement obj) {
-        /*
-         * We don't want to allow "bare" PyObject and force ourselves to decide between
-         * PyObjectTransfer and PyObjectBorrow
-         */
-        var initializer = getFieldInitializer(obj);
-        // assumes that the 'transfer' flag is the only bool flag and defaults to false
-        return !initializer.matches("ArgBehavior\\.PyObject[,)]") || initializer.contains("true");
-    }
-
     private static String name(Element obj) {
         return obj.getSimpleName().toString();
     }
@@ -282,23 +272,19 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private String capiTypeToLogicalType(VariableElement element) {
         var init = getFieldInitializer(element);
-        if (init.contains("Void")) {
-            return "void";
-        } else if (init.contains("Float64")) {
-            return "double";
-        } else if (init.contains("Float32")) {
-            return "float";
-        } else if (init.contains("Int32")) {
-            return "int";
-        } else if (init.contains("Char16")) {
-            return "short";
-        } else if (init.contains("Char8")) {
-            return "byte";
-        } else if (init.contains("PyObject") || init.contains("Pointer")) {
-            return "pointer";
-        } else {
-            return "long";
-        }
+        String prefix = "NativeSimpleType.";
+        int start = init.indexOf(prefix);
+        NativeSimpleType type = start < 0 ? NativeSimpleType.SINT64 : NativeSimpleType.valueOf(init.substring(start + prefix.length(), init.indexOf(',', start)));
+        return switch (type) {
+            case VOID -> "void";
+            case DOUBLE -> "double";
+            case FLOAT -> "float";
+            case SINT32 -> "int";
+            case SINT16 -> "short";
+            case SINT8 -> "byte";
+            case POINTER -> "pointer";
+            case SINT64 -> "long";
+        };
     }
 
     private boolean isVoid(VariableElement element) {
@@ -517,11 +503,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         TypeMirror retConversion = findValue(builtin, "retConversion", TypeMirror.class);
                         List<TypeMirror> argConversions = findValues(builtin, "argConversions", TypeMirror.class);
                         if (!verifyBuiltinConversions(element, builtin, name, args.length, retConversion, argConversions)) {
-                            continue;
-                        }
-                        if (!isValidReturnType(ret)) {
-                            processingEnv.getMessager().printError(
-                                            String.format("Invalid @CApiBuiltin %s: %s is not an allowed return type, use PyObjectTransfer or PyObjectBorrow variants", name, ret));
                             continue;
                         }
                         boolean usesGenerateNodeFactory = false;
@@ -1476,11 +1457,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     /**
-     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
+     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor} to
      * the native Java carrier type.
      */
     private String toJavaNfiType(String argDescriptor) {
-        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nativeSimpleType'
+        // TODO: types should be inferred with: 'ArgDescriptor.nativeSimpleType'
         return switch (argDescriptor) {
             case "Void" -> "void";
             case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
