@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
@@ -944,14 +943,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static int convert(VirtualFrame frame, Object xObj,
                         @Bind Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             int x = asIntNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
             }
             if (x > 0xFFFF) {
-                warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.NTOH_PYTHON_STRING_TOO_LARGE_TO_CONVERT, 1);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.NTOHS_PYTHON_INT_TOO_LARGE_TO_CONVERT);
             }
             short i = (short) x;
             if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
