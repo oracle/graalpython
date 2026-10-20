@@ -817,6 +817,19 @@ public final class PythonCextBuiltins {
         ArgDescriptor[] args() default {};
 
         /**
+         * Java-to-native return value conversion node class. A Java primitive class specifies
+         * pass-through conversion; {@code void.class} specifies no return value.
+         */
+        Class<?> retConversion() default long.class;
+
+        /**
+         * Native-to-Java argument conversion node classes, in the same order as {@link #args()}.
+         * A Java primitive class specifies pass-through conversion for that argument. The empty
+         * default temporarily allows existing declarations to compile during migration.
+         */
+        Class<?>[] argConversions() default {};
+
+        /**
          * This will generate a builtin with the name suffix "_Inlined" on the native side
          * ({@code capi_forwards.h}), which can be useful if a builtin needs a different
          * implementation on the native side, in {@code capi_native.c}, which may in some cases
