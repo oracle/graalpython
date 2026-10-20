@@ -71,19 +71,6 @@ public abstract class NativeAccessSupport {
         return MethodHandles.dropArguments(methodHandle, 0, methodType.parameterList());
     }
 
-    protected static Class<?> asJavaType(NativeSimpleType type) {
-        return switch (type) {
-            case VOID -> void.class;
-            case SINT8 -> byte.class;
-            case SINT16 -> short.class;
-            case SINT32 -> int.class;
-            case SINT64 -> long.class;
-            case FLOAT -> float.class;
-            case DOUBLE -> double.class;
-            case POINTER -> long.class;
-        };
-    }
-
     static Object createArena() {
         return INSTANCE.createArenaImpl();
     }

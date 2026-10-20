@@ -237,15 +237,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     /** Maps an {@link ArgDescriptor} to the native Java carrier type. */
     private static String capiTypeToJavaPrimitiveType(ArgDescriptor descriptor) {
-        return switch (descriptor.getNativeSimpleType()) {
-            case VOID -> "void";
-            case DOUBLE -> "double";
-            case FLOAT -> "float";
-            case SINT32 -> "int";
-            case SINT16 -> "short";
-            case SINT8 -> "byte";
-            case POINTER, SINT64 -> "long";
-        };
+        return descriptor.getNativeSimpleType().carrier().getName();
     }
 
     private static boolean isVoid(ArgDescriptor descriptor) {
