@@ -52,6 +52,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -69,7 +71,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextTracebackBuiltins {
 
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct, retConversion = void.class, argConversions = {CharPtrToPythonNode.class,
+                    CharPtrToPythonNode.class, int.class})
     abstract static class _PyTraceback_Add extends CApiTernaryBuiltinNode {
         @Specialization
         static Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
@@ -82,7 +85,7 @@ public final class PythonCextTracebackBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
         static int tbHere(PFrame frame,

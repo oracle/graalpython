@@ -58,7 +58,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -85,7 +87,7 @@ public final class PythonCextSetBuiltins {
 
     private static final CApiTiming TIMING_PYSET_NEW = CApiTiming.create(false, "PySet_New");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     static long PySet_New(long iterablePtr) {
         CApiTiming.enter();
         try {
@@ -103,7 +105,7 @@ public final class PythonCextSetBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PySet_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PSet anyset, Object item,
@@ -129,7 +131,7 @@ public final class PythonCextSetBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PySet_Pop extends CApiUnaryBuiltinNode {
         @Specialization
         static Object pop(PSet set,
@@ -143,7 +145,7 @@ public final class PythonCextSetBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFrozenSet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
         static Object newFrozenSet(Object iterable,
@@ -159,7 +161,7 @@ public final class PythonCextSetBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PySet_Discard extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
@@ -174,7 +176,7 @@ public final class PythonCextSetBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class})
     abstract static class PySet_Clear extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
@@ -190,7 +192,7 @@ public final class PythonCextSetBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PySet_Add extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -212,7 +214,7 @@ public final class PythonCextSetBuiltins {
      * A pure-C implementation regressed a mixed managed/native set/frozenset workload by about
      * 1.16x.
      */
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {NativeToPythonNode.class})
     abstract static class PySet_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static long get(PBaseSet object,

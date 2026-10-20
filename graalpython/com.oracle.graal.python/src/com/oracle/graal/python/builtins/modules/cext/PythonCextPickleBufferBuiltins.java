@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -59,7 +61,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextPickleBufferBuiltins {
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_PickleBuffer_viewobj extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getviewobj(PPickleBuffer object,

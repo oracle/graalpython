@@ -94,7 +94,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextCEvalBuiltins {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextCEvalBuiltins.class);
 
-    @CApiBuiltin(ret = PyThreadState, args = {}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = PyThreadState, args = {}, acquireGil = false, call = Direct, retConversion = long.class, argConversions = {})
     static long PyEval_SaveThread() {
         PythonContext context = PythonContext.get(null);
         long threadState = context.getThreadState(context.getLanguage()).getNativePointer();
@@ -104,7 +104,7 @@ public final class PythonCextCEvalBuiltins {
         return threadState;
     }
 
-    @CApiBuiltin(ret = Void, args = {PyThreadState}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyThreadState}, acquireGil = false, call = Direct, retConversion = void.class, argConversions = {long.class})
     static void PyEval_RestoreThread(@SuppressWarnings("unused") long ptr) {
         PythonContext context = PythonContext.get(null);
         /*
@@ -116,27 +116,28 @@ public final class PythonCextCEvalBuiltins {
         GilNode.getUncached().acquire(context, null);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
     static long PyEval_GetBuiltins() {
         PythonModule cext = PythonContext.get(null).getBuiltins();
         return ToNativeBorrowedNode.executeUncached(GetDictIfExistsNode.getUncached().execute(cext));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct, retConversion = long.class, argConversions = {})
     static long PyEval_GetFrameBuiltins() {
         PythonModule builtins = PythonContext.get(null).getBuiltins();
         Object dict = GetDictIfExistsNode.getUncached().execute(builtins);
         return PythonToNativeInternalNode.executeNewRefUncached(dict);
     }
 
-    @CApiBuiltin(ret = PyFrameObjectBorrowed, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyFrameObjectBorrowed, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
     static long PyEval_GetFrame() {
         PFrame pFrame = ReadFrameNode.getUncached().getCurrentPythonFrame(null);
         return pFrame != null ? ToNativeBorrowedNode.executeUncached(pFrame) : NULLPTR;
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObjectConstPtr, Int,
-                    PyObjectRawPointer, PyObjectRawPointer}, call = Ignored)
+                    PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class, long.class, long.class, int.class, long.class,
+                                    int.class, long.class, int.class, long.class, long.class})
     static long GraalPyPrivate_Eval_EvalCodeEx(long codePtr, long globalsPtr, long localsPtr,
                     long argumentArrayPtr, int argumentCount, long kwsPtr, int kwsCount, long defaultValueArrayPtr, int defaultValueCount,
                     long kwdefaultsWrapperPtr, long closureObjPtr) {
@@ -180,13 +181,13 @@ public final class PythonCextCEvalBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
     static long PyEval_GetGlobals() {
         PythonObject globals = PyEvalGetGlobals.executeUncached(null);
         return globals != null ? ToNativeBorrowedNode.executeUncached(globals) : NULLPTR;
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
     static long PyEval_GetLocals() {
         PFrame frame = ReadFrameNode.getUncached().getCurrentPythonFrame(null, CallerFlags.NEEDS_LOCALS);
         if (frame == null) {
@@ -207,13 +208,13 @@ public final class PythonCextCEvalBuiltins {
         return ToNativeBorrowedNode.executeUncached(localsCache);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct, retConversion = long.class, argConversions = {})
     static long PyEval_GetFrameGlobals() {
         PythonObject globals = PyEvalGetGlobals.executeUncached(null);
         return globals != null ? PythonToNativeInternalNode.executeNewRefUncached(globals) : NULLPTR;
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct, retConversion = long.class, argConversions = {})
     static long PyEval_GetFrameLocals() {
         PFrame frame = ReadFrameNode.getUncached().getCurrentPythonFrame(null, CallerFlags.NEEDS_LOCALS);
         if (frame == null) {

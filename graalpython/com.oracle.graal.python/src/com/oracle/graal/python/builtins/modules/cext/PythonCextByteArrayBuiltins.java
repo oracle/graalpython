@@ -60,7 +60,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 
 public final class PythonCextByteArrayBuiltins {
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyByteArray_AsString(long bytesPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         if (obj instanceof PByteArray bytes) {

@@ -61,7 +61,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -75,7 +78,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextDescrBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyDictProxy_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object values(Object obj,
@@ -84,7 +87,9 @@ public final class PythonCextDescrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, Pointer, Pointer, ConstCharPtrAsTruffleString,
+                    Pointer}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class, NativeToPythonClassNode.class, long.class, long.class,
+                                    CharPtrToPythonNode.class, long.class})
     abstract static class GraalPyPrivate_Descr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
@@ -94,7 +99,9 @@ public final class PythonCextDescrBuiltins {
     }
 
     /** Implementation of {@code PyDescr_NewClassMethod}. */
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Pointer, PyTypeObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Pointer,
+                    PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, CharPtrToPythonNode.class, CharPtrToPythonNode.class, int.class,
+                                    long.class, NativeToPythonClassNode.class})
     public static long GraalPyPrivate_Descr_NewClassMethod(long methodDefPtr, long nameRaw, long docRaw, int flags, long methPtr, long typeRaw) {
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = PythonLanguage.get(null);

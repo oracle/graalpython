@@ -64,6 +64,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -94,7 +97,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextStructSeqBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Int}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonClassNode.class, long.class, int.class})
     abstract static class GraalPyPrivate_StructSequence_InitType2 extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -127,7 +130,8 @@ public final class PythonCextStructSeqBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer,
+                    Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class, CharPtrToPythonNode.class, long.class, int.class})
     abstract static class GraalPyPrivate_StructSequence_NewType extends CApiQuaternaryBuiltinNode {
 
         @Specialization
@@ -150,7 +154,7 @@ public final class PythonCextStructSeqBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonClassNode.class})
     abstract static class PyStructSequence_New extends CApiUnaryBuiltinNode {
 
         @Specialization

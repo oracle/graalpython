@@ -51,7 +51,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyLifecycleBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct, retConversion = int.class, argConversions = {long.class})
     abstract static class Py_AtExit extends CApiUnaryBuiltinNode {
 
         @Specialization

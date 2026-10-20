@@ -54,14 +54,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodecBuiltins {
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCodec_Encoder(long encodingPtr) {
         TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);
         return PythonToNativeInternalNode.executeNewRefUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 0));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCodec_Decoder(long encodingPtr) {
         TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);

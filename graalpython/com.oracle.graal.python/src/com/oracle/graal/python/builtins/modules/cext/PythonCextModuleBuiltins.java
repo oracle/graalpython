@@ -85,13 +85,16 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
@@ -125,7 +128,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextModuleBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, CharPtrToPythonNode.class})
     abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
         @Specialization
         static int run(PythonModule module, Object doc,
@@ -135,8 +138,9 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
-    @CApiBuiltin(name = "PyModule_New", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {ToPythonStringNode.class})
+    @CApiBuiltin(name = "PyModule_New", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+                    CharPtrToPythonNode.class})
     abstract static class PyModule_NewObject extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -146,7 +150,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class})
     abstract static class GraalPyPrivate_Module_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -181,7 +185,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getName(PythonModule module,
@@ -216,7 +220,8 @@ public final class PythonCextModuleBuiltins {
         return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PythonModule);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, CharPtrToPythonNode.class,
+                    NativeToPythonNode.class})
     @ImportStatic(PythonCextModuleBuiltins.class)
     abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
@@ -239,7 +244,8 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
+                    CharPtrToPythonNode.class, long.class})
     @ImportStatic(PythonCextModuleBuiltins.class)
     abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
@@ -261,7 +267,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyMethodDef}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyMethodDef}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class})
     public static int GraalPyPrivate_Module_AddFunctions(long moduleRaw, long functions) {
         CompilerAsserts.neverPartOfCompilation();
         Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
@@ -277,7 +283,7 @@ public final class PythonCextModuleBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyMethodDef}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyMethodDef}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class, long.class})
     public static int GraalPyPrivate_AddMethodsToObject(long moduleRaw, long nameRaw, long functions) {
         CompilerAsserts.neverPartOfCompilation();
         Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
@@ -286,7 +292,8 @@ public final class PythonCextModuleBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct, abi = ABI.ABI3T, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class,
+                    NativeToPythonNode.class})
     public static long PyModule_FromSlotsAndSpec(long slots, long specPtr) {
         if (slots == NULLPTR) {
             throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.PYMODULE_FROMSLOTS_NULL_SLOTS);
@@ -298,7 +305,7 @@ public final class PythonCextModuleBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(module);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, abi = ABI.ABI3T, retConversion = int.class, argConversions = {NativeToPythonNode.class})
     public static int PyModule_Exec(long modulePtr) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -307,7 +314,7 @@ public final class PythonCextModuleBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct, abi = ABI.ABI3T, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class})
     public static int PyModule_GetStateSize(long modulePtr, long result) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -318,7 +325,7 @@ public final class PythonCextModuleBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct, abi = ABI.ABI3T, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class})
     public static int PyModule_GetToken(long modulePtr, long result) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -329,7 +336,7 @@ public final class PythonCextModuleBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_MODULE_GOT_T, object);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = Int, args = {PyObject, VOID_PTR_LIST}, call = Direct, abi = ABI.ABI3T, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class})
     public static int PyModule_GetToken_DuringGC(long modulePtr, long result) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -340,7 +347,7 @@ public final class PythonCextModuleBuiltins {
         return -1;
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct, abi = ABI.ABI3T, retConversion = long.class, argConversions = {NativeToPythonNode.class})
     public static long PyModule_GetState_DuringGC(long modulePtr) {
         Object object = NativeToPythonInternalNode.executeUncached(modulePtr, false);
         if (object instanceof PythonModule module) {
@@ -349,7 +356,7 @@ public final class PythonCextModuleBuiltins {
         return NULLPTR;
     }
 
-    @CApiBuiltin(ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct, abi = ABI.ABI3T)
+    @CApiBuiltin(ret = Int, args = {PY_ABI_INFO_PTR, ConstCharPtr}, call = Direct, abi = ABI.ABI3T, retConversion = int.class, argConversions = {long.class, long.class})
     public static int PyABIInfo_Check(long info, long moduleName) {
         TruffleString name = moduleName == NULLPTR ? T_EMPTY_STRING : (TruffleString) CharPtrToPythonNode.executeUncached(moduleName);
         return CExtNodes.checkAbiInfo(null, info, name);
@@ -357,7 +364,7 @@ public final class PythonCextModuleBuiltins {
 
     private static final CApiTiming TIMING_INVOKE_TRAVERSE_PROC = CApiTiming.create(true, "invokeTraverseProc");
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class, long.class})
     public static int GraalPyPrivate_Module_Traverse(long selfPtr, long visitFun, long arg) {
 
         PythonModule self = (PythonModule) NativeToPythonInternalNode.executeUncached(selfPtr, false);
@@ -376,7 +383,7 @@ public final class PythonCextModuleBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyModule_GetFilenameObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getFilename(PythonModule module,
@@ -398,13 +405,13 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonNode.class, long.class})
     public static void GraalPyPrivate_Module_SetDef(long object, long value) {
         PythonModule module = (PythonModule) NativeToPythonInternalNode.executeUncached(object, false);
         module.setNativeModuleDef(value);
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonNode.class, long.class})
     public static void GraalPyPrivate_Module_SetState(long object, long value) {
         PythonModule module = (PythonModule) NativeToPythonInternalNode.executeUncached(object, false);
         module.setNativeModuleState(value);

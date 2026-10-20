@@ -52,14 +52,14 @@ public final class PythonCextBoolBuiltins {
 
     // These two should only be used during C API initialization, so the performance hardly
     // matters, but keeping their codesize small still makes sense.
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false)
+    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false, retConversion = long.class, argConversions = {})
     public static long GraalPyPrivate_True() {
         Object trueValue = PythonContext.get(null).getTrue();
         assert EnsurePythonObjectNode.doesNotNeedPromotion(trueValue);
         return PythonToNativeInternalNode.executeUncached(trueValue, true);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false)
+    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false, retConversion = long.class, argConversions = {})
     public static long GraalPyPrivate_False() {
         Object falseValue = PythonContext.get(null).getFalse();
         assert EnsurePythonObjectNode.doesNotNeedPromotion(falseValue);

@@ -48,6 +48,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.truffle.api.dsl.Bind;
@@ -57,7 +59,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFloatBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {double.class})
     abstract static class GraalPyPrivate_Float_FromDouble extends CApiUnaryBuiltinNode {
         @Specialization
         static double fromDouble(double d) {
@@ -65,7 +67,7 @@ public final class PythonCextFloatBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored, retConversion = double.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Float_AsDouble extends CApiUnaryBuiltinNode {
         @Specialization
         static double doGenericErr(Object object,
@@ -75,7 +77,7 @@ public final class PythonCextFloatBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFloat_FromString extends CApiUnaryBuiltinNode {
 
         @Specialization

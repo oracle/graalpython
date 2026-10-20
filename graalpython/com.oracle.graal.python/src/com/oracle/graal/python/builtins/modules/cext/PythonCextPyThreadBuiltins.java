@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 
 public final class PythonCextPyThreadBuiltins {
 
-    @CApiBuiltin(ret = UNSIGNED_LONG, args = {}, call = Direct, acquireGil = false, canRaise = false)
+    @CApiBuiltin(ret = UNSIGNED_LONG, args = {}, call = Direct, acquireGil = false, canRaise = false, retConversion = long.class, argConversions = {})
     public static long PyThread_get_thread_ident() {
         return Thread.currentThread().threadId();
     }

@@ -61,9 +61,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -110,27 +114,28 @@ public final class PythonCextFuncBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     static long PyCell_Get(long cellPtr) {
         checkCell(cellPtr);
         Object ref = getPromotedCellRef(cellPtr);
         return ref == null ? NULLPTR : PythonToNativeInternalNode.executeNewRefUncached(ref);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     static int PyCell_Set(long cellPtr, long valuePtr) {
         checkCell(cellPtr);
         getCell(cellPtr).setRef(valuePtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(valuePtr, false));
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyCell_GET(long cellPtr) {
         Object ref = getPromotedCellRef(cellPtr);
         return ref == null ? NULLPTR : ToNativeBorrowedNode.executeUncached(ref);
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, PyObjectTransfer}, call = Direct)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, PyObjectTransfer}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonTransferNode.class})
     static void GraalPyCell_SET(long cellPtr, long valuePtr) {
         getCell(cellPtr).setRef(valuePtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(valuePtr, true));
     }
@@ -142,62 +147,62 @@ public final class PythonCextFuncBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetCode(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_CODE(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetGlobals(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_GLOBALS(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetModule(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_MODULE(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetDefaults(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_DEFAULTS(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetKwDefaults(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_KW_DEFAULTS(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetClosure(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_CLOSURE(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long PyFunction_GetAnnotations(long functionPtr) {
         checkFunction(functionPtr);
         return GraalPyFunction_GET_ANNOTATIONS(functionPtr);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_CODE(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         return ToNativeBorrowedNode.executeUncached(function.getCode());
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_GLOBALS(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         Object globals = function.getGlobals();
         return ToNativeBorrowedNode.executeUncached(globals instanceof PythonModule ? GetOrCreateDictNode.executeUncached(globals) : globals);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_MODULE(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         Object module = ReadAttributeFromObjectNode.getUncached().execute(function, T___MODULE__);
@@ -222,35 +227,35 @@ public final class PythonCextFuncBuiltins {
         return ToNativeBorrowedNode.executeUncached(promotedModule);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_DEFAULTS(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         Object[] defaults = function.getDefaults();
         return defaults.length == 0 ? NULLPTR : ToNativeBorrowedNode.executeUncached(PFactory.createTuple(PythonLanguage.get(null), defaults));
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_KW_DEFAULTS(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         Object defaults = function.getKwDefaultsDict(PythonLanguage.get(null));
         return defaults == PNone.NONE ? NULLPTR : ToNativeBorrowedNode.executeUncached(defaults);
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_CLOSURE(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         PCell[] closure = function.getClosure();
         return closure == null ? NULLPTR : ToNativeBorrowedNode.executeUncached(PFactory.createTuple(PythonLanguage.get(null), closure));
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     static long GraalPyFunction_GET_ANNOTATIONS(long functionPtr) {
         PFunction function = (PFunction) NativeToPythonInternalNode.executeUncached(functionPtr, false);
         Object annotations = ReadAttributeFromObjectNode.getUncached().execute(function, T___ANNOTATIONS__);
         return annotations != PNone.NO_VALUE ? ToNativeBorrowedNode.executeUncached(annotations) : NULLPTR;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyStaticMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object staticmethod(Object func,
@@ -261,7 +266,7 @@ public final class PythonCextFuncBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyClassMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object staticmethod(Object callable,
@@ -270,7 +275,8 @@ public final class PythonCextFuncBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonNode.class,
+                    CharPtrToPythonNode.class})
     abstract static class GraalPyPrivate_CFunction_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
