@@ -1175,9 +1175,16 @@ public final class PythonCextUnicodeBuiltins {
         Object doInt(long arr, long size,
                         @Bind Node inliningTarget,
                         @Cached ReadUnicodeArrayNode readArray,
-                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
+                        @Cached TruffleString.FromIntArrayUTF32Node fromArray,
+                        @Cached PRaiseNode raiseNode) {
+            if ((arr == NULLPTR && size != 0) || size < -1) {
+                throw raiseNode.raiseBadInternalCall(inliningTarget);
+            }
+            if (size > Integer.MAX_VALUE / Integer.BYTES) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            return PFactory.createString(PythonLanguage.get(inliningTarget), fromArray.execute(readArray.execute(inliningTarget, arr, castToInt(size), CStructs.wchar_t.size())));
+            return PFactory.createString(PythonLanguage.get(inliningTarget), fromArray.execute(readArray.execute(inliningTarget, arr, (int) size, CStructs.wchar_t.size())));
         }
     }
 
