@@ -44,7 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Deprecatio
 import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_CHARACTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_MODE_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
+import static com.oracle.graal.python.nodes.ErrorMessages.NEG_FILE_DESC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -57,15 +57,15 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -73,7 +73,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -407,7 +406,6 @@ public class IONodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
     public abstract static class CastOpenNameNode extends ArgumentCastNode {
 
         public static final int MAX = Integer.MAX_VALUE;
@@ -432,34 +430,27 @@ public class IONodes {
             return (int) fd;
         }
 
-        @Specialization(guards = {"!isBoolean(nameobj)", "!isInteger(nameobj)"})
+        @Fallback
         static Object generic(VirtualFrame frame, Object nameobj,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyLongAsIntNode asIntNode,
                         @Cached PRaiseNode raiseNode) {
             if (indexCheckNode.execute(inliningTarget, nameobj)) {
-                int fd = asSizeNode.executeExact(frame, inliningTarget, nameobj);
+                int fd;
+                try {
+                    fd = asIntNode.execute(frame, inliningTarget, nameobj);
+                } catch (PException e) {
+                    // FileIO treats failed descriptor conversions, including overflow, as paths.
+                    return fspath.execute(frame, nameobj);
+                }
                 if (fd < 0) {
-                    err(fd, raiseNode);
+                    throw raiseNode.raise(inliningTarget, ValueError, NEG_FILE_DESC);
                 }
                 return fd;
-            } else {
-                return fspath.execute(frame, nameobj);
             }
-        }
-
-        @Specialization(guards = "fd < 0")
-        static int err(int fd,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, OPENER_RETURNED_D, fd);
-        }
-
-        @Specialization(guards = "fd < 0")
-        static int err(long fd,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, OPENER_RETURNED_D, fd);
+            return fspath.execute(frame, nameobj);
         }
 
         @ClinicConverterFactory
