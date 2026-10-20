@@ -45,4 +45,7 @@ test.test_sys.SysModuleTest.test_sys_tracebacklimit @ darwin-arm64,linux-aarch64
 test.test_sys.SysModuleTest.test_sys_version_info_no_instantiation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_thread_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.UnraisableHookTest.test_custom_unraisablehook @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sys.UnraisableHookTest.test_custom_unraisablehook_fail @ linux-x86_64
+test.test_sys.UnraisableHookTest.test_original_unraisablehook @ linux-x86_64
+test.test_sys.UnraisableHookTest.test_original_unraisablehook_exception_qualname @ linux-x86_64
 test.test_sys.UnraisableHookTest.test_original_unraisablehook_wrong_type @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

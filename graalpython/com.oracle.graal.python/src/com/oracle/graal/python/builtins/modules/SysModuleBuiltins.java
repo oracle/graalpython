@@ -99,6 +99,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___BREAKPOINTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___DISPLAYHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___NOTES__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___STDERR__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___STDIN__;
@@ -202,6 +203,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -1468,7 +1470,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "* err_msg: Error message, can be None.\n" +
                     "* object: Object causing the exception, can be None.")
     @GenerateNodeFactory
-    abstract static class UnraisableHookNode extends PythonBuiltinNode {
+    public abstract static class UnraisableHookNode extends PythonBuiltinNode {
 
         private void writeUnraisableExc(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                         PythonModule sys, Object out, Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
@@ -1499,8 +1501,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             TruffleString className;
             try {
-                className = getTypeName(excType);
-                className = classNameNoDot(className);
+                className = TypeNodes.GetQualNameNode.executeUncached(excType);
             } catch (PException pe) {
                 className = null;
             }
@@ -1510,7 +1511,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 fileWriteString(out, T_VALUE_UNKNOWN);
             } else {
                 moduleName = castToString(v);
-                if (!moduleName.equalsUncached(T_BUILTINS, TS_ENCODING)) {
+                if (!moduleName.equalsUncached(T_BUILTINS, TS_ENCODING) && !moduleName.equalsUncached(T___MAIN__, TS_ENCODING)) {
                     fileWriteString(out, moduleName);
                     fileWriteString(out, T_DOT);
                 }
@@ -1564,6 +1565,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         private void writeUnraisableExc(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                         PythonModule sys, Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
             Object stdErr = objectLookupAttr(sys, T_STDERR);
+            if (stdErr == PNone.NO_VALUE || stdErr == PNone.NONE) {
+                return;
+            }
             writeUnraisableExc(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, excType, excValue, excTb, errMsg, obj);
             fileFlush(stdErr);
         }
