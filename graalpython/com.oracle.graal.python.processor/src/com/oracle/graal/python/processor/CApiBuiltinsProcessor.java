@@ -162,18 +162,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private String getCSignature(VariableElement obj) {
-        return ArgDescriptor.valueOf(name(obj)).getCSignature();
-    }
-
     private static String[] splitInitializerArgs(String initializer) {
         int start = initializer.indexOf('(');
         int end = initializer.lastIndexOf(')');
         return initializer.substring(start + 1, end).split(",");
-    }
-
-    private static boolean isVarArgs(VariableElement obj) {
-        return name(obj).equals("VARARGS");
     }
 
     private static String name(Element obj) {
@@ -202,8 +194,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final class CApiBuiltinDesc {
         public final Element origin;
         public final String name;
-        public final VariableElement[] arguments;
-        public final VariableElement returnType;
+        public final ArgDescriptor[] arguments;
+        public final ArgDescriptor returnType;
         /** Conversion metadata is absent for signature-only declarations in CApiFunction. */
         public final TypeMirror retConversion;
         public final List<TypeMirror> argConversions;
@@ -215,7 +207,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final Set<String> abis;
         public int id;
 
-        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, TypeMirror retConversion, List<TypeMirror> argConversions,
+        public CApiBuiltinDesc(Element origin, String name, ArgDescriptor returnType, ArgDescriptor[] arguments, TypeMirror retConversion, List<TypeMirror> argConversions,
                         boolean acquireGil, boolean canRaise, String call, String factory, Set<String> abis) {
             this.origin = origin;
             this.name = name;
@@ -243,10 +235,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private static String capiTypeToLogicalType(VariableElement element) {
-        return capiTypeToLogicalType(ArgDescriptor.valueOf(name(element)));
-    }
-
     private static String capiTypeToLogicalType(ArgDescriptor descriptor) {
         return switch (descriptor.getNativeSimpleType()) {
             case VOID -> "void";
@@ -260,11 +248,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         };
     }
 
-    private static boolean isVoid(VariableElement element) {
+    private static boolean isVoid(ArgDescriptor element) {
         return capiTypeToLogicalType(element).equals("void");
     }
 
-    private static String capiTypeToErrorValue(VariableElement element) {
+    private static String capiTypeToErrorValue(ArgDescriptor element) {
         if (capiTypeToLogicalType(element).equals("pointer")) {
             return "0";
         } else {
@@ -272,12 +260,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private static String capiTypeToJavaPrimitiveType(VariableElement element) {
+    private static String capiTypeToJavaPrimitiveType(ArgDescriptor element) {
         var type = capiTypeToLogicalType(element);
         return type.equals("pointer") ? "long" : type;
     }
 
-    private static String capiTypeToForeignPrimitiveType(VariableElement element) {
+    private static String capiTypeToForeignPrimitiveType(ArgDescriptor element) {
         String type = capiTypeToJavaPrimitiveType(element);
         return type.equals("void") ? "void" : ("j" + type);
     }
@@ -393,6 +381,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public List<T> visitEnumConstant(VariableElement c, Class<T> p) {
             if (p == VariableElement.class) {
                 return List.of(p.cast(c));
+            } else if (p == ArgDescriptor.class) {
+                return List.of(p.cast(ArgDescriptor.valueOf(name(c))));
             } else {
                 return null;
             }
@@ -459,7 +449,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     if (!builtinName.isEmpty()) {
                         name = builtinName;
                     }
-                    var ret = findValue(builtin, "ret", VariableElement.class);
+                    var ret = findValue(builtin, "ret", ArgDescriptor.class);
                     boolean acquireGil = findValue(builtin, "acquireGil", Boolean.class);
                     boolean canRaise = findValue(builtin, "canRaise", Boolean.class);
                     if (acquireGil && !canRaise) {
@@ -469,7 +459,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     String call = name(findValue(builtin, "call", VariableElement.class));
                     Set<String> abis = abiNames(findValues(builtin, "abi", VariableElement.class));
                     // boolean inlined = findValue(builtin, "inlined", Boolean.class);
-                    VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
+                    ArgDescriptor[] args = findValues(builtin, "args", ArgDescriptor.class).toArray(new ArgDescriptor[0]);
                     if (element instanceof TypeElement te && te.getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
                         additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, null, List.of(), acquireGil, canRaise, call, null, abis));
                     } else {
@@ -563,7 +553,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private void verifyStaticMethod(ExecutableElement e, AnnotationMirror annotation) {
         if (!e.getModifiers().contains(Modifier.STATIC)) {
             processingEnv.getMessager().printError("CApiBuiltins must be nodes or static methods", e);
-        } else if (e.getParameters().size() != findValues(annotation, "args", VariableElement.class).size()) {
+        } else if (e.getParameters().size() != findValues(annotation, "args", ArgDescriptor.class).size()) {
             processingEnv.getMessager().printError("Arity mismatch between declared arguments and static method", e);
         }
     }
@@ -574,7 +564,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             for (var e : dt.asElement().getEnclosedElements()) {
                 if (e.getKind() == ElementKind.METHOD) {
                     if (e.getModifiers().contains(Modifier.ABSTRACT) && e.getSimpleName().toString().equals("execute")) {
-                        if (((ExecutableElement) e).getParameters().size() != findValues(annotation, "args", VariableElement.class).size()) {
+                        if (((ExecutableElement) e).getParameters().size() != findValues(annotation, "args", ArgDescriptor.class).size()) {
                             processingEnv.getMessager().printError("Arity mismatch between declared arguments and builtin superclass", te);
                         }
                         return;
@@ -599,31 +589,28 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         t1.equals(resolveTypeAlias(t2)) || resolveTypeAlias(t1).equals(t2);
     }
 
-    private void compareFunction(String name, VariableElement ret1, VariableElement ret2, VariableElement[] args1, VariableElement[] args2) {
-        compareFunction(name, ret1, getCSignature(ret2), args1, Arrays.stream(args2).map(this::getCSignature).toArray(String[]::new));
+    private void compareFunction(String name, ArgDescriptor ret1, ArgDescriptor ret2, ArgDescriptor[] args1, ArgDescriptor[] args2) {
+        compareFunction(name, ret1, ret2.getCSignature(), args1, Arrays.stream(args2).map(ArgDescriptor::getCSignature).toArray(String[]::new));
     }
 
-    private void compareFunction(String name, VariableElement ret1, String ret2, VariableElement[] args1, String[] args2) {
-        if (trees == null) {
-            return; // This isn't correct without parsing
-        }
-        if (!isSimilarType(getCSignature(ret1), ret2)) {
+    private void compareFunction(String name, ArgDescriptor ret1, String ret2, ArgDescriptor[] args1, String[] args2) {
+        if (!isSimilarType(ret1.getCSignature(), ret2)) {
             processingEnv.getMessager().printError("duplicate entry for " + name + ", different return " + ret1 + " vs. " + ret2);
         }
         if (args1.length != args2.length) {
             processingEnv.getMessager().printError("duplicate entry for " + name + ", different arg lengths " + args1.length + " vs. " + args2.length);
         } else {
             for (int i = 0; i < args1.length; i++) {
-                if (!isSimilarType(getCSignature(args1[i]), args2[i])) {
+                if (!isSimilarType(args1[i].getCSignature(), args2[i])) {
                     processingEnv.getMessager().printError("duplicate entry for " + name + ", different arg " + i + ": " + args1[i] + " vs. " + args2[i]);
                 }
             }
         }
     }
 
-    private String getArgSignatureWithName(VariableElement arg, int i) {
-        String sig = getCSignature(arg);
-        if (isVarArgs(arg)) {
+    private static String getArgSignatureWithName(ArgDescriptor arg, int i) {
+        String sig = arg.getCSignature();
+        if (arg == ArgDescriptor.VARARGS) {
             return sig;
         } else if (sig.contains("(*)")) {
             // function type
@@ -650,9 +637,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 lines.add("#undef " + name);
                 String line;
                 if (name.startsWith("GraalPyPrivate_")) {
-                    line = "GraalPy_CAPI_HELPER_SYMBOL " + getCSignature(value.returnType) + " " + name + "(";
+                    line = "GraalPy_CAPI_HELPER_SYMBOL " + value.returnType.getCSignature() + " " + name + "(";
                 } else {
-                    line = "PyAPI_FUNC(" + getCSignature(value.returnType) + ") " + name + "(";
+                    line = "PyAPI_FUNC(" + value.returnType.getCSignature() + ") " + name + "(";
                 }
                 for (int i = 0; i < value.arguments.length; i++) {
                     line += (i == 0 ? "" : ", ") + getArgSignatureWithName(value.arguments[i], i);
@@ -738,21 +725,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         updateResource(name, javaBuiltins, lines, StandardLocation.NATIVE_HEADER_OUTPUT);
     }
 
-    private Map<String, VariableElement> getArgDescriptorsByName() {
-        TypeElement argDescriptorType = processingEnv.getElementUtils().getTypeElement(ArgDescriptor.class.getCanonicalName());
-        if (argDescriptorType == null) {
-            processingEnv.getMessager().printError("Could not resolve ArgDescriptor while generating C API helper declarations.");
-            return Map.of();
-        }
-        Map<String, VariableElement> result = new HashMap<>();
-        for (var element : argDescriptorType.getEnclosedElements()) {
-            if (element.getKind() == ElementKind.ENUM_CONSTANT) {
-                result.put(name(element), (VariableElement) element);
-            }
-        }
-        return result;
-    }
-
     private static final class CApiSymbolDesc {
         final String cName;
         final CApiExternalFunctionSignatureDesc signature;
@@ -798,7 +770,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private void addCApiSymbolDeclarations(List<String> lines, List<CApiSymbolDesc> capiSymbols) {
         List<String> declarations = new ArrayList<>();
-        Map<String, VariableElement> argDescriptors = getArgDescriptorsByName();
+        Map<String, ArgDescriptor> argDescriptors = Arrays.stream(ArgDescriptor.values()).collect(Collectors.toMap(ArgDescriptor::name, descriptor -> descriptor));
         for (var helper : capiSymbols) {
             if (!helper.cName.startsWith("GraalPyPrivate_")) {
                 continue;
@@ -809,19 +781,19 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printError("Invalid C API helper signature initializer for " + helper.signature.name, helper.signature.origin);
                 continue;
             }
-            VariableElement returnType = argDescriptors.get(signatureArgs[1].strip());
+            ArgDescriptor returnType = argDescriptors.get(signatureArgs[1].strip());
             if (returnType == null) {
                 processingEnv.getMessager().printError("Could not resolve return type " + signatureArgs[1].strip() + " for C API helper " + helper.cName, helper.signature.origin);
                 continue;
             }
-            String line = "GraalPy_CAPI_HELPER_SYMBOL " + getCSignature(returnType) + " " + helper.cName + "(";
+            String line = "GraalPy_CAPI_HELPER_SYMBOL " + returnType.getCSignature() + " " + helper.cName + "(";
             if (signatureArgs.length == 2) {
                 line += "void";
             } else {
                 boolean valid = true;
                 for (int i = 2; i < signatureArgs.length; i++) {
                     String argType = signatureArgs[i].strip();
-                    VariableElement arg = argDescriptors.get(argType);
+                    ArgDescriptor arg = argDescriptors.get(argType);
                     if (arg == null) {
                         processingEnv.getMessager().printError("Could not resolve argument type " + argType + " for C API helper " + helper.cName, helper.signature.origin);
                         valid = false;
@@ -860,9 +832,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (var entry : javaBuiltins) {
             assert (id++) == entry.id;
             String prefix = entry.call.equals("Direct") ? "PUBLIC" : "PRIVATE";
-            String line = "    " + prefix + "_BUILTIN(" + entry.name + ", " + getCSignature(entry.returnType);
+            String line = "    " + prefix + "_BUILTIN(" + entry.name + ", " + entry.returnType.getCSignature();
             for (var arg : entry.arguments) {
-                line += ", " + getCSignature(arg);
+                line += ", " + arg.getCSignature();
             }
             line += ") \\";
             lines.add(line);
@@ -879,7 +851,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 String setPrefix = "GraalPyPrivate_Set_";
                 if (name.startsWith(getPrefix)) {
                     assert entry.arguments.length == 1 : name;
-                    String type = name(entry.arguments[0]).replace("Wrapper", "");
+                    String type = entry.arguments[0].name().replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
                     assert name.charAt(getPrefix.length() + type.length()) == '_' : name;
                     String unprefixed = name.substring(getPrefix.length());
@@ -889,7 +861,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     lines.add(macro.toString());
                 } else if (name.startsWith(setPrefix)) {
                     assert entry.arguments.length == 2 : name;
-                    String type = name(entry.arguments[0]).replace("Wrapper", "");
+                    String type = entry.arguments[0].name().replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
                     assert name.charAt(setPrefix.length() + type.length()) == '_' : name;
                     String unprefixed = name.substring(setPrefix.length());
@@ -1373,8 +1345,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final VariableElement origin;
         public final String name;
 
-        String returnType;
-        String[] argumentTypes;
+        ArgDescriptor returnType;
+        ArgDescriptor[] argumentTypes;
         public boolean cannotRaise;
 
         public CApiExternalFunctionSignatureDesc(VariableElement origin, String name) {
@@ -1430,8 +1402,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     /** Maps an {@link ArgDescriptor} to the native Java carrier type. */
-    private String toJavaNfiType(String argDescriptor) {
-        String type = capiTypeToLogicalType(ArgDescriptor.valueOf(argDescriptor));
+    private String toJavaNfiType(ArgDescriptor argDescriptor) {
+        String type = capiTypeToLogicalType(argDescriptor);
         return type.equals("pointer") ? "long" : type;
     }
 
@@ -1508,9 +1480,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             assert !sig.cannotRaise;
             sig.cannotRaise = Boolean.valueOf(initArgs[0].strip());
             assert sig.returnType == null;
-            sig.returnType = initArgs[1].strip();
+            sig.returnType = ArgDescriptor.valueOf(initArgs[1].strip());
             assert sig.argumentTypes == null;
-            sig.argumentTypes = Arrays.stream(initArgs).skip(2).map(String::strip).toArray(String[]::new);
+            sig.argumentTypes = Arrays.stream(initArgs).skip(2).map(String::strip).map(ArgDescriptor::valueOf).toArray(ArgDescriptor[]::new);
         }
 
         for (CApiExternalFunctionSignatureDesc sig : signatures) {
