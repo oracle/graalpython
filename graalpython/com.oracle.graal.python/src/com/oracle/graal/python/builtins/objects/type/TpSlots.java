@@ -216,6 +216,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
@@ -1765,14 +1766,14 @@ public record TpSlots(TpSlot nb_bool, //
         var readAttr = ReadAttributeFromObjectNode.getUncached();
         PythonBuiltinClass typeObj = core.lookupType(type);
         for (TruffleString name : SPECIAL2SLOT.keySet()) {
-            assert readAttr.execute(typeObj, name) == PNone.NO_VALUE : type.name() + ":" + name;
+            assert !PythonOptions.detailedAssertionsEnabled() || readAttr.execute(typeObj, name) == PNone.NO_VALUE : type.name() + ":" + name;
         }
         return true;
     }
 
     public static void addOperatorsToBuiltin(Python3Core core, PythonBuiltinClassType type, PythonBuiltinClass pythonBuiltinClass) {
         TpSlots slots = type.getDeclaredSlots();
-        assert checkNoMagicOverrides(core, type);
+        assert !PythonOptions.detailedAssertionsEnabled() || checkNoMagicOverrides(core, type);
 
         // Similar to CPython:add_operators
         for (var slotDefGroup : SLOTDEFS.entrySet()) {

@@ -512,7 +512,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         public MroShapeLookupResult lookupInMroShape(MroShape shape, Object klass, TruffleString key) {
-            assert MroShape.validate(klass, PythonLanguage.get(this));
+            assert !PythonOptions.detailedAssertionsEnabled() || MroShape.validate(klass, PythonLanguage.get(this));
             return shape.lookup(key);
         }
 

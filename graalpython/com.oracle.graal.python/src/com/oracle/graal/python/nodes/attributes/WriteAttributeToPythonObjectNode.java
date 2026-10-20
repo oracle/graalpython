@@ -85,7 +85,7 @@ public abstract class WriteAttributeToPythonObjectNode extends PNodeWithContext 
     @Specialization
     static void write(PythonObject dynamicObject, TruffleString key, Object value,
                     @Cached DynamicObject.PutNode putNode) {
-        assert GetDictIfExistsNode.getDictUncached(dynamicObject) == null : "direct attribute write with a backing dictionary";
+        assert !PythonOptions.detailedAssertionsEnabled() || GetDictIfExistsNode.getDictUncached(dynamicObject) == null : "direct attribute write with a backing dictionary";
         putNode.execute(dynamicObject, key, value);
     }
 }

@@ -158,6 +158,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -1261,12 +1262,21 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "java_assert", minNumOfPositionalArgs = 0)
+    @Builtin(name = "java_assert", minNumOfPositionalArgs = 0, parameterNames = {"detailed"})
+    @ArgumentClinic(name = "detailed", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    abstract static class JavaAssertNode extends PythonBuiltinNode {
+    abstract static class JavaAssertNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GraalPythonModuleBuiltinsClinicProviders.JavaAssertNodeClinicProviderGen.INSTANCE;
+        }
+
         @SuppressWarnings("all")
         @Specialization
-        Object doit() {
+        boolean doit(boolean detailed) {
+            if (detailed) {
+                return PythonOptions.detailedAssertionsEnabled();
+            }
             boolean assertOn = false;
             assert assertOn = true;
             return assertOn;

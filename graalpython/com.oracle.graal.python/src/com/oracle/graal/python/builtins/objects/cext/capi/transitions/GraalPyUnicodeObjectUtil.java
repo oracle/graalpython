@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 
 public final class GraalPyUnicodeObjectUtil {
@@ -163,19 +164,20 @@ public final class GraalPyUnicodeObjectUtil {
         boolean isUnicodeSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.UNICODE_SUBCLASS) != 0L;
         assert !HandlePointerConverter.pointsToPyHandleSpace(obType);
         // During finalization, the native reference for obType may already have been freed, so it cannot be converted back to a managed class.
-        assert PythonContext.get(null).isFinalizing() || IsBuiltinClassProfile.profileClassSlowPath(NativeToPythonClassInternalNode.executeUncached(obType),
+        assert !PythonOptions.detailedAssertionsEnabled() || PythonContext.get(null).isFinalizing() || IsBuiltinClassProfile.profileClassSlowPath(NativeToPythonClassInternalNode.executeUncached(
+                        obType),
                         PythonBuiltinClassType.PString) == isUnicodeSubclass;
         return isUnicodeSubclass;
     }
 
     /** Similar to {@code unicodeobject.h:_PyUnicode_NONCOMPACT_DATA} */
     public static long getNonCompactDataPointer(long rawPointer) {
-        assert isGraalPyUnicodeObject(rawPointer) && !isCompact(rawPointer);
+        assert !PythonOptions.detailedAssertionsEnabled() || isGraalPyUnicodeObject(rawPointer) && !isCompact(rawPointer);
         return readPtrField(rawPointer, CFields.GraalPyUnicodeObject__data);
     }
 
     public static long getUtf8DataPointer(long rawPointer) {
-        assert isGraalPyUnicodeObject(rawPointer);
+        assert !PythonOptions.detailedAssertionsEnabled() || isGraalPyUnicodeObject(rawPointer);
         return readPtrField(rawPointer, CFields.GraalPyUnicodeObject__utf8);
     }
 }

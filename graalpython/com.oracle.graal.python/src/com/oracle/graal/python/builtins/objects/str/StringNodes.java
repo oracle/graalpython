@@ -140,7 +140,7 @@ public abstract class StringNodes {
         static TruffleString doNative(PString x, boolean copyNativeData,
                         @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNativePointerNode) {
             assert x.isNative();
-            assert PythonToNativeInternalNode.executeUncached(x, false) == x.getNativePointer();
+            assert !PythonOptions.detailedAssertionsEnabled() || PythonToNativeInternalNode.executeUncached(x, false) == x.getNativePointer();
             long ptr = HandlePointerConverter.pointerToStub(x.getNativePointer());
             long data = CStructAccess.readPtrField(ptr, CFields.GraalPyUnicodeObject__data);
             assert data != 0;

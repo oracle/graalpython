@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -93,7 +94,7 @@ public abstract class PyTupleCheckExactNode extends PNodeWithContext {
     public static boolean checkNative(PythonContext context, PythonAbstractNativeObject nativeObject) {
         long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
         boolean isTupleExact = obType == context.lookupType(PythonBuiltinClassType.PTuple).getNativePointer();
-        assert IsBuiltinObjectExactProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleExact;
+        assert !PythonOptions.detailedAssertionsEnabled() || IsBuiltinObjectExactProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleExact;
         return isTupleExact;
     }
 }

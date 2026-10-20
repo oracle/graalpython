@@ -1144,14 +1144,14 @@ public abstract class CApiTransitions {
     @TruffleBoundary
     public static void nativeLookupPut(HandleContext context, long pointer, NativeObjectReference value) {
         assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
-        assert !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
+        assert !PythonOptions.detailedAssertionsEnabled() || !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
         context.nativeLookup.put(pointer, value);
     }
 
     @TruffleBoundary
     public static void nativeLookupPut(HandleContext context, long pointer, PythonObjectReference value) {
         assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
-        assert !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
+        assert !PythonOptions.detailedAssertionsEnabled() || !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
         context.nativeLookup.put(pointer, value);
     }
 
@@ -1164,7 +1164,7 @@ public abstract class CApiTransitions {
         assert idx != 0;
         assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
         IdReference<?> result = context.nativeTypeLookup[idx];
-        assert result == nativeLookupGet(context, pointer);
+        assert !PythonOptions.detailedAssertionsEnabled() || result == nativeLookupGet(context, pointer);
         return result;
     }
 
@@ -1355,12 +1355,14 @@ public abstract class CApiTransitions {
         }
 
         public static long pointerToLong(long pointer) {
-            assert Integer.toHexString((int) ((pointer & ~(HANDLE_TAG_BIT | INTEGER_TAG_BIT)) >> 3)).equals(Long.toHexString(((pointer & ~(HANDLE_TAG_BIT | INTEGER_TAG_BIT)) >> 3)));
+            assert !PythonOptions.detailedAssertionsEnabled() || Integer.toHexString((int) ((pointer & ~(HANDLE_TAG_BIT | INTEGER_TAG_BIT)) >> 3)).equals(Long.toHexString(((pointer &
+                            ~(HANDLE_TAG_BIT | INTEGER_TAG_BIT)) >> 3)));
             return (int) (pointer >> 3);
         }
 
         public static double pointerToDouble(long pointer) {
-            assert Integer.toHexString((int) ((pointer & ~(HANDLE_TAG_BIT | FLOAT_TAG_BIT)) >> 3)).equals(Long.toHexString(((pointer & ~(HANDLE_TAG_BIT | FLOAT_TAG_BIT)) >> 3)));
+            assert !PythonOptions.detailedAssertionsEnabled() || Integer.toHexString((int) ((pointer & ~(HANDLE_TAG_BIT | FLOAT_TAG_BIT)) >> 3)).equals(Long.toHexString(((pointer & ~(HANDLE_TAG_BIT |
+                            FLOAT_TAG_BIT)) >> 3)));
             return Float.intBitsToFloat((int) (pointer >> 3));
         }
     }
@@ -1961,7 +1963,7 @@ public abstract class CApiTransitions {
                 pointer = pythonObject.getNativePointer();
             }
             assert pythonObject.isNative();
-            assert isGcTrackedIfNecessary(pythonObject);
+            assert !PythonOptions.detailedAssertionsEnabled() || isGcTrackedIfNecessary(pythonObject);
             return pointer;
         }
 
@@ -2044,7 +2046,7 @@ public abstract class CApiTransitions {
                 }
                 pointer = pythonObject.getNativePointer();
             }
-            assert isGcTrackedIfNecessary(pythonObject);
+            assert !PythonOptions.detailedAssertionsEnabled() || isGcTrackedIfNecessary(pythonObject);
             assert pythonObject.isNative();
             return pointer;
         }
@@ -2669,7 +2671,7 @@ public abstract class CApiTransitions {
 
         LOGGER.finest(() -> PythonUtils.formatJString("addNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
 
-        assert !isDeallocatingSlowPath(pointer);
+        assert !PythonOptions.detailedAssertionsEnabled() || !isDeallocatingSlowPath(pointer);
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount + refCntDelta);
         return refCount + refCntDelta;
     }
@@ -2677,7 +2679,7 @@ public abstract class CApiTransitions {
     public static long subNativeRefCount(long pointer, long refCntDelta) {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
-        assert !isDeallocatingSlowPath(pointer);
+        assert !PythonOptions.detailedAssertionsEnabled() || !isDeallocatingSlowPath(pointer);
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         if (refCount == IMMORTAL_REFCNT) {
             return IMMORTAL_REFCNT;

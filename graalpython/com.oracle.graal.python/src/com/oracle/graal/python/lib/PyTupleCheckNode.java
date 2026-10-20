@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -85,7 +86,7 @@ public abstract class PyTupleCheckNode extends Node {
     public static boolean doNative(PythonAbstractNativeObject nativeObject) {
         long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
         boolean isTupleSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.TUPLE_SUBCLASS) != 0L;
-        assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleSubclass;
+        assert !PythonOptions.detailedAssertionsEnabled() || IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleSubclass;
         return isTupleSubclass;
     }
 

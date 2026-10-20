@@ -163,6 +163,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
@@ -2439,7 +2440,8 @@ public abstract class ExternalFunctionNodes {
         static void doGeneric(long argsTuplePtr, Object[] managedArgs,
                         @Bind Node inliningTarget) {
             assert !HandlePointerConverter.pointsToPyHandleSpace(argsTuplePtr);
-            assert IsSameTypeNode.executeUncached(GetNativeClassNodeGen.getUncached().execute(null, new PythonAbstractNativeObject(argsTuplePtr)), PythonBuiltinClassType.PTuple);
+            assert !PythonOptions.detailedAssertionsEnabled() || IsSameTypeNode.executeUncached(GetNativeClassNodeGen.getUncached().execute(null, new PythonAbstractNativeObject(argsTuplePtr)),
+                            PythonBuiltinClassType.PTuple);
             long refCount = CApiTransitions.readNativeRefCount(argsTuplePtr);
             assert refCount >= 1;
             if (refCount > 1) {
@@ -2451,7 +2453,7 @@ public abstract class ExternalFunctionNodes {
                 return;
             }
             assert readLongField(argsTuplePtr, CFields.PyVarObject__ob_size) == managedArgs.length;
-            assert verifyElements(argsTuplePtr, managedArgs);
+            assert !PythonOptions.detailedAssertionsEnabled() || verifyElements(argsTuplePtr, managedArgs);
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("Releasing native args tuple %x.", argsTuplePtr));
             }

@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -90,7 +91,7 @@ public abstract class PyUnicodeCheckNode extends PNodeWithContext {
     public static boolean doNative(PythonAbstractNativeObject nativeObject) {
         long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
         boolean isUnicodeSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.UNICODE_SUBCLASS) != 0L;
-        assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PString) == isUnicodeSubclass;
+        assert !PythonOptions.detailedAssertionsEnabled() || IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PString) == isUnicodeSubclass;
         return isUnicodeSubclass;
     }
 

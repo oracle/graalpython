@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.PListAppendNodeGe
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -370,7 +371,7 @@ public abstract class ListNodes {
 
         @Specialization
         static NativeSequenceStorage getNative(PythonAbstractNativeObject list) {
-            assert IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
+            assert !PythonOptions.detailedAssertionsEnabled() || IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
             long listRawPtr = list.getPtr();
             long array = readPtrField(listRawPtr, PyListObject__ob_item);
             int size = (int) readLongField(listRawPtr, PyVarObject__ob_size);

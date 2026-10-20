@@ -844,7 +844,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached("kwname") TruffleString cachedKwName,
                         @Cached(value = "kwdefaults", weak = true, dimensions = 0) PKeyword[] cachedKwdefaults,
                         @Cached(value = "doUncached(kwdefaults, kwname, getUncachedEqualNode())", weak = true) PKeyword result) {
-            assert kwIsCorrect(cachedKwdefaults, cachedKwName, result);
+            assert !PythonOptions.detailedAssertionsEnabled() || kwIsCorrect(cachedKwdefaults, cachedKwName, result);
             return result;
         }
 

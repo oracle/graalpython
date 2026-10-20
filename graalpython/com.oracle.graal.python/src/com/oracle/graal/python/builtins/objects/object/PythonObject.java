@@ -107,10 +107,16 @@ public class PythonObject extends PythonAbstractObject {
         writeNode.execute(inliningTarget, this, HiddenAttr.DICT, dict);
     }
 
+    /**
+     * For use in assertions only. The uncached dictionary lookup requires detailed assertions.
+     */
     public boolean checkDictFlags() {
-        return checkDictFlags(GetDictIfExistsNode.getDictUncached(this));
+        return !PythonOptions.detailedAssertionsEnabled() || checkDictFlags(GetDictIfExistsNode.getDictUncached(this));
     }
 
+    /**
+     * For use in assertions only, when the dictionary is already known.
+     */
     public boolean checkDictFlags(PDict dict) {
         assert dict == null || hasShapeFlag(HAS_DICT);
         assert (dict == null || dict.getDictStorage() instanceof DynamicObjectStorage domStorage && domStorage.getStore() == this) || hasShapeFlag(HAS_MATERIALIZED_DICT);

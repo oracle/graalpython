@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -165,7 +166,7 @@ public abstract class PyObjectLookupAttr extends Node {
                         @Shared @Cached ReadAttributeFromObjectNode readNode) {
             // It should not have __getattr__, because otherwise it would not have builtin
             // object#tp_getattro, but slot wrapper dispatching to __getattribute__ or __getattr__
-            assert hasNoGetAttr(type);
+            assert !PythonOptions.detailedAssertionsEnabled() || hasNoGetAttr(type);
             return readNode.execute(object, cachedName);
         }
 
@@ -184,7 +185,7 @@ public abstract class PyObjectLookupAttr extends Node {
                         /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached InlinedConditionProfile noValueFound,
                         @Cached(inline = false) CallNode callGetattr) {
-            assert hasNoGetAttr(type);
+            assert !PythonOptions.detailedAssertionsEnabled() || hasNoGetAttr(type);
             Object value = readNode.execute(object, cachedName);
             if (noValueFound.profile(inliningTarget, value == PNone.NO_VALUE)) {
                 Object getAttr = readGetattr.execute(object, SpecialMethodNames.T___GETATTR__);
@@ -255,7 +256,7 @@ public abstract class PyObjectLookupAttr extends Node {
                         @Exclusive @Cached InlinedConditionProfile noGetMethod,
                         @Exclusive @Cached CallSlotDescrGet callGetSlot,
                         /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
-            assert hasNoGetAttr(type);
+            assert !PythonOptions.detailedAssertionsEnabled() || hasNoGetAttr(type);
             Object value = readNode.execute(object);
             if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
                 var valueSlots = getSlotsNode.execute(inliningTarget, value);

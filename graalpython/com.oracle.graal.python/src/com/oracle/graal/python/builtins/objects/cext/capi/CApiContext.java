@@ -1140,7 +1140,7 @@ public final class CApiContext {
             }
             CApiTransitions.initializeThreadStateDeallocatingOffsets();
 
-            assert PythonCApiAssertions.assertBuiltins(capiLibrary);
+            assert !PythonOptions.detailedAssertionsEnabled() || PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
 
             /*

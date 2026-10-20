@@ -2339,7 +2339,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             // Some types with known tp_descr_get implementation that just return itself when
             // `instance` parameter to tp_descr_get is NO_VALUE
             if (value instanceof PBuiltinFunction || value instanceof PFunction) {
-                assert CallSlotDescrGet.executeUncached(GetObjectSlotsNode.executeUncached(value).tp_descr_get(), value, PNone.NO_VALUE, object) == value;
+                assert !PythonOptions.detailedAssertionsEnabled() || CallSlotDescrGet.executeUncached(GetObjectSlotsNode.executeUncached(value).tp_descr_get(), value, PNone.NO_VALUE, object) == value;
                 return value;
             }
             Object valueKlass = GetClassNode.executeUncached(value);

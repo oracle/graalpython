@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -150,7 +151,7 @@ public class PBaseException extends PythonObject {
     }
 
     public void setContext(Object context) {
-        assert context == null || PyExceptionInstanceCheckNode.executeUncached(context);
+        assert !PythonOptions.detailedAssertionsEnabled() || context == null || PyExceptionInstanceCheckNode.executeUncached(context);
         this.context = context;
     }
 
@@ -159,7 +160,7 @@ public class PBaseException extends PythonObject {
     }
 
     public void setCause(Object cause) {
-        assert cause == null || PyExceptionInstanceCheckNode.executeUncached(cause);
+        assert !PythonOptions.detailedAssertionsEnabled() || cause == null || PyExceptionInstanceCheckNode.executeUncached(cause);
         this.cause = cause;
         this.suppressContext = true;
     }

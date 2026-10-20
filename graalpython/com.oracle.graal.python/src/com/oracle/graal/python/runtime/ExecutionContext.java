@@ -184,7 +184,8 @@ public abstract class ExecutionContext {
                         @Bind Node inliningTarget,
                         @Cached PassCallerFrameNode passCallerFrame,
                         @Cached PassExceptionStateNode passExceptionState) {
-            assert inliningTarget.getRootNode() instanceof TopLevelExceptionHandler || PArguments.assertIsPythonFrame(frame) : "calling from non-Python or non-top-level frame";
+            assert !PythonOptions.detailedAssertionsEnabled() || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler || PArguments.assertIsPythonFrame(
+                            frame) : "calling from non-Python or non-top-level frame";
             passCallerFrame.execute(frame, inliningTarget, callArguments, callerFlags);
             passExceptionState.execute(frame, inliningTarget, callArguments, CallerFlags.needsExceptionState(callerFlags));
         }
@@ -587,7 +588,7 @@ public abstract class ExecutionContext {
         }
 
         private static void validateBoundaryCallData(BoundaryCallData boundaryCallData) {
-            assert boundaryCallData.isUncached() ||
+            assert !PythonOptions.detailedAssertionsEnabled() || boundaryCallData.isUncached() ||
                             (!(boundaryCallData.getRootNode() instanceof PBytecodeDSLRootNode) || BytecodeNode.get(boundaryCallData) != null);
         }
     }

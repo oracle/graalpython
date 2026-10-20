@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -122,7 +123,8 @@ public final class PException extends AbstractTruffleException {
 
     private static Node validateLocation(Node location) {
         // For Bytecode DSL root nodes the location must lead to a BytecodeNode
-        assert location == null || !(location.getRootNode() instanceof PBytecodeDSLRootNode) || BytecodeNode.get(location) != null : String.format("%s, root: %s", location, location.getRootNode());
+        assert !PythonOptions.detailedAssertionsEnabled() || location == null || !(location.getRootNode() instanceof PBytecodeDSLRootNode) || BytecodeNode.get(location) != null : String.format(
+                        "%s, root: %s", location, location.getRootNode());
         return location;
     }
 

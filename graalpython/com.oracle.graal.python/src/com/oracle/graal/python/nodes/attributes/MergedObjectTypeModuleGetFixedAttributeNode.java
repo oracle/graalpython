@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlo
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -113,7 +114,7 @@ public abstract class MergedObjectTypeModuleGetFixedAttributeNode extends PNodeW
                     @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                     @Cached CallSlotDescrGet.Lazy callSlotValueGet,
                     @Cached ModuleBuiltins.LazyHandleGetattrExceptionNode handleException) {
-        assert hasNoGetAttr(type);
+        assert !PythonOptions.detailedAssertionsEnabled() || hasNoGetAttr(type);
         try {
             Object descr = lookup.execute(type);
             boolean hasDescr = hasDescProfile.profile(inliningTarget, descr != PNone.NO_VALUE);
