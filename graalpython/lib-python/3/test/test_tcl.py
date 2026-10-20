@@ -772,6 +772,8 @@ class BigmemTclTest(unittest.TestCase):
     def setUp(self):
         self.interp = Tcl()
 
+    # GraalPy change: the INT_MAX cutoff belongs to CPython _tkinter conversions.
+    @support.requires_testcapi
     @support.cpython_only
     @unittest.skipUnless(INT_MAX < PY_SSIZE_T_MAX, "needs UINT_MAX < SIZE_MAX")
     @support.bigmemtest(size=INT_MAX + 1, memuse=5, dry_run=False)
@@ -779,6 +781,8 @@ class BigmemTclTest(unittest.TestCase):
         value = ' ' * size
         self.assertRaises(OverflowError, self.interp.call, 'string', 'index', value, 0)
 
+    # GraalPy change: the INT_MAX cutoff belongs to CPython _tkinter conversions.
+    @support.requires_testcapi
     @support.cpython_only
     @unittest.skipUnless(INT_MAX < PY_SSIZE_T_MAX, "needs UINT_MAX < SIZE_MAX")
     @support.bigmemtest(size=INT_MAX + 1, memuse=2, dry_run=False)
@@ -804,6 +808,8 @@ class BigmemTclTest(unittest.TestCase):
         self.assertRaises(OverflowError, tk.createcommand, value, max)
         self.assertRaises(OverflowError, tk.deletecommand, value)
 
+    # GraalPy change: the INT_MAX cutoff belongs to CPython _tkinter conversions.
+    @support.requires_testcapi
     @support.cpython_only
     @unittest.skipUnless(INT_MAX < PY_SSIZE_T_MAX, "needs UINT_MAX < SIZE_MAX")
     @support.bigmemtest(size=INT_MAX + 1, memuse=6, dry_run=False)

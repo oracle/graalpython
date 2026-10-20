@@ -38,7 +38,8 @@ __all__ = [
     "requires_gil_enabled", "requires_linux_version", "requires_mac_ver",
     "check_syntax_error",
     "requires_gzip", "requires_bz2", "requires_lzma",
-    "bigmemtest", "bigaddrspacetest", "cpython_only", "get_attribute",
+    # GraalPy change: export the optional C API fixture guard.
+    "bigmemtest", "bigaddrspacetest", "cpython_only", "requires_testcapi", "get_attribute",
     "requires_IEEE_754", "requires_zlib",
     "has_fork_support", "requires_fork",
     "has_subprocess_support", "requires_subprocess",
@@ -1265,6 +1266,16 @@ def requires_resource(resource):
         return _id
     else:
         return unittest.skip("resource {0!r} is not enabled".format(resource))
+
+# GraalPy change: C API fixtures can be available on other implementations.
+def requires_testcapi(test):
+    """Decorator for tests that require the optional _testcapi extension."""
+    try:
+        import _testcapi
+    except ImportError:
+        return unittest.skip("requires _testcapi")(test)
+    return test
+
 
 def cpython_only(test):
     """

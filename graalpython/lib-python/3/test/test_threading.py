@@ -3,6 +3,8 @@ Tests for the threading module.
 """
 
 import test.support
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import threading_helper, requires_subprocess, requires_gil_enabled
 from test.support import verbose, cpython_only, os_helper
 from test.support.import_helper import import_module
@@ -962,7 +964,8 @@ class ThreadTests(BaseTestCase):
                 t.join()
             self.assertRaises(ValueError, bs.release)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_frame_tstate_tracing(self):
         _testcapi = import_module("_testcapi")
         # Issue #14432: Crash when a generator is created in a C thread that is

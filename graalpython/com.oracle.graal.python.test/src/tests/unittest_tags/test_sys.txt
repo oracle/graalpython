@@ -44,3 +44,5 @@ test.test_sys.SysModuleTest.test_sys_ignores_cleaning_up_user_data @ darwin-arm6
 test.test_sys.SysModuleTest.test_sys_tracebacklimit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_sys_version_info_no_instantiation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_thread_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sys.UnraisableHookTest.test_custom_unraisablehook @ linux-x86_64
+test.test_sys.UnraisableHookTest.test_original_unraisablehook_wrong_type @ linux-x86_64

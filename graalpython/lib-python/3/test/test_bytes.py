@@ -1798,7 +1798,8 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         self.assertRaises(BufferError, delslice)
         self.assertEqual(b, orig)
 
-    @test.support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @test.support.requires_testcapi
     def test_obsolete_write_lock(self):
         _testcapi = import_helper.import_module('_testcapi')
         self.assertRaises(BufferError, _testcapi.getbuffer_with_null_view, bytearray())

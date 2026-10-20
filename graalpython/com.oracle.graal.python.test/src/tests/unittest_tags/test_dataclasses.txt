@@ -243,3 +243,4 @@ test.test_dataclasses.TestStringAnnotations.test_initvar @ darwin-arm64,linux-aa
 test.test_dataclasses.TestStringAnnotations.test_isnt_classvar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestStringAnnotations.test_isnt_initvar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestStringAnnotations.test_text_annotations @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_dataclasses.TestSlots.test_dataclass_slot_dict_ctype @ linux-x86_64

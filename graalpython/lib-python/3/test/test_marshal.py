@@ -717,7 +717,8 @@ class InterningTestCase(unittest.TestCase, HelperMixin):
         s2 = sys.intern(s)
         self.assertNotEqual(id(s2), id(s))
 
-@support.cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@support.requires_testcapi
 @unittest.skipUnless(_testcapi, 'requires _testcapi')
 class CAPI_TestCase(unittest.TestCase, HelperMixin):
 

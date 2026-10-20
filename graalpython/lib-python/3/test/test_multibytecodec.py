@@ -210,7 +210,8 @@ class Test_IncrementalEncoder(unittest.TestCase):
         self.assertEqual(encoder.encode('\xff'), b'\\xff')
         self.assertEqual(encoder.encode('\n'), b'\n')
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_subinterp(self):
         # bpo-42846: Test a CJK codec in a subinterpreter
         _testcapi = import_module("_testcapi")

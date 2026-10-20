@@ -6,7 +6,8 @@ import os
 import random
 import select
 import unittest
-from test.support import cpython_only
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 
 if not hasattr(select, 'devpoll') :
     raise unittest.SkipTest('test works only on Solaris OS family')
@@ -127,7 +128,8 @@ class DevPollTests(unittest.TestCase):
         self.assertRaises(ValueError, pollster.modify, 1, -1)
         self.assertRaises(OverflowError, pollster.modify, 1, 1 << 64)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_events_mask_overflow_c_limits(self):
         from _testcapi import USHRT_MAX
         pollster = select.devpoll()

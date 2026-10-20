@@ -1609,7 +1609,8 @@ class TestDescriptions(unittest.TestCase):
         self.assertEqual(self._get_summary_line(dict.__class_getitem__),
             "__class_getitem__(object, /) class method of builtins.dict")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @requires_docstrings
     def test_module_level_callable_unrepresentable_default(self):
         _testcapi = import_helper.import_module("_testcapi")
@@ -1617,7 +1618,8 @@ class TestDescriptions(unittest.TestCase):
         self.assertEqual(self._get_summary_line(builtin),
             "func_with_unrepresentable_signature(a, b=<x>)")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @requires_docstrings
     def test_builtin_staticmethod_unrepresentable_default(self):
         self.assertEqual(self._get_summary_line(str.maketrans),
@@ -1627,7 +1629,8 @@ class TestDescriptions(unittest.TestCase):
         self.assertEqual(self._get_summary_line(cls.staticmeth),
             "staticmeth(a, b=<x>)")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @requires_docstrings
     def test_unbound_builtin_method_unrepresentable_default(self):
         self.assertEqual(self._get_summary_line(dict.pop),
@@ -1639,7 +1642,8 @@ class TestDescriptions(unittest.TestCase):
             "meth(self, /, a, b=<x>) unbound "
             "_testcapi.DocStringUnrepresentableSignatureTest method")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @requires_docstrings
     def test_bound_builtin_method_unrepresentable_default(self):
         self.assertEqual(self._get_summary_line({}.pop),
@@ -1651,7 +1655,8 @@ class TestDescriptions(unittest.TestCase):
             "meth(a, b=<x>) "
             "method of _testcapi.DocStringUnrepresentableSignatureTest instance")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @requires_docstrings
     def test_unbound_builtin_classmethod_unrepresentable_default(self):
         _testcapi = import_helper.import_module("_testcapi")
@@ -1661,7 +1666,8 @@ class TestDescriptions(unittest.TestCase):
             "classmeth(type, /, a, b=<x>) unbound "
             "_testcapi.DocStringUnrepresentableSignatureTest method")
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     @requires_docstrings
     def test_bound_builtin_classmethod_unrepresentable_default(self):
         _testcapi = import_helper.import_module("_testcapi")

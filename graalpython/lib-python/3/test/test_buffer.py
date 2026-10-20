@@ -4448,7 +4448,8 @@ class TestBufferProtocol(unittest.TestCase):
         with self.assertRaises(SystemError):
             obj.__buffer__(inspect.BufferFlags.WRITE)
 
-    @support.cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @support.requires_testcapi
     def test_pybuffer_size_from_format(self):
         # basic tests
         for format in ('', 'ii', '3s'):

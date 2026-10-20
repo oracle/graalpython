@@ -19,3 +19,4 @@ test.test_genericclass.TestMROEntry.test_mro_entry_signature @ darwin-arm64,linu
 test.test_genericclass.TestMROEntry.test_mro_entry_type_call @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_genericclass.CAPITest.test_c_class @ linux-x86_64

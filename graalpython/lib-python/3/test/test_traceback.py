@@ -15,6 +15,8 @@ import random
 import string
 from test import support
 import shutil
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import (Error, captured_output, cpython_only, ALWAYS_EQ,
                           requires_debug_ranges, has_no_debug_ranges,
                           requires_subprocess)
@@ -1779,7 +1781,8 @@ class PurePythonTracebackErrorCaretTests(
     """
 
 
-@cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@requires_testcapi
 @requires_debug_ranges()
 @force_not_colorized_test_class
 class CPythonTracebackErrorCaretTests(
@@ -1791,7 +1794,8 @@ class CPythonTracebackErrorCaretTests(
     Same set of tests as above but with Python's internal traceback printing.
     """
 
-@cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@requires_testcapi
 @requires_debug_ranges()
 @force_not_colorized_test_class
 class CPythonTracebackLegacyErrorCaretTests(
@@ -1818,7 +1822,8 @@ class TracebackFormatMixin:
             return self._filter_debug_ranges(expected)
         return expected
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def check_traceback_format(self, cleanup_func=None):
         from _testcapi import traceback_print
         try:
@@ -2124,7 +2129,8 @@ class TracebackFormatMixin:
             '    return traceback.format_stack()\n' % (__file__, lineno+1),
         ])
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_unhashable(self):
         from _testcapi import exception_print
 
@@ -2157,7 +2163,8 @@ class TracebackFormatMixin:
             e = ExceptionGroup('eg', [e])
         return e
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_exception_group_deep_recursion_capi(self):
         from _testcapi import exception_print
         LIMIT = 75
@@ -2179,7 +2186,8 @@ class TracebackFormatMixin:
         self.assertIn('ExceptionGroup', output)
         self.assertLessEqual(output.count('ExceptionGroup'), LIMIT)
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_print_exception_bad_type_capi(self):
         from _testcapi import exception_print
         with captured_output("stderr") as stderr:
@@ -3051,7 +3059,8 @@ class CExcReportingTests(BaseExceptionReportingTests, unittest.TestCase):
     # This checks built-in reporting by the interpreter.
     #
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def get_report(self, e):
         from _testcapi import exception_print
         e = self.get_exception(e)
@@ -4684,7 +4693,8 @@ class PurePythonSuggestionFormattingTests(
     """
 
 
-@cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@requires_testcapi
 class CPythonSuggestionFormattingTests(
     CAPIExceptionFormattingMixin,
     SuggestionFormattingTestBase,

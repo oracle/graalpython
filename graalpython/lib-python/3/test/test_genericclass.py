@@ -274,7 +274,8 @@ class TestClassGetitem(unittest.TestCase):
         self.assertEqual(C[int], 'from metaclass')
 
 
-@support.cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@support.requires_testcapi
 class CAPITest(unittest.TestCase):
 
     def test_c_class(self):

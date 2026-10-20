@@ -2448,7 +2448,8 @@ class UnawaitedWarningDuringShutdownTest(unittest.TestCase):
         assert_python_ok("-c", code)
 
 
-@support.cpython_only
+# GraalPy change: require C API fixtures, regardless of implementation.
+@support.requires_testcapi
 @unittest.skipIf(_testcapi is None, "requires _testcapi")
 class CAPITest(unittest.TestCase):
 

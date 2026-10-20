@@ -309,3 +309,5 @@ test.test_inspect.test_inspect.TestUnwrap.test_unhashable @ darwin-arm64,linux-a
 test.test_inspect.test_inspect.TestUnwrap.test_unwrap_one @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestUnwrap.test_unwrap_several @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestUnwrap.test_wrapped_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_builtin_func @ linux-x86_64
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_decorated_builtins @ linux-x86_64

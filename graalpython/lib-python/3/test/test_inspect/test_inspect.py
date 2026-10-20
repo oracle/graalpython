@@ -39,6 +39,8 @@ try:
 except ImportError:
     ThreadPoolExecutor = None
 
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import cpython_only, import_helper, suppress_immortalization
 from test.support import MISSING_C_DOCSTRINGS, ALWAYS_EQ
 from test.support.import_helper import DirsOnSysPath, ready_to_import
@@ -1376,7 +1378,8 @@ class TestClassesAndFunctions(unittest.TestCase):
              kwonlyargs_e=['dir_fd', 'follow_symlinks'],
              kwonlydefaults_e={'dir_fd': None, 'follow_symlinks': True})
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_getfullargspec_builtin_func(self):
@@ -1385,7 +1388,8 @@ class TestClassesAndFunctions(unittest.TestCase):
         spec = inspect.getfullargspec(builtin)
         self.assertEqual(spec.defaults[0], 'avocado')
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_getfullargspec_builtin_func_no_signature(self):
@@ -3428,7 +3432,8 @@ class TestSignatureObject(unittest.TestCase):
         self.assertEqual(self.signature(A.f4),
                          ((('args', ..., ..., 'var_positional'),
                             ('kwargs', ..., ..., 'var_keyword')), ...))
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_signature_on_builtins(self):
@@ -3509,7 +3514,8 @@ class TestSignatureObject(unittest.TestCase):
         sig = test_unbound_method(method)
         self.assertEqual(list(sig.parameters), ['self', 'buffer'])
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_signature_on_decorated_builtins(self):
@@ -3532,7 +3538,8 @@ class TestSignatureObject(unittest.TestCase):
                                            follow_wrapped=False),
                          inspect.signature(wrapper_like))
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_signature_on_builtins_no_signature(self):
         _testcapi = import_helper.import_module("_testcapi")
         with self.assertRaisesRegex(ValueError,

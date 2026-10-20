@@ -19,7 +19,7 @@ class CAPITest(unittest.TestCase):
 
     maxDiff = None
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_sys_getobject(self):
         # Test PySys_GetObject()
@@ -37,7 +37,7 @@ class CAPITest(unittest.TestCase):
                              "'utf-8' codec can't decode")
         # CRASHES getobject(NULL)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_sys_setobject(self):
         # Test PySys_SetObject()
@@ -69,7 +69,7 @@ class CAPITest(unittest.TestCase):
             setobject(b'\xff', value)
         # CRASHES setobject(NULL, value)
 
-    @support.cpython_only
+    # GraalPy change: the existing module availability guard is sufficient.
     @unittest.skipIf(_testlimitedcapi is None, 'need _testlimitedcapi module')
     def test_sys_getxoptions(self):
         # Test PySys_GetXOptions()

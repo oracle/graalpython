@@ -27,6 +27,8 @@ import unittest
 from unittest import mock
 import _imp
 
+# GraalPy change: gate C API fixtures by availability.
+from test.support import requires_testcapi
 from test.support import os_helper
 from test.support import (
     STDLIB_DIR,
@@ -406,7 +408,8 @@ class ImportTests(unittest.TestCase, ExtraAssertions):
         self.assertEqual(cm.exception.path, os.__file__)
         self.assertRegex(str(cm.exception), r"cannot import name 'i_dont_exist' from 'os' \(.*os.py\)")
 
-    @cpython_only
+    # GraalPy change: require C API fixtures, regardless of implementation.
+    @requires_testcapi
     def test_from_import_missing_attr_has_name_and_so_path(self):
         _testcapi = import_module("_testcapi")
         with self.assertRaises(ImportError) as cm:

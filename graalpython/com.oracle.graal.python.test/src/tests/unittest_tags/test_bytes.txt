@@ -285,3 +285,4 @@ test.test_bytes.BytesTest.test_strip_int_error @ darwin-arm64,linux-aarch64,linu
 test.test_bytes.BytesTest.test_strip_string_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.BytesTest.test_translate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.BytesTest.test_xjust_int_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_bytes.ByteArrayTest.test_obsolete_write_lock @ linux-x86_64
