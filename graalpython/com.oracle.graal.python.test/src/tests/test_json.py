@@ -60,6 +60,39 @@ BIGINT_JSON_DATA = '''
 
 
 class JsonTest(unittest.TestCase):
+    def test_load_duplicate_nested_keys(self):
+        text = '{"a": {"old": 0}, "b": [{"x": 1}], "a": {"last": [{"y": 2}]}, "c": {}}'
+        result = json.loads(text)
+        assert list(result.items()) == [("a", {"last": [{"y": 2}]}), ("b", [{"x": 1}]), ("c", {})]
+        result["d"] = 3
+        del result["b"]
+        assert list(result) == ["a", "c", "d"]
+        assert result.popitem() == ("d", 3)
+        assert json.loads(json.dumps(result)) == result
+
+    def test_load_dict_index_sizes(self):
+        for size in (0, 1, 4, 8, 32, 130, 1024, 33000):
+            expected = {str(i): i for i in range(size)}
+            result = json.loads(json.dumps(expected))
+            assert list(result.items()) == list(expected.items())
+            result["extra"] = None
+            for i in range(0, size, 3):
+                assert result.pop(str(i)) == i
+            result.update(expected)
+            assert result == dict(expected, extra=None)
+
+    def test_load_duplicate_colliding_keys(self):
+        # These strings have the same Java-style string hash.
+        keys = [""]
+        for _ in range(8):
+            keys = [key + suffix for key in keys for suffix in ("Aa", "BB")]
+        pairs = [(key, i) for i, key in enumerate(keys)]
+        pairs += [(key, -i) for i, key in enumerate(reversed(keys))]
+        text = "{" + ",".join(json.dumps(key) + ":" + str(value) for key, value in pairs) + "}"
+        result = json.loads(text)
+        assert list(result.items()) == list(dict(pairs).items())
+        assert result == json.loads(text, object_pairs_hook=dict)
+
     def test_callable_object_hook(self):
         called = []
         class Hook:

@@ -83,6 +83,15 @@ public class EconomicMapStorage extends ObjectHashMap {
         super(initialCapacity);
     }
 
+    /** Takes ownership of the array; callers must not use it after this call. */
+    public static EconomicMapStorage fromStringEntries(Object[] entries, int entryCount, TruffleString.HashCodeNode hashCodeNode, TruffleString.EqualNode equalNode) {
+        return new EconomicMapStorage(entries, entryCount, hashCodeNode, equalNode);
+    }
+
+    private EconomicMapStorage(Object[] entries, int entryCount, TruffleString.HashCodeNode hashCodeNode, TruffleString.EqualNode equalNode) {
+        super(entries, entryCount, hashCodeNode, equalNode);
+    }
+
     private EconomicMapStorage() {
         this(4);
     }
