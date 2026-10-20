@@ -83,7 +83,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
-import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -790,36 +789,11 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class, long.class})
-    @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Replace extends CApiQuaternaryBuiltinNode {
-        @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
+        @Specialization
         static Object replace(Object s, Object substr, Object replstr, long count,
-                        @Shared @Cached ReplaceNode replaceNode) {
-            return replaceNode.execute(null, s, substr, replstr, count);
-        }
-
-        @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
-                        "isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)",
-                        "isStringSubtype(inliningTarget, substr, getClassNode, isSubtypeNode)",
-                        "isStringSubtype(inliningTarget, replstr, getClassNode, isSubtypeNode)"})
-        static Object replace(Object s, Object substr, Object replstr, long count,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Shared @Cached ReplaceNode replaceNode,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return replace(s, substr, replstr, count, replaceNode);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
-                        "!isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)",
-                        "!isStringSubtype(inliningTarget, substr, getClassNode, isSubtypeNode)",
-                        "!isStringSubtype(inliningTarget, replstr, getClassNode, isSubtypeNode)"})
-        static Object replace(Object s, Object substr, Object replstr, long count,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return NATIVE_NULL;
+                        @Cached ReplaceNode replaceNode) {
+            return replaceNode.execute(null, s, substr, replstr, castLong(count));
         }
     }
 
@@ -1050,9 +1024,9 @@ public final class PythonCextUnicodeBuiltins {
                     NativeToPythonNode.class, long.class})
     abstract static class PyUnicode_Split extends CApiTernaryBuiltinNode {
         @Specialization
-        static Object split(Object string, Object sep, Object maxsplit,
+        static Object split(Object string, Object sep, long maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode) {
-            return splitNode.execute(null, string, sep, maxsplit);
+            return splitNode.execute(null, string, sep, castLong(maxsplit));
         }
     }
 
