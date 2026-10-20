@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -62,7 +61,7 @@ public final class PythonCextGenericAliasBuiltins {
     private PythonCextGenericAliasBuiltins() {
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class Py_GenericAlias extends CApiBinaryBuiltinNode {
         @Specialization

@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 
@@ -60,7 +60,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 
 public final class PythonCextByteArrayBuiltins {
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyByteArray_AsString(long bytesPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         if (obj instanceof PByteArray bytes) {

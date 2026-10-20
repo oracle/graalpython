@@ -42,14 +42,12 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.CONST_VOID_PTR;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.annotations.ArgDescriptor.UNSIGNED_CHAR_PTR;
@@ -115,7 +113,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_GETINFO = CApiTiming.create(false, "PyLong_GetInfo");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     static long PyLong_GetInfo() {
         CApiTiming.enter();
         try {
@@ -139,7 +137,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMDOUBLE = CApiTiming.create(false, "GraalPyPrivate_Long_FromDouble");
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {double.class})
+    @CApiBuiltin(ret = PyObject, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {double.class})
     static long GraalPyPrivate_Long_FromDouble(double d) {
         CApiTiming.enter();
         try {
@@ -150,7 +148,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class,
                     int.class})
     abstract static class GraalPyPrivate_Long_FromString extends CApiBinaryBuiltinNode {
 
@@ -302,7 +300,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMLONGLONG = CApiTiming.create(false, "GraalPyPrivate_Long_FromLongLong");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {LONG_LONG}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
     static long GraalPyPrivate_Long_FromLongLong(long n) {
         CApiTiming.enter();
         try {
@@ -314,7 +312,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMUNSIGNEDLONGLONG = CApiTiming.create(false, "GraalPyPrivate_Long_FromUnsignedLongLong");
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Long_FromUnsignedLongLong(long n) {
         CApiTiming.enter();
         try {
@@ -327,7 +325,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_NUMBITS = CApiTiming.create(false, "GraalPyPrivate_Long_NumBits");
 
-    @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = SIZE_T, args = {PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Long_NumBits(long objPtr) {
         CApiTiming.enter();
         try {
@@ -459,7 +457,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, int.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, int.class})
     abstract static class PyLong_FromUnicodeObject extends CApiBinaryBuiltinNode {
         @Specialization
         static Object convert(Object s, int base,
@@ -469,7 +467,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class,
+    @CApiBuiltin(ret = PyObject, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class,
                     int.class, int.class})
     abstract static class _PyLong_FromByteArray extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -494,7 +492,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_ASNATIVEBYTES = CApiTiming.create(false, "PyLong_AsNativeBytes");
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Pointer, Py_ssize_t, Int}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class, long.class, int.class})
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Pointer, Py_ssize_t, Int}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class, long.class, int.class})
     static long PyLong_AsNativeBytes(long objectPtr, long buffer, long size, int flags) {
         CApiTiming.enter();
         try {
@@ -578,7 +576,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_FROMNATIVEBYTES = CApiTiming.create(false, "PyLong_FromNativeBytes");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class, int.class})
+    @CApiBuiltin(ret = PyObject, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class, int.class})
     static long PyLong_FromNativeBytes(long buffer, long size, int flags) {
         CApiTiming.enter();
         try {
@@ -600,7 +598,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_FROMUNSIGNEDNATIVEBYTES = CApiTiming.create(false, "PyLong_FromUnsignedNativeBytes");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class, int.class})
+    @CApiBuiltin(ret = PyObject, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class, int.class})
     static long PyLong_FromUnsignedNativeBytes(long buffer, long size, int flags) {
         CApiTiming.enter();
         try {

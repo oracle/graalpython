@@ -41,16 +41,12 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleStringStrict;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
@@ -165,7 +161,7 @@ public final class PythonCextDictBuiltins {
         return HashingStorageLen.executeUncached(dict.getDictStorage());
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     static long PyDict_New() {
         CApiTiming.enter();
         try {
@@ -177,7 +173,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectPtr}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class, long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class, long.class})
     static int PyDict_Pop(long dictPtr, long keyPtr, long resultPtr) {
         long result = NULLPTR;
         try {
@@ -323,7 +319,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class _PyDict_Pop extends CApiTernaryBuiltinNode {
         @Specialization
@@ -338,7 +334,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
         static Object copy(PDict dict,
@@ -392,7 +388,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -436,7 +432,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object dict, Object key,
@@ -565,7 +561,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class,
                     CharPtrToPythonStrictNode.class})
     abstract static class _PyDict_GetItemStringWithError extends CApiBinaryBuiltinNode {
         @Specialization
@@ -576,7 +572,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
                     CharPtrToPythonStrictNode.class, NativeToPythonNode.class})
     @ImportStatic(PGuards.class)
     abstract static class PyDict_SetItemString extends CApiTernaryBuiltinNode {
@@ -644,7 +640,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
@@ -712,7 +708,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
                     CharPtrToPythonStrictNode.class})
     @ImportStatic(PGuards.class)
     abstract static class PyDict_DelItemString extends CApiBinaryBuiltinNode {
@@ -766,7 +762,7 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
-    @CApiBuiltin(name = "PyDict_ContainsString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(name = "PyDict_ContainsString", ret = Int, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
                     CharPtrToPythonStrictNode.class})
     abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
@@ -796,7 +792,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyDict_Keys extends CApiUnaryBuiltinNode {
         @Specialization
         static Object keys(PDict dict,
@@ -811,7 +807,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyDict_Values extends CApiUnaryBuiltinNode {
         @Specialization
         static Object values(PDict dict,
@@ -826,7 +822,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyDict_Items extends CApiUnaryBuiltinNode {
         @Specialization
         static Object items(PDict dict,

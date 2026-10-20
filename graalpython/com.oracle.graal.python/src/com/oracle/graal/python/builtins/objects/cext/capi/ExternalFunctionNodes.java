@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectReturn;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.BINARYFUNC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.BINARYFUNC_L;
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.BINARYFUNC_R;
@@ -591,7 +591,7 @@ public abstract class ExternalFunctionNodes {
 
         MethodDescriptorRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper wrapper) {
             super(language, name, isStatic);
-            assert wrapper.returnValue == PyObjectReturn;
+            assert wrapper.returnValue == PyObject;
             this.timing = CApiTiming.create(true, name);
         }
 
@@ -654,7 +654,7 @@ public abstract class ExternalFunctionNodes {
 
         ObjectWrapperDescriptorRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper wrapper) {
             super(language, name, wrapper);
-            assert wrapper.signature.returnValue == PyObjectReturn;
+            assert wrapper.signature.returnValue == PyObject;
         }
 
         final NativeToPythonReturnNode ensureNativeToPythonReturnNode() {

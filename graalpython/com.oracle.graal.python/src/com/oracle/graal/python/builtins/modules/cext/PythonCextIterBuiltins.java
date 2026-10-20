@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -59,7 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextIterBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
         @Specialization
         static PSequenceIterator call(Object seq,
@@ -68,7 +67,7 @@ public final class PythonCextIterBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
         @Specialization

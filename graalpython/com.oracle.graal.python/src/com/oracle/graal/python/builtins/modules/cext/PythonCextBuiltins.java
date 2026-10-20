@@ -44,12 +44,11 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyCodeObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyCodeObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObjectRawPointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.annotations.ArgDescriptor.UINTPTR_T;
@@ -878,7 +877,7 @@ public final class PythonCextBuiltins {
         ABI[] abi() default {ABI.GRAALPY};
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, retConversion = long.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = long.class, argConversions = {})
     static long GraalPyPrivate_FileSystemDefaultEncoding() {
         return PythonToNativeInternalNode.executeNewRefUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
     }
@@ -888,7 +887,7 @@ public final class PythonCextBuiltins {
                     T_BUILTINS
     };
 
-    @CApiBuiltin(ret = PyTypeObjectRawPointer, args = {ConstCharPtr}, call = Ignored, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyTypeObject, args = {ConstCharPtr}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Type(long typeNamePtr) {
         TruffleString typeName = (TruffleString) CharPtrToPythonNode.executeUncached(typeNamePtr);
         Python3Core core = PythonContext.get(null).getCore();
@@ -906,7 +905,7 @@ public final class PythonCextBuiltins {
         throw PRaiseNode.raiseStatic(null, PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
     }
 
-    @CApiBuiltin(ret = Void, args = {PyTypeObjectRawPointer}, call = Ignored, retConversion = void.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Void, args = {PyTypeObject}, call = Ignored, retConversion = void.class, argConversions = {long.class})
     @TruffleBoundary
     static void GraalPyPrivate_AddInheritedSlots(long pythonClassPtr) {
         /**
@@ -934,7 +933,7 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyFrameObjectRawPointer, args = {PyThreadState, PyCodeObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {
+    @CApiBuiltin(ret = PyFrameObject, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {
                     long.class, long.class, long.class, long.class})
     static long PyFrame_New(long threadState, long codePtr, long globalsPtr, long localsPtr) {
         PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
@@ -945,7 +944,7 @@ public final class PythonCextBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createPFrame(language, threadState, code, globals, frameLocals));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {Pointer, PyObjectRawPointer, Py_ssize_t, Int, Py_ssize_t, ConstCharPtr, Int, Pointer, Pointer, Pointer,
+    @CApiBuiltin(ret = PyObject, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtr, Int, Pointer, Pointer, Pointer,
                     Pointer}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class, long.class, int.class, long.class, long.class, int.class, long.class, long.class,
                                     long.class, long.class})
     static long GraalPyPrivate_MemoryViewFromBuffer(long bufferStructPointer, long ownerPtr, long lenArg, int readonlyArg, long itemsizeArg, long formatPtr, int ndim, long bufPointer,
@@ -1612,7 +1611,7 @@ public final class PythonCextBuiltins {
         return clazz;
     }
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Ignored, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_GetMMapData(long objectPtr) {
         PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
         PythonContext context = PythonContext.get(null);
@@ -1623,7 +1622,7 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, retConversion = int.class, argConversions = {long.class})
     static int GraalPyPrivate_MMap_IsReadonly(long objectPtr) {
         PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
         return object.isWriteable() ? 0 : 1;

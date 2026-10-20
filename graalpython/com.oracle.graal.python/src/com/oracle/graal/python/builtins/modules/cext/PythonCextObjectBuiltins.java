@@ -41,16 +41,11 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleStringStrict;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_hash_t;
@@ -265,7 +260,7 @@ public abstract class PythonCextObjectBuiltins {
 
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class, int.class})
     abstract static class GraalPyPrivate_Object_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -286,7 +281,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObjectConstPtr, Py_ssize_t}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObjectConstPtr, Py_ssize_t}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonNode.class, NativeToPythonNode.class, long.class, long.class})
     abstract static class GraalPyPrivate_Object_CallMethodObjArgs extends CApiQuaternaryBuiltinNode {
 
@@ -303,7 +298,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject, PyObjectPtr}, call = Ignored, retConversion = int.class, argConversions = {
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject, PyObjectPtr}, call = Ignored, retConversion = int.class, argConversions = {
                     ToPythonStringNode.class, NativeToPythonNode.class, long.class, long.class, NativeToPythonNode.class, long.class})
     static int GraalPyPrivate_Object_VectorcallMethod(long methodNamePtr, long receiverPtr, long argsArray, long nargs, long kwnamesPtr, long resultPointer) {
         TruffleString methodName = CastToTruffleStringNode.castKnownStringUncached(NativeToPythonInternalNode.executeUncached(methodNamePtr, false));
@@ -359,7 +354,7 @@ public abstract class PythonCextObjectBuiltins {
         return args;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, ConstCharPtr, PyObject, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonNode.class, CharPtrToPythonNode.class, NativeToPythonNode.class, int.class})
     abstract static class GraalPyPrivate_Object_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -379,7 +374,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     // directly called without landing function
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyThreadState, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     long.class, NativeToPythonNode.class, long.class, long.class, NativeToPythonNode.class})
     abstract static class _PyObject_MakeTpCall extends CApi5BuiltinNode {
 
@@ -436,7 +431,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyObject_Str extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doGeneric(Object obj,
@@ -451,7 +446,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyObject_Repr extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doGeneric(Object obj,
@@ -530,7 +525,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Object_GenericGetAttr extends CApiBinaryBuiltinNode {
         @Specialization
@@ -574,7 +569,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObjectAsTruffleString, PyObjectPtr}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class, ToPythonStringNode.class,
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class, ToPythonStringNode.class,
                     long.class})
     abstract static class GraalPyPrivate_Object_GetMethod extends CApiTernaryBuiltinNode {
         @Specialization
@@ -639,13 +634,13 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, retConversion = int.class, argConversions = {long.class})
     static int GraalPyPrivate_Object_IsTrue(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         return PyObjectIsTrueNode.executeUncached(obj) ? 1 : 0;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyObject_Bytes extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isBuiltinBytes(bytes)")
         static Object bytes(PBytes bytes) {
@@ -686,7 +681,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     abstract static class GraalPyPrivate_NotImplemented extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
@@ -694,7 +689,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     abstract static class GraalPyPrivate_NoValue extends CApiNullaryBuiltinNode {
         @Specialization
         static PNone doNoValue() {
@@ -702,7 +697,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     abstract static class GraalPyPrivate_None extends CApiNullaryBuiltinNode {
         @Specialization
         static PNone doNativeNone() {
@@ -737,7 +732,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, retConversion = int.class, argConversions = {long.class})
     abstract static class GraalPyPrivate_Object_IsFreed extends CApiUnaryBuiltinNode {
         @Specialization
         static int doLong(long pointer,
@@ -805,7 +800,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyObject_ASCII extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         static Object ascii(Object obj,
@@ -820,7 +815,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class PyObject_Format extends CApiBinaryBuiltinNode {
         @Specialization
@@ -830,14 +825,14 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Object_GetAIter(long objectPtr) {
         Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
         Object result = PyObjectGetAIter.executeUncached(object);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Object_GetIter(long objectPtr) {
         Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
         Object result = PyObjectGetIter.executeUncached(object);
@@ -858,7 +853,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyObject_Dir extends CApiUnaryBuiltinNode {
         @Specialization
         static Object dir(Object object,
@@ -868,7 +863,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Object_GenericGetDict extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getDict(Object object,
@@ -887,7 +882,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, ConstCharPtr}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonNode.class, CharPtrToPythonStrictNode.class})
     abstract static class GraalPyPrivate_Object_GetAttrString extends CApiBinaryBuiltinNode {
         @Specialization
@@ -898,7 +893,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict, PyObject}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, PyObject}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class,
                     CharPtrToPythonStrictNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Object_SetAttrString extends CApiTernaryBuiltinNode {
         @Specialization

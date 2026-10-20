@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -56,7 +55,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextPosixmoduleBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyOS_FSPath extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doit(Object path,

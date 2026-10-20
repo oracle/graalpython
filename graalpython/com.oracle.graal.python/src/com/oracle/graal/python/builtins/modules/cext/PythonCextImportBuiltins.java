@@ -40,12 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleStringStrict;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectAsTruffleString;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.lib.PyImportImport.T_FROMLIST;
 import static com.oracle.graal.python.lib.PyImportImport.T_LEVEL;
@@ -90,11 +87,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextImportBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleStringStrict}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonStrictNode.class})
-    @CApiBuiltin(name = "PyImport_Import", ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonStrictNode.class})
+    @CApiBuiltin(name = "PyImport_Import", ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     ToPythonStringNode.class})
-    @CApiBuiltin(name = "PyImport_ImportModuleNoBlock", ret = PyObjectTransfer, args = {
-                    ConstCharPtrAsTruffleStringStrict}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonStrictNode.class})
+    @CApiBuiltin(name = "PyImport_ImportModuleNoBlock", ret = PyObject, args = {
+                    ConstCharPtr}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonStrictNode.class})
     abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
         @Specialization
         static Object imp(TruffleString name) {
@@ -102,7 +99,7 @@ public final class PythonCextImportBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
     abstract static class PyImport_GetModuleDict extends CApiNullaryBuiltinNode {
         @Specialization
         Object getModuleDict() {
@@ -110,7 +107,7 @@ public final class PythonCextImportBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleStringStrict}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonStrictNode.class})
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonStrictNode.class})
     abstract static class PyImport_AddModuleRef extends CApiUnaryBuiltinNode {
         @Specialization
         static Object addModule(TruffleString name,
@@ -129,7 +126,7 @@ public final class PythonCextImportBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, PyObject, PyObject, PyObject, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject, PyObject, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     ToPythonStringNode.class, NativeToPythonNode.class, NativeToPythonNode.class, NativeToPythonNode.class, int.class})
     abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
         @Specialization
@@ -147,7 +144,7 @@ public final class PythonCextImportBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyImport_GetModule extends CApiUnaryBuiltinNode {
 
         private static final TruffleString T__LOCK_UNLOCK_MODULE = tsLiteral("_lock_unlock_module");

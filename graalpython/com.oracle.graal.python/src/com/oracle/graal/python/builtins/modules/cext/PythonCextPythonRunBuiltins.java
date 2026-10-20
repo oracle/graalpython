@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PY_COMPILER_FLAGS;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -83,7 +82,7 @@ public final class PythonCextPythonRunBuiltins {
     private static final int Py_file_input = 257;
     private static final int Py_eval_input = 258;
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject,
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, Int, PyObject, PyObject,
                     PY_COMPILER_FLAGS}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class, int.class, NativeToPythonNode.class,
                                     NativeToPythonNode.class, long.class})
     abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
@@ -132,7 +131,7 @@ public final class PythonCextPythonRunBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     CharPtrToPythonNode.class, CharPtrToPythonNode.class, int.class})
     abstract static class Py_CompileString extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
@@ -152,7 +151,7 @@ public final class PythonCextPythonRunBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS,
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, ConstCharPtr, Int, PY_COMPILER_FLAGS,
                     Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class, CharPtrToPythonNode.class, int.class, long.class, int.class})
     abstract static class Py_CompileStringExFlags extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
@@ -187,7 +186,7 @@ public final class PythonCextPythonRunBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     CharPtrToPythonNode.class, NativeToPythonNode.class, int.class, long.class, int.class})
     abstract static class Py_CompileStringObject extends CApi5BuiltinNode {
         @Specialization(guards = "isString(source)")

@@ -43,21 +43,12 @@ package com.oracle.graal.python.annotations;
 /** C signature and native type metadata, independent of Java/native conversion nodes. */
 public enum ArgDescriptor {
     Void(NativeSimpleType.VOID, "void"),
-    VoidNoReturn(NativeSimpleType.VOID, "void"),
     PyObject(NativeSimpleType.POINTER, "PyObject*", true),
-    PyObjectBorrowed(NativeSimpleType.POINTER, "PyObject*", true),
-    PyObjectAsTruffleString(NativeSimpleType.POINTER, "PyObject*"),
     PyTypeObject(NativeSimpleType.POINTER, "PyTypeObject*", true),
-    PyTypeObjectBorrowed(NativeSimpleType.POINTER, "PyTypeObject*", true),
-    PyTypeObjectTransfer(NativeSimpleType.POINTER, "PyTypeObject*", true),
-    PyTypeObjectRawPointer(NativeSimpleType.POINTER, "PyTypeObject*"),
     PyListObject(NativeSimpleType.POINTER, "PyListObject*", true),
     PyTupleObject(NativeSimpleType.POINTER, "PyTupleObject*", true),
     PyMethodObject(NativeSimpleType.POINTER, "PyMethodObject*", true),
     PyInstanceMethodObject(NativeSimpleType.POINTER, "PyInstanceMethodObject*", true),
-    PyObjectTransfer(NativeSimpleType.POINTER, "PyObject*", true),
-    PyObjectReturn(NativeSimpleType.POINTER, "PyObject*", true),
-    PyObjectRawPointer(NativeSimpleType.POINTER, "PyObject*"),
     Pointer(NativeSimpleType.POINTER, "void*"),
     Py_ssize_t(NativeSimpleType.SINT64, "Py_ssize_t"),
     Py_hash_t(NativeSimpleType.SINT64, "Py_hash_t"),
@@ -89,10 +80,7 @@ public enum ArgDescriptor {
     CHAR_CONST_ARRAY("char*const []"),
     CHAR_PTR(NativeSimpleType.POINTER, "char*"),
     CHAR_PTR_LIST(NativeSimpleType.POINTER, "char**"),
-    ConstCharPtrAsTruffleString(NativeSimpleType.POINTER, "const char*"),
-    ConstCharPtrAsTruffleStringStrict(NativeSimpleType.POINTER, "const char*"),
     ConstCharPtr(NativeSimpleType.POINTER, "const char*"),
-    CharPtrAsTruffleString(NativeSimpleType.POINTER, "char*"),
     CONST_CHAR_PTR_LIST("const char**"),
     CONST_PY_BUFFER("const Py_buffer*"),
     CONST_PY_SSIZE_T("const Py_ssize_t"),
@@ -134,8 +122,6 @@ public enum ArgDescriptor {
     PyCMethodObject(NativeSimpleType.POINTER, "PyCMethodObject*", true),
     PY_CAPSULE_DESTRUCTOR(NativeSimpleType.POINTER, "PyCapsule_Destructor"),
     PyCodeObject(NativeSimpleType.POINTER, "PyCodeObject*", true),
-    PyCodeObjectTransfer(NativeSimpleType.POINTER, "PyCodeObject*", true),
-    PyCodeObjectRawPointer(NativeSimpleType.POINTER, "PyCodeObject*"),
     PyCode_WatchCallback(NativeSimpleType.POINTER, "PyCode_WatchCallback"),
     PY_COMPILER_FLAGS(NativeSimpleType.POINTER, "PyCompilerFlags*"),
     PY_COMPLEX("Py_complex"),
@@ -146,9 +132,6 @@ public enum ArgDescriptor {
     PyFunctionObject(NativeSimpleType.POINTER, "PyFunctionObject*", true),
     PyFrameConstructor("PyFrameConstructor*"),
     PyFrameObject(NativeSimpleType.POINTER, "PyFrameObject*", true),
-    PyFrameObjectBorrowed(NativeSimpleType.POINTER, "PyFrameObject*", true),
-    PyFrameObjectTransfer(NativeSimpleType.POINTER, "PyFrameObject*", true),
-    PyFrameObjectRawPointer(NativeSimpleType.POINTER, "PyFrameObject*"),
     _PyFrameEvalFunction("_PyFrameEvalFunction"),
     _PyInterpreterFrame("struct _PyInterpreterFrame*"),
     PY_GEN_OBJECT(NativeSimpleType.POINTER, "PyGenObject*", true),
@@ -164,13 +147,11 @@ public enum ArgDescriptor {
     PY_LOCK_STATUS("PyLockStatus"),
     PyLongObject(NativeSimpleType.POINTER, "PyLongObject*", true),
     ConstPyLongObject(NativeSimpleType.POINTER, "const PyLongObject*", true),
-    PyLongObjectTransfer(NativeSimpleType.POINTER, "PyLongObject*", true),
     PY_LONG_EXPORT_PTR(NativeSimpleType.POINTER, "PyLongExport*"),
     PY_LONG_WRITER_PTR(NativeSimpleType.POINTER, "PyLongWriter*"),
     CONST_PY_LONG_LAYOUT_PTR(NativeSimpleType.POINTER, "const PyLongLayout*"),
     PyMemberDef(NativeSimpleType.POINTER, "PyMemberDef*"),
     PyModuleObject(NativeSimpleType.POINTER, "PyModuleObject*", true),
-    PyModuleObjectTransfer(NativeSimpleType.POINTER, "PyModuleObject*", true),
     PyMethodDef(NativeSimpleType.POINTER, "PyMethodDef*"),
     PY_MONITORING_STATE_PTR(NativeSimpleType.POINTER, "PyMonitoringState*"),
     PyModuleDef(NativeSimpleType.POINTER, "PyModuleDef*"), // it's unclear if this should be
@@ -300,15 +281,15 @@ public enum ArgDescriptor {
     func_objvoid("PyObject*(*)(void)"),
     func_objcharsizevoidptr("PyObject*(*)(const char*, Py_ssize_t, void*)"),
     xid_newobjectfunc(NativeSimpleType.POINTER, "xid_newobjectfunc"),
-    atexit_datacallbackfunc(NativeSimpleType.POINTER, "atexit_datacallbackfunc"),
-
-    PrimitiveResult32(NativeSimpleType.SINT32, "int"),
-    PrimitiveResult64(NativeSimpleType.SINT64, "long");
+    atexit_datacallbackfunc(NativeSimpleType.POINTER, "atexit_datacallbackfunc");
 
     private final String cSignature;
     /** Null for descriptors whose native type has not been specified. */
     private final NativeSimpleType nativeSimpleType;
-    /** Whether struct accesses treat this type as a Python object reference rather than raw data. */
+    /**
+     * Whether this native type points to a Python object. Used by struct-access assertions, not to
+     * select conversions.
+     */
     private final boolean pyObject;
 
     ArgDescriptor(String cSignature) {
@@ -347,7 +328,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isCharPtr() {
-        return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString || this == ConstCharPtrAsTruffleStringStrict;
+        return this == CHAR_PTR || this == ConstCharPtr;
     }
 
     public boolean isI64() {

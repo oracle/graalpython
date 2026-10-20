@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyCodeObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyCodeObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
@@ -62,21 +62,21 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodeBuiltins {
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyCodeObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyCodeObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long GraalPyCode_GetNumFree(long codePtr) {
         PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
         return code.getFreeVars().length;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyCodeObjectRawPointer}, call = Direct, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Int, args = {PyCodeObject}, call = Direct, retConversion = int.class, argConversions = {long.class})
     static int GraalPyCode_GetFirstFree(long codePtr) {
         PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
         return code.getVarnames().length + code.getCellVars().length;
     }
 
-    @CApiBuiltin(ret = PyCodeObjectRawPointer, args = {Int, Int, Int, Int, Int, Int, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer,
-                    PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer, Int, PyObjectRawPointer,
-                    PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {int.class, int.class, int.class, int.class, int.class, int.class, long.class, long.class,
+    @CApiBuiltin(ret = PyCodeObject, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject,
+                    PyObject, PyObject, PyObject, PyObject, Int, PyObject,
+                    PyObject}, call = Direct, retConversion = long.class, argConversions = {int.class, int.class, int.class, int.class, int.class, int.class, long.class, long.class,
                                     long.class, long.class, long.class, long.class, long.class, long.class, long.class, int.class, long.class, long.class})
     static long PyUnstable_Code_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, long codePtr, long constsPtr,
                     long namesPtr, long varnamesPtr, long freevarsPtr, long cellvarsPtr,
@@ -108,14 +108,14 @@ public final class PythonCextCodeBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(CallNode.executeUncached(PythonBuiltinClassType.PCode, args));
     }
 
-    @CApiBuiltin(ret = PyCodeObjectRawPointer, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class, int.class})
+    @CApiBuiltin(ret = PyCodeObject, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class, int.class})
     static long PyCode_NewEmpty(long filenamePtr, long funcnamePtr, int lineno) {
         TruffleString filename = (TruffleString) CharPtrToPythonNode.executeUncached(filenamePtr);
         TruffleString funcname = (TruffleString) CharPtrToPythonNode.executeUncached(funcnamePtr);
         return PythonToNativeInternalNode.executeNewRefUncached(createCodeNewEmpty(filename, funcname, lineno));
     }
 
-    @CApiBuiltin(ret = Int, args = {PyCodeObjectRawPointer, Int}, call = Direct, retConversion = int.class, argConversions = {long.class, int.class})
+    @CApiBuiltin(ret = Int, args = {PyCodeObject, Int}, call = Direct, retConversion = int.class, argConversions = {long.class, int.class})
     static int PyCode_Addr2Line(long codePtr, int lasti) {
         PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
         if (lasti < 0) {
@@ -124,13 +124,13 @@ public final class PythonCextCodeBuiltins {
         return code.lastiToLine(lasti);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyCodeObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyCodeObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long GraalPyCode_GetName(long codePtr) {
         PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
         return PythonToNativeInternalNode.executeNewRefUncached(code.getName());
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyCodeObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyCodeObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long GraalPyCode_GetFileName(long codePtr) {
         PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
         return PythonToNativeInternalNode.executeNewRefUncached(code.getFilename());

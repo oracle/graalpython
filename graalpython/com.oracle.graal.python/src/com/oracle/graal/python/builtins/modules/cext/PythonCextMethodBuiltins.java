@@ -40,12 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getArrayElementPtr;
@@ -129,8 +128,8 @@ public final class PythonCextMethodBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyMethodDef, ConstCharPtrAsTruffleString, Pointer, Int, PyObject, PyObject, PyTypeObject,
-                    ConstCharPtrAsTruffleString}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, CharPtrToPythonNode.class, long.class, int.class,
+    @CApiBuiltin(ret = PyObject, args = {PyMethodDef, ConstCharPtr, Pointer, Int, PyObject, PyObject, PyTypeObject,
+                    ConstCharPtr}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, CharPtrToPythonNode.class, long.class, int.class,
                                     NativeToPythonNode.class, NativeToPythonNode.class, NativeToPythonClassNode.class, CharPtrToPythonNode.class})
     public static long GraalPyPrivate_CMethod_NewEx(long methodDefPtr, long nameRaw, long methPtr, int flags, long selfRaw, long moduleRaw, long clsRaw, long docRaw) {
         // errors are expected to be thrown already in native code

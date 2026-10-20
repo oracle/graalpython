@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectConstArray;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 
@@ -71,25 +70,25 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     // METH_FASTCALL
-    FASTCALL(PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t),
+    FASTCALL(PyObject, PyObject, PyObjectConstArray, Py_ssize_t),
 
     // METH_FASTCALL | METH_KEYWORDS
-    FASTCALL_WITH_KEYWORDS(PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
+    FASTCALL_WITH_KEYWORDS(PyObject, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
 
     // METH_VARARGS | METH_KEYWORDS
-    KEYWORDS(PyObjectReturn, PyObject, PyObject, PyObject),
+    KEYWORDS(PyObject, PyObject, PyObject, PyObject),
 
     // METH_VARARGS
-    VARARGS(PyObjectReturn, PyObject, PyObject),
+    VARARGS(PyObject, PyObject, PyObject),
 
     // METH_NOARGS
-    NOARGS(PyObjectReturn, PyObject, PyObject),
+    NOARGS(PyObject, PyObject, PyObject),
 
     // METH_O
-    O(PyObjectReturn, PyObject, PyObject),
+    O(PyObject, PyObject, PyObject),
 
     // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
-    METHOD(PyObjectReturn, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject);
+    METHOD(PyObject, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject);
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;

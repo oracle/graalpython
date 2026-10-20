@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
@@ -66,7 +65,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PythonCextNamespaceBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     static long _PyNamespace_New(long dictPtr) {
         PythonLanguage language = PythonLanguage.get(null);
         PSimpleNamespace namespace = PFactory.createSimpleNamespace(language);

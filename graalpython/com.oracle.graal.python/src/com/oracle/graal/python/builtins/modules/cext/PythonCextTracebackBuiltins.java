@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
@@ -71,7 +71,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextTracebackBuiltins {
 
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct, retConversion = void.class, argConversions = {CharPtrToPythonNode.class,
+    @CApiBuiltin(ret = Void, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct, retConversion = void.class, argConversions = {CharPtrToPythonNode.class,
                     CharPtrToPythonNode.class, int.class})
     abstract static class _PyTraceback_Add extends CApiTernaryBuiltinNode {
         @Specialization

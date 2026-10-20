@@ -42,9 +42,8 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObjectTransfer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
@@ -167,7 +166,7 @@ public final class PythonCextPyStateBuiltins {
         return PNone.NO_VALUE;
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
     abstract static class PyThreadState_GetDict extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -232,7 +231,7 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyFrameObject, args = {PyThreadState}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
     abstract static class PyThreadState_GetFrame extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(@SuppressWarnings("unused") long threadState,
@@ -242,7 +241,7 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {Py_ssize_t}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {Py_ssize_t}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {long.class})
     abstract static class GraalPyPrivate_State_FindModule extends CApiUnaryBuiltinNode {
 
         @Specialization

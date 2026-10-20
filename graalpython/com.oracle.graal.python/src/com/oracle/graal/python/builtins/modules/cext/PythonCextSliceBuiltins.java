@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 
@@ -67,7 +66,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextSliceBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PySlice_New extends CApiTernaryBuiltinNode {
         @Specialization
@@ -85,7 +84,7 @@ public final class PythonCextSliceBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     abstract static class GraalPyPrivate_Ellipsis extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
@@ -93,7 +92,7 @@ public final class PythonCextSliceBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPySlice_Start extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PIntSlice slice) {
@@ -112,7 +111,7 @@ public final class PythonCextSliceBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPySlice_Stop extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PIntSlice slice) {
@@ -131,7 +130,7 @@ public final class PythonCextSliceBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPySlice_Step extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PIntSlice slice) {

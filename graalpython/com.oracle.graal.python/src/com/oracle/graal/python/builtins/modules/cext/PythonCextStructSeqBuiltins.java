@@ -40,12 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObjectTransfer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -130,7 +129,7 @@ public final class PythonCextStructSeqBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer,
+    @CApiBuiltin(ret = PyTypeObject, args = {ConstCharPtr, ConstCharPtr, Pointer,
                     Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class, CharPtrToPythonNode.class, long.class, int.class})
     abstract static class GraalPyPrivate_StructSequence_NewType extends CApiQuaternaryBuiltinNode {
 
@@ -154,7 +153,7 @@ public final class PythonCextStructSeqBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonClassNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonClassNode.class})
     abstract static class PyStructSequence_New extends CApiUnaryBuiltinNode {
 
         @Specialization

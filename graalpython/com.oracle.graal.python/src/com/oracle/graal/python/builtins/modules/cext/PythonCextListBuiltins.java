@@ -45,8 +45,6 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
@@ -105,7 +103,7 @@ public final class PythonCextListBuiltins {
 
     private static final CApiTiming TIMING_PYLIST_NEW = CApiTiming.create(false, "PyList_New");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {Py_ssize_t}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
     static long PyList_New(long size) {
         CApiTiming.enter();
         try {
@@ -131,7 +129,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, long.class})
     abstract static class PyList_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -167,7 +165,7 @@ public final class PythonCextListBuiltins {
 
     private static final CApiTiming TIMING_PYLIST_GETITEMREF = CApiTiming.create(false, "PyList_GetItemRef");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, long.class})
     static long PyList_GetItemRef(long opPtr, long key) {
         CApiTiming.enter();
         try {
@@ -212,7 +210,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyList_AsTuple extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -227,7 +225,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     long.class, long.class})
     abstract static class PyList_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
@@ -279,7 +277,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyListObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyListObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class _PyList_Extend extends CApiBinaryBuiltinNode {
 

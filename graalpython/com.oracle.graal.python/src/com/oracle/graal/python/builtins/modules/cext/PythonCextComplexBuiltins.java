@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
@@ -63,7 +63,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 
 public final class PythonCextComplexBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Pointer}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class})
     static int GraalPyPrivate_Complex_AsCComplex(long objPtr, long out) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         double real, imag;
@@ -87,7 +87,7 @@ public final class PythonCextComplexBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObjectRawPointer}, call = Ignored, retConversion = double.class, argConversions = {long.class})
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored, retConversion = double.class, argConversions = {long.class})
     static double GraalPyPrivate_Complex_RealAsDouble(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         if (PyComplexCheckNode.executeUncached(obj)) {
@@ -101,7 +101,7 @@ public final class PythonCextComplexBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObjectRawPointer}, call = Ignored, retConversion = double.class, argConversions = {long.class})
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored, retConversion = double.class, argConversions = {long.class})
     static double GraalPyPrivate_Complex_ImagAsDouble(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         if (PyComplexCheckNode.executeUncached(obj)) {
@@ -115,7 +115,7 @@ public final class PythonCextComplexBuiltins {
         return 0.0;
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double, ArgDescriptor.Double}, call = Direct, retConversion = long.class, argConversions = {double.class, double.class})
+    @CApiBuiltin(ret = PyObject, args = {ArgDescriptor.Double, ArgDescriptor.Double}, call = Direct, retConversion = long.class, argConversions = {double.class, double.class})
     static long PyComplex_FromDoubles(double r, double i) {
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createComplex(PythonLanguage.get(null), r, i));
     }

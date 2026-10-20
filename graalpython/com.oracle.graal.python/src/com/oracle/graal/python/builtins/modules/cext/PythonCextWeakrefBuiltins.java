@@ -44,8 +44,6 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
@@ -80,7 +78,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextWeakrefBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_GetManagedWeakRefs extends PythonCextBuiltins.CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonAbstractObject object,
@@ -91,12 +89,12 @@ public final class PythonCextWeakrefBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = false, retConversion = void.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct, acquireGil = false, canRaise = false, retConversion = void.class, argConversions = {long.class})
     public static void PyObject_ClearWeakRefs(long pyObject) {
         CApiTransitions.removeNativeWeakRef(PythonContext.get(null), pyObject);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct, acquireGil = false, canRaise = true, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, acquireGil = false, canRaise = true, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyWeakref_NewRef extends CApiBinaryBuiltinNode {
         @Specialization
@@ -106,7 +104,7 @@ public final class PythonCextWeakrefBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = true, retConversion = long.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, acquireGil = false, canRaise = true, retConversion = long.class, argConversions = {
                     long.class, long.class})
     public static long PyWeakref_NewProxy(long objectPtr, long callbackPtr) {
         PythonModule weakrefModule = PythonContext.get(null).lookupBuiltinModule(T__WEAKREF);
@@ -121,7 +119,7 @@ public final class PythonCextWeakrefBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(proxy);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     public static long PyWeakref_GetObject(long referencePtr) {
         Object reference = NativeToPythonInternalNode.executeUncached(referencePtr, false);
         if (reference instanceof PReferenceType ref) {
@@ -140,7 +138,7 @@ public final class PythonCextWeakrefBuiltins {
         return PythonContext.get(null).getCApiContext().getNonePtr();
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectPtr}, call = Direct, acquireGil = false, retConversion = int.class, argConversions = {long.class, long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObjectPtr}, call = Direct, acquireGil = false, retConversion = int.class, argConversions = {long.class, long.class})
     public static int PyWeakref_GetRef(long referencePtr, long resultPtr) {
         long result = NULLPTR;
         try {
@@ -176,7 +174,7 @@ public final class PythonCextWeakrefBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "_PyWeakref_IsDead", ret = Int, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = false, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(name = "_PyWeakref_IsDead", ret = Int, args = {PyObject}, call = Direct, acquireGil = false, canRaise = false, retConversion = int.class, argConversions = {long.class})
     public static int PyWeakref_IsDead(long referencePtr) {
         PReferenceType reference = (PReferenceType) NativeToPythonInternalNode.executeUncached(referencePtr, false);
         return reference.getObject() == null ? 1 : 0;

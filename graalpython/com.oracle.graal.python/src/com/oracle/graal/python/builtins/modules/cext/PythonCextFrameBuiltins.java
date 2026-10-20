@@ -41,10 +41,9 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyCodeObjectTransfer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObjectTransfer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
@@ -67,7 +66,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFrameBuiltins {
-    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyCodeObject, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFrame_GetCode extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PFrame frame,
@@ -94,7 +93,7 @@ public final class PythonCextFrameBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFrame_GetLocals extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PFrame frame,
@@ -108,7 +107,7 @@ public final class PythonCextFrameBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFrame_GetGlobals extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PFrame frame,
@@ -117,7 +116,7 @@ public final class PythonCextFrameBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyFrameObject, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFrame_GetBack extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PFrame frame,
@@ -130,7 +129,7 @@ public final class PythonCextFrameBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyFrameObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFrame_GetBuiltins extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PFrame frame,

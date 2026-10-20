@@ -41,16 +41,11 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyBufferProcs;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObjectRawPointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -146,9 +141,9 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonCextTypeBuiltins {
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonClassNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonClassNode.class,
                     NativeToPythonNode.class})
-    @CApiBuiltin(name = "_PyType_LookupRef", ret = PyObjectTransfer, args = {PyTypeObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(name = "_PyType_LookupRef", ret = PyObject, args = {PyTypeObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonClassNode.class, NativeToPythonNode.class})
     abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {
         @Specialization
@@ -207,7 +202,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject, ConstCharPtr}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonClassNode.class, CharPtrToPythonNode.class})
     abstract static class GraalPyPrivate_Compute_Mro extends CApiBinaryBuiltinNode {
 
@@ -226,7 +221,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonClassNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_NewTypeDict extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -336,8 +331,8 @@ public final class PythonCextTypeBuiltins {
         return func;
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int,
-                    ConstCharPtrAsTruffleString}, call = Ignored, retConversion = int.class, argConversions = {long.class, NativeToPythonClassNode.class, NativeToPythonNode.class,
+    @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtr, Pointer, Int,
+                    ConstCharPtr}, call = Ignored, retConversion = int.class, argConversions = {long.class, NativeToPythonClassNode.class, NativeToPythonNode.class,
                                     CharPtrToPythonNode.class, long.class, int.class, CharPtrToPythonNode.class})
     public static int GraalPyPrivate_Type_AddFunctionToType(long methodDefPtr, long typeRaw, long dictRaw, long nameRaw, long cfunc, int flags, long docRaw) {
         CompilerAsserts.neverPartOfCompilation();
@@ -371,7 +366,7 @@ public final class PythonCextTypeBuiltins {
         return -1;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, PyObjectRawPointer, ConstCharPtr, Int, Py_ssize_t, Int,
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtr, Int, Py_ssize_t, Int,
                     ConstCharPtr}, call = CApiCallPath.Ignored, retConversion = int.class, argConversions = {long.class, long.class, long.class, int.class, long.class, int.class, long.class})
     @TruffleBoundary
     public static int GraalPyPrivate_Type_AddMember(long clazzPtr, long tpDictPtr, long memberNamePtr, int memberType, long offset, int canSet, long memberDocPtr) {
@@ -402,7 +397,7 @@ public final class PythonCextTypeBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, PyObjectRawPointer, ConstCharPtr, Pointer, Pointer, ConstCharPtr, Pointer}, call = Ignored, retConversion = int.class, argConversions = {
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtr, Pointer, Pointer, ConstCharPtr, Pointer}, call = Ignored, retConversion = int.class, argConversions = {
                     long.class, long.class, long.class, long.class, long.class, long.class, long.class})
     static int GraalPyPrivate_Type_AddGetSet(long clsPtr, long dictPtr, long namePtr, long getter, long setter, long docPtr, long closure) {
         Object cls = NativeToPythonClassInternalNode.executeUncached(clsPtr);

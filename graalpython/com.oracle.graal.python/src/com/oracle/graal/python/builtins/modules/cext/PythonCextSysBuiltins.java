@@ -41,10 +41,8 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
@@ -78,7 +76,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSysBuiltins {
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {ConstCharPtrAsTruffleString}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {CharPtrToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {CharPtrToPythonNode.class})
     abstract static class PySys_GetObject extends CApiUnaryBuiltinNode {
 
         @Specialization

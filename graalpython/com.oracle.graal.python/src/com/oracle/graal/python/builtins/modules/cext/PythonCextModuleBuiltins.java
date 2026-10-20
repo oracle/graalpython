@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.CONST_PY_SLOT_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PY_ABI_INFO_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PY_SSIZE_T_PTR;
@@ -50,10 +49,7 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyModuleDef;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyModuleObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyModuleObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectAsTruffleString;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.VOID_PTR_LIST;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -128,7 +124,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextModuleBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, CharPtrToPythonNode.class})
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, CharPtrToPythonNode.class})
     abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
         @Specialization
         static int run(PythonModule module, Object doc,
@@ -138,8 +134,8 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {ToPythonStringNode.class})
-    @CApiBuiltin(name = "PyModule_New", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {ToPythonStringNode.class})
+    @CApiBuiltin(name = "PyModule_New", ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     CharPtrToPythonNode.class})
     abstract static class PyModule_NewObject extends CApiUnaryBuiltinNode {
 
@@ -150,7 +146,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class})
+    @CApiBuiltin(ret = PyModuleObject, args = {ConstCharPtr}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class})
     abstract static class GraalPyPrivate_Module_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -185,7 +181,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getName(PythonModule module,
@@ -220,7 +216,7 @@ public final class PythonCextModuleBuiltins {
         return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PythonModule);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, CharPtrToPythonNode.class,
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, CharPtrToPythonNode.class,
                     NativeToPythonNode.class})
     @ImportStatic(PythonCextModuleBuiltins.class)
     abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
@@ -244,7 +240,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, ArgDescriptor.Long}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class,
                     CharPtrToPythonNode.class, long.class})
     @ImportStatic(PythonCextModuleBuiltins.class)
     abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
@@ -292,7 +288,7 @@ public final class PythonCextModuleBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct, abi = ABI.ABI3T, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class,
+    @CApiBuiltin(ret = PyObject, args = {CONST_PY_SLOT_PTR, PyObject}, call = Direct, abi = ABI.ABI3T, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class,
                     NativeToPythonNode.class})
     public static long PyModule_FromSlotsAndSpec(long slots, long specPtr) {
         if (slots == NULLPTR) {
@@ -383,7 +379,7 @@ public final class PythonCextModuleBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyModule_GetFilenameObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getFilename(PythonModule module,

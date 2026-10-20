@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.annotations.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Double;
 import static com.oracle.graal.python.annotations.ArgDescriptor.INT64_T;
@@ -169,7 +168,7 @@ public enum CFields {
     Py_buffer__itemsize(Py_ssize_t),
     Py_buffer__readonly(Int),
     Py_buffer__ndim(Int),
-    Py_buffer__format(CharPtrAsTruffleString),
+    Py_buffer__format(CHAR_PTR),
     Py_buffer__shape(PY_SSIZE_T_PTR),
     Py_buffer__strides(PY_SSIZE_T_PTR),
     Py_buffer__suboffsets(PY_SSIZE_T_PTR),
@@ -352,7 +351,7 @@ public enum CFields {
     PyASCIIObject__state(Int),
 
     PyCompactUnicodeObject__utf8_length(Py_ssize_t),
-    PyCompactUnicodeObject__utf8(CharPtrAsTruffleString),
+    PyCompactUnicodeObject__utf8(CHAR_PTR),
 
     PyUnicodeObject__data(Pointer),
 

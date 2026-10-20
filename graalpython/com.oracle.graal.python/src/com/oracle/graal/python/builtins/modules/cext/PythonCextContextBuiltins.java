@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.VoidNoReturn;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printPythonLikeStackTrace;
@@ -72,13 +72,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextContextBuiltins {
 
-    @CApiBuiltin(ret = VoidNoReturn, args = {}, call = Ignored, retConversion = void.class, argConversions = {})
+    @CApiBuiltin(ret = Void, args = {}, call = Ignored, retConversion = void.class, argConversions = {})
     @TruffleBoundary
     static void GraalPyPrivate_PrintStacktrace() {
         printPythonLikeStackTrace();
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr, PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PyContextVar_New(long namePtr, long defPtr) {
         if (namePtr == NULLPTR) {
             return NULLPTR;
@@ -88,7 +88,7 @@ public final class PythonCextContextBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(CallNode.executeUncached(PythonBuiltinClassType.ContextVar, name, def));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, Pointer}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class, long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, Pointer}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class, long.class})
     static long GraalPyPrivate_ContextVar_Get(long varPtr, long defPtr, long marker) {
         Object var = NativeToPythonInternalNode.executeUncached(varPtr, false);
         if (!(var instanceof PContextVar pvar)) {
@@ -107,7 +107,7 @@ public final class PythonCextContextBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PyContextVar_Set(long varPtr, long valPtr) {
         Object var = NativeToPythonInternalNode.executeUncached(varPtr, false);
         Object val = NativeToPythonInternalNode.executeUncached(valPtr, false);
@@ -122,7 +122,7 @@ public final class PythonCextContextBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createContextVarsToken(language, pvar, threadState.getContextVarsContext(null), oldValue));
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyContextVar_Reset(long varPtr, long tokenPtr) {
         Object var = NativeToPythonInternalNode.executeUncached(varPtr, false);
         if (!(var instanceof PContextVar pvar)) {
@@ -138,23 +138,23 @@ public final class PythonCextContextBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Direct, retConversion = long.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Direct, retConversion = long.class, argConversions = {})
     static long PyContext_CopyCurrent() {
         return PythonToNativeInternalNode.executeNewRefUncached(PyContextCopyCurrent.executeUncached());
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, retConversion = long.class, argConversions = {long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyContext_Copy(long contextPtr) {
         PContextVarsContext context = (PContextVarsContext) NativeToPythonInternalNode.executeUncached(contextPtr, false);
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.copyContextVarsContext(PythonLanguage.get(null), context));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Direct, retConversion = long.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Direct, retConversion = long.class, argConversions = {})
     static long PyContext_New() {
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createContextVarsContext(PythonLanguage.get(null)));
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Direct, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, retConversion = int.class, argConversions = {long.class})
     static int PyContext_Enter(long contextPtr) {
         PContextVarsContext context = (PContextVarsContext) NativeToPythonInternalNode.executeUncached(contextPtr, false);
         PythonContext pythonContext = PythonContext.get(null);
@@ -163,7 +163,7 @@ public final class PythonCextContextBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Direct, retConversion = int.class, argConversions = {long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, retConversion = int.class, argConversions = {long.class})
     static int PyContext_Exit(long contextPtr) {
         PContextVarsContext context = (PContextVarsContext) NativeToPythonInternalNode.executeUncached(contextPtr, false);
         PythonContext pythonContext = PythonContext.get(null);

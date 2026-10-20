@@ -41,10 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -89,12 +86,12 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextTupleBuiltins {
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, retConversion = long.class, argConversions = {})
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = long.class, argConversions = {})
     static long GraalPyPrivate_Tuple_Empty() {
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createEmptyTuple(PythonLanguage.get(null)));
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, long.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, long.class})
     public abstract static class GraalPyPrivate_Tuple_GetItem extends CApiBinaryBuiltinNode {
 
         public abstract Object execute(PTuple tuple, long key);
@@ -158,7 +155,7 @@ public final class PythonCextTupleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     long.class, long.class})
     abstract static class PyTuple_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization

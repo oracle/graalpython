@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -61,7 +60,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextPickleBufferBuiltins {
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_PickleBuffer_viewobj extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getviewobj(PPickleBuffer object,

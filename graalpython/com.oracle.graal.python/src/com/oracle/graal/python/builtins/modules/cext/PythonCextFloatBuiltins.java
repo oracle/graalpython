@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 
@@ -59,7 +58,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFloatBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {double.class})
+    @CApiBuiltin(ret = PyObject, args = {ArgDescriptor.Double}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {double.class})
     abstract static class GraalPyPrivate_Float_FromDouble extends CApiUnaryBuiltinNode {
         @Specialization
         static double fromDouble(double d) {
@@ -77,7 +76,7 @@ public final class PythonCextFloatBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyFloat_FromString extends CApiUnaryBuiltinNode {
 
         @Specialization

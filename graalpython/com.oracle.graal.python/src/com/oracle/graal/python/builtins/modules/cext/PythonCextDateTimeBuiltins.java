@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -82,7 +80,7 @@ import com.oracle.truffle.api.nodes.Node;
  */
 public final class PythonCextDateTimeBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class, int.class, int.class,
+    @CApiBuiltin(ret = PyObject, args = {Int, Int, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class, int.class, int.class,
                     NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_Date_FromDate extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -92,7 +90,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, Int, Int, Int, PyObject, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {Int, Int, Int, Int, Int, Int, Int, PyObject, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     int.class, int.class, int.class, int.class, int.class, int.class, int.class, NativeToPythonNode.class, NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTime extends CApi9BuiltinNode {
         @Specialization
@@ -102,7 +100,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, PyObject, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class, int.class,
+    @CApiBuiltin(ret = PyObject, args = {Int, Int, Int, Int, PyObject, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class, int.class,
                     int.class, int.class, NativeToPythonNode.class, NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_Time_FromTime extends CApi6BuiltinNode {
         @Specialization
@@ -112,7 +110,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class, int.class, int.class,
+    @CApiBuiltin(ret = PyObject, args = {Int, Int, Int, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class, int.class, int.class,
                     int.class, NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_Delta_FromDelta extends CApi5BuiltinNode {
         @Specialization
@@ -123,7 +121,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_TimeZone_FromTimeZone extends CApiBinaryBuiltinNode {
         @Specialization
@@ -133,7 +131,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_DateTime_FromTimestamp extends CApiTernaryBuiltinNode {
         @Specialization
@@ -150,7 +148,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_Date_FromTimestamp extends CApiBinaryBuiltinNode {
         @Specialization
@@ -165,7 +163,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, Int, Int, Int, PyObject, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {Int, Int, Int, Int, Int, Int, Int, PyObject, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     int.class, int.class, int.class, int.class, int.class, int.class, int.class, NativeToPythonNode.class, int.class, NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTimeAndFold extends CApi10BuiltinNode {
         @Specialization
@@ -175,7 +173,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, PyObject, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class,
+    @CApiBuiltin(ret = PyObject, args = {Int, Int, Int, Int, PyObject, Int, PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {int.class,
                     int.class, int.class, int.class, NativeToPythonNode.class, int.class, NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_DateTimeCAPI_Time_FromTimeAndFold extends CApi7BuiltinNode {
         @Specialization
@@ -273,7 +271,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyDateTime_DATE_GET_TZINFO extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object obj,
@@ -338,7 +336,7 @@ public final class PythonCextDateTimeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyDateTime_TIME_GET_TZINFO extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object obj,

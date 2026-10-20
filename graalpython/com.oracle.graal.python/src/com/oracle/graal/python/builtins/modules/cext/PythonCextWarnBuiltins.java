@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
@@ -60,7 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextWarnBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, long.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Err_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -77,7 +76,7 @@ public final class PythonCextWarnBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
                     NativeToPythonNode.class, NativeToPythonNode.class, NativeToPythonNode.class, int.class, NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Err_WarnExplicit extends CApi6BuiltinNode {
         @Specialization
