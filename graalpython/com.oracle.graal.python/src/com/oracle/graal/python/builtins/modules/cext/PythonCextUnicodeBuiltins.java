@@ -1030,6 +1030,16 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonNode.class, long.class})
+    abstract static class PyUnicode_RSplit extends CApiTernaryBuiltinNode {
+        @Specialization
+        static Object split(Object string, Object sep, long maxsplit,
+                        @Cached StringBuiltins.RSplitNode splitNode) {
+            return splitNode.execute(null, string, sep, castLong(maxsplit));
+        }
+    }
+
     @CApiBuiltin(ret = PyObject, args = {Pointer, Py_ssize_t, ConstCharPtr, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class,
                     long.class, CharPtrToPythonNode.class, int.class})
     abstract static class GraalPyPrivate_Unicode_DecodeUTF8Stateful extends CApiQuaternaryBuiltinNode {

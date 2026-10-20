@@ -905,7 +905,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_IsIdentifier", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_Partition", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_RPartition", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyUnicode_RSplit", ret = PyObject, args = {PyObject, PyObject, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_Resize", ret = Int, args = {PyObjectPtr, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_RichCompare", ret = PyObject, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_Splitlines", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
