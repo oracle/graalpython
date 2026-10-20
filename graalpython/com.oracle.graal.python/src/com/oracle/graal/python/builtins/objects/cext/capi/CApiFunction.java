@@ -857,7 +857,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_acquire_lock", ret = Int, args = {PY_THREAD_TYPE_LOCK, Int}, call = CImpl)
     @CApiBuiltin(name = "PyThread_allocate_lock", ret = PY_THREAD_TYPE_LOCK, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThread_release_lock", ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = CImpl)
-    @CApiBuiltin(name = "PyTraceBack_Print", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_GetFullyQualifiedName", ret = PyObject, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_SUPPORTS_WEAKREFS", ret = Int, args = {PyTypeObject}, call = CImpl)
