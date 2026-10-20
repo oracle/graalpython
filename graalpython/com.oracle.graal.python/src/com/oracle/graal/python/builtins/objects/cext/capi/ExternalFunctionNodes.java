@@ -244,6 +244,11 @@ public abstract class ExternalFunctionNodes {
                             !(object instanceof Number || object instanceof TruffleString);
         }
 
+        @NeverDefault
+        public static ToNativeBorrowedNode create() {
+            return new ToNativeBorrowedNode();
+        }
+
         @TruffleBoundary(allowInlining = true)
         public static long executeUncached(Object object) {
             Object promoted = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), object, false);

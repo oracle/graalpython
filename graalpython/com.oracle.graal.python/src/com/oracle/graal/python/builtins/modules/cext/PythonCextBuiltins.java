@@ -175,6 +175,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorag
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -507,15 +508,20 @@ public final class PythonCextBuiltins {
         private final CApiTiming timing;
         private final ArgDescriptor ret;
         private final ArgDescriptor[] args;
+        private final Supplier<? extends CExtToNativeNode> retConversion;
+        private final Supplier<CExtToJavaNode[]> argConversions;
         private final boolean acquireGil;
         private final String name;
         private final int id;
 
-        public CApiBuiltinExecutable(String name, ArgDescriptor ret, ArgDescriptor[] args, boolean acquireGil, int id) {
+        public CApiBuiltinExecutable(String name, ArgDescriptor ret, ArgDescriptor[] args, boolean acquireGil, int id, Supplier<? extends CExtToNativeNode> retConversion,
+                        Supplier<CExtToJavaNode[]> argConversions) {
             this.timing = CApiTiming.create(false, name);
             this.name = name;
             this.ret = ret;
             this.args = args;
+            this.retConversion = retConversion;
+            this.argConversions = argConversions;
             this.acquireGil = acquireGil;
             this.id = id;
         }
@@ -540,7 +546,7 @@ public final class PythonCextBuiltins {
         }
 
         CExtToNativeNode createRetNode() {
-            return ret.createPythonToNativeNode();
+            return retConversion == null ? null : retConversion.get();
         }
 
         Object getErrorReturnValue() {
@@ -557,7 +563,9 @@ public final class PythonCextBuiltins {
         }
 
         CExtToJavaNode[] createArgNodes() {
-            return ArgDescriptor.createNativeToPython(args);
+            CExtToJavaNode[] nodes = argConversions.get();
+            assert args.length == nodes.length;
+            return nodes;
         }
 
         public CApiBuiltinNode createBuiltinNode() {
@@ -820,6 +828,8 @@ public final class PythonCextBuiltins {
         /**
          * Java-to-native return value conversion node class. A Java primitive class specifies
          * pass-through conversion; {@code void.class} specifies no return value.
+         * Conversion node classes must provide public static no-argument {@code create()} and
+         * {@code getUncached()} methods returning an instance of the specified node class.
          */
         Class<?> retConversion() default long.class;
 
@@ -827,6 +837,8 @@ public final class PythonCextBuiltins {
          * Native-to-Java argument conversion node classes, in the same order as {@link #args()}.
          * A Java primitive class specifies pass-through conversion for that argument. The empty
          * default temporarily allows existing declarations to compile during migration.
+         * Conversion node classes must provide public static no-argument {@code create()} and
+         * {@code getUncached()} methods returning an instance of the specified node class.
          */
         Class<?>[] argConversions() default {};
 

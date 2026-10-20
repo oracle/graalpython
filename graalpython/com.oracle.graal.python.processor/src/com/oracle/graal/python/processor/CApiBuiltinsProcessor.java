@@ -1053,6 +1053,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return true;
     }
 
+    private String conversionFactory(Element origin, TypeMirror conversion, boolean methodReference) {
+        if (!needsConversion(conversion)) {
+            return "null";
+        }
+        TypeElement conversionClass = (TypeElement) processingEnv.getTypeUtils().asElement(conversion);
+        for (Element member : processingEnv.getElementUtils().getAllMembers(conversionClass)) {
+            if (member.getKind() == ElementKind.METHOD && member.getSimpleName().contentEquals("create") &&
+                            member.getModifiers().containsAll(Set.of(Modifier.PUBLIC, Modifier.STATIC))) {
+                ExecutableElement method = (ExecutableElement) member;
+                if (method.getParameters().isEmpty() && processingEnv.getTypeUtils().isAssignable(method.getReturnType(), conversion)) {
+                    return conversion + (methodReference ? "::create" : ".create()");
+                }
+            }
+        }
+        processingEnv.getMessager().printError(String.format("Conversion class %s must have a public static no-argument create() method returning %s",
+                        conversion, conversion), origin);
+        return "null";
+    }
+
     /**
      * Generates the contents of the PythonCextBuiltinRegistry class: the list of builtins, the
      * CApiBuiltinNode factory function, and the slot query function.
@@ -1077,6 +1096,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
                         import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
                         import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
+                        import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
                         import com.oracle.graal.python.runtime.GilNode;
                         import com.oracle.graal.python.runtime.exception.PException;
 
@@ -1089,8 +1109,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
+            String retConversion = conversionFactory(builtin.origin, builtin.retConversion, true);
+            String argConversions = builtin.argConversions.stream().map(conversion -> conversionFactory(builtin.origin, conversion, false)).collect(Collectors.joining(", "));
             lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", ArgDescriptor." +
-                            builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.acquireGil + ", " + builtin.id + ");");
+                            builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.acquireGil + ", " + builtin.id + ", " + retConversion +
+                            ", () -> new CExtToJavaNode[]{" + argConversions + "});");
         }
         lines.add("");
         lines.add("    public static final CApiBuiltinExecutable[] builtins = {");
