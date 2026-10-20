@@ -2153,8 +2153,16 @@ PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size)
                         "Negative size passed to PyUnicode_FromStringAndSize");
         return NULL;
     }
-    // GraalPy change
-    return GraalPyPrivate_Unicode_FromUTF((void*) u, size, 1);
+    if (u != NULL) {
+        // GraalPy change: decode through the managed Unicode implementation.
+        return GraalPyPrivate_Unicode_FromUTF((void*) u, size, 1);
+    }
+    if (size > 0) {
+        PyErr_SetString(PyExc_SystemError,
+            "NULL string with positive size with NULL passed to PyUnicode_FromStringAndSize");
+        return NULL;
+    }
+    return unicode_get_empty();
 }
 
 #if 0 // GraalPy change
