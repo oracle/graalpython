@@ -466,6 +466,79 @@ class TestPyMemoryView(CPyExtTestCase):
 
 
 class TestObject(unittest.TestCase):
+    def test_memoryview_native_exports(self):
+        TestType = CPyExtType(
+            "TestMemoryViewNativeExports",
+            """
+            static PyObject *acquire(PyObject *self, PyObject *args) {
+                PyObject *obj;
+                int flags;
+                if (!PyArg_ParseTuple(args, "Oi", &obj, &flags)) {
+                    return NULL;
+                }
+                TestMemoryViewNativeExportsObject *holder = (TestMemoryViewNativeExportsObject *)self;
+                if (holder->view.obj != NULL) {
+                    PyErr_SetString(PyExc_RuntimeError, "buffer already acquired");
+                    return NULL;
+                }
+                if (PyObject_GetBuffer(obj, &holder->view, flags) < 0) {
+                    return NULL;
+                }
+                Py_buffer *v = &holder->view;
+                return Py_BuildValue("nniiii", v->len, v->itemsize, v->ndim,
+                                     v->format != NULL, v->shape != NULL, v->strides != NULL);
+            }
+            static PyObject *drop(PyObject *self, PyObject *unused) {
+                PyBuffer_Release(&((TestMemoryViewNativeExportsObject *)self)->view);
+                Py_RETURN_NONE;
+            }
+            static PyObject *read_buffer(PyObject *self, PyObject *unused) {
+                Py_buffer *v = &((TestMemoryViewNativeExportsObject *)self)->view;
+                PyObject *result = PyBytes_FromStringAndSize(NULL, v->len);
+                if (result != NULL && PyBuffer_ToContiguous(PyBytes_AS_STRING(result), v, v->len, 'C') < 0) {
+                    Py_CLEAR(result);
+                }
+                return result;
+            }
+            """,
+            cmembers='Py_buffer view;',
+            tp_methods='''
+                {"acquire", acquire, METH_VARARGS, ""},
+                {"drop", drop, METH_NOARGS, ""},
+                {"read", read_buffer, METH_NOARGS, ""}
+            ''',
+        )
+        first, second = TestType(), TestType()
+        mv = memoryview(bytearray(b'abcdefgh'))[1:7].cast('H', shape=[1, 3])
+        assert first.acquire(mv, 0x11c) == (6, 2, 2, 1, 1, 1)  # PyBUF_FULL_RO
+        assert second.acquire(mv, 0) == (6, 2, 1, 0, 0, 0)  # PyBUF_SIMPLE
+        assert first.read() == b'bcdefg'
+        with self.assertRaises(BufferError):
+            mv.release()
+        first.drop()
+        with self.assertRaises(BufferError):
+            mv.release()
+        second.drop()
+        mv.release()
+        with self.assertRaises(ValueError):
+            first.acquire(mv, 0x11c)
+
+        for mv, flags in [(memoryview(b'abc'), 1),  # PyBUF_WRITABLE
+                          (memoryview(b'abcdef')[::2], 0),
+                          (memoryview(b'abcdef')[::2], 0x38),  # PyBUF_C_CONTIGUOUS
+                          (memoryview(b'abcdef')[::2], 0x58),  # PyBUF_F_CONTIGUOUS
+                          (memoryview(b'abcdef')[::2], 0x98),  # PyBUF_ANY_CONTIGUOUS
+                          (memoryview(b'abc'), 4)]:  # PyBUF_SIMPLE | PyBUF_FORMAT
+            with self.assertRaises(BufferError):
+                first.acquire(mv, flags)
+            mv.release()  # Failed acquisition must not leave an export behind.
+
+        mv = memoryview(bytearray(b'abcdef'))[::2]
+        assert first.acquire(mv, 0x11c) == (3, 1, 1, 1, 1, 1)
+        assert first.read() == b'ace'
+        first.drop()
+        mv.release()
+
     def test_memoryview_fromobject_multidim(self):
         TestType = CPyExtType(
             "TestMemoryViewMultidim",

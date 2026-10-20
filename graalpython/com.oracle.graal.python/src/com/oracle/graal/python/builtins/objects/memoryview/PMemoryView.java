@@ -48,6 +48,8 @@ import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -96,6 +98,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     // Phantom ref to this object that will decref/release the managed buffer if any
     private BufferReference reference;
     private int flags;
+    private NativeMemoryViewBuffer nativeBuffer;
 
     // Cached hash value, required to comply with CPython's semantics
     private int cachedHash = -1;
@@ -217,6 +220,13 @@ public final class PMemoryView extends PythonBuiltinObject {
         return exports;
     }
 
+    public long getNativeBuffer() {
+        if (nativeBuffer == null) {
+            nativeBuffer = NativeMemoryViewBuffer.allocate(this);
+        }
+        return nativeBuffer.getPointer();
+    }
+
     public BufferReference getReference() {
         return reference;
     }
@@ -238,6 +248,9 @@ public final class PMemoryView extends PythonBuiltinObject {
         }
         buffer = null;
         owner = null;
+        if (nativeBuffer != null) {
+            CStructAccess.writePtrField(nativeBuffer.getPointer(), CFields.Py_buffer__obj, NULLPTR);
+        }
     }
 
     public void setShouldReleaseImmediately(boolean shouldReleaseImmediately) {

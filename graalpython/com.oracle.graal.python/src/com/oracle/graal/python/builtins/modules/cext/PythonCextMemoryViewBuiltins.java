@@ -42,27 +42,41 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_BUFFER_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.CastNode;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.ContiguousNode;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -73,6 +87,71 @@ public final class PythonCextMemoryViewBuiltins {
 
     public static final int PY_BUF_READ = 0x100;
     public static final int PY_BUF_WRITE = 0x200;
+
+    @CApiBuiltin(ret = PY_BUFFER_PTR, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class})
+    abstract static class GraalPyPrivate_MemoryViewBuffer extends CApiUnaryBuiltinNode {
+        @Specialization
+        static long get(PMemoryView self) {
+            return self.getNativeBuffer();
+        }
+    }
+
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, retConversion = PythonToNativeNode.class, argConversions = {NativeToPythonNode.class})
+    abstract static class GraalPyPrivate_MemoryViewBase extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PMemoryView self) {
+            return self.getOwner() == null ? PNone.NO_VALUE : self.getOwner();
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class})
+    abstract static class GraalPyPrivate_MemoryViewIsReleased extends CApiUnaryBuiltinNode {
+        @Specialization
+        static int get(PMemoryView self) {
+            return self.isReleased() ? 1 : 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_BUFFER_PTR, Int}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class, int.class})
+    abstract static class GraalPyPrivate_MemoryViewGetBuffer extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int get(PMemoryView self, long view, int flags,
+                        @Cached PyObjectGetBuffer getBuffer) {
+            getBuffer.execute(null, self, flags);
+            boolean success = false;
+            try {
+                NativeMemory.memcpy(view, self.getNativeBuffer(), CStructs.Py_buffer.size());
+                writePtrField(view, CFields.Py_buffer__obj, NULLPTR);
+                if (!BufferFlags.requestsFormat(flags)) {
+                    writePtrField(view, CFields.Py_buffer__format, NULLPTR);
+                }
+                if (!BufferFlags.requestsStrides(flags)) {
+                    writePtrField(view, CFields.Py_buffer__strides, NULLPTR);
+                }
+                if (!BufferFlags.requestsShape(flags)) {
+                    writeIntField(view, CFields.Py_buffer__ndim, 1);
+                    writePtrField(view, CFields.Py_buffer__shape, NULLPTR);
+                }
+                writePtrField(view, CFields.Py_buffer__obj, PythonToNativeInternalNode.executeNewRefUncached(self));
+                success = true;
+                return 0;
+            } finally {
+                if (!success) {
+                    self.getExports().decrementAndGet();
+                }
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObject, PY_BUFFER_PTR}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonNode.class, long.class})
+    abstract static class GraalPyPrivate_MemoryViewReleaseBuffer extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object release(PMemoryView self, @SuppressWarnings("unused") long view) {
+            long exports = self.getExports().decrementAndGet();
+            assert exports >= 0;
+            return PNone.NO_VALUE;
+        }
+    }
 
     @CApiBuiltin(ret = PyObject, args = {PyObject, Int, CHAR}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, int.class,
                     byte.class})
