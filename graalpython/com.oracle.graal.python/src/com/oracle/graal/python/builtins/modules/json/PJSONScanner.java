@@ -96,6 +96,12 @@ public final class PJSONScanner extends PythonBuiltinObject {
         }
 
         private static int spread(int hash) {
+            // MurmurHash3 finalizer: mix all bits before masking so similar property names do not
+            // cluster in adjacent slots during linear probing.
+            hash ^= hash >>> 16;
+            hash *= 0x85ebca6b;
+            hash ^= hash >>> 13;
+            hash *= 0xc2b2ae35;
             return hash ^ (hash >>> 16);
         }
 
