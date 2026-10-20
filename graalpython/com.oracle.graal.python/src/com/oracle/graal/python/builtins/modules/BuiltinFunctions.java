@@ -1143,7 +1143,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private void checkFlags(int flags) {
             if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_COMPILE_MASK)) != 0) {
-                throw PRaiseNode.raiseStatic(this, ValueError, null, NO_VALUE, ErrorMessages.UNRECOGNIZED_FLAGS, PythonUtils.EMPTY_OBJECT_ARRAY);
+                throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.UNRECOGNIZED_FLAGS);
             }
         }
 
