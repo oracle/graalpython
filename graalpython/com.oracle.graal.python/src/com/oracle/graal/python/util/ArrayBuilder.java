@@ -83,6 +83,11 @@ public final class ArrayBuilder<T> {
         return (T) data[index];
     }
 
+    public void set(int index, Object item) {
+        assert index >= 0 && index < size;
+        data[index] = item;
+    }
+
     @SuppressWarnings("unchecked")
     public T pop() {
         assert size > 0;
@@ -127,6 +132,13 @@ public final class ArrayBuilder<T> {
      */
     public ObjectSequenceStorage toObjectSequenceStorage() {
         return new ObjectSequenceStorage(data, size);
+    }
+
+    /**
+     * Returns the backing array, which may be overallocated.
+     */
+    public Object[] getInternalArray() {
+        return data;
     }
 
     public int size() {

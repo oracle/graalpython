@@ -40,10 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
+
+import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.RemoveNodeGen;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -65,6 +69,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Generic dictionary/set backing storage implementation.
@@ -225,6 +230,52 @@ public class ObjectHashMap extends HashingStorage {
         // Note: there is no point in null values/keys, we should use empty storage for such cases,
         // this map will almost certainly have some actual elements
         allocateData(INITIAL_INDICES_SIZE);
+    }
+
+    /**
+     * Takes ownership of an alternating string key/value array and builds its hash index. Duplicate
+     * keys are compacted in place, retaining the first key and the last value.
+     */
+    protected ObjectHashMap(Object[] entries, int entryCount, TruffleString.HashCodeNode hashCodeNode, TruffleString.EqualNode equalNode) {
+        assert (entries.length & 1) == 0 && entries.length > 0;
+        assert entryCount >= 0 && entryCount <= entries.length / 2;
+        int entryCapacity = entries.length / 2;
+        int bucketsCount = getMinBucketsCount(entryCapacity);
+        ensureArraySizesFit(bucketsCount, entryCapacity);
+        keysAndValues = entries;
+        metadata = createMetadata(bucketsCount, entryCapacity);
+        int indexByteSize = getIndexByteSize(entryCapacity);
+        int indicesOffset = getIndicesOffset(entryCapacity);
+        int collisionMask = getPhysicalCollisionMaskForIndexByteSize(indexByteSize);
+        for (int i = 0; i < entryCount; i++) {
+            TruffleString key = (TruffleString) entries[i * 2];
+            Object value = entries[i * 2 + 1];
+            long hash = PyObjectHashNode.hash(key, hashCodeNode);
+            int bucket = getIndex(bucketsCount, hash);
+            long perturb = hash;
+            while (true) {
+                int index = getIndex(metadata, indicesOffset, indexByteSize, bucket);
+                if (index == EMPTY_INDEX) {
+                    setIndex(metadata, indicesOffset, indexByteSize, collisionMask, bucket, size + INDEX_OFFSET);
+                    entries[size * 2] = key;
+                    entries[size * 2 + 1] = value;
+                    setHash(metadata, size, hash);
+                    size++;
+                    usedHashes++;
+                    usedIndices++;
+                    break;
+                }
+                int existingIndex = unwrapIndex(index);
+                if (getHash(metadata, existingIndex) == hash && equalNode.execute((TruffleString) getKey(existingIndex, entries), key, TS_ENCODING)) {
+                    entries[existingIndex * 2 + 1] = value;
+                    break;
+                }
+                markCollision(metadata, indicesOffset, indexByteSize, collisionMask, bucket);
+                perturb >>>= PERTURB_SHIFT;
+                bucket = nextIndex(bucketsCount, bucket, perturb);
+            }
+        }
+        Arrays.fill(entries, size * 2, entryCount * 2, null);
     }
 
     protected ObjectHashMap(ObjectHashMap original) {

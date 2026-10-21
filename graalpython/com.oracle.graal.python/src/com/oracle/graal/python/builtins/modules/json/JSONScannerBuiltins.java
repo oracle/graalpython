@@ -459,6 +459,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
             ObjectSequenceStorage currentListStorage = null;
             ObjectSequenceStorage currentPairsStorage = null;
             EconomicMapStorage currentDictStorage = null;
+            ArrayBuilder<?> currentDictEntries = null;
             ScannerState state = ScannerState.initial;
             boolean commaSeen = false;
             int commaIndex = -1;
@@ -482,7 +483,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         TruffleString parentKey = null;
                         final Object dict;
                         /*
-                         * If no hooks are present, the stack contains only the parent dicts or
+                         * If no hooks are present, the stack contains only the parent entry buffers or
                          * lists the current object is nested in. If a objectHook or objectPairsHook
                          * is present, the stack also stores the property keys of nested dicts. For
                          * example, when parsing the innermost dict of '{"a":{"b":{"c":"d"}}}', the
@@ -508,9 +509,10 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                             assert ((PDict) topOfStack).getDictStorage() == currentDictStorage;
                             dict = callObjectHook.executeObject(objectHook, topOfStack);
                         } else {
-                            assert topOfStack instanceof PDict;
-                            assert ((PDict) topOfStack).getDictStorage() == currentDictStorage;
-                            dict = topOfStack;
+                            // Adopt the entry buffer and build the hash index only once, at }.
+                            assert topOfStack == currentDictEntries;
+                            EconomicMapStorage storage = EconomicMapStorage.fromStringEntries(currentDictEntries.getInternalArray(), currentDictEntries.size() / 2, hashCodeNode, equalNode);
+                            dict = PFactory.createDict(language, storage);
                         }
                         if (stack.isEmpty()) {
                             return dict;
@@ -537,11 +539,13 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                 }
                             } else {
                                 Object parent = stack.peek();
-                                if (parent instanceof PDict parentDict) {
-                                    currentDictStorage = (EconomicMapStorage) parentDict.getDictStorage();
+                                if (parent instanceof ArrayBuilder<?> entries) {
+                                    currentDictEntries = entries;
+                                    currentDictEntries.set(currentDictEntries.size() - 1, dict);
                                     nextState = ScannerState.dict;
                                 } else {
                                     currentListStorage = (ObjectSequenceStorage) ((PList) parent).getSequenceStorage();
+                                    currentListStorage.setObjectItemNormalized(currentListStorage.length() - 1, dict);
                                     nextState = ScannerState.list;
                                 }
                             }
@@ -593,8 +597,11 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                             } else if (hasPairsHook) {
                                 currentPairsStorage = (ObjectSequenceStorage) parent;
                                 nextState = ScannerState.dict;
-                            } else {
+                            } else if (hasObjectHook) {
                                 currentDictStorage = (EconomicMapStorage) ((PDict) parent).getDictStorage();
+                                nextState = ScannerState.dict;
+                            } else {
+                                currentDictEntries = (ArrayBuilder<?>) parent;
                                 nextState = ScannerState.dict;
                             }
                         }
@@ -612,8 +619,10 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         idx++;
                         if (hasPairsHook) {
                             value = new ObjectSequenceStorage(4);
-                        } else {
+                        } else if (hasObjectHook) {
                             value = PFactory.createDict(language, EconomicMapStorage.create());
+                        } else {
+                            value = new ArrayBuilder<>(8);
                         }
                         nextState = ScannerState.dict;
                     } else if (c == '[') {
@@ -639,9 +648,12 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         assert propertyKey != null;
                         if (hasPairsHook) {
                             currentPairsStorage.appendItem(PFactory.createTuple(language, new Object[]{propertyKey, value}));
-                        } else {
+                        } else if (hasObjectHook) {
                             HashingStorage newStorage = hashingStorageSetItem.execute(inliningTarget, currentDictStorage, propertyKey, value);
                             assert newStorage == currentDictStorage;
+                        } else {
+                            currentDictEntries.add(propertyKey);
+                            currentDictEntries.add(value);
                         }
                     } else if (state == ScannerState.list) {
                         assert propertyKey == null;
@@ -667,6 +679,9 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                  */
                                 stack.add(propertyKey);
                             }
+                        } else if (!hasObjectHook) {
+                            assert nextState == ScannerState.dict;
+                            currentDictEntries = (ArrayBuilder<?>) value;
                         } else {
                             assert nextState == ScannerState.dict;
                             currentDictStorage = (EconomicMapStorage) ((PDict) value).getDictStorage();
