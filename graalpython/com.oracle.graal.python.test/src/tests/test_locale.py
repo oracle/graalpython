@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -69,3 +69,36 @@ def test_get_setlocale():
         assert locale.getlocale(0) == new_locale
     finally:
         locale.setlocale(0, current_locale)
+
+
+def test_numeric_locale_formatting():
+    import locale
+    from decimal import Decimal
+
+    saved_locale = locale.setlocale(locale.LC_NUMERIC)
+    try:
+        for name, separator, point in (("C", "", "."), ("en_US.UTF-8", ",", "."),
+                                       ("de_DE.UTF-8", ".", ","), ("C", "", ".")):
+            try:
+                locale.setlocale(locale.LC_NUMERIC, name)
+            except locale.Error:
+                if name == "C":
+                    raise
+                continue  # These locales are not installed on every test host.
+            conv = locale.localeconv()
+            assert conv["decimal_point"] == point
+            assert conv["thousands_sep"] == separator
+            if name == "C":
+                assert conv["grouping"] == []
+            integer = separator.join(("1", "234", "567"))
+            number = integer + point + "89"
+            for sign in ("", "-"):
+                assert format(int(sign + "1234567"), "n") == sign + integer
+                assert format(float(sign + "1234567.89"), ".9n") == sign + number
+                assert format(Decimal(sign + "1234567.89"), "n") == sign + number
+                assert format(complex(float(sign + "1234567.89"), 1234567.89), ".9n") == sign + number + "+" + number + "j"
+            assert locale.format_string("%.2f", 1234567.89, grouping=True) == number
+            assert format(1234567.89, ",.2f") == "1,234,567.89"
+            assert format(1234567, ",d") == "1,234,567"
+    finally:
+        locale.setlocale(locale.LC_NUMERIC, saved_locale)

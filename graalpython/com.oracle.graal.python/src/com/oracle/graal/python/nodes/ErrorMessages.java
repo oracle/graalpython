@@ -1604,6 +1604,45 @@ public abstract class ErrorMessages {
     public static final TruffleString NOT_A_DIGIT = tsLiteral("not a digit");
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
 
+    // decimal
+    public static final TruffleString OPTIONAL_DECIMAL_CONTEXT = tsLiteral("optional argument must be a context");
+    public static final TruffleString CONVERSION_FROM_S_TO_DECIMAL_NOT_SUPPORTED = tsLiteral("conversion from %s to Decimal is not supported");
+    public static final TruffleString DECIMAL_SEQUENCE_LENGTH = tsLiteral("argument must be a sequence of length 3");
+    public static final TruffleString DECIMAL_SIGN = tsLiteral("sign must be an integer with the value 0 or 1");
+    public static final TruffleString DECIMAL_EXPONENT = tsLiteral("exponent must be an integer");
+    public static final TruffleString DECIMAL_SPECIAL_EXPONENT = tsLiteral("string argument in the third position must be 'F', 'n' or 'N'");
+    public static final TruffleString DECIMAL_COEFFICIENT = tsLiteral("coefficient must be a tuple of digits");
+    public static final TruffleString DECIMAL_INVALID_SIGNAL_DICT = tsLiteral("invalid signal dict");
+    public static final TruffleString DECIMAL_EXPECTED_SIGNAL_DICT = tsLiteral("argument must be a signal dict");
+    public static final TruffleString DECIMAL_SIGNAL_DELETE = tsLiteral("signal keys cannot be deleted");
+    public static final TruffleString DECIMAL_CONTEXT_TYPE = tsLiteral("argument must be a context");
+    public static final TruffleString DECIMAL_PREC_RANGE = tsLiteral("valid range for prec is [1, MAX_PREC]");
+    public static final TruffleString DECIMAL_EMIN_RANGE = tsLiteral("valid range for Emin is [MIN_EMIN, 0]");
+    public static final TruffleString DECIMAL_EMAX_RANGE = tsLiteral("valid range for Emax is [0, MAX_EMAX]");
+    public static final TruffleString DECIMAL_CAPITALS_RANGE = tsLiteral("valid values for capitals are 0 or 1");
+    public static final TruffleString DECIMAL_CLAMP_RANGE = tsLiteral("valid values for clamp are 0 or 1");
+    public static final TruffleString DECIMAL_ROUNDING_VALUES = tsLiteral(
+                    "valid values for rounding are:\n  [ROUND_CEILING, ROUND_FLOOR, ROUND_UP, ROUND_DOWN,\n   ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_HALF_EVEN,\n   ROUND_05UP]");
+    public static final TruffleString DECIMAL_INVALID_SIGNALS = tsLiteral(
+                    "valid values for signals are:\n  [InvalidOperation, FloatOperation, DivisionByZero,\n   Overflow, Underflow, Subnormal, Inexact, Rounded,\n   Clamped]");
+    public static final TruffleString DECIMAL_INFINITY_TO_INTEGER = tsLiteral("cannot convert Infinity to integer");
+    public static final TruffleString DECIMAL_NAN_TO_INTEGER = tsLiteral("cannot convert NaN to integer");
+    public static final TruffleString DECIMAL_SNAN_TO_FLOAT = tsLiteral("cannot convert signaling NaN to float");
+    public static final TruffleString DECIMAL_SNAN_HASH = tsLiteral("Cannot hash a signaling NaN value");
+    public static final TruffleString DECIMAL_INTEGER_ARGUMENT = tsLiteral("argument must be an integer");
+    public static final TruffleString DECIMAL_ARGUMENT = tsLiteral("argument must be a Decimal");
+    public static final TruffleString DECIMAL_FROM_FLOAT_ARGUMENT = tsLiteral("argument must be int or float");
+    public static final TruffleString DECIMAL_INFINITY_TO_RATIO = tsLiteral("cannot convert Infinity to integer ratio");
+    public static final TruffleString DECIMAL_NAN_TO_RATIO = tsLiteral("cannot convert NaN to integer ratio");
+    public static final TruffleString DECIMAL_FORMAT_N_DEPRECATED = tsLiteral("Format specifier 'N' is deprecated and slated for removal in Python 3.18");
+    public static final TruffleString DECIMAL_ROUND_DIGITS = tsLiteral("optional arg must be an integer");
+    public static final TruffleString DECIMAL_FORMAT_STRING = tsLiteral("format arg must be str");
+    public static final TruffleString DECIMAL_FORMAT_DICT = tsLiteral("optional argument must be a dict");
+    public static final TruffleString DECIMAL_FORMAT_OVERRIDE = tsLiteral("invalid override dict");
+    public static final TruffleString DECIMAL_FORMAT_INVALID = tsLiteral("invalid format string");
+    public static final TruffleString DECIMAL_FORMAT_LIMITS = tsLiteral("format specification exceeds internal limits of _decimal");
+    public static final TruffleString DECIMAL_INVALID_LOCALCONTEXT_KEYWORD = tsLiteral("'%s' is an invalid keyword argument for this function");
+
     // re module errors
     public static final TruffleString BAD_ESCAPE_S = tsLiteral("bad escape %s");
     public static final TruffleString BAD_ESCAPE_END_OF_STRING = tsLiteral("bad escape (end of string)");

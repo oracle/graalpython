@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalModuleState;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -189,6 +190,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -508,10 +510,20 @@ public final class PythonContext extends Python3Core {
         }
 
         public PContextVarsContext getContextVarsContext(Node node) {
-            if (contextVarsContext == null) {
-                contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
+            return getContextVarsContext(node, InlinedBranchProfile.getUncached());
+        }
+
+        public PContextVarsContext getContextVarsContext(Node node, InlinedBranchProfile initializeProfile) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, contextVarsContext == null)) {
+                initializeProfile.enter(node);
+                initializeContextVarsContext(node);
             }
             return contextVarsContext;
+        }
+
+        @TruffleBoundary
+        private void initializeContextVarsContext(Node node) {
+            contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
         }
 
         public void setContextVarsContext(PContextVarsContext contextVarsContext) {
@@ -752,6 +764,10 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private NativeZlibSupport nativeZlib;
     @CompilationFinal private NativeBz2Support nativeBz2lib;
     @CompilationFinal private NativeLZMASupport nativeLZMA;
+
+    // This is just a shortcut to the module state of _decimal module.
+    // It's used all the time in decimal builtins and needs to be fast.
+    @CompilationFinal private DecimalModuleState decimalModuleState;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -1233,6 +1249,15 @@ public final class PythonContext extends Python3Core {
             releaseGil();
         }
 
+    }
+
+    public DecimalModuleState getDecimalModuleState() {
+        return decimalModuleState;
+    }
+
+    public void setDecimalModuleState(DecimalModuleState state) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        decimalModuleState = state;
     }
 
     public void resetPerfCounter() {

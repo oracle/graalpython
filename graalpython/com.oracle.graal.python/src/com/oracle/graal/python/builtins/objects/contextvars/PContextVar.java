@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PContextVar extends PythonBuiltinObject {
@@ -73,7 +74,11 @@ public final class PContextVar extends PythonBuiltinObject {
     }
 
     public Object getValue(Node node, PythonContext.PythonThreadState state) {
-        return state.getContextVarsContext(node).contextVarValues.lookup(this, getHash());
+        return getValue(node, state, InlinedBranchProfile.getUncached());
+    }
+
+    public Object getValue(Node node, PythonContext.PythonThreadState state, InlinedBranchProfile initializeProfile) {
+        return state.getContextVarsContext(node, initializeProfile).contextVarValues.lookup(this, getHash());
     }
 
     public void setValue(Node node, PythonContext.PythonThreadState state, Object value) {

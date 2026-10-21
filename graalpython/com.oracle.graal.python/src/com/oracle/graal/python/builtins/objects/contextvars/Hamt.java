@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -223,7 +223,7 @@ public final class Hamt {
     }
 
     @CompilerDirectives.TruffleBoundary
-    private static Object lookupKeyInPart(TreePart part, Object key, int hash, int hashShift) {
+    private static Entry lookupEntryInPart(TreePart part, Object key, int hash, int hashShift) {
         assert hashShift <= 25;
         if (part == null) {
             return null;
@@ -231,7 +231,7 @@ public final class Hamt {
         if (part instanceof Entry) {
             Entry existing = (Entry) part;
             if (existing.hash == hash && PyObjectRichCompareBool.executeEqUncached(existing.key, key)) {
-                return existing.value;
+                return existing;
             }
             return null;
         }
@@ -243,12 +243,12 @@ public final class Hamt {
                 return null;
             }
             TreePart deeper = existing.elems[sparseIdx];
-            return lookupKeyInPart(deeper, key, hash, hashShift + 5);
+            return lookupEntryInPart(deeper, key, hash, hashShift + 5);
         }
         if (part instanceof ArrayPart) {
             ArrayPart existing = (ArrayPart) part;
             int position = hashIdx(hash, hashShift);
-            return lookupKeyInPart(existing.elems[position], key, hash, hashShift + 5);
+            return lookupEntryInPart(existing.elems[position], key, hash, hashShift + 5);
         }
         if (part instanceof CollisionPart) {
             CollisionPart existing = (CollisionPart) part;
@@ -257,7 +257,7 @@ public final class Hamt {
             }
             for (Entry entry : existing.elems) {
                 if (PyObjectRichCompareBool.executeEqUncached(entry.key, key)) {
-                    return entry.value;
+                    return entry;
                 }
             }
             return null;
@@ -266,7 +266,12 @@ public final class Hamt {
     }
 
     public Object lookup(Object key, int hash) {
-        return lookupKeyInPart(root, key, hash, 0);
+        Entry entry = lookupEntry(key, hash);
+        return entry == null ? null : entry.value;
+    }
+
+    public Entry lookupEntry(Object key, int hash) {
+        return lookupEntryInPart(root, key, hash, 0);
     }
 
     private static TreePart bitmapWithoutKey(BitmapPart existing, Object key, int hash, int hashShift) {

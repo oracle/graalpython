@@ -79,7 +79,8 @@ ROUND_05UP = 'ROUND_05UP'
 # Compatibility with the C version
 HAVE_THREADS = True
 HAVE_CONTEXTVAR = True
-if sys.maxsize == 2**63-1:
+# GraalPy change: assume 64bit regardless of maxsize
+if True:
     MAX_PREC = 999999999999999999
     MAX_EMAX = 999999999999999999
     MIN_EMIN = -999999999999999999

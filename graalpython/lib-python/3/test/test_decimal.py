@@ -65,6 +65,9 @@ sys.modules['decimal'] = orig_sys_decimal
 
 requires_cdecimal = unittest.skipUnless(C, "test requires C version")
 
+# GraalPy change: decimal uses 64-bit limits despite its 32-bit sys.maxsize.
+DECIMAL_MAXSIZE = 2**63-1 if sys.implementation.name == 'graalpy' else sys.maxsize
+
 # Useful Test Constant
 Signals = {
   C: tuple(C.getcontext().flags.keys()) if C else None,
@@ -5579,18 +5582,19 @@ class CWhitebox(unittest.TestCase):
             c.traps[InvalidOperation] = True
 
             # Clamped
-            x = "0e%d" % sys.maxsize
+            # GraalPy change: use decimal's 64-bit boundaries.
+            x = "0e%d" % DECIMAL_MAXSIZE
             self.assertRaises(InvalidOperation, Decimal, x)
 
-            x = "0e%d" % (-sys.maxsize-1)
+            x = "0e%d" % (-DECIMAL_MAXSIZE-1)
             self.assertRaises(InvalidOperation, Decimal, x)
 
             # Overflow
-            x = "1e%d" % sys.maxsize
+            x = "1e%d" % DECIMAL_MAXSIZE
             self.assertRaises(InvalidOperation, Decimal, x)
 
             # Underflow
-            x = "1e%d" % (-sys.maxsize-1)
+            x = "1e%d" % (-DECIMAL_MAXSIZE-1)
             self.assertRaises(InvalidOperation, Decimal, x)
 
     def test_from_tuple(self):
@@ -5608,29 +5612,30 @@ class CWhitebox(unittest.TestCase):
             c.traps[Underflow] = True
 
             # SSIZE_MAX
-            x = (1, (), sys.maxsize)
+            # GraalPy change: use decimal's 64-bit boundaries.
+            x = (1, (), DECIMAL_MAXSIZE)
             self.assertEqual(str(c.create_decimal(x)), '-0E+999999')
             self.assertRaises(InvalidOperation, Decimal, x)
 
-            x = (1, (0, 1, 2), sys.maxsize)
+            x = (1, (0, 1, 2), DECIMAL_MAXSIZE)
             self.assertRaises(Overflow, c.create_decimal, x)
             self.assertRaises(InvalidOperation, Decimal, x)
 
             # SSIZE_MIN
-            x = (1, (), -sys.maxsize-1)
+            x = (1, (), -DECIMAL_MAXSIZE-1)
             self.assertEqual(str(c.create_decimal(x)), '-0E-1000007')
             self.assertRaises(InvalidOperation, Decimal, x)
 
-            x = (1, (0, 1, 2), -sys.maxsize-1)
+            x = (1, (0, 1, 2), -DECIMAL_MAXSIZE-1)
             self.assertRaises(Underflow, c.create_decimal, x)
             self.assertRaises(InvalidOperation, Decimal, x)
 
             # OverflowError
-            x = (1, (), sys.maxsize+1)
+            x = (1, (), DECIMAL_MAXSIZE+1)
             self.assertRaises(OverflowError, c.create_decimal, x)
             self.assertRaises(OverflowError, Decimal, x)
 
-            x = (1, (), -sys.maxsize-2)
+            x = (1, (), -DECIMAL_MAXSIZE-2)
             self.assertRaises(OverflowError, c.create_decimal, x)
             self.assertRaises(OverflowError, Decimal, x)
 

@@ -108,6 +108,10 @@ import com.oracle.graal.python.builtins.objects.contextvars.PContextIterator;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimal;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalContext;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalContextManager;
+import com.oracle.graal.python.builtins.objects.decimal.PDecimalSignalDict;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
@@ -388,6 +392,50 @@ public final class PFactory {
 
     public static PTupleGetter createTupleGetter(Object cls, Shape shape, int index, Object doc) {
         return new PTupleGetter(cls, shape, index, doc);
+    }
+
+    public static PDecimal createDecimal(PythonLanguage language, long value) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), value);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, long value) {
+        return new PDecimal(cls, shape, value);
+    }
+
+    public static PDecimal createDecimal(PythonLanguage language, boolean negative, long coefficient, long exponent, PDecimal.Kind kind) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, boolean negative, long coefficient, long exponent, PDecimal.Kind kind) {
+        return new PDecimal(cls, shape, negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(PythonLanguage language, boolean negative, BigInteger coefficient, long exponent, PDecimal.Kind kind) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, boolean negative, BigInteger coefficient, long exponent, PDecimal.Kind kind) {
+        return new PDecimal(cls, shape, negative, coefficient, exponent, kind);
+    }
+
+    public static PDecimal createDecimal(PythonLanguage language, PDecimal value) {
+        return createDecimal(PythonBuiltinClassType.PDecimal, PythonBuiltinClassType.PDecimal.getInstanceShape(language), value);
+    }
+
+    public static PDecimal createDecimal(Object cls, Shape shape, PDecimal value) {
+        return new PDecimal(cls, shape, value);
+    }
+
+    public static PDecimalContext createDecimalContext(Object cls, Shape shape) {
+        return new PDecimalContext(cls, shape);
+    }
+
+    public static PDecimalSignalDict createDecimalSignalDict(Object cls, Shape shape, PDecimalContext context, boolean traps) {
+        return new PDecimalSignalDict(cls, shape, context, traps);
+    }
+
+    public static PDecimalContextManager createDecimalContextManager(PythonLanguage language, PDecimalContext outer, PDecimalContext local) {
+        return new PDecimalContextManager(PythonBuiltinClassType.PDecimalContextManager, PythonBuiltinClassType.PDecimalContextManager.getInstanceShape(language), outer, local);
     }
 
     public static PComplex createComplex(Object cls, Shape shape, double real, double imag) {

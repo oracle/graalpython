@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.DecimalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
@@ -238,6 +239,10 @@ import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalBuiltins;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalContextBuiltins;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalContextManagerBuiltins;
+import com.oracle.graal.python.builtins.objects.decimal.DecimalSignalDictBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterCommonBuiltins;
@@ -761,6 +766,13 @@ public abstract class Python3Core {
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
+
+                        // _decimal
+                        new DecimalModuleBuiltins(),
+                        new DecimalBuiltins(),
+                        new DecimalContextBuiltins(),
+                        new DecimalContextManagerBuiltins(),
+                        new DecimalSignalDictBuiltins(),
 
                         // pickle
                         new PickleModuleBuiltins(),

@@ -728,7 +728,11 @@ public abstract class CExtNodes {
                 current = getBaseClassNode.execute(inliningTarget, current);
             } while (current != null);
             // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
-            return isBasicsizeOrWeaklistoffset ? indexedSlotsSize + CStructs.PyObject.size() : 0L;
+            if (isBasicsizeOrWeaklistoffset) {
+                // Hardcode sizeof(PyObject) because the C API might not be loaded yet
+                return 16 + indexedSlotsSize;
+            }
+            return 0L;
         }
     }
 
