@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
