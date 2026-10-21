@@ -40,17 +40,16 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyThreadState;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.exception.PBaseException.T_CODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TRACEBACK;
@@ -76,6 +75,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadAndClearNativeException;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -136,7 +138,7 @@ public final class PythonCextErrBuiltins {
         return obj instanceof PNone ? NATIVE_NULL : obj;
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Err_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -156,7 +158,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyThreadState, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyThreadState, PyObject}, call = Direct, retConversion = void.class, argConversions = {long.class, NativeToPythonNode.class})
     abstract static class _PyErr_SetHandledException extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -184,7 +186,8 @@ public final class PythonCextErrBuiltins {
      * Exceptions are usually printed using the traceback module or the hook function
      * {@code sys.excepthook}. This is the last resort if the hook function itself failed.
      */
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class,
+                    NativeToPythonNode.class})
     abstract static class PyErr_Display extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -197,7 +200,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Err_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
@@ -222,7 +225,8 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+                    CharPtrToPythonNode.class, NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyErr_NewException extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -268,7 +272,9 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, ConstCharPtr, PyObject,
+                    PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class, CharPtrToPythonNode.class, NativeToPythonNode.class,
+                                    NativeToPythonNode.class})
     abstract static class PyErr_NewExceptionWithDoc extends CApiQuaternaryBuiltinNode {
 
         @Specialization
@@ -290,7 +296,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     abstract static class GraalPyPrivate_Err_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
@@ -313,7 +319,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyThreadState}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
     abstract static class _PyErr_GetHandledException extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -330,7 +336,8 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonNode.class})
     abstract static class _Py_CalculateSuggestions extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -340,7 +347,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {ConstCharPtr, PyObject}, call = Ignored, retConversion = void.class, argConversions = {CharPtrToPythonNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_WriteUnraisable extends CApiBinaryBuiltinNode {
         @Specialization
         static Object write(Object msg, Object obj,
@@ -366,7 +373,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyErr_WriteUnraisable extends CApiUnaryBuiltinNode {
         @Specialization
         static Object write(Object obj,
@@ -385,7 +392,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {Int}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {Int}, call = Direct, retConversion = void.class, argConversions = {int.class})
     abstract static class PyErr_PrintEx extends CApiUnaryBuiltinNode {
 
         @TruffleBoundary
@@ -473,7 +480,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyException_SetCause extends CApiBinaryBuiltinNode {
         @Specialization
         Object setCause(Object exc, Object cause,
@@ -484,7 +491,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyException_GetCause extends CApiUnaryBuiltinNode {
         @Specialization
         Object getCause(Object exc,
@@ -494,7 +501,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyException_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object setCause(Object exc,
@@ -504,7 +511,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyException_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         Object setContext(Object exc, Object context,
@@ -515,7 +522,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyException_GetTraceback extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -526,7 +533,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyException_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -538,7 +545,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyException_GetArgs extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -549,7 +556,7 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyException_SetArgs extends CApiBinaryBuiltinNode {
 
         @Specialization

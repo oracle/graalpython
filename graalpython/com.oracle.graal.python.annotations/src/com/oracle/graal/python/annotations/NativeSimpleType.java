@@ -48,12 +48,26 @@ package com.oracle.graal.python.annotations;
  * </p>
  */
 public enum NativeSimpleType {
-    VOID,
-    SINT8,
-    SINT16,
-    SINT32,
-    SINT64,
-    FLOAT,
-    DOUBLE,
-    POINTER;    // raw pointer represented in Java as a long
+    VOID(void.class),
+    SINT8(byte.class),
+    SINT16(short.class),
+    SINT32(int.class),
+    SINT64(long.class),
+    FLOAT(float.class),
+    DOUBLE(double.class),
+    POINTER(long.class);
+
+    private final Class<?> carrier;
+
+    NativeSimpleType(Class<?> carrier) {
+        this.carrier = carrier;
+    }
+
+    /**
+     * Returns the Java carrier used by native access signatures. Pointers are represented as raw
+     * {@code long} addresses; {@link #VOID} uses {@code void.class} for return signatures.
+     */
+    public Class<?> carrier() {
+        return carrier;
+    }
 }

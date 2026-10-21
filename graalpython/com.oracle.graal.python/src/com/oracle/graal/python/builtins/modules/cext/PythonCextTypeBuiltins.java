@@ -40,20 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyBufferProcs;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectRawPointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
@@ -64,6 +59,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -77,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -84,7 +81,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodFlags;
 import com.oracle.graal.python.builtins.objects.cext.capi.WrapperDescriptorRootNodesGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
@@ -142,8 +141,10 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonCextTypeBuiltins {
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject, PyObject}, call = Direct)
-    @CApiBuiltin(name = "_PyType_LookupRef", ret = PyObjectTransfer, args = {PyTypeObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject, PyObject}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonClassNode.class,
+                    NativeToPythonNode.class})
+    @CApiBuiltin(name = "_PyType_LookupRef", ret = PyObject, args = {PyTypeObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+                    NativeToPythonClassNode.class, NativeToPythonNode.class})
     abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object type, Object name,
@@ -201,7 +202,8 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject, ConstCharPtr}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+                    NativeToPythonClassNode.class, CharPtrToPythonNode.class})
     abstract static class GraalPyPrivate_Compute_Mro extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -219,7 +221,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyTypeObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonClassNode.class})
     abstract static class GraalPyPrivate_NewTypeDict extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -233,7 +235,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject}, call = Direct)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject}, call = Direct, retConversion = void.class, argConversions = {NativeToPythonClassNode.class})
     abstract static class PyType_Modified extends CApiUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
@@ -277,7 +279,7 @@ public final class PythonCextTypeBuiltins {
 
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored, retConversion = int.class, argConversions = {long.class})
     abstract static class GraalPyPrivate_Trace_Type extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_Trace_Type.class);
 
@@ -329,7 +331,9 @@ public final class PythonCextTypeBuiltins {
         return func;
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtr, Pointer, Int,
+                    ConstCharPtr}, call = Ignored, retConversion = int.class, argConversions = {long.class, NativeToPythonClassNode.class, NativeToPythonNode.class,
+                                    CharPtrToPythonNode.class, long.class, int.class, CharPtrToPythonNode.class})
     public static int GraalPyPrivate_Type_AddFunctionToType(long methodDefPtr, long typeRaw, long dictRaw, long nameRaw, long cfunc, int flags, long docRaw) {
         CompilerAsserts.neverPartOfCompilation();
         try {
@@ -347,7 +351,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject}, call = Ignored, retConversion = int.class, argConversions = {NativeToPythonClassNode.class})
     public static int GraalPyPrivate_Type_AddOperators(long type) {
         CompilerAsserts.neverPartOfCompilation();
         try {
@@ -362,7 +366,8 @@ public final class PythonCextTypeBuiltins {
         return -1;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, PyObjectRawPointer, ConstCharPtr, Int, Py_ssize_t, Int, ConstCharPtr}, call = CApiCallPath.Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtr, Int, Py_ssize_t, Int,
+                    ConstCharPtr}, call = CApiCallPath.Ignored, retConversion = int.class, argConversions = {long.class, long.class, long.class, int.class, long.class, int.class, long.class})
     @TruffleBoundary
     public static int GraalPyPrivate_Type_AddMember(long clazzPtr, long tpDictPtr, long memberNamePtr, int memberType, long offset, int canSet, long memberDocPtr) {
         Object clazz = NativeToPythonClassInternalNode.executeUncached(clazzPtr);
@@ -392,7 +397,8 @@ public final class PythonCextTypeBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, PyObjectRawPointer, ConstCharPtr, Pointer, Pointer, ConstCharPtr, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtr, Pointer, Pointer, ConstCharPtr, Pointer}, call = Ignored, retConversion = int.class, argConversions = {
+                    long.class, long.class, long.class, long.class, long.class, long.class, long.class})
     static int GraalPyPrivate_Type_AddGetSet(long clsPtr, long dictPtr, long namePtr, long getter, long setter, long docPtr, long closure) {
         Object cls = NativeToPythonClassInternalNode.executeUncached(clsPtr);
         PDict dict = (PDict) NativeToPythonInternalNode.executeUncached(dictPtr, false);
@@ -443,7 +449,7 @@ public final class PythonCextTypeBuiltins {
         return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored, retConversion = void.class, argConversions = {NativeToPythonClassNode.class, long.class})
     abstract static class GraalPyPrivate_Type_SetBufferProcs extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -464,7 +470,7 @@ public final class PythonCextTypeBuiltins {
 
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {Pointer, Int}, call = Ignored, retConversion = void.class, argConversions = {long.class, int.class})
     public static void GraalPyPrivate_Type_NotifyDealloc(long ptr, int typeLookupIdx) {
         assert CStructAccess.readIntField(ptr, CFields.PyTypeObject__tp_version_tag) == typeLookupIdx;
         if (typeLookupIdx != 0) {

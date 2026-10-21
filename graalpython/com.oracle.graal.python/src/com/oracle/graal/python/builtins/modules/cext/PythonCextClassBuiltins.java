@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode.checkNonNullArgUncached;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -53,7 +53,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 
 public final class PythonCextClassBuiltins {
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyInstanceMethod_New(long funcPtr) {
         Object func = NativeToPythonInternalNode.executeUncached(funcPtr, false);
         checkNonNullArgUncached(func);
@@ -62,7 +62,7 @@ public final class PythonCextClassBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(res);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PyMethod_New(long funcPtr, long selfPtr) {
         Object func = NativeToPythonInternalNode.executeUncached(funcPtr, false);
         Object self = NativeToPythonInternalNode.executeUncached(selfPtr, false);

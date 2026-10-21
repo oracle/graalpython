@@ -40,20 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.INT64_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyListObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 
@@ -68,10 +66,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
@@ -102,7 +103,7 @@ public final class PythonCextListBuiltins {
 
     private static final CApiTiming TIMING_PYLIST_NEW = CApiTiming.create(false, "PyList_New");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {Py_ssize_t}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
     static long PyList_New(long size) {
         CApiTiming.enter();
         try {
@@ -128,7 +129,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {NativeToPythonNode.class, long.class})
     abstract static class PyList_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -164,7 +165,7 @@ public final class PythonCextListBuiltins {
 
     private static final CApiTiming TIMING_PYLIST_GETITEMREF = CApiTiming.create(false, "PyList_GetItemRef");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, long.class})
     static long PyList_GetItemRef(long opPtr, long key) {
         CApiTiming.enter();
         try {
@@ -193,7 +194,7 @@ public final class PythonCextListBuiltins {
 
     private static final CApiTiming TIMING_PYLIST_APPEND = CApiTiming.create(false, "PyList_Append");
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     static int PyList_Append(long opPtr, long itemPtr) {
         CApiTiming.enter();
         try {
@@ -209,7 +210,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyList_AsTuple extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -224,7 +225,8 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    long.class, long.class})
     abstract static class PyList_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
         Object getSlice(PList list, Object iLow, Object iHigh,
@@ -240,7 +242,8 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class, long.class,
+                    NativeToPythonNode.class})
     abstract static class PyList_SetSlice extends CApiQuaternaryBuiltinNode {
 
         @Specialization
@@ -258,7 +261,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class PyList_Extend extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -274,7 +277,8 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyListObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyListObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonNode.class})
     abstract static class _PyList_Extend extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -296,7 +300,7 @@ public final class PythonCextListBuiltins {
      * A pure-C Py_SIZE implementation regressed mixed managed/native/list-subclass workload by
      * about 1.26x.
      */
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct, acquireGil = false, retConversion = long.class, argConversions = {NativeToPythonNode.class})
     static long PyList_Size(long opPtr) {
         CApiTiming.enter();
         try {
@@ -310,7 +314,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyList_Sort extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -326,7 +330,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class, NativeToPythonNode.class})
     abstract static class PyList_Insert extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -342,7 +346,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyList_Reverse extends CApiUnaryBuiltinNode {
         @Specialization
         static int reverse(PList self,
@@ -358,7 +362,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyList_Clear extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -374,7 +378,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class, long.class})
     abstract static class GraalPyPrivate_List_TruncateNativeStorage extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -390,7 +394,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class, long.class})
     abstract static class GraalPyPrivate_List_TryGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization

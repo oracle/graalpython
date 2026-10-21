@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.func_voidvoid;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_voidvoid;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -51,7 +51,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyLifecycleBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct, retConversion = int.class, argConversions = {long.class})
     abstract static class Py_AtExit extends CApiUnaryBuiltinNode {
 
         @Specialization

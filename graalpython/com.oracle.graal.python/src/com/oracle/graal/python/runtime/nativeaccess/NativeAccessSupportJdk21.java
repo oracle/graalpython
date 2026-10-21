@@ -78,9 +78,9 @@ final class NativeAccessSupportJdk21 extends NativeAccessSupport {
             parameterTypes[1] = Object.class;
         }
         for (int i = 0; i < argTypes.length; i++) {
-            parameterTypes[i + injectedArgumentCount] = asJavaType(argTypes[i]);
+            parameterTypes[i + injectedArgumentCount] = argTypes[i].carrier();
         }
-        return MethodType.methodType(asJavaType(resType), parameterTypes);
+        return MethodType.methodType(resType.carrier(), parameterTypes);
     }
 
     @Override

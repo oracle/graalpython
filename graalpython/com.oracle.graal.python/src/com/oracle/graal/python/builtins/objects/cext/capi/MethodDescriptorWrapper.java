@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstArray;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectConstArray;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -71,25 +70,25 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     // METH_FASTCALL
-    FASTCALL(PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t),
+    FASTCALL(PyObject, PyObject, PyObjectConstArray, Py_ssize_t),
 
     // METH_FASTCALL | METH_KEYWORDS
-    FASTCALL_WITH_KEYWORDS(PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
+    FASTCALL_WITH_KEYWORDS(PyObject, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
 
     // METH_VARARGS | METH_KEYWORDS
-    KEYWORDS(PyObjectReturn, PyObject, PyObject, PyObject),
+    KEYWORDS(PyObject, PyObject, PyObject, PyObject),
 
     // METH_VARARGS
-    VARARGS(PyObjectReturn, PyObject, PyObject),
+    VARARGS(PyObject, PyObject, PyObject),
 
     // METH_NOARGS
-    NOARGS(PyObjectReturn, PyObject, PyObject),
+    NOARGS(PyObject, PyObject, PyObject),
 
     // METH_O
-    O(PyObjectReturn, PyObject, PyObject),
+    O(PyObject, PyObject, PyObject),
 
     // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
-    METHOD(PyObjectReturn, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject);
+    METHOD(PyObject, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject);
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;

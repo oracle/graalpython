@@ -40,22 +40,22 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.CONST_VOID_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.INT8_T_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_hash_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
 
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -67,7 +67,7 @@ import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 public final class PythonCextHashBuiltins {
 
-    @CApiBuiltin(ret = Void, args = {INT8_T_PTR}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {INT8_T_PTR}, call = Ignored, retConversion = void.class, argConversions = {long.class})
     abstract static class GraalPyPrivate_Hash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -78,7 +78,7 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Long, args = {Int}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Long, args = {Int}, call = Ignored, retConversion = long.class, argConversions = {int.class})
     abstract static class GraalPyPrivate_HashConstant extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -98,7 +98,7 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_hash_t, args = {ArgDescriptor.Double}, call = Ignored)
+    @CApiBuiltin(ret = Py_hash_t, args = {ArgDescriptor.Double}, call = Ignored, retConversion = long.class, argConversions = {double.class})
     abstract static class GraalPyPrivate_HashDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -108,7 +108,7 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR, Py_ssize_t}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     abstract static class _Py_HashBytes extends CApiBinaryBuiltinNode {
 
         @Specialization

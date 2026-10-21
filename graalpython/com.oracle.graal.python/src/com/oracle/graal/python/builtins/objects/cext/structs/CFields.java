@@ -40,75 +40,74 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT_LIST;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_C_FUNCTION;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyAsyncMethods;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMappingMethods;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMemberDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefSlot;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyNumberMethods;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySequenceMethods;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_buffer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UCHAR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT16_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT64_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.allocfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.binaryfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.descrgetfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.descrsetfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.destructor;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.freefunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getattrfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getattrofunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getbufferproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getiterfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getter;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.hashfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.initproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.inquiry;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.iternextfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.lenfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.newfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.objobjargproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.objobjproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.releasebufferproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.reprfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.richcmpfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.sendfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setattrfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setattrofunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ssizeargfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ssizeobjargproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ternaryfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.unaryfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Double;
+import static com.oracle.graal.python.annotations.ArgDescriptor.INT64_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.INT_LIST;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_C_FUNCTION;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyAsyncMethods;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyBufferProcs;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyGetSetDef;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyMappingMethods;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyMemberDef;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyMethodDef;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyModuleDefSlot;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyNumberMethods;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PySequenceMethods;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_buffer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_hash_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UCHAR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UINT16_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UINT64_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UINTPTR_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UNSIGNED_INT;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UNSIGNED_LONG;
+import static com.oracle.graal.python.annotations.ArgDescriptor.allocfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.binaryfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.descrgetfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.descrsetfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.destructor;
+import static com.oracle.graal.python.annotations.ArgDescriptor.freefunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.getattrfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.getattrofunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.getbufferproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.getiterfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.getter;
+import static com.oracle.graal.python.annotations.ArgDescriptor.hashfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.initproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.inquiry;
+import static com.oracle.graal.python.annotations.ArgDescriptor.iternextfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.lenfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.newfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.objobjargproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.objobjproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.releasebufferproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.reprfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.richcmpfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.sendfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.setattrfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.setattrofunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.setter;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ssizeargfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ssizeobjargproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ternaryfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.traverseproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.unaryfunc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.vectorcallfunc;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
 
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -169,7 +168,7 @@ public enum CFields {
     Py_buffer__itemsize(Py_ssize_t),
     Py_buffer__readonly(Int),
     Py_buffer__ndim(Int),
-    Py_buffer__format(CharPtrAsTruffleString),
+    Py_buffer__format(CHAR_PTR),
     Py_buffer__shape(PY_SSIZE_T_PTR),
     Py_buffer__strides(PY_SSIZE_T_PTR),
     Py_buffer__suboffsets(PY_SSIZE_T_PTR),
@@ -352,7 +351,7 @@ public enum CFields {
     PyASCIIObject__state(Int),
 
     PyCompactUnicodeObject__utf8_length(Py_ssize_t),
-    PyCompactUnicodeObject__utf8(CharPtrAsTruffleString),
+    PyCompactUnicodeObject__utf8(CHAR_PTR),
 
     PyUnicodeObject__data(Pointer),
 

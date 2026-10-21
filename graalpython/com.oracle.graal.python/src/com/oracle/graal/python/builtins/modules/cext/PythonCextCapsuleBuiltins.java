@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_INCORRECT_NAME;
@@ -82,7 +82,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCapsuleBuiltins {
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {Pointer, ConstCharPtr, PY_CAPSULE_DESTRUCTOR}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {Pointer, ConstCharPtr, PY_CAPSULE_DESTRUCTOR}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class, long.class})
     static long PyCapsule_New(long pointer, long namePtr, long destructor) {
         PyCapsule capsule = PyCapsuleNewNode.executeUncached(pointer, namePtr, destructor);
         return PythonToNativeInternalNode.executeNewRefUncached(capsule);
@@ -115,7 +115,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyCapsule_IsValid(long oPtr, long namePtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(oPtr, false);
         if (!(obj instanceof PyCapsule capsule)) {
@@ -130,7 +130,7 @@ public final class PythonCextCapsuleBuiltins {
         return 1;
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PyCapsule_GetPointer(long oPtr, long namePtr) {
         Object capsule = NativeToPythonInternalNode.executeUncached(oPtr, false);
         return PyCapsuleGetPointerNode.executeUncached(capsule, namePtr);
@@ -170,25 +170,25 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCapsule_GetName(long oPtr) {
         PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_GetName");
         return capsule.getNamePtr();
     }
 
-    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCapsule_GetDestructor(long oPtr) {
         PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_GetDestructor");
         return capsule.getDestructor();
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCapsule_GetContext(long oPtr) {
         PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_GetContext");
         return capsule.getContext();
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Pointer}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyCapsule_SetPointer(long oPtr, long pointer) {
         if (pointer == NULLPTR) {
             throw PRaiseNode.raiseStatic(null, ValueError, CALLED_WITH_NULL_POINTER, "PyCapsule_SetPointer");
@@ -198,28 +198,28 @@ public final class PythonCextCapsuleBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyCapsule_SetName(long oPtr, long namePtr) {
         PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetName");
         capsule.setNamePtr(namePtr);
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PY_CAPSULE_DESTRUCTOR}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyCapsule_SetDestructor(long oPtr, long destructor) {
         PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetDestructor");
         capsule.registerDestructor(destructor);
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Pointer}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyCapsule_SetContext(long oPtr, long context) {
         PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetContext");
         capsule.setContext(context);
         return 0;
     }
 
-    @CApiBuiltin(ret = Pointer, args = {ConstCharPtr, Int}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {ConstCharPtr, Int}, call = Direct, retConversion = long.class, argConversions = {long.class, int.class})
     static long PyCapsule_Import(long namePtr, @SuppressWarnings("unused") int noBlock) {
         TruffleString name = FromCharPointerNode.executeUncached(namePtr, true);
         TruffleString trace = name;

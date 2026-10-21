@@ -40,14 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
@@ -57,7 +55,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -75,7 +76,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSysBuiltins {
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {CharPtrToPythonNode.class})
     abstract static class PySys_GetObject extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -118,7 +119,7 @@ public final class PythonCextSysBuiltins {
     }
 
     /** similar to {@code sys_pyfile_write} */
-    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr}, call = Ignored, acquireGil = false, retConversion = int.class, argConversions = {int.class, long.class})
     @TruffleBoundary
     public static int GraalPyPrivate_Sys_WriteStd(int fd, long msgPtr) {
         TruffleString msg = FromCharPointerNode.executeUncached(msgPtr);
@@ -127,7 +128,7 @@ public final class PythonCextSysBuiltins {
     }
 
     /** similar to {@code sys_pyfile_write_unicode} */
-    @CApiBuiltin(ret = Int, args = {Int, PyObject}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = Int, args = {Int, PyObject}, call = Ignored, acquireGil = false, retConversion = int.class, argConversions = {int.class, NativeToPythonNode.class})
     @TruffleBoundary
     public static int GraalPyPrivate_Sys_PyFileWriteUnicode(int fd, long unicodePtr) {
         Object msg = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
@@ -135,7 +136,7 @@ public final class PythonCextSysBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {ConstCharPtr, PyObject}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = Int, args = {ConstCharPtr, PyObject}, call = Ignored, acquireGil = false, retConversion = int.class, argConversions = {long.class, NativeToPythonNode.class})
     @TruffleBoundary
     public static int GraalPyPrivate_Sys_Audit(long eventPtr, long argsPtr) {
         TruffleString event = FromCharPointerNode.executeUncached(eventPtr);

@@ -40,17 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_BUFFER_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
@@ -65,7 +63,9 @@ import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
@@ -80,7 +80,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextArrayBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, long.class,
+                    int.class})
     static long GraalPyPrivate_Array_New(long clsPtr, long size, int typeCode) {
         Object cls = NativeToPythonInternalNode.executeUncached(clsPtr, false);
         TruffleString typeCodeString = TruffleString.fromCodePointUncached(typeCode, TS_ENCODING);
@@ -94,7 +95,7 @@ public final class PythonCextArrayBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, retConversion = int.class, argConversions = {long.class})
     static int GraalPyPrivate_Array_TypeCode(long arrayPtr) {
         return expectArray(arrayPtr, "GraalPyArray_GetDescriptor").getFormatString().codePointAtIndexUncached(0, TS_ENCODING);
     }
@@ -102,7 +103,7 @@ public final class PythonCextArrayBuiltins {
     /**
      * Graalpy-specific function implemented for Cython
      */
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int GraalPyArray_Resize(long arrayPtr, long newSize) {
         PArray array = expectArray(arrayPtr, "GraalPyArray_Resize");
         ArrayNodes.EnsureCapacityNode.executeUncached(array, (int) newSize);
@@ -110,7 +111,7 @@ public final class PythonCextArrayBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long GraalPyArray_Data(long arrayPtr) {
         PArray array = expectArray(arrayPtr, "GraalPyArray_Data");
         if (array.getBytesLength() > 0) {
@@ -119,7 +120,7 @@ public final class PythonCextArrayBuiltins {
         return NULLPTR;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PY_BUFFER_PTR, Int}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_BUFFER_PTR, Int}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class, int.class})
     static int GraalPyPrivate_Array_getbuffer(long arrayPtr, long pyBufferPtr, int flags) {
         PArray array = expectArray(arrayPtr, "GraalPyPrivate_Array_getbuffer");
         long bufPtr = ArrayNodes.EnsureNativeStorageNode.executeUncached(array).getPtr();
@@ -159,7 +160,7 @@ public final class PythonCextArrayBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObjectRawPointer, PY_BUFFER_PTR}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PyObject, PY_BUFFER_PTR}, call = Ignored, retConversion = void.class, argConversions = {long.class, long.class})
     static void GraalPyPrivate_Array_releasebuffer(long arrayPtr, long pyBufferPtr) {
         PArray array = expectArray(arrayPtr, "GraalPyPrivate_Array_releasebuffer");
         array.getExports().decrementAndGet();

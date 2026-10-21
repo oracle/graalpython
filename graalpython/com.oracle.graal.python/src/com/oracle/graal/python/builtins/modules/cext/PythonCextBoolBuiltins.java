@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
@@ -52,14 +52,14 @@ public final class PythonCextBoolBuiltins {
 
     // These two should only be used during C API initialization, so the performance hardly
     // matters, but keeping their codesize small still makes sense.
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false)
+    @CApiBuiltin(ret = PyObject, call = Ignored, acquireGil = false, canRaise = false, retConversion = long.class, argConversions = {})
     public static long GraalPyPrivate_True() {
         Object trueValue = PythonContext.get(null).getTrue();
         assert EnsurePythonObjectNode.doesNotNeedPromotion(trueValue);
         return PythonToNativeInternalNode.executeUncached(trueValue, true);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false)
+    @CApiBuiltin(ret = PyObject, call = Ignored, acquireGil = false, canRaise = false, retConversion = long.class, argConversions = {})
     public static long GraalPyPrivate_False() {
         Object falseValue = PythonContext.get(null).getFalse();
         assert EnsurePythonObjectNode.doesNotNeedPromotion(falseValue);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -52,13 +51,16 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextWarnBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonNode.class, long.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Err_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
         Object warn(Object message, Object category, long stackLevel, @SuppressWarnings("unused") Object source,
@@ -74,7 +76,8 @@ public final class PythonCextWarnBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {
+                    NativeToPythonNode.class, NativeToPythonNode.class, NativeToPythonNode.class, int.class, NativeToPythonNode.class, NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Err_WarnExplicit extends CApi6BuiltinNode {
         @Specialization
         Object warn(Object category, Object message, Object filename, int lineno, Object module, Object registry,

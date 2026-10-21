@@ -41,35 +41,33 @@
 
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstPyLongObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INTPTR_T_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStatePtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.visitproc;
+import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstPyLongObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Double;
+import static com.oracle.graal.python.annotations.ArgDescriptor.INT64_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.INT8_T_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.INTPTR_T_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Long;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_BUFFER_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyThreadState;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyThreadStatePtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.SIZE_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UINTPTR_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.VA_LIST;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
+import static com.oracle.graal.python.annotations.ArgDescriptor.visitproc;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -80,33 +78,33 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CApiExternalFunctionSignatures
 public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
-    PYCFUNCTION(false, PyObjectReturn, PyObject, PyObject),
+    PYCFUNCTION(false, PyObject, PyObject, PyObject),
     // typedef PyObject *(*PyCFunctionWithKeywords)(PyObject *, PyObject *, PyObject *);
-    PYCFUNCTION_WITH_KEYWORDS(false, PyObjectReturn, PyObject, PyObject, PyObject),
+    PYCFUNCTION_WITH_KEYWORDS(false, PyObject, PyObject, PyObject, PyObject),
     // typedef PyObject *(*_PyCFunctionFast) (PyObject *, PyObject *const *, Py_ssize_t);
-    PYCFUNCTION_FAST(false, PyObjectReturn, PyObject, Pointer, Py_ssize_t),
+    PYCFUNCTION_FAST(false, PyObject, PyObject, Pointer, Py_ssize_t),
     // typedef PyObject *(*_PyCFunctionFastWithKeywords) (PyObject *, PyObject *const *, Py_ssize_t,
     // PyObject *);
-    PYCFUNCTION_FAST_WITH_KEYWORDS(false, PyObjectReturn, PyObject, Pointer, Py_ssize_t, PyObject),
+    PYCFUNCTION_FAST_WITH_KEYWORDS(false, PyObject, PyObject, Pointer, Py_ssize_t, PyObject),
     // typedef PyObject *(*PyCMethod)(PyObject *, PyTypeObject *, PyObject *const *, size_t,
     // PyObject *);
-    PYCMETHOD(false, PyObjectReturn, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
+    PYCMETHOD(false, PyObject, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
 
     // typedef PyObject * (*unaryfunc)(PyObject *);
-    UNARYFUNC(false, PyObjectReturn, PyObject),
+    UNARYFUNC(false, PyObject, PyObject),
     // typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);
-    BINARYFUNC(false, PyObjectReturn, PyObject, PyObject),
+    BINARYFUNC(false, PyObject, PyObject, PyObject),
     // typedef PyObject * (*ternaryfunc)(PyObject *, PyObject *, PyObject *);
-    TERNARYFUNC(false, PyObjectReturn, PyObject, PyObject, PyObject),
+    TERNARYFUNC(false, PyObject, PyObject, PyObject, PyObject),
     // typedef int (*inquiry)(PyObject *);
     INQUIRY(false, Int, PyObject),
     // typedef Py_ssize_t (*lenfunc)(PyObject *);
-    LENFUNC(false, PrimitiveResult64, PyObject),
+    LENFUNC(false, Long, PyObject),
     // typedef PyObject *(*ssizeargfunc)(PyObject *, Py_ssize_t);
-    SSIZEARGFUNC(false, PyObjectReturn, PyObject, Py_ssize_t),
+    SSIZEARGFUNC(false, PyObject, PyObject, Py_ssize_t),
 
     // typedef PyObject *(*ssizessizeargfunc)(PyObject *, Py_ssize_t, Py_ssize_t);
-    SSIZESSIZEARGFUNC(false, PyObjectReturn, PyObject, Py_ssize_t, Py_ssize_t),
+    SSIZESSIZEARGFUNC(false, PyObject, PyObject, Py_ssize_t, Py_ssize_t),
     // typedef int(*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *);
     SSIZEOBJARGPROC(false, Int, PyObject, Py_ssize_t, PyObject),
     // typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject *);
@@ -121,9 +119,9 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // typedef int (*traverseproc)(PyObject *, visitproc, void *);
     TRAVERSEPROC(false, Int, PyObject, Pointer, Pointer),
     // PyObject *PyType_GenericAlloc(PyTypeObject *, Py_ssize_t);
-    TYPE_GENERIC_ALLOC(false, PyObjectReturn, PyTypeObject, Py_ssize_t),
+    TYPE_GENERIC_ALLOC(false, PyObject, PyTypeObject, Py_ssize_t),
     // PyObject *PyType_GenericNew(PyTypeObject *, PyObject *, PyObject *);
-    PY_TYPE_GENERIC_NEW(false, PyObjectReturn, PyTypeObject, PyObject, PyObject),
+    PY_TYPE_GENERIC_NEW(false, PyObject, PyTypeObject, PyObject, PyObject),
     // uintptr_t PyType_GenericNew(PyTypeObject *, uintptr_t, uintptr_t);
     PY_TYPE_GENERIC_NEW_RAW(true, UINTPTR_T, PyTypeObject, UINTPTR_T, UINTPTR_T),
 
@@ -134,38 +132,38 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // void _Py_Dealloc(PyObject *);
     PY_DEALLOC(false, Void, PyObject),
     // typedef PyObject *(*getattrfunc)(PyObject *, char *);
-    GETATTRFUNC(false, PyObjectReturn, PyObject, CharPtrAsTruffleString),
+    GETATTRFUNC(false, PyObject, PyObject, CHAR_PTR),
     // typedef PyObject *(*getattrofunc)(PyObject *, PyObject *);
-    GETATTROFUNC(false, PyObjectReturn, PyObject, PyObject),
+    GETATTROFUNC(false, PyObject, PyObject, PyObject),
     // typedef int (*setattrfunc)(PyObject *, char *, PyObject *);
-    SETATTRFUNC(false, Int, PyObject, CharPtrAsTruffleString, PyObject),
+    SETATTRFUNC(false, Int, PyObject, CHAR_PTR, PyObject),
     // typedef int (*setattrofunc)(PyObject *, PyObject *, PyObject *);
     SETATTROFUNC(false, Int, PyObject, PyObject, PyObject),
     // typedef PyObject *(*reprfunc)(PyObject *);
-    REPRFUNC(false, PyObjectReturn, PyObject),
+    REPRFUNC(false, PyObject, PyObject),
     // typedef Py_hash_t (*hashfunc)(PyObject *);
     HASHFUNC(false, Py_ssize_t, PyObject),
     // typedef PyObject *(*richcmpfunc) (PyObject *, PyObject *, int);
-    RICHCMPFUNC(false, PyObjectReturn, PyObject, PyObject, Int),
+    RICHCMPFUNC(false, PyObject, PyObject, PyObject, Int),
     // typedef PyObject *(*getiterfunc) (PyObject *);
-    GETITERFUNC(false, PyObjectReturn, PyObject),
+    GETITERFUNC(false, PyObject, PyObject),
     // typedef PyObject *(*iternextfunc) (PyObject *);
-    ITERNEXTFUNC(false, PyObjectReturn, PyObject),
+    ITERNEXTFUNC(false, PyObject, PyObject),
     // typedef PyObject *(*descrgetfunc) (PyObject *, PyObject *, PyObject *);
-    DESCRGETFUNC(false, PyObjectReturn, PyObject, PyObject, PyObject),
+    DESCRGETFUNC(false, PyObject, PyObject, PyObject, PyObject),
     // typedef int (*descrsetfunc) (PyObject *, PyObject *, PyObject *);
     DESCRSETFUNC(false, Int, PyObject, PyObject, PyObject),
     // typedef int (*initproc)(PyObject *, PyObject *, PyObject *);
     INITPROC(false, Int, PyObject, PyObject, PyObject),
     // typedef PyObject *(*newfunc)(PyTypeObject *, PyObject *, PyObject *);
-    NEWFUNC(false, PyObjectReturn, PyTypeObject, PyObject, PyObject),
+    NEWFUNC(false, PyObject, PyTypeObject, PyObject, PyObject),
 
     // typedef PyObject *(*getter)(PyObject *, void *);
-    GETTER(false, PyObjectReturn, PyObject, Pointer),
+    GETTER(false, PyObject, PyObject, Pointer),
     // typedef int (*setter)(PyObject *, PyObject *, void *);
     SETTER(false, Int, PyObject, PyObject, Pointer),
     // typedef PyObject *(*Py_mod_create)(PyObject *, PyModuleDef *);
-    MODCREATE(false, PyObjectReturn, Pointer, Pointer),
+    MODCREATE(false, PyObject, Pointer, Pointer),
     // typedef int (*Py_mod_exec)(PyObject *);
     MODEXEC(false, Int, Pointer),
     // typedef PyObject *(*PyModInitFunction)(void);
@@ -184,7 +182,7 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // void GraalPyPrivate_CheckTypeReady(PyTypeObject *);
     TRUFFLE_CHECK_TYPE_READY(true, Void, PyTypeObject),
     // Py_ssize_t PyUnicode_GetLength(PyObject *);
-    PY_UNICODE_GET_LENGTH(false, PrimitiveResult64, PyObject),
+    PY_UNICODE_GET_LENGTH(false, Long, PyObject),
     // void GraalPyPrivate_InitNativeDateTime(void);
     INIT_NATIVE_DATETIME(true, Void),
     // uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *);
@@ -198,7 +196,7 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // int PyObject_GenericSetDict(PyObject *, PyObject *, void *);
     PY_OBJECT_GENERIC_SET_DICT(false, Int, PyObject, PyObject, Pointer),
     // PyObject *GraalPyPrivate_ObjectNew(PyTypeObject *);
-    PY_OBJECT_NEW(false, PyObjectReturn, PyTypeObject),
+    PY_OBJECT_NEW(false, PyObject, PyTypeObject),
     // void PyObject_Free(void *);
     PY_OBJECT_FREE(true, Void, Pointer),
     // void GraalPyPrivate_ObjectArrayRelease(PyObject **, int);
@@ -218,37 +216,37 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // void GraalPyPrivate_MMap_InitBufferProtocol(PyObject *);
     MMAP_INIT_BUFFERPROTOCOL(true, Void, PyObject),
     // PyObject *GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *, PyObject *);
-    EXCEPTION_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, PyObject),
+    EXCEPTION_SUBTYPE_NEW(false, PyObject, PyTypeObject, PyObject),
     // PyObject *GraalPyPrivate_Bytes_SubtypeNew(PyTypeObject *, int8_t *, Py_ssize_t);
-    BYTES_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, INT8_T_PTR, Py_ssize_t),
+    BYTES_SUBTYPE_NEW(false, PyObject, PyTypeObject, INT8_T_PTR, Py_ssize_t),
     // PyObject *GraalPyPrivate_Float_SubtypeNew(PyTypeObject *, double);
-    FLOAT_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Double),
+    FLOAT_SUBTYPE_NEW(false, PyObject, PyTypeObject, Double),
     // PyObject *GraalPyPrivate_Complex_SubtypeFromDoubles(PyTypeObject *, double, double);
-    COMPLEX_SUBTYPE_FROM_DOUBLES(false, PyObjectReturn, PyTypeObject, Double, Double),
+    COMPLEX_SUBTYPE_FROM_DOUBLES(false, PyObject, PyTypeObject, Double, Double),
     // PyObject *GraalPyPrivate_Tuple_SubtypeNew(PyTypeObject *, PyObject *);
-    TUPLE_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, PyObject),
+    TUPLE_SUBTYPE_NEW(false, PyObject, PyTypeObject, PyObject),
     // PyObject *GraalPyPrivate_Unicode_SubtypeNew(PyTypeObject *, PyObject *);
-    UNICODE_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, PyObject),
+    UNICODE_SUBTYPE_NEW(false, PyObject, PyTypeObject, PyObject),
     // int GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject *, int);
     CHECK_BASICSIZE_FOR_GETSTATE(true, Int, PyTypeObject, Int),
     // PyObject *GraalPyPrivate_Date_SubtypeNew(PyTypeObject *, int, int, int);
-    DATE_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int),
+    DATE_SUBTYPE_NEW(false, PyObject, PyTypeObject, Int, Int, Int),
     // PyObject *GraalPyPrivate_Time_SubtypeNew(PyTypeObject *, int, int, int, int, PyObject *,
     // int);
-    TIME_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int, Int, PyObject, Int),
+    TIME_SUBTYPE_NEW(false, PyObject, PyTypeObject, Int, Int, Int, Int, PyObject, Int),
     // PyObject *GraalPyPrivate_TimeDelta_SubtypeNew(PyTypeObject *, int, int, int);
-    TIMEDELTA_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int),
+    TIMEDELTA_SUBTYPE_NEW(false, PyObject, PyTypeObject, Int, Int, Int),
     // PyObject *GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject *, int, int, int, int, int, int,
     // int, PyObject *, int);
-    DATETIME_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int, Int, Int, Int, Int, PyObject, Int),
+    DATETIME_SUBTYPE_NEW(false, PyObject, PyTypeObject, Int, Int, Int, Int, Int, Int, Int, PyObject, Int),
     // PyObject *GraalPyPrivate_MemoryViewFromObject(PyObject *, int);
-    GRAALPY_MEMORYVIEW_FROM_OBJECT(false, PyObjectReturn, PyObject, Int),
+    GRAALPY_MEMORYVIEW_FROM_OBJECT(false, PyObject, PyObject, Int),
     // Py_hash_t PyObject_HashNotImplemented(PyObject *);
     PYOBJECT_HASH_NOT_IMPLEMENTED(false, Py_ssize_t, PyObject),
     // void _PyGC_CollectNoFail(PyThreadState *);
     PY_GC_COLLECT_NO_FAIL(true, Void, PyThreadState),
     // PyObject *_PyObject_NextNotImplemented(PyObject *);
-    PY_OBJECT_NEXT_NOT_IMPLEMENTED(false, PyObjectTransfer, PyObject),
+    PY_OBJECT_NEXT_NOT_IMPLEMENTED(false, PyObject, PyObject),
     // int GraalPyPrivate_SubtypeTraverse(PyObject *, void *, void *);
     SUBTYPE_TRAVERSE(true, Int, PyObject, visitproc, Pointer),
 
@@ -256,7 +254,7 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     GCCOLLECT(false, Py_ssize_t, Int),
     GETDICTPTRFUN(true, Pointer, PyObject),
     // typedef PyObject *(*vectorcallfunc)(PyObject *, PyObject *const *, size_t, PyObject *);
-    VECTORCALL(false, PyObjectReturn, PyObject, Pointer, Py_ssize_t, PyObject);
+    VECTORCALL(false, PyObject, PyObject, Pointer, Py_ssize_t, PyObject);
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;

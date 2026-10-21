@@ -40,25 +40,23 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -72,9 +70,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -107,7 +107,7 @@ public final class PythonCextBytesBuiltins {
     /*
      * Moving this to native regresses median time by about 1.84x, so leaving it here.
      */
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyBytes_Size(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         if (obj instanceof PBytes bytes) {
@@ -119,7 +119,7 @@ public final class PythonCextBytesBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_Bytes_Concat(long originalPtr, long newPartPtr) {
         Object original = NativeToPythonInternalNode.executeUncached(originalPtr, false);
         Object newPart = NativeToPythonInternalNode.executeUncached(newPartPtr, false);
@@ -128,7 +128,8 @@ public final class PythonCextBytesBuiltins {
     }
 
     // TODO(CAPI STATIC): uses nodes without @GenerateUncached
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonNode.class})
     abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
         @Specialization
         static Object join(Object original, Object newPart,
@@ -138,7 +139,8 @@ public final class PythonCextBytesBuiltins {
     }
 
     // TODO(CAPI STATIC): uses nodes without @GenerateUncached
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, PyObject}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class,
+                    NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Bytes_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object fromFormat(TruffleString fmt, Object args,
@@ -150,7 +152,7 @@ public final class PythonCextBytesBuiltins {
     }
 
     // TODO(CAPI STATIC): uses nodes without @GenerateUncached
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class})
     abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isBuiltinBytes(bytes)")
         static Object bytes(PBytes bytes) {
@@ -166,7 +168,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, Py_ssize_t}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_Bytes_FromStringAndSize(long nativePointer, long size) {
         try {
             byte[] bytes = getByteArray(nativePointer, size);
@@ -177,7 +179,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, Py_ssize_t}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_ByteArray_FromStringAndSize(long nativePointer, long size) {
         try {
             byte[] bytes = getByteArray(nativePointer, size);
@@ -188,8 +190,8 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class})
     static int GraalPyPrivate_Bytes_Resize(long selfPtr, long newSizeL) {
         Object self = NativeToPythonInternalNode.executeUncached(selfPtr, false);
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !(self instanceof PBytesLike))) {
@@ -208,7 +210,7 @@ public final class PythonCextBytesBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Long}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {ArgDescriptor.Long}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Bytes_EmptyWithCapacity(long size) {
         try {
             Object result = PFactory.createBytes(PythonLanguage.get(null), new byte[PInt.intValueExact(size)]);
@@ -218,12 +220,12 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)
+    @CApiBuiltin(ret = PyObject, call = Ignored, retConversion = long.class, argConversions = {})
     static long GraalPyPrivate_Bytes_Empty() {
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createEmptyBytes(PythonLanguage.get(null)));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {Py_ssize_t}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_ByteArray_EmptyWithCapacity(long size) {
         try {
             Object result = PFactory.createByteArray(PythonLanguage.get(null), new byte[PInt.intValueExact(size)]);
@@ -233,7 +235,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = CApiCallPath.Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = CApiCallPath.Ignored, retConversion = int.class, argConversions = {long.class})
     static int GraalPyPrivate_Bytes_CheckEmbeddedNull(long bytesPtr) {
         Object bytes = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         SequenceStorage sequenceStorage = GetBytesStorage.executeUncached(bytes);
@@ -250,7 +252,7 @@ public final class PythonCextBytesBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyBytes_AsString(long bytesPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         if (obj instanceof PBytes bytes) {

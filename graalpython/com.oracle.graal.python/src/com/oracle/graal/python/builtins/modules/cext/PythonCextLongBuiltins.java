@@ -40,25 +40,23 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.CONST_VOID_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.LONG_LONG;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyLongObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.annotations.ArgDescriptor.SIZE_T;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.annotations.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 
@@ -66,6 +64,7 @@ import java.math.BigInteger;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
@@ -76,10 +75,12 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
@@ -112,7 +113,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_GETINFO = CApiTiming.create(false, "PyLong_GetInfo");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {})
     static long PyLong_GetInfo() {
         CApiTiming.enter();
         try {
@@ -123,7 +124,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Long_DigitCount extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -136,7 +137,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMDOUBLE = CApiTiming.create(false, "GraalPyPrivate_Long_FromDouble");
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {double.class})
     static long GraalPyPrivate_Long_FromDouble(double d) {
         CApiTiming.enter();
         try {
@@ -147,7 +148,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr, Int}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {CharPtrToPythonNode.class,
+                    int.class})
     abstract static class GraalPyPrivate_Long_FromString extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -158,7 +160,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, SIZE_T, Pointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, SIZE_T, Pointer}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {NativeToPythonNode.class, long.class,
+                    long.class})
     abstract static class GraalPyPrivate_Long_AsPrimitiveAndOverflow extends CApiTernaryBuiltinNode {
         @Specialization
         static long doGeneric(Object object, long targetTypeSize, long overflow,
@@ -194,7 +197,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored)
+    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class, int.class, long.class})
     abstract static class GraalPyPrivate_Long_AsPrimitiveWithCoercion extends CApiTernaryBuiltinNode {
         @Specialization
         static long doGeneric(Object object, int mode, long targetTypeSize,
@@ -212,7 +215,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored)
+    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class, int.class, long.class})
     abstract static class GraalPyPrivate_Long_AsPrimitive extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -297,7 +300,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMLONGLONG = CApiTiming.create(false, "GraalPyPrivate_Long_FromLongLong");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {LONG_LONG}, call = Ignored, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class})
     static long GraalPyPrivate_Long_FromLongLong(long n) {
         CApiTiming.enter();
         try {
@@ -309,7 +312,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_FROMUNSIGNEDLONGLONG = CApiTiming.create(false, "GraalPyPrivate_Long_FromUnsignedLongLong");
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Long_FromUnsignedLongLong(long n) {
         CApiTiming.enter();
         try {
@@ -322,7 +325,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_GRAALPYPRIVATE_LONG_NUMBITS = CApiTiming.create(false, "GraalPyPrivate_Long_NumBits");
 
-    @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = SIZE_T, args = {PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Long_NumBits(long objPtr) {
         CApiTiming.enter();
         try {
@@ -342,7 +345,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {NativeToPythonNode.class})
     abstract static class GraalPyPrivate_Long_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private TransformPExceptionToNativeCachedNode transformExceptionToNativeNode;
 
@@ -407,7 +410,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int, Int}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int, Int}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, long.class,
+                    long.class, int.class, int.class, int.class})
     abstract static class _PyLong_AsByteArray extends CApi6BuiltinNode {
         private static void checkSign(Node inliningTarget, boolean negative, int isSigned, int withExceptions, PRaiseNode raiseNode) {
             if (negative) {
@@ -453,7 +457,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class, int.class})
     abstract static class PyLong_FromUnicodeObject extends CApiBinaryBuiltinNode {
         @Specialization
         static Object convert(Object s, int base,
@@ -463,7 +467,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class,
+                    int.class, int.class})
     abstract static class _PyLong_FromByteArray extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object convert(long charPtr, long size, int littleEndian, int signed,
@@ -487,7 +492,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_ASNATIVEBYTES = CApiTiming.create(false, "PyLong_AsNativeBytes");
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Pointer, Py_ssize_t, Int}, call = Direct)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Pointer, Py_ssize_t, Int}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class, long.class, int.class})
     static long PyLong_AsNativeBytes(long objectPtr, long buffer, long size, int flags) {
         CApiTiming.enter();
         try {
@@ -571,7 +576,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_FROMNATIVEBYTES = CApiTiming.create(false, "PyLong_FromNativeBytes");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class, int.class})
     static long PyLong_FromNativeBytes(long buffer, long size, int flags) {
         CApiTiming.enter();
         try {
@@ -593,7 +598,7 @@ public final class PythonCextLongBuiltins {
 
     private static final CApiTiming TIMING_PYLONG_FROMUNSIGNEDNATIVEBYTES = CApiTiming.create(false, "PyLong_FromUnsignedNativeBytes");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {long.class, long.class, int.class})
     static long PyLong_FromUnsignedNativeBytes(long buffer, long size, int flags) {
         CApiTiming.enter();
         try {

@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -54,14 +54,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodecBuiltins {
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCodec_Encoder(long encodingPtr) {
         TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);
         return PythonToNativeInternalNode.executeNewRefUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 0));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtr}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyCodec_Decoder(long encodingPtr) {
         TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);

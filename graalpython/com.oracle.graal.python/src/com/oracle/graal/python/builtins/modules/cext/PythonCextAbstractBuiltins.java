@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObjectPtr;
+import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
@@ -48,13 +53,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode.checkNonNullArgUncached;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
@@ -83,7 +81,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointe
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -179,7 +179,7 @@ public final class PythonCextAbstractBuiltins {
 
     /////// PyNumber ///////
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_PyNumber_Index(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         checkNonNullArgUncached(obj);
@@ -202,14 +202,14 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_PyNumber_IndexCopy(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object result = PyLongCopyNodeGen.getUncached().execute(null, obj);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_PyNumber_Long(long objectPtr) {
         Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
         Object result = PyNumberLongNode.executeUncached(object);
@@ -217,7 +217,8 @@ public final class PythonCextAbstractBuiltins {
     }
 
     // TODO(CAPI STATIC): uses nodes without @GenerateUncached
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Int}, call = Direct, acquireGil = false, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    int.class})
     protected abstract static class PyNumber_ToBase extends CApiBinaryBuiltinNode {
         @Specialization(guards = "base == 2")
         static Object toBase2(Object n, @SuppressWarnings("unused") int base,
@@ -266,14 +267,14 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_PyNumber_Float(long objectPtr) {
         Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
         double result = PyNumberFloatNode.executeUncached(object);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Add(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -281,7 +282,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Subtract(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -289,7 +290,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Multiply(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -297,7 +298,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Remainder(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -305,7 +306,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_TrueDivide(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -313,7 +314,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_FloorDivide(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -321,7 +322,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Divmod(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -329,7 +330,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_And(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -337,7 +338,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Or(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -345,7 +346,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Xor(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -353,7 +354,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Lshift(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -361,7 +362,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_Rshift(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -369,7 +370,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_MatrixMultiply(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -377,7 +378,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceAdd(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -385,7 +386,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceSubtract(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -393,7 +394,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceMultiply(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -401,7 +402,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceRemainder(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -409,7 +410,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceTrueDivide(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -417,7 +418,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceFloorDivide(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -425,7 +426,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceAnd(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -433,7 +434,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceOr(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -441,7 +442,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceXor(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -449,7 +450,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceLshift(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -457,7 +458,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceRshift(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -465,7 +466,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlaceMatrixMultiply(long o1Ptr, long o2Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -473,7 +474,8 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {
+                    long.class, long.class, long.class})
     static long GraalPyPrivate_PyNumber_InPlacePower(long o1Ptr, long o2Ptr, long o3Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -482,7 +484,8 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject}, call = Ignored, acquireGil = false, retConversion = long.class, argConversions = {
+                    long.class, long.class, long.class})
     static long GraalPyPrivate_PyNumber_Power(long o1Ptr, long o2Ptr, long o3Ptr) {
         Object o1 = NativeToPythonInternalNode.executeUncached(o1Ptr, false);
         Object o2 = NativeToPythonInternalNode.executeUncached(o2Ptr, false);
@@ -493,7 +496,7 @@ public final class PythonCextAbstractBuiltins {
 
     /////// PySequence ///////
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long PySequence_Tuple(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         checkNonNullArgUncached(obj);
@@ -501,14 +504,15 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, acquireGil = false, retConversion = long.class, argConversions = {long.class})
     static long PySequence_List(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object result = ConstructListNode.getUncached().execute(null, obj);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Ignored, acquireGil = false, retConversion = int.class, argConversions = {long.class, long.class,
+                    long.class})
     static int GraalPyPrivate_Sequence_SetItem(long objPtr, long key, long valuePtr) {
         if ((int) key != key) {
             throw PRaiseNode.raiseStatic(null, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
@@ -519,7 +523,8 @@ public final class PythonCextAbstractBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, Py_ssize_t, Py_ssize_t}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, acquireGil = false, retConversion = long.class, argConversions = {long.class, long.class,
+                    long.class})
     static long PySequence_GetSlice(long objPtr, long iLow, long iHigh) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         if (PySequenceCheckNode.executeUncached(obj)) {
@@ -530,14 +535,14 @@ public final class PythonCextAbstractBuiltins {
         throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, acquireGil = false, retConversion = int.class, argConversions = {long.class, long.class})
     static int PySequence_Contains(long haystackPtr, long needlePtr) {
         Object haystack = NativeToPythonInternalNode.executeUncached(haystackPtr, false);
         Object needle = NativeToPythonInternalNode.executeUncached(needlePtr, false);
         return PInt.intValue(PySequenceContainsNode.executeUncached(haystack, needle));
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PySequence_InPlaceRepeat(long objPtr, long n) {
         if (!PInt.isIntRange(n)) {
             throw PRaiseNode.raiseStatic(null, OverflowError);
@@ -547,7 +552,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PySequence_Concat(long s1Ptr, long s2Ptr) {
         Object s1 = NativeToPythonInternalNode.executeUncached(s1Ptr, false);
         Object s2 = NativeToPythonInternalNode.executeUncached(s2Ptr, false);
@@ -555,7 +560,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PySequence_InPlaceConcat(long s1Ptr, long s2Ptr) {
         Object s1 = NativeToPythonInternalNode.executeUncached(s1Ptr, false);
         Object s2 = NativeToPythonInternalNode.executeUncached(s2Ptr, false);
@@ -563,7 +568,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class})
     static int GraalPyPrivate_Sequence_DelItem(long oPtr, long i) {
         if ((int) i != i) {
             throw PRaiseNode.raiseStatic(null, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
@@ -573,7 +578,7 @@ public final class PythonCextAbstractBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, Py_ssize_t}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_Sequence_GetItem(long delegatePtr, long position) {
         if ((int) position != position) {
             throw PRaiseNode.raiseStatic(null, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
@@ -583,13 +588,14 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Sequence_Size(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         return PySequenceSizeNode.executeUncached(obj);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t, Py_ssize_t, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class, long.class,
+                    long.class})
     static int PySequence_SetSlice(long sequencePtr, long iLow, long iHigh, long sPtr) {
         Object sequence = NativeToPythonInternalNode.executeUncached(sequencePtr, false);
         TpSlots slots = GetObjectSlotsNode.executeUncached(sequence);
@@ -603,7 +609,7 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class, long.class})
     static int PySequence_DelSlice(long sequencePtr, long iLow, long iHigh) {
         Object sequence = NativeToPythonInternalNode.executeUncached(sequencePtr, false);
         TpSlots slots = GetObjectSlotsNode.executeUncached(sequence);
@@ -616,14 +622,14 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PySequence_Count(long haystackPtr, long needlePtr) {
         Object haystack = NativeToPythonInternalNode.executeUncached(haystackPtr, false);
         Object needle = NativeToPythonInternalNode.executeUncached(needlePtr, false);
         return PySequenceIterSearchNode.executeUncached(haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_COUNT);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PySequence_Index(long haystackPtr, long needlePtr) {
         Object haystack = NativeToPythonInternalNode.executeUncached(haystackPtr, false);
         Object needle = NativeToPythonInternalNode.executeUncached(needlePtr, false);
@@ -632,7 +638,7 @@ public final class PythonCextAbstractBuiltins {
 
     /////// PyObject ///////
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PyObject_GetItem(long objPtr, long keyPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object key = NativeToPythonInternalNode.executeUncached(keyPtr, false);
@@ -640,7 +646,8 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObjectRawPointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Ignored)
+    @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtr}, call = Ignored, retConversion = long.class, argConversions = {
+                    long.class, long.class})
     static long GraalPyPrivate_Object_GetItemString(long objPtr, long keyPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object key = CharPtrToPythonStrictNode.executeUncached(keyPtr);
@@ -648,7 +655,8 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
-    @CApiBuiltin(name = "GraalPyPrivate_Mapping_GetOptionalItemString", ret = Int, args = {PyObjectRawPointer, ConstCharPtr, PyObjectPtr}, call = Ignored)
+    @CApiBuiltin(name = "GraalPyPrivate_Mapping_GetOptionalItemString", ret = Int, args = {PyObject, ConstCharPtr, PyObjectPtr}, call = Ignored, retConversion = int.class, argConversions = {
+                    long.class, long.class, long.class})
     static int GraalPyPrivate_Mapping_GetOptionalItemString(long objPtr, long keyPtr, long resultPtr) {
         NativeMemory.writePtr(resultPtr, NULLPTR);
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
@@ -664,7 +672,7 @@ public final class PythonCextAbstractBuiltins {
         return 1;
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Object_Size(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         // Native objects are handled in C
@@ -674,7 +682,7 @@ public final class PythonCextAbstractBuiltins {
         return PyObjectSizeNode.executeUncached(obj);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Py_ssize_t}, call = Direct, retConversion = long.class, argConversions = {long.class, long.class})
     static long PyObject_LengthHint(long objPtr, long defaultValue) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         int len = IteratorNodes.GetLength.executeUncached(obj);
@@ -686,7 +694,7 @@ public final class PythonCextAbstractBuiltins {
 
     /////// PyMapping ///////
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyMapping_Keys(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         checkNonNullArgUncached(obj);
@@ -704,7 +712,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(listResult);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyMapping_Items(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         checkNonNullArgUncached(obj);
@@ -722,7 +730,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(listResult);
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyMapping_Values(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         checkNonNullArgUncached(obj);
@@ -740,7 +748,7 @@ public final class PythonCextAbstractBuiltins {
         return PythonToNativeInternalNode.executeNewRefUncached(listResult);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class})
     static long GraalPyPrivate_Mapping_Size(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object cls = GetClassNode.executeUncached(obj);
@@ -754,7 +762,7 @@ public final class PythonCextAbstractBuiltins {
 
     /////// PyIter ///////
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyIter_Next(long iteratorPtr) {
         Object iterator = NativeToPythonInternalNode.executeUncached(iteratorPtr, false);
         try {
@@ -768,7 +776,7 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored)
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored, retConversion = long.class, argConversions = {long.class, long.class})
     static long GraalPyPrivate_Iter_Send(long iterPtr, long argPtr) {
         Object iter = NativeToPythonInternalNode.executeUncached(iterPtr, false);
         Object arg = NativeToPythonInternalNode.executeUncached(argPtr, false);
@@ -795,7 +803,7 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObjectRawPointer}, call = Direct)
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct, retConversion = long.class, argConversions = {long.class})
     static long PyObject_GetDoc(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         try {
@@ -809,7 +817,7 @@ public final class PythonCextAbstractBuiltins {
         return NULLPTR;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct, retConversion = int.class, argConversions = {long.class, long.class})
     static int PyObject_SetDoc(long objPtr, long valuePtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object value = CharPtrToPythonNode.executeUncached(valuePtr);
