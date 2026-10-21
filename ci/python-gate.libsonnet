@@ -359,7 +359,11 @@
     //------------------------------------------------------------------------------------------------------------------
     // graalpy gates
     //------------------------------------------------------------------------------------------------------------------
-    local base_gate = $.os_arch_jdk_mixin + task_spec({
+    local base_gate = $.os_arch_jdk_mixin + task_spec(evaluate_late("_4_build_with_assertions", {
+        environment+: {
+            BUILD_WITH_ASSERTIONS: "true",
+        },
+    })) + task_spec({
         // private
         tags:: self.task_name,
         task_name:: null,

@@ -149,8 +149,8 @@ _COLLECTING_COVERAGE = False
 CI = get_boolean_env("CI")
 GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
-BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
-GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", False)
+BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS')
+GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE")
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -2709,7 +2709,7 @@ def graalpy_abiflags(*_):
 
 
 def dev_tag(_=None):
-    if not get_boolean_env('GRAALPYTHONDEVMODE', False) or 'dev' not in SUITE.release_version():
+    if not get_boolean_env('GRAALPYTHONDEVMODE') or 'dev' not in SUITE.release_version():
         mx.logv("GraalPy dev_tag: <0 because not in dev mode>")
         return ''
 
