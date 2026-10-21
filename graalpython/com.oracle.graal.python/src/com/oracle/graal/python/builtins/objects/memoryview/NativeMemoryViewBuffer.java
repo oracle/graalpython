@@ -45,7 +45,9 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
@@ -53,14 +55,20 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /** Native buffer metadata, owned by the memoryview, without a native replacement object. */
 final class NativeMemoryViewBuffer extends AsyncHandler.SharedFinalizer.FinalizableReference {
-    NativeMemoryViewBuffer(PMemoryView owner, long pointer) {
-        super(owner, pointer, PythonContext.get(null).getSharedFinalizer());
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeMemoryViewBuffer.class);
+
+    // Keep the promoted owner alive while Py_buffer.obj holds a borrowed native reference.
+    @SuppressWarnings("unused") private final Object ownerWrapper;
+
+    NativeMemoryViewBuffer(PMemoryView memoryView, long pointer, Object ownerWrapper) {
+        super(memoryView, pointer, PythonContext.get(null).getSharedFinalizer());
+        this.ownerWrapper = ownerWrapper;
     }
 
     long getPointer() {
@@ -81,25 +89,39 @@ final class NativeMemoryViewBuffer extends AsyncHandler.SharedFinalizer.Finaliza
             format = format.switchEncodingUncached(encoding);
         }
         long buf = object.getBufferPointer();
+        byte[] bufferCopy = null;
         if (object.getBuffer() != null) {
             if (buf == NULLPTR) {
-                buf = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
+                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
+                buf = bufferLib.getNativePointer(object.getBuffer());
                 if (buf == NULLPTR) {
-                    throw CompilerDirectives.shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
+                    /*
+                     * It would be more Pythonic to raise an exception rather than to copy, but because this is invoked from macros, there's no practical way of doing it
+                     */
+                    LOGGER.warning(() -> "Cannot obtain a native buffer pointer for interop buffer; allocating a copy. Writes to the copy will not update the original buffer.");
+                    bufferCopy = bufferLib.getCopiedByteArray(object.getBuffer());
                 }
             }
-            buf += object.getOffset();
         }
-        long owner = object.getOwner() == null ? NULLPTR : PythonToNativeInternalNode.executeUncached(object.getOwner(), false);
+        Object ownerWrapper = object.getOwner() == null ? null : EnsurePythonObjectNode.executeUncached(PythonContext.get(null), object.getOwner(), false);
+        long owner = ownerWrapper == null ? NULLPTR : PythonToNativeInternalNode.executeUncached(ownerWrapper, false);
         int ndim = object.getDimensions();
         long bufferSize = CStructs.Py_buffer.size();
         long arraySize = (long) ndim * Long.BYTES;
         long formatSize = format == null ? 0 : format.byteLength(encoding) + 1L;
-        // Space for the Py_buffer, shape, strides, suboffsets, and null-terminated format.
-        long view = NativeMemory.calloc(bufferSize + 3 * arraySize + formatSize);
+        // Space for the Py_buffer, shape, strides, suboffsets, null-terminated format, and any copy.
+        long metadataSize = bufferSize + 3 * arraySize + formatSize;
+        long view = NativeMemory.calloc(metadataSize + (bufferCopy == null ? 0 : bufferCopy.length));
+        if (bufferCopy != null) {
+            buf = view + metadataSize;
+            NativeMemory.writeByteArrayElements(buf, 0, bufferCopy, 0, bufferCopy.length);
+        }
+        if (object.getBuffer() != null) {
+            buf += object.getOffset();
+        }
         long array = view + CStructs.Py_buffer.size();
         writePtrField(view, CFields.Py_buffer__buf, buf);
-        // Borrowed, like CPython's embedded view.obj. The managed memoryview keeps its owner alive.
+        // Borrowed, like CPython's embedded view.obj. This allocation retains the promoted owner.
         writePtrField(view, CFields.Py_buffer__obj, owner);
         writeLongField(view, CFields.Py_buffer__len, object.getLength());
         writeLongField(view, CFields.Py_buffer__itemsize, object.getItemSize());
@@ -115,7 +137,7 @@ final class NativeMemoryViewBuffer extends AsyncHandler.SharedFinalizer.Finaliza
             WriteTruffleStringNode.writeUncached(array, format, encoding);
             writePtrField(view, CFields.Py_buffer__format, array);
         }
-        return new NativeMemoryViewBuffer(object, view);
+        return new NativeMemoryViewBuffer(object, view, ownerWrapper);
     }
 
     private static long copyArray(long pointer, int[] array) {
