@@ -429,6 +429,12 @@ public abstract class ExecutionContext {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
             }
+            PFrame pFrame = ensureMaterializeNode().execute(location, false, false, frame);
+            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+            if (bytecodeNode != null) {
+                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
+                assert !pFrame.outdatedCallerFlags(CallerFlags.ALL_FRAME_FLAGS);
+            }
             Reference callerInfo = info.getCallerInfo();
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
@@ -451,12 +457,6 @@ public abstract class ExecutionContext {
             // go to the other branch and setNeedsCallerFrame. This helps to prevent one-off
             // initializations (importing a module) from invalidating the assumption
 
-            PFrame pFrame = ensureMaterializeNode().execute(location, false, false, frame);
-            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
-            if (bytecodeNode != null) {
-                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
-                assert !pFrame.outdatedCallerFlags(CallerFlags.ALL_FRAME_FLAGS);
-            }
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
             info.setCallerInfo(callerInfo);
