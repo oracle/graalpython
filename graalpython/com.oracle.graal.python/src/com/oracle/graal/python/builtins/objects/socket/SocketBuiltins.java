@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -94,7 +95,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
@@ -705,12 +705,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object recvInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer = getBuffer.executeWritable(frame, bufferObj);
             try {
                 if (recvlenIn < 0) {
@@ -752,7 +752,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(bufferObj, frame, callData);
+                releaseBuffer.execute(frame, bufferObj);
             }
         }
 
@@ -772,13 +772,13 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object recvFromInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer = getBuffer.executeWritable(frame, bufferObj);
             try {
                 if (recvlenIn < 0) {
@@ -819,7 +819,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -838,12 +838,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         static int send(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer = getBuffer.executeReadonly(frame, bufferObj);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
@@ -859,7 +859,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -878,12 +878,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object sendAll(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer = getBuffer.executeReadonly(frame, bufferObj);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
@@ -917,7 +917,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     }
                 }
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -936,7 +936,6 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasFlagsProfile,
@@ -945,7 +944,8 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             int flags;
             Object address;
             if (hasFlagsProfile.profile(inliningTarget, maybeAddress == PNone.NO_VALUE)) {
@@ -974,7 +974,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }
@@ -1108,12 +1108,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongAsIntNode asIntNode,
-                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             byte[] bytes;
             int len;
             try {
@@ -1127,7 +1127,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     len = bufferLib.getBufferLength(buffer);
                     bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, callData);
+                    releaseBuffer.execute(frame, buffer);
                 }
 
             }

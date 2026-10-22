@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCheckBuffer;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
@@ -98,7 +99,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.crypto.BouncyCastleSupportProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -220,11 +220,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isString(a) || !isString(b)"})
         static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectCheckBuffer checkBufferNode,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             if (checkBufferNode.execute(a) && checkBufferNode.execute(b)) {
                 Object bufferA = getBuffer.executeReadonly(frame, a);
                 try {
@@ -234,10 +234,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
                         return cmp(bytesA, bytesB);
                     } finally {
-                        accessLib.release(bufferB, frame, callData);
+                        releaseBuffer.execute(frame, bufferB);
                     }
                 } finally {
-                    accessLib.release(bufferA, frame, callData);
+                    releaseBuffer.execute(frame, bufferA);
                 }
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
@@ -290,13 +290,14 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("checkBuffer") @Cached PyObjectCheckBuffer checkBufferNode,
                         @Shared("getBuffer") @Cached PyObjectGetBuffer getBuffer,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Shared @Cached PyBufferRelease releaseBuffer) {
             // cast guaranteed in our initialize
             EconomicMapStorage constructors = self.getModuleState(EconomicMapStorage.class);
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(frame, self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, checkBufferNode, getBuffer, bufferLib, raiseNode);
+                return hmacNew(frame, self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, checkBufferNode, getBuffer, bufferLib, raiseNode, releaseBuffer);
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError);
             }
@@ -311,7 +312,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("checkBuffer") @Cached PyObjectCheckBuffer checkBufferNode,
                         @Shared("getBuffer") @Cached PyObjectGetBuffer getBuffer,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Shared @Cached PyBufferRelease releaseBuffer) {
             TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
             if (!checkBufferNode.execute(keyObj)) {
@@ -338,11 +340,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 } finally {
                     if (msg != null) {
-                        bufferLib.release(msg);
+                        releaseBuffer.execute(frame, msg);
                     }
                 }
             } finally {
-                bufferLib.release(key);
+                releaseBuffer.execute(frame, key);
             }
         }
     }
@@ -370,11 +372,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectCheckBuffer checkBufferNode,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer;
             if (value == PNone.NO_VALUE) {
                 buffer = null;
@@ -395,7 +397,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 return PFactory.createDigestObject(PythonLanguage.get(inliningTarget), type, pythonName, digest);
             } finally {
                 if (buffer != null) {
-                    bufferLib.release(buffer, frame, callData);
+                    releaseBuffer.execute(frame, buffer);
                 }
             }
         }
@@ -510,7 +512,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached InlinedConditionProfile noDklenProfile,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 String javaHashName = toJavaStringNode.execute(hashName);
                 if (iterations < 1) {
@@ -537,8 +540,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             } catch (GeneralSecurityException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
             } finally {
-                passwordLib.release(password);
-                saltLib.release(salt);
+                releaseBuffer.execute(frame, password);
+                releaseBuffer.execute(frame, salt);
             }
         }
 

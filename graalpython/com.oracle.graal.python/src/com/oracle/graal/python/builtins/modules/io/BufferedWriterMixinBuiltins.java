@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,11 +56,10 @@ import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosed
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewindUnlockedNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -68,7 +67,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PBufferedWriter, PBufferedRandom})
@@ -98,17 +96,16 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()")
         static Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_WRITE)") CheckIsClosedNode checkIsClosedNode,
-                        @Cached BufferedWriterNodes.WriteNode writeNode) {
+                        @Cached BufferedWriterNodes.WriteNode writeNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 lock.enter(inliningTarget, self);
                 checkIsClosedNode.execute(frame, self);
                 return writeNode.execute(frame, inliningTarget, self, buffer);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
                 EnterBufferedNode.leave(self);
             }
         }

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectCheckBuffer;
@@ -258,7 +259,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             try {
                 return bufferLib.getCopiedByteArray(buffer);
             } finally {
-                bufferLib.release(buffer);
+                PyBufferRelease.getUncached().execute(null, buffer);
             }
         }
         return null;

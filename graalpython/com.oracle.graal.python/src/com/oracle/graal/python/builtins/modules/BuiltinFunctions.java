@@ -170,6 +170,7 @@ import com.oracle.graal.python.compiler.AstOptimizer;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
@@ -269,7 +270,6 @@ import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1189,7 +1189,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     int bytesLen = bufferLib.getBufferLength(source);
                     return doDecodeSource(getContext(), source, filename, bytes, bytesLen);
                 } finally {
-                    bufferLib.release(buffer, frame, InteropCallData.getUncached());
+                    PyBufferRelease.getUncached().execute(frame, buffer);
                 }
             }
         }

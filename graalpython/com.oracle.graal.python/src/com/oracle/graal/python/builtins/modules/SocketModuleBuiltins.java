@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
@@ -107,7 +108,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.AddrInfoCursor;
@@ -838,12 +838,12 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, Object addr,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @Cached PosixSupportNodes.GetCStringAsStringNode getCStringAsStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer = getBuffer.executeReadonly(frame, addr);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -855,7 +855,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 Object result = posixSupport.inet_ntoa(ByteArraySupport.bigEndian().getInt(bytes, 0));
                 return getCStringAsStringNode.execute(inliningTarget, posixSupport, result);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }
@@ -896,13 +896,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @Cached PosixSupportNodes.GetCStringAsStringNode getCStringAsStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer = getBuffer.executeReadonly(frame, obj);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -926,7 +926,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 

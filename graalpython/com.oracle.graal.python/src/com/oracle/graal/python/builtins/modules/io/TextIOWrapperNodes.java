@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -99,7 +100,6 @@ import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -502,7 +502,6 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         static boolean readChunk(VirtualFrame frame, Node inliningTarget, PTextIO self, int hint,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached(inline = false) DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
@@ -512,7 +511,8 @@ public abstract class TextIOWrapperNodes {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             /*
              * The return value is True unless EOF was reached. The decoded string is placed in
              * self._decoded_chars (replacing its previous value). The entire input chunk is sent to
@@ -600,7 +600,7 @@ public abstract class TextIOWrapperNodes {
 
                 return !eof;
             } finally {
-                bufferLib.release(inputChunkBuf, frame, callData);
+                releaseBuffer.execute(frame, inputChunkBuf);
             }
         }
 

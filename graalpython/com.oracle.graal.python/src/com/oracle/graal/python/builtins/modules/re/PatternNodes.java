@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -377,17 +377,16 @@ public class PatternNodes {
             @Specialization
             static TruffleString convert(VirtualFrame frame, Object bytesLikeObject,
                             @Bind Node inliningTarget,
-                            @Cached("createFor($node)") IndirectCallData.InteropCallData callData,
                             @Cached(inline = true) BufferToTruffleStringInnerNode innerNode,
                             @Cached PyObjectGetBuffer getBuffer,
-                            @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                            @Cached PyBufferRelease releaseBuffer) {
                 Object buffer = null;
                 try {
                     buffer = getBuffer.executeReadonly(frame, bytesLikeObject);
                     return innerNode.execute(inliningTarget, buffer);
                 } finally {
                     if (buffer != null) {
-                        bufferLib.release(buffer, frame, callData);
+                        releaseBuffer.execute(frame, buffer);
                     }
                 }
             }

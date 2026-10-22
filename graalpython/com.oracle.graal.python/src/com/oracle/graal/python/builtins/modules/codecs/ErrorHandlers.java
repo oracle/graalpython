@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetObjectNode;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetStartNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
@@ -93,7 +94,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -404,14 +404,14 @@ public final class ErrorHandlers {
         static Object doDecodeException(VirtualFrame frame, PBaseException exception,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
-                        @Cached @Shared TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
+                        @Cached @Shared TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
@@ -428,7 +428,7 @@ public final class ErrorHandlers {
                 }
                 LoopNode.reportLoopCount(inliningTarget, (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) end - start)));
             } finally {
-                accessLib.release(srcBuf, frame, callData);
+                releaseBuffer.execute(frame, srcBuf);
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, 0, replacement.length, TruffleString.CompactionLevel.S1, false);
             return PFactory.createTuple(language, new Object[]{resultAscii, end});
@@ -578,7 +578,6 @@ public final class ErrorHandlers {
         static Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -588,7 +587,8 @@ public final class ErrorHandlers {
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             int start = getStartNode.execute(inliningTarget, exception);
             getEndNode.execute(inliningTarget, exception);  // called for side effects only
             Object object = getObjectNode.execute(inliningTarget, exception);
@@ -609,7 +609,7 @@ public final class ErrorHandlers {
                 }
                 return PFactory.createTuple(language, new Object[]{fromCodePointNode.execute(cp, TS_ENCODING, true), start + encoding.byteLength});
             } finally {
-                accessLib.release(srcBuf, frame, callData);
+                releaseBuffer.execute(frame, srcBuf);
             }
         }
 
@@ -707,7 +707,6 @@ public final class ErrorHandlers {
         static Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -716,7 +715,8 @@ public final class ErrorHandlers {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
@@ -738,7 +738,7 @@ public final class ErrorHandlers {
                 }
                 return PFactory.createTuple(language, new Object[]{toStringNode.execute(tsb), start + consumed});
             } finally {
-                accessLib.release(srcBuf, frame, callData);
+                releaseBuffer.execute(frame, srcBuf);
             }
         }
 

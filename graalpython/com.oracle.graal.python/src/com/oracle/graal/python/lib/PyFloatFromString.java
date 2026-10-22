@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,12 +86,12 @@ public abstract class PyFloatFromString extends PNodeWithContext {
 
     @Specialization
     static double doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Cached(value = "createFor($node)") InteropCallData callData,
                     @Cached PyObjectGetBuffer getBuffer,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                     @Cached(inline = false) CastToJavaStringNode cast,
                     @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,
-                    @Shared @Cached PRaiseNode raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode,
+                    @Cached PyBufferRelease releaseBuffer) {
         String string = null;
         try {
             string = cast.execute(object);
@@ -109,7 +108,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
                     int len = accessLib.getBufferLength(buffer);
                     string = newString(bytes, 0, len);
                 } finally {
-                    accessLib.release(buffer, frame, callData);
+                    releaseBuffer.execute(frame, buffer);
                 }
             }
         }

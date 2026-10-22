@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -623,6 +624,7 @@ public class PPickler extends PythonBuiltinObject {
         @Child private PyObjectIsTrueNode isTrueNode;
         @Child private IsNode isNode;
         @Child private PyObjectGetBuffer getBufferNode;
+        @Child private PyBufferRelease releaseBufferNode;
         @Child private PythonBufferAccessLibrary bufferLibrary;
         @Child private PyCallableCheckNode callableCheckNode;
         @Child private PyObjectReprAsTruffleStringNode reprNode;
@@ -1094,6 +1096,14 @@ public class PPickler extends PythonBuiltinObject {
                 getIterNode = insert(PyObjectGetIter.create());
             }
             return getIterNode.executeCached(frame, object);
+        }
+
+        private PyBufferRelease getReleaseBufferNode() {
+            if (releaseBufferNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                releaseBufferNode = insert(PyBufferRelease.create());
+            }
+            return releaseBufferNode;
         }
 
         private PyObjectGetBuffer getBufferNode() {
@@ -1728,7 +1738,7 @@ public class PPickler extends PythonBuiltinObject {
                     saveBytesData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } finally {
-                bufferLib.release(buffer);
+                getReleaseBufferNode().execute(frame, buffer);
             }
         }
 
@@ -2268,7 +2278,7 @@ public class PPickler extends PythonBuiltinObject {
                     saveBytearrayData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } finally {
-                bufferLib.release(buffer);
+                getReleaseBufferNode().execute(frame, buffer);
             }
         }
 

@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.GetLength;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
@@ -109,7 +110,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -666,12 +666,12 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         static boolean compare(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached CastToJavaStringNode cast,
                         @Cached PyObjectCheckBuffer checkBufferNode,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 String leftString = cast.execute(left);
                 String rightString = cast.execute(right);
@@ -686,10 +686,10 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                     try {
                         return tscmp(bufferLib.getCopiedByteArray(leftBuffer), bufferLib.getCopiedByteArray(rightBuffer));
                     } finally {
-                        bufferLib.release(rightBuffer, frame, callData);
+                        releaseBuffer.execute(frame, rightBuffer);
                     }
                 } finally {
-                    bufferLib.release(leftBuffer, frame, callData);
+                    releaseBuffer.execute(frame, leftBuffer);
                 }
             }
         }

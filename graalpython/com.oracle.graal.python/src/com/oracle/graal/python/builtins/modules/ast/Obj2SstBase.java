@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyEnterRecursiveCallNode;
@@ -235,7 +236,7 @@ abstract class Obj2SstBase {
             try {
                 return accessLib.getCopiedByteArray(buf);
             } finally {
-                accessLib.release(buf);
+                PyBufferRelease.getUncached().execute(null, buf);
             }
         }
         if (PyUnicodeCheckExactNode.executeUncached(obj)) {
@@ -305,7 +306,7 @@ abstract class Obj2SstBase {
             try {
                 return ConstantValue.ofBytes(accessLib.getCopiedByteArray(buf));
             } finally {
-                accessLib.release(buf);
+                PyBufferRelease.getUncached().execute(null, buf);
             }
         }
         boolean isTuple = PyTupleCheckExactNode.executeUncached(obj);

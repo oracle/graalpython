@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,11 +24,11 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -93,17 +93,17 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()", limit = "3")
         static Object next(VirtualFrame frame, PStructUnpackIterator self,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Bind PythonLanguage language) {
+                        @Bind PythonLanguage language,
+                        @Cached PyBufferRelease releaseBuffer) {
             final PStruct struct = self.getStruct();
             final Object buffer = self.getBuffer();
             final int bufferLen = bufferLib.getBufferLength(buffer);
 
             if (struct == null || self.index >= bufferLen) {
                 self.setExhausted();
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
                 throw iteratorExhausted();
             }
 

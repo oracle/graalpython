@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.AddrInfoCursor;
@@ -190,13 +190,13 @@ public abstract class SocketNodes {
         @Specialization(guards = "isUnix(socket)")
         static UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode,
                         @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             byte[] path;
             if (unicodeCheckNode.execute(inliningTarget, address)) {
                 path = encodeFSDefaultNode.execute(frame, inliningTarget, toTruffleStringNode.execute(inliningTarget, address));
@@ -205,7 +205,7 @@ public abstract class SocketNodes {
                 try {
                     path = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, callData);
+                    releaseBuffer.execute(frame, buffer);
                 }
             }
             if (!PosixConstants.IS_LINUX || (path.length > 0 && path[0] != 0)) {

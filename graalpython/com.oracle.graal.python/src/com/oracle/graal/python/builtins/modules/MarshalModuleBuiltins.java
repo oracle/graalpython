@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -126,7 +127,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -285,9 +285,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object buffer, boolean allowCode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -302,7 +302,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (Marshal.MarshalError me) {
                 throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -988,7 +988,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                             writeSize(len);
                             out.write(accessLib.getInternalOrCopiedByteArray(buf), 0, len);
                         } finally {
-                            accessLib.release(buf);
+                            PyBufferRelease.getUncached().execute(null, buf);
                         }
                     } else {
                         writeByte(TYPE_UNKNOWN);

@@ -54,10 +54,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -73,7 +73,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PickleBuffer)
@@ -136,11 +135,11 @@ public class PickleBufferBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PickleBufferReleaseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object release(PPickleBuffer self,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        Object release(VirtualFrame frame, PPickleBuffer self,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object view = self.getView();
             if (view != null) {
-                bufferLib.release(view);
+                releaseBuffer.execute(frame, view);
                 self.release();
             }
             return PNone.NONE;

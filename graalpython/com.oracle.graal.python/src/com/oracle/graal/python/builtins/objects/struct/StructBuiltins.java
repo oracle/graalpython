@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -100,7 +101,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -501,10 +501,10 @@ public class StructBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object packInto(VirtualFrame frame, PStruct self, Object buffer, int offset, Object[] args,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.PackValueNode packValueNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 final long size = self.getUnsignedSize();
                 if (args.length != self.getLen()) {
@@ -550,7 +550,7 @@ public class StructBuiltins extends PythonBuiltins {
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -575,10 +575,10 @@ public class StructBuiltins extends PythonBuiltins {
         static Object unpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 int bytesLen = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -587,7 +587,7 @@ public class StructBuiltins extends PythonBuiltins {
                 }
                 return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, 0));
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }
@@ -607,9 +607,9 @@ public class StructBuiltins extends PythonBuiltins {
         static Object iterUnpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 if (self.getSize() == 0) {
                     throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0);
@@ -619,7 +619,7 @@ public class StructBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES, self.getSize());
                 }
             } catch (Exception e) {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
                 throw e;
             }
             // The buffer ownership is transferred to the iterator
@@ -646,10 +646,10 @@ public class StructBuiltins extends PythonBuiltins {
         static Object unpackFrom(VirtualFrame frame, PStruct self, Object buffer, int offset,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 int bufferOffset = offset;
                 int bytesLen = bufferLib.getBufferLength(buffer);
@@ -673,7 +673,7 @@ public class StructBuiltins extends PythonBuiltins {
 
                 return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, bufferOffset));
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }

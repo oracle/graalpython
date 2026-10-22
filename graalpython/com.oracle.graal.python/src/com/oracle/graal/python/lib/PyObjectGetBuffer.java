@@ -78,8 +78,8 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyObject_GetBuffer}. The returned buffer must be accessed and
- * released using {@link PythonBufferAccessLibrary}.
+ * Equivalent of CPython's {@code PyObject_GetBuffer}. The returned buffer must be accessed using
+ * {@link PythonBufferAccessLibrary} and released using {@link PyBufferRelease}.
  */
 @GenerateUncached
 @GenerateInline(false)

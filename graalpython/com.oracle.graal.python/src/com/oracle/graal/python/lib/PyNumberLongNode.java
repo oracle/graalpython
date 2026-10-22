@@ -241,7 +241,8 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                         @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Cached PyLongFromUnicodeObject fromString,
                         @Cached PyObjectGetBuffer getBuffer,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object buffer;
             try {
                 buffer = getBuffer.executeReadonly(frame, object);
@@ -254,7 +255,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                 TruffleString string = fromByteArrayNode.execute(bytes, 0, len, TruffleString.CompactionLevel.S1, false);
                 return fromString.execute(inliningTarget, string, base, bytes, len);
             } finally {
-                bufferLib.release(buffer);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }

@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
@@ -132,7 +133,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverter
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -533,7 +533,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached InlinedConditionProfile step1Profile,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             if (self.isClosed()) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
             }
@@ -572,7 +573,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                     }
                 }
             } finally {
-                bufferLib.release(buffer);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }
@@ -807,10 +808,10 @@ public final class MMapBuiltins extends PythonBuiltins {
         static int doIt(VirtualFrame frame, PMMap self, Object dataBuffer,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 if (!self.isWriteable()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
@@ -826,7 +827,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
-                bufferLib.release(dataBuffer, frame, callData);
+                releaseBuffer.execute(frame, dataBuffer);
             }
         }
     }
@@ -893,12 +894,12 @@ public final class MMapBuiltins extends PythonBuiltins {
         static long find(VirtualFrame frame, PMMap self, Object subBuffer, Object startIn, Object endIn,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("subBuffer") PythonBufferAccessLibrary bufferLib,
                         @Cached LongIndexConverterNode startConverter,
                         @Cached LongIndexConverterNode endConverter,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 long start = normalizeIndex(frame, startConverter, startIn, self.getLength(), self.getPos());
                 long end = normalizeIndex(frame, endConverter, endIn, self.getLength(), self.getLength());
@@ -952,7 +953,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } finally {
-                bufferLib.release(subBuffer, frame, callData);
+                releaseBuffer.execute(frame, subBuffer);
             }
         }
 

@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -948,7 +949,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             accessLib.readIntoByteArray(buffer, 0, bytes, 0, chunkLen);
             return bytes;
         } finally {
-            PythonBufferAccessLibrary.getUncached().release(buffer);
+            PyBufferRelease.getUncached().execute(null, buffer);
         }
     }
 

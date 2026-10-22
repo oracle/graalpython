@@ -52,6 +52,7 @@ import java.util.Objects;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -122,7 +123,7 @@ public final class TRegexCache {
                 int bytesLen = bufferLib.getBufferLength(buffer);
                 patternStr = new String(bytes, 0, bytesLen, StandardCharsets.ISO_8859_1);
             } finally {
-                bufferLib.release(buffer);
+                PyBufferRelease.getUncached().execute(null, buffer);
             }
         }
         validateFlags(node, binary, flags);

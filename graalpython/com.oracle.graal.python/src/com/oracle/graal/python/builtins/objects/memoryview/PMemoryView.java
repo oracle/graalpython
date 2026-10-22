@@ -48,14 +48,11 @@ import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -278,26 +275,8 @@ public final class PMemoryView extends PythonBuiltinObject {
         return getLength();
     }
 
-    @ExportMessage
-    void release(
-                    @Bind Node inliningTarget,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached ReleaseBufferNode releaseNode) {
-        /*
-         * This is a bit hacky - the shouldReleaseImmediately marker is used when this is a helper
-         * memoryview that was created to hold a buffer for native object. In the future there
-         * should be no such helper memoryviews, the C buffer should have a separate implementation.
-         */
-        if (shouldReleaseImmediately) {
-            checkExports(inliningTarget, raiseNode);
-            if (checkShouldReleaseBuffer()) {
-                releaseNode.execute(inliningTarget, getLifecycleManager());
-            }
-            setReleased();
-        } else {
-            long l = exports.decrementAndGet();
-            assert l >= 0;
-        }
+    public boolean shouldReleaseImmediately() {
+        return shouldReleaseImmediately;
     }
 
     @ExportMessage
