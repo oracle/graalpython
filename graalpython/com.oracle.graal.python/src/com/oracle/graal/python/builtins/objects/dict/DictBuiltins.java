@@ -436,7 +436,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Bind PythonLanguage language) {
             var storage = getStorageNode.execute(inliningTarget, self);
-            return PFactory.createDictKeyIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return PFactory.createDictReverseKeyIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 

@@ -1085,12 +1085,27 @@ public final class PFactory {
                         initialSize);
     }
 
+    public static PDictItemIterator createDictReverseItemIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
+        return new PDictItemIterator(PythonBuiltinClassType.PDictReverseItemIterator, PythonBuiltinClassType.PDictReverseItemIterator.getInstanceShape(language), iterator, hashingStorage,
+                        initialSize);
+    }
+
     public static PDictKeyIterator createDictKeyIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
         return new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.getInstanceShape(language), iterator, hashingStorage, initialSize);
     }
 
+    public static PDictKeyIterator createDictReverseKeyIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
+        return new PDictKeyIterator(PythonBuiltinClassType.PDictReverseKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator.getInstanceShape(language), iterator, hashingStorage,
+                        initialSize);
+    }
+
     public static PDictValueIterator createDictValueIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
         return new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.getInstanceShape(language), iterator, hashingStorage, initialSize);
+    }
+
+    public static PDictValueIterator createDictReverseValueIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
+        return new PDictValueIterator(PythonBuiltinClassType.PDictReverseValueIterator, PythonBuiltinClassType.PDictReverseValueIterator.getInstanceShape(language), iterator, hashingStorage,
+                        initialSize);
     }
 
     public static Object createSentinelIterator(PythonLanguage language, Object callable, Object sentinel) {
