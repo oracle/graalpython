@@ -73,6 +73,15 @@ def test_incomplete_input_error():
             assert False, "SyntaxError was not raised"
 
 
+def test_compile_unrecognised_flags_message():
+    try:
+        compile("1", "<input>", "exec", 0x7fffffff)
+    except ValueError as e:
+        assert str(e) == "compile(): unrecognised flags"
+    else:
+        assert False, "ValueError was not raised"
+
+
 def test_lambdas_as_function_default_argument_values():
     globs = {}
     exec("""
