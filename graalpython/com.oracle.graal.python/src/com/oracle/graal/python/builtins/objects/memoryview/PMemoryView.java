@@ -47,9 +47,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -68,7 +66,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 // TODO interop library
-@ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
@@ -277,45 +274,8 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBuffer() {
-        return true;
-    }
-
-    @ExportMessage
     int getBufferLength() {
         return getLength();
-    }
-
-    @ExportMessage
-    Object acquire(int requestedFlags,
-                    @Bind Node inliningTarget,
-                    @Cached PRaiseNode raiseNode) {
-        checkReleased(inliningTarget, raiseNode);
-        if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
-        }
-        if (BufferFlags.requestsCContiguous(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
-        }
-        if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
-        }
-        if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isAnyContiguous()) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
-        }
-        if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
-        }
-        if (!BufferFlags.requestsStrides(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
-        }
-        // TODO should reflect the cast to unsigned bytes if necessary
-        if (!BufferFlags.requestsShape(requestedFlags) && BufferFlags.requestsFormat(requestedFlags)) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
-        }
-        exports.incrementAndGet();
-        return this;
     }
 
     @ExportMessage

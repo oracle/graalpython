@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,27 +45,26 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.dsl.Bind;
@@ -91,12 +90,11 @@ public class PickleBufferBuiltins extends PythonBuiltins {
     @SlotSignature(name = "PickleBuffer", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"})
     @GenerateNodeFactory
     abstract static class ConstructPickleBufferNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static PPickleBuffer construct(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib) {
-            Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, callData);
+                        @Cached PyObjectGetBuffer getBuffer) {
+            Object buffer = getBuffer.execute(frame, object, BufferFlags.PyBUF_FULL_RO);
             return PFactory.createPickleBuffer(language, buffer);
         }
     }

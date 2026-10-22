@@ -43,11 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -79,7 +76,6 @@ import com.oracle.truffle.api.utilities.TriState;
  * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     /**
@@ -278,19 +274,4 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         }
     }
 
-    @ExportMessage
-    boolean hasBuffer(
-                    @Bind Node inliningTarget,
-                    @Cached CExtNodes.HasNativeBufferNode hasNativeBuffer) {
-        return hasNativeBuffer.execute(inliningTarget, this);
-    }
-
-    @ExportMessage
-    Object acquire(int flags,
-                    @Bind Node inliningTarget,
-                    @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
-        PMemoryView mv = createMemoryView.execute(inliningTarget, this, flags);
-        mv.setShouldReleaseImmediately(true);
-        return mv;
-    }
 }

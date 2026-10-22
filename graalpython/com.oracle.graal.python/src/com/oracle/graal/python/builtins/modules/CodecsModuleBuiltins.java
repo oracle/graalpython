@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.CallDecodingErrorHandlerNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -107,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -241,7 +241,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached ErrorHandlers.CallEncodingErrorHandlerNode errorHandler,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PRaiseNode raiseNode,
@@ -258,7 +258,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                     return ret;
                 }
             }
-            return slowPath(frame, encoding, errors, inliningTarget, toJavaStringNode, equalNode, errorHandler, acquireLib, bufferLib, castToJavaStringNode, raiseNode, input, charsetWrapper);
+            return slowPath(frame, encoding, errors, inliningTarget, toJavaStringNode, equalNode, errorHandler, getBuffer, bufferLib, castToJavaStringNode, raiseNode, input, charsetWrapper);
         }
 
         private static byte[] fastPath(TruffleString input,
@@ -295,7 +295,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         TruffleString.ToJavaStringNode toJavaStringNode,
                         TruffleString.EqualNode equalNode,
                         ErrorHandlers.CallEncodingErrorHandlerNode errorHandler,
-                        PythonBufferAcquireLibrary acquireLib,
+                        PyObjectGetBuffer getBuffer,
                         PythonBufferAccessLibrary bufferLib,
                         CastToJavaStringNode castToJavaStringNode,
                         PRaiseNode raiseNode,
@@ -317,7 +317,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         String replacementStr = castToJavaStringNode.execute(result.replacement);
                         encoder.replace(replacementStr, charset);
                     } else {
-                        Object buffer = acquireLib.acquireReadonly(result.replacement);
+                        Object buffer = getBuffer.executeReadonly(frame, result.replacement);
                         try {
                             encoder.replace(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
                         } finally {
@@ -385,7 +385,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.IsValidNode isValidNode,
@@ -394,7 +394,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached(inline = true) CharsetLookupNode charsetLookupNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = acquireLib.acquireReadonly(input, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, input);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -472,7 +472,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         ErrorHandlers.DecodingErrorHandlerResult result = CallDecodingErrorHandlerNodeGen.getUncached().execute(null, null, handlerCache, errors, encoding, input,
                                         pos, pos + decoder.getErrorLength(), decoder.getErrorReason());
                         if (result.newSrcObj != input) {
-                            buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(result.newSrcObj);
+                            buffer = PyObjectGetBuffer.getUncached().executeReadonly(null, result.newSrcObj);
                             releaseBuffer = true;
                             bufferLib = PythonBufferAccessLibrary.getFactory().getUncached(buffer);
                             decoder.setNewInput(bufferLib.getInternalOrCopiedByteArray(result.newSrcObj), 0, bufferLib.getBufferLength(result.newSrcObj), result.newPos);
@@ -1316,15 +1316,15 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CharmapDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         Object doIt(VirtualFrame frame, Object data, TruffleString errors, Object mapping,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyUnicodeDecodeCharmapNode pyUnicodeDecodeCharmapNode) {
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), callData);
+            Object dataBuffer = getBuffer.executeReadonly(frame, data);
             int len;
             try {
                 len = bufferLib.getBufferLength(dataBuffer);

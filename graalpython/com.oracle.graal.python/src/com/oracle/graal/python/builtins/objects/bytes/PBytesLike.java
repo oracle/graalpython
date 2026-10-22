@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -59,7 +58,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public abstract class PBytesLike extends PSequence {
 
@@ -85,17 +83,6 @@ public abstract class PBytesLike extends PSequence {
     public void setSequenceStorage(SequenceStorage store) {
         assert store instanceof ByteSequenceStorage || store instanceof NativeByteSequenceStorage;
         this.store = store;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBuffer() {
-        return true;
-    }
-
-    @ExportMessage
-    Object acquire(@SuppressWarnings("unused") int flags) {
-        return this;
     }
 
     @ExportMessage

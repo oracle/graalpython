@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.GetErrorHan
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.RaiseEncodeException;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -362,17 +362,14 @@ public final class CharmapNodes {
 
         public abstract TruffleString execute(VirtualFrame frame, Object data, TruffleString errors, Object mapping);
 
-        @Specialization(limit = "3")
+        @Specialization
         static TruffleString decodeLatin1(VirtualFrame frame, Object data, @SuppressWarnings("unused") TruffleString errors, @SuppressWarnings("unused") PNone mapping,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
                         @Shared @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Shared @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
-                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             // equivalent of PyUnicode_DecodeLatin1
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), callData);
+            Object dataBuffer = getBuffer.executeReadonly(frame, data);
             try {
                 int len = bufferLib.getBufferLength(dataBuffer);
                 byte[] src = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
@@ -386,7 +383,7 @@ public final class CharmapNodes {
         static TruffleString decodeStringMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
                         @Bind Node inliningTarget,
                         @Shared @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Shared @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
                         @Cached @Exclusive CastToTruffleStringNode castToTruffleStringNode,
@@ -409,7 +406,7 @@ public final class CharmapNodes {
             int errorStartPos;
             int srcLen;
             do {
-                Object srcBuf = bufferAcquireLib.acquireReadonly(srcObj, frame, context, language, callData);
+                Object srcBuf = getBuffer.executeReadonly(frame, srcObj);
                 try {
                     srcLen = bufferLib.getBufferLength(srcBuf);
                     byte[] src = bufferLib.getInternalOrCopiedByteArray(srcBuf);
@@ -445,7 +442,7 @@ public final class CharmapNodes {
         static TruffleString decodeGenericMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
                         @Bind Node inliningTarget,
                         @Shared @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Shared @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
                         @Cached PyObjectGetItem pyObjectGetItemNode,
@@ -475,7 +472,7 @@ public final class CharmapNodes {
             int errorStartPos;
             int srcLen;
             do {
-                Object srcBuf = bufferAcquireLib.acquireReadonly(srcObj, frame, context, language, callData);
+                Object srcBuf = getBuffer.executeReadonly(frame, srcObj);
                 try {
                     srcLen = bufferLib.getBufferLength(srcBuf);
                     byte[] src = bufferLib.getInternalOrCopiedByteArray(srcBuf);

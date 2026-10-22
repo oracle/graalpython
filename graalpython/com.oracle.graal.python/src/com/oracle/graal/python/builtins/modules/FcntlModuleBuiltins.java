@@ -64,9 +64,10 @@ import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -203,7 +204,8 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyLongAsIntNode asIntNode,
@@ -220,14 +222,14 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
             if (arg != PNone.NO_VALUE) {
                 Object buffer = null;
                 // Buffer argument
-                if (acquireLib.hasBuffer(arg)) {
+                if (checkBufferNode.execute(arg)) {
                     boolean writable = false;
                     try {
-                        buffer = acquireLib.acquireWritable(arg, frame, callData);
+                        buffer = getBuffer.executeWritable(frame, arg);
                         writable = true;
                     } catch (PException e) {
                         try {
-                            buffer = acquireLib.acquireReadonly(arg, frame, callData);
+                            buffer = getBuffer.executeReadonly(frame, arg);
                         } catch (PException e1) {
                             // ignore
                         }

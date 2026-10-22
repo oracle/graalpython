@@ -65,7 +65,6 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -80,11 +79,12 @@ import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsCli
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsClinicProviders.Pbkdf2HmacNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -221,13 +221,14 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            if (acquireLib.hasBuffer(a) && acquireLib.hasBuffer(b)) {
-                Object bufferA = acquireLib.acquireReadonly(a, frame, callData);
+            if (checkBufferNode.execute(a) && checkBufferNode.execute(b)) {
+                Object bufferA = getBuffer.executeReadonly(frame, a);
                 try {
-                    Object bufferB = acquireLib.acquireReadonly(b, frame, callData);
+                    Object bufferB = getBuffer.executeReadonly(frame, b);
                     try {
                         byte[] bytesA = accessLib.getInternalOrCopiedByteArray(bufferA);
                         byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
@@ -286,7 +287,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
-                        @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
+                        @Shared("checkBuffer") @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Shared("getBuffer") @Cached PyObjectGetBuffer getBuffer,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             // cast guaranteed in our initialize
@@ -294,34 +296,35 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib, raiseNode);
+                return hmacNew(frame, self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, checkBufferNode, getBuffer, bufferLib, raiseNode);
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError);
             }
         }
 
         @Specialization(guards = "isString(digestmodObj)")
-        static Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
+        static Object hmacNew(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
-                        @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
+                        @Shared("checkBuffer") @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Shared("getBuffer") @Cached PyObjectGetBuffer getBuffer,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
-            if (!acquireLib.hasBuffer(keyObj)) {
+            if (!checkBufferNode.execute(keyObj)) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, keyObj);
             } else {
-                key = acquireLib.acquireReadonly(keyObj);
+                key = getBuffer.executeReadonly(frame, keyObj);
             }
             try {
                 Object msg;
                 if (msgObj instanceof PNone) {
                     msg = null;
-                } else if (acquireLib.hasBuffer(msgObj)) {
-                    msg = acquireLib.acquireReadonly(msgObj);
+                } else if (checkBufferNode.execute(msgObj)) {
+                    msg = getBuffer.executeReadonly(frame, msgObj);
                 } else {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, msgObj);
                 }
@@ -368,14 +371,15 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raise) {
             Object buffer;
             if (value == PNone.NO_VALUE) {
                 buffer = null;
-            } else if (acquireLib.hasBuffer(value)) {
-                buffer = acquireLib.acquireReadonly(value, frame, callData);
+            } else if (checkBufferNode.execute(value)) {
+                buffer = getBuffer.executeReadonly(frame, value);
             } else {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
             }

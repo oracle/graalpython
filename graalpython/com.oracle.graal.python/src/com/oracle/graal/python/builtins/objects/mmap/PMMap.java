@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.mmap;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -61,7 +60,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMMap extends PythonObject {
     public static final int ACCESS_DEFAULT = 0;
@@ -162,17 +160,6 @@ public final class PMMap extends PythonObject {
         } catch (PosixException e) {
             throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
-    }
-
-    @ExportMessage
-    Object acquire(@SuppressWarnings("unused") int flags) {
-        return this;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBuffer() {
-        return true;
     }
 
     static class MMapRef extends AsyncHandler.SharedFinalizer.FinalizableReference {

@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -701,17 +701,17 @@ public final class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static Object recvInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, callData);
+            Object buffer = getBuffer.executeWritable(frame, bufferObj);
             try {
                 if (recvlenIn < 0) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV_INTO);
@@ -768,18 +768,18 @@ public final class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class RecvFromIntoNode extends PythonQuaternaryClinicBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static Object recvFromInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, callData);
+            Object buffer = getBuffer.executeWritable(frame, bufferObj);
             try {
                 if (recvlenIn < 0) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM_INTO);
@@ -834,17 +834,17 @@ public final class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class SendNode extends PythonTernaryClinicBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static int send(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, bufferObj);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
@@ -874,17 +874,17 @@ public final class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryClinicBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static Object sendAll(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, bufferObj);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
@@ -932,12 +932,12 @@ public final class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "sendto", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SendToNode extends PythonBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasFlagsProfile,
                         @Cached PyLongAsIntNode asIntNode,
@@ -956,7 +956,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 flags = asIntNode.execute(frame, inliningTarget, flagsOrAddress);
             }
 
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, bufferObj);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
@@ -1109,7 +1109,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongAsIntNode asIntNode,
@@ -1122,7 +1122,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 len = bytes.length;
                 PythonUtils.ARRAY_ACCESSOR.putInt(bytes, 0, flag);
             } catch (PException e) {
-                Object buffer = bufferAcquireLib.acquireReadonly(value, frame, callData);
+                Object buffer = getBuffer.executeReadonly(frame, value);
                 try {
                     len = bufferLib.getBufferLength(buffer);
                     bytes = bufferLib.getInternalOrCopiedByteArray(buffer);

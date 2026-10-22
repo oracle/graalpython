@@ -63,13 +63,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -169,7 +169,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
 
                 Object buffer;
                 try {
-                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(o);
+                    buffer = PyObjectGetBuffer.getUncached().executeReadonly(null, o);
                 } catch (PException e) {
                     throw PRaiseNode.raiseStatic(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
                 }

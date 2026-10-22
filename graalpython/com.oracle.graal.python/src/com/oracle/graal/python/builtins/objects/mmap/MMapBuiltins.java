@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -114,6 +113,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -527,7 +527,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         static void doSlice(VirtualFrame frame, PMMap self, PSlice slice, Object valueObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
@@ -550,7 +550,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             if (valueObj == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION);
             }
-            Object buffer = acquireLib.acquireReadonly(valueObj);
+            Object buffer = getBuffer.executeReadonly(frame, valueObj);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 if (info.sliceLength != bufferLen) {

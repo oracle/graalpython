@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
@@ -62,7 +61,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -242,12 +240,11 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                         @Bind Node inliningTarget,
                         @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Cached PyLongFromUnicodeObject fromString,
-                        @Cached(value = "createFor($node)") InteropCallData callData,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(object, frame, callData);
+                buffer = getBuffer.executeReadonly(frame, object);
             } catch (AbstractTruffleException e) {
                 return null;
             }

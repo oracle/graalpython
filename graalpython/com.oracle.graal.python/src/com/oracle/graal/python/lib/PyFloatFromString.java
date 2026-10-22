@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -89,7 +88,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
     @Specialization
     static double doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached(value = "createFor($node)") InteropCallData callData,
-                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                    @Cached PyObjectGetBuffer getBuffer,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                     @Cached(inline = false) CastToJavaStringNode cast,
                     @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,
@@ -100,7 +99,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         } catch (CannotCastException e) {
             Object buffer = null;
             try {
-                buffer = acquireLib.acquireReadonly(object, frame, callData);
+                buffer = getBuffer.executeReadonly(frame, object);
             } catch (PException e1) {
                 // fallthrough
             }

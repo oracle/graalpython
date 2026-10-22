@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
+
 /**
- * Flags for getting buffers. Extracted from CPython. Used by {@link PythonBufferAcquireLibrary}.
+ * Flags for getting buffers. Extracted from CPython. Used by {@link PyObjectGetBuffer}.
  */
 public abstract class BufferFlags {
     public static final int PyBUF_SIMPLE = 0;

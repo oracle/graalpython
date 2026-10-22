@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -89,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStrin
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -835,16 +835,16 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "inet_ntoa", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static TruffleString doGeneric(VirtualFrame frame, Object addr,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @Cached PosixSupportNodes.GetCStringAsStringNode getCStringAsStringNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, addr);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -893,17 +893,17 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @Cached PosixSupportNodes.GetCStringAsStringNode getCStringAsStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, obj);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);

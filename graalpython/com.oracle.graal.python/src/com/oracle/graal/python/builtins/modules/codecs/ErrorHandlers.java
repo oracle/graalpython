@@ -66,7 +66,6 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -83,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
@@ -409,7 +409,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached @Shared TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             int start = getStartNode.execute(inliningTarget, exception);
@@ -420,7 +420,7 @@ public final class ErrorHandlers {
             }
             byte[] replacement = new byte[4 * (end - start)];
             int pos = 0;
-            Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
+            Object srcBuf = getBuffer.executeReadonly(frame, object);
             try {
                 byte[] src = accessLib.getInternalOrCopiedByteArray(srcBuf);
                 for (int i = start; i < end; i++) {
@@ -585,7 +585,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
                         @Cached PyUnicodeDecodeErrorGetEncodingNode getEncodingNode,
                         @Exclusive @Cached GetStandardEncodingNode getStandardEncodingNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -597,7 +597,7 @@ public final class ErrorHandlers {
             if (encoding == StandardEncoding.UNKNOWN) {
                 throw raiseNode.raiseExceptionObject(inliningTarget, exception);
             }
-            Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
+            Object srcBuf = getBuffer.executeReadonly(frame, object);
             try {
                 int cp = 0;
                 int srcLen = accessLib.getBufferLength(srcBuf);
@@ -712,7 +712,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
@@ -720,7 +720,7 @@ public final class ErrorHandlers {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
-            Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
+            Object srcBuf = getBuffer.executeReadonly(frame, object);
             TruffleStringBuilderUTF32 tsb = TruffleStringBuilder.createUTF32();
             try {
                 byte[] src = accessLib.getInternalOrCopiedByteArray(srcBuf);

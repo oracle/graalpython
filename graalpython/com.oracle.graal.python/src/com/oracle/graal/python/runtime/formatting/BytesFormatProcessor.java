@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
@@ -62,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -250,10 +251,9 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     private static byte[] byteBufferAsBytesOrNull(Object obj) {
-        PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getFactory().getUncached(obj);
-        if (acquireLib.hasBuffer(obj)) {
+        if (PyObjectCheckBuffer.executeUncached(obj)) {
             // TODO PyBUF_FULL_RO
-            Object buffer = acquireLib.acquire(obj, BufferFlags.PyBUF_ND);
+            Object buffer = PyObjectGetBuffer.getUncached().execute(null, obj, BufferFlags.PyBUF_ND);
             PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().getUncached(buffer);
             try {
                 return bufferLib.getCopiedByteArray(buffer);

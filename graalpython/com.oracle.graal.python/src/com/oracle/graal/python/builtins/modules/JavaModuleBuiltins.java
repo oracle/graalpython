@@ -56,11 +56,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -285,12 +285,12 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
             return new PUnsignedBytesWrapper(object);
         }
 
-        @Specialization(guards = "!isBytes(object)", limit = "3")
+        @Specialization(guards = "!isBytes(object)")
         static Object doBuffer(VirtualFrame frame, Object object,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = acquireLib.acquireReadonly(object, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, object);
             try {
                 return new InteropByteArray(bufferLib.getCopiedByteArray(object));
             } finally {

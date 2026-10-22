@@ -66,9 +66,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
@@ -194,14 +194,14 @@ public abstract class SocketNodes {
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode,
-                        @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             byte[] path;
             if (unicodeCheckNode.execute(inliningTarget, address)) {
                 path = encodeFSDefaultNode.execute(frame, inliningTarget, toTruffleStringNode.execute(inliningTarget, address));
             } else {
-                Object buffer = bufferAcquireLib.acquireReadonly(address, frame, callData);
+                Object buffer = getBuffer.executeReadonly(frame, address);
                 try {
                     path = bufferLib.getCopiedByteArray(buffer);
                 } finally {

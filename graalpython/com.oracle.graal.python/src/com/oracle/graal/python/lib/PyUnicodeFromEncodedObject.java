@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,13 +46,11 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -102,16 +100,15 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
-    @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
+    @Specialization(guards = {"!isPBytes(object)", "!isString(object)"})
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
                     @Bind PythonLanguage language,
                     @Cached("createFor($node)") InteropCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
-                    @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @Cached PyObjectGetBuffer getBuffer,
                     @Exclusive @Cached PyUnicodeDecode decode,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        PythonContext context = PythonContext.get(inliningTarget);
-        Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, context.getLanguage(inliningTarget), indirectCallNode);
+        Object buffer = getBuffer.executeReadonly(frame, object);
         try {
             int len = bufferLib.getBufferLength(buffer);
             if (emptyStringProfile.profile(inliningTarget, len == 0)) {

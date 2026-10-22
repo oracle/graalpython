@@ -52,7 +52,7 @@ import java.util.Objects;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -112,7 +112,7 @@ public final class TRegexCache {
         } catch (CannotCastException ce) {
             Object buffer;
             try {
-                buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(pattern);
+                buffer = PyObjectGetBuffer.getUncached().executeReadonly(null, pattern);
             } catch (PException e) {
                 throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
             }

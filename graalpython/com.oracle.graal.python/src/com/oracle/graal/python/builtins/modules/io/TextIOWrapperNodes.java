@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.Make
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
@@ -92,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -510,7 +510,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             /*
@@ -563,7 +563,7 @@ public abstract class TextIOWrapperNodes {
 
             Object inputChunkBuf;
             try {
-                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk, frame, callData);
+                inputChunkBuf = getBuffer.executeReadonly(frame, inputChunk);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? T_READ1 : T_READ), inputChunk);
             }

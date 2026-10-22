@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsClinicProviders.BytesNewNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -67,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -236,14 +236,14 @@ public class BytesBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
     abstract static class HashNode extends HashBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static long hash(VirtualFrame frame, Object self,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("self") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {
-            Object buffer = acquireLib.acquireReadonly(self, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, self);
             try {
                 return hashBufferNode.execute(inliningTarget, buffer);
             } finally {

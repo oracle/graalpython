@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
@@ -105,6 +104,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -461,16 +461,16 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends ClosedCheckPythonBinaryBuiltinNode {
 
-        @Specialization(guards = "self.hasBuf()", limit = "3")
+        @Specialization(guards = "self.hasBuf()")
         static Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
-            Object buffer = acquireLib.acquireReadonly(b, frame, callData);
+            Object buffer = getBuffer.executeReadonly(frame, b);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 if (len == 0) {

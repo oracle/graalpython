@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,14 +41,11 @@
 package com.oracle.graal.python.util;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -122,13 +119,12 @@ public final class ByteArrayBuilder {
     public abstract static class AppendBytesNode extends PNodeWithContext {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, ByteArrayBuilder builder, Object bytes);
 
-        @Specialization(limit = "3")
-        static void appendBytes(VirtualFrame frame, Node inliningTarget, ByteArrayBuilder builder, Object data,
-                        @Bind PythonContext context,
+        @Specialization
+        static void appendBytes(VirtualFrame frame, ByteArrayBuilder builder, Object data,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib) {
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), callData);
+                        @Cached PyObjectGetBuffer getBuffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            Object dataBuffer = getBuffer.executeReadonly(frame, data);
             try {
                 int len = bufferLib.getBufferLength(dataBuffer);
                 byte[] src = bufferLib.getInternalOrCopiedByteArray(dataBuffer);

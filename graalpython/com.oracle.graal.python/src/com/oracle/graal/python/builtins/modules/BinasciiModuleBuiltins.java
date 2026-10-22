@@ -62,9 +62,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -76,7 +77,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -107,13 +107,11 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     }
 
     abstract static class AsciiBufferConverter extends ArgumentCastNode {
-        @Specialization(guards = "acquireLib.hasBuffer(value)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "checkBufferNode.execute(value)", limit = "1")
         static Object doObject(VirtualFrame frame, Object value,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-            return acquireLib.acquireReadonly(value, frame, context, context.getLanguage(inliningTarget), callData);
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer) {
+            return getBuffer.executeReadonly(frame, value);
         }
 
         @ExportLibrary(PythonBufferAccessLibrary.class)
