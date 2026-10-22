@@ -71,7 +71,6 @@ import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleSafepoint;
-import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -83,7 +82,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -212,12 +210,7 @@ public abstract class ReadFrameNode extends Node {
                     // We found the right reference
                     // Maybe it's for the frame we're in?
                     if (curFrameInfo == executingFrameInfo && frame != null) {
-                        PFrame pFrame = materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsMaterializedLocals(callerFlags), frame);
-                        if (CallerFlags.needsMaterializedLocals(callerFlags) && !pFrame.hasMaterializedFrame()) {
-                            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
-                            pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
-                        }
-                        return pFrame;
+                        return materializeFrameNode.execute(this, false, callerFlags, frame);
                     }
                     if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().needsRefresh(null, callerFlags)) {
                         return curFrameInfo.getPyFrame();
@@ -339,12 +332,7 @@ public abstract class ReadFrameNode extends Node {
     private static PFrame processStackWalkResult(MaterializeFrameNode materializeFrameNode, int callerFlags, StackWalkResult callerFrameResult) {
         if (callerFrameResult != null) {
             Node location = getMaterializationLocation(callerFrameResult);
-            PFrame pFrame = materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsMaterializedLocals(callerFlags), callerFrameResult.frame);
-            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
-            if (CallerFlags.needsMaterializedLocals(callerFlags) && bytecodeNode != null) {
-                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) callerFrameResult.frame), true);
-            }
-            return pFrame;
+            return materializeFrameNode.execute(location, false, callerFlags, callerFrameResult.frame);
         }
         return null;
     }

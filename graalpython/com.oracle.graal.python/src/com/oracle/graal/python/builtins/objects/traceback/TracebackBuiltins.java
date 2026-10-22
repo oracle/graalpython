@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -69,7 +70,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -224,13 +224,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                                             rootNode, pException.getTracebackFrameCount(), pException.getTracebackStartIndex(), Arrays.toString(stackTrace.toArray()));
             // create the PFrame and refresh frame values
             Frame frame = PGenerator.unwrapDSLGeneratorFrame(element);
-            PFrame pFrame = materializeFrameNode.execute(location, true, true, frame);
-            // This should have been done when exitting the callee context, but it can get skipped during stack overflows
-            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
-            if (!pFrame.hasMaterializedFrame() && bytecodeNode != null) {
-                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
-            }
-            return pFrame;
+            return materializeFrameNode.execute(location, true, CallerFlags.NEEDS_MATERIALIZED_LOCALS, frame);
         }
     }
 
