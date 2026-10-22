@@ -618,21 +618,17 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
             PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, tryComplexNode);
-            if (canBeDoubleNode.execute(inliningTarget, two)) {
-                double twoValue = asDoubleNode.execute(frame, inliningTarget, two);
-                if (oneValue == null) {
-                    if (one == PNone.NO_VALUE) {
-                        return createComplexNode.execute(inliningTarget, cls, 0, twoValue);
-                    } else if (canBeDoubleNode.execute(inliningTarget, one)) {
-                        return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), twoValue);
-                    } else {
-                        throw raiseFirstArgError(one, inliningTarget, raiseNode);
-                    }
-                }
-                return createComplexNode.execute(inliningTarget, cls, oneValue.getReal(), oneValue.getImag() + twoValue);
-            } else {
+            if (oneValue == null && one != PNone.NO_VALUE && !canBeDoubleNode.execute(inliningTarget, one)) {
+                throw raiseFirstArgError(one, inliningTarget, raiseNode);
+            }
+            if (!canBeDoubleNode.execute(inliningTarget, two)) {
                 throw raiseSecondArgError(two, inliningTarget, raiseNode);
             }
+            if (oneValue == null) {
+                double oneDouble = one == PNone.NO_VALUE ? 0 : asDoubleNode.execute(frame, inliningTarget, one);
+                return createComplexNode.execute(inliningTarget, cls, oneDouble, asDoubleNode.execute(frame, inliningTarget, two));
+            }
+            return createComplexNode.execute(inliningTarget, cls, oneValue.getReal(), oneValue.getImag() + asDoubleNode.execute(frame, inliningTarget, two));
         }
 
         @Specialization

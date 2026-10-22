@@ -304,6 +304,20 @@ def test_complex_subclass_without_dunder_complex_uses_fallback():
     assert result == 2 + 3j
     assert type(result) is complex
 
+
+def test_create_checks_arguments_before_converting():
+    class RaisingReal:
+        def __float__(self):
+            raise KeyError
+
+    class RaisingImag:
+        def __float__(self):
+            raise RuntimeError
+
+    assert_raises(TypeError, complex, {}, RaisingImag())
+    assert_raises(TypeError, complex, RaisingReal(), {})
+    assert_raises(KeyError, complex, RaisingReal(), RaisingImag())
+
 class ComplexTest(unittest.TestCase):
 
     def assertAlmostEqual(self, a, b):
