@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
-import com.oracle.graal.python.nodes.util.BadOPCodeNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -138,7 +138,7 @@ public abstract class CodeNodes {
             PRootNode rootNode;
             Signature signature;
             if (codedata.length == 0) {
-                rootNode = language.createCachedRootNode(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name.toJavaStringUncached());
+                rootNode = language.createCachedRootNode(l -> PBytecodeDSLRootNode.createBadOpcode(l, name), CreateCodeNode.class, name.toJavaStringUncached());
                 /*
                  * We need to create a proper signature because this code path is used to create
                  * fake code objects for duck-typed function-like objects, such as Cython functions.

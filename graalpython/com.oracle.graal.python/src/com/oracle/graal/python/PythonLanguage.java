@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
@@ -1223,7 +1224,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }
 
-    public <T extends RootNode> T createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, int memberIndex) {
+    public BuiltinFunctionRootNode createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, BuiltinFunctionRootNode> rootNodeFunction, int memberIndex) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
     }
 

@@ -58,6 +58,9 @@ import static com.oracle.graal.python.util.PythonUtils.checkAssumption;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -474,6 +477,47 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     public static PBytecodeDSLRootNode cast(RootNode root) {
         return PBytecodeDSLRootNodeGen.BYTECODE.cast(root);
+    }
+
+    public static PBytecodeDSLRootNode createBadOpcode(PythonLanguage language, TruffleString name) {
+        BytecodeDSLCodeUnit.BytecodeSupplier supplier = new BytecodeDSLCodeUnit.BytecodeSupplier() {
+            @Override
+            public PBytecodeDSLRootNode createRootNode(PythonLanguage rootLanguage) {
+                return PBytecodeDSLRootNodeGen.create(rootLanguage, BytecodeConfig.DEFAULT, b -> {
+                    b.beginRoot();
+                    // Reserve the local used by exception tracing and profiling.
+                    b.createLocal();
+                    b.emitEnterInstrumentedRoot();
+                    b.beginRaise();
+                    b.beginCallUnaryMethod();
+                    b.emitLoadConstant(SystemError);
+                    b.emitLoadConstant(ErrorMessages.UNKNOWN_OPCODE);
+                    b.endCallUnaryMethod();
+                    b.emitLoadConstant(PNone.NO_VALUE);
+                    b.endRaise();
+                    b.endRoot();
+                }).getNode(0);
+            }
+
+            @Override
+            public byte[] createSerializedBytecode(PythonLanguage rootLanguage) {
+                try {
+                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                    createRootNode(rootLanguage).getRootNodes().serialize(new DataOutputStream(bytes), new MarshalModuleBuiltins.PBytecodeDSLSerializer(rootLanguage));
+                    return bytes.toByteArray();
+                } catch (IOException e) {
+                    throw shouldNotReachHere(e);
+                }
+            }
+        };
+        BytecodeDSLCodeUnit code = new BytecodeDSLCodeUnit(name, name, 0, 0, 0, 0,
+                        PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY,
+                        PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY,
+                        PythonUtils.EMPTY_OBJECT_ARRAY, 1, 0, 1, 0, -1, -1, -1, 0, 0, supplier);
+        PBytecodeDSLRootNode root = code.createRootNode(language, false);
+        // Preserve the empty co_code of these placeholder code objects.
+        root.setCode(PythonUtils.EMPTY_BYTE_ARRAY);
+        return root;
     }
 
     @TruffleBoundary
