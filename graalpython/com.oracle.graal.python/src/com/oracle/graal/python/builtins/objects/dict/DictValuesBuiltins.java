@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -109,7 +109,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetReverseIterator getReverseIter,
                         @Bind PythonLanguage language) {
             HashingStorage storage = self.getWrappedStorage();
-            return PFactory.createDictValueIterator(language, getReverseIter.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return PFactory.createDictReverseValueIterator(language, getReverseIter.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 }

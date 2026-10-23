@@ -2007,3 +2007,16 @@ def test_bulk_value_update_preserves_iterators():
     d.update({k: -v for k, v in d.items()})
     assert list(it) == expected[1:]
     assert list(reverse) == expected[-2::-1]
+
+
+def test_reversed_iterator_types():
+    d = {1: 'a', 2: 'b'}
+    assert type(reversed(d)).__name__ == 'dict_reversekeyiterator'
+    assert type(reversed(d.keys())).__name__ == 'dict_reversekeyiterator'
+    assert type(reversed(d.values())).__name__ == 'dict_reversevalueiterator'
+    assert type(reversed(d.items())).__name__ == 'dict_reverseitemiterator'
+    assert type(reversed(d)) is not type(iter(d))
+    assert_raises(TypeError, type(reversed(d)))
+    assert_raises(TypeError, type(reversed(d.values())))
+    assert_raises(TypeError, type(reversed(d.items())))
+    assert list(reversed(d.items())) == [(2, 'b'), (1, 'a')]

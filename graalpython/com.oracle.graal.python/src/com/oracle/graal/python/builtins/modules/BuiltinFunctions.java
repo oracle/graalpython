@@ -1011,16 +1011,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object compile(TruffleString expression, TruffleString filename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize, int featureVersion) {
             checkFlags(flags);
             checkOptimize(optimize, optimize);
+            InputType type = getParserInputType(mode, flags);
             checkSource(expression);
 
             TruffleString code = expression;
             PythonContext context = getContext();
-            InputType type = getParserInputType(mode, flags);
-            if (type == InputType.FUNCTION_TYPE) {
-                if ((flags & PyCF_ONLY_AST) == 0) {
-                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
-                }
-            }
             if (lstrip && !code.isEmpty()) {
                 int c = code.codePointAtIndexUncached(0, TS_ENCODING);
                 if (c == ' ' || c == '\t') {
@@ -1087,11 +1082,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             checkFlags(flags);
             checkOptimize(optimize, optimize);
+            InputType type = getParserInputType(mode, flags);
 
             Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 if (AstModuleBuiltins.isAst(context, wSource)) {
-                    ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
+                    ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, type);
                     if ((flags & PyCF_ONLY_AST) != 0) {
                         if ((flags & PyCF_OPTIMIZED_AST) != PyCF_OPTIMIZED_AST) {
                             return wSource;
@@ -1143,7 +1139,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private void checkFlags(int flags) {
             if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_COMPILE_MASK)) != 0) {
-                throw PRaiseNode.raiseStatic(this, ValueError, null, NO_VALUE, ErrorMessages.UNRECOGNIZED_FLAGS, PythonUtils.EMPTY_OBJECT_ARRAY);
+                throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.UNRECOGNIZED_FLAGS);
             }
         }
 
@@ -1156,6 +1152,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (mode.equalsUncached(StringLiterals.T_SINGLE, TS_ENCODING)) {
                 return InputType.SINGLE;
             } else if (mode.equalsUncached(StringLiterals.T_FUNC_TYPE, TS_ENCODING)) {
+                if ((flags & PyCF_ONLY_AST) == 0) {
+                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
+                }
                 return InputType.FUNCTION_TYPE;
             } else {
                 if ((flags & PyCF_ONLY_AST) != 0) {
