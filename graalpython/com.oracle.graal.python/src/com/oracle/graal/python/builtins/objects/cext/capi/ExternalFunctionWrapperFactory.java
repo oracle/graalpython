@@ -47,7 +47,7 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.PythonOS;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBaseRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBase;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -55,17 +55,17 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /** Creates configured native wrapper bodies that read their own frame arguments. */
-final class ExternalFunctionWrapperFactory implements NodeFactory<WrapperBaseRoot> {
-    private final Class<? extends WrapperBaseRoot> nodeClass;
+final class ExternalFunctionWrapperFactory implements NodeFactory<WrapperBase> {
+    private final Class<? extends WrapperBase> nodeClass;
     private final Signature signature;
     private final Builtin builtin;
-    private final Supplier<? extends WrapperBaseRoot> constructor;
+    private final Supplier<? extends WrapperBase> constructor;
 
-    ExternalFunctionWrapperFactory(Class<? extends WrapperBaseRoot> nodeClass, Signature signature, TruffleString name,
-                    Supplier<? extends WrapperBaseRoot> constructor) {
+    ExternalFunctionWrapperFactory(Class<? extends WrapperBase> nodeClass, Signature signature, TruffleString name,
+                    Supplier<? extends WrapperBase> constructor) {
         this.nodeClass = nodeClass;
         this.signature = signature;
-        this.builtin = new NamedBuiltin(name.toJavaStringUncached(), WrapperBaseRoot.class.getAnnotation(Builtin.class));
+        this.builtin = new NamedBuiltin(name.toJavaStringUncached(), WrapperBase.class.getAnnotation(Builtin.class));
         this.constructor = constructor;
     }
 
@@ -74,17 +74,17 @@ final class ExternalFunctionWrapperFactory implements NodeFactory<WrapperBaseRoo
     }
 
     @Override
-    public WrapperBaseRoot createNode(Object... arguments) {
+    public WrapperBase createNode(Object... arguments) {
         assert arguments.length == 0;
-        WrapperBaseRoot body = constructor.get();
+        WrapperBase body = constructor.get();
         assert nodeClass.isInstance(body);
         return body;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Class<WrapperBaseRoot> getNodeClass() {
-        return (Class<WrapperBaseRoot>) nodeClass;
+    public Class<WrapperBase> getNodeClass() {
+        return (Class<WrapperBase>) nodeClass;
     }
 
     @Override

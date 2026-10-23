@@ -48,13 +48,13 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethodRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcall;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywords;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywords;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethod;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargs;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethO;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargs;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -123,20 +123,20 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
 
     static ExternalFunctionWrapperFactory createFactory(MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
         return switch (sig) {
-            case KEYWORDS -> new ExternalFunctionWrapperFactory(MethKeywordsRoot.class, MethKeywordsRoot.SIGNATURE, name,
-                            () -> new MethKeywordsRoot(name, isStatic, sig));
-            case VARARGS -> new ExternalFunctionWrapperFactory(MethVarargsRoot.class, MethVarargsRoot.SIGNATURE, name,
-                            () -> new MethVarargsRoot(name, isStatic, sig));
-            case NOARGS -> new ExternalFunctionWrapperFactory(MethNoargsRoot.class, MethNoargsRoot.SIGNATURE, name,
-                            () -> new MethNoargsRoot(name, isStatic, sig));
-            case O -> new ExternalFunctionWrapperFactory(MethORoot.class, MethORoot.SIGNATURE, name,
-                            () -> new MethORoot(name, isStatic, sig));
-            case FASTCALL -> new ExternalFunctionWrapperFactory(MethFastcallRoot.class, MethFastcallRoot.SIGNATURE, name,
-                            () -> new MethFastcallRoot(name, isStatic, sig));
-            case FASTCALL_WITH_KEYWORDS -> new ExternalFunctionWrapperFactory(MethFastcallWithKeywordsRoot.class, MethFastcallWithKeywordsRoot.SIGNATURE, name,
-                            () -> new MethFastcallWithKeywordsRoot(name, isStatic, sig));
-            case METHOD -> new ExternalFunctionWrapperFactory(MethMethodRoot.class, MethMethodRoot.SIGNATURE, name,
-                            () -> new MethMethodRoot(name, isStatic, sig));
+            case KEYWORDS -> new ExternalFunctionWrapperFactory(MethKeywords.class, MethKeywords.SIGNATURE, name,
+                            () -> new MethKeywords(name, isStatic, sig));
+            case VARARGS -> new ExternalFunctionWrapperFactory(MethVarargs.class, MethVarargs.SIGNATURE, name,
+                            () -> new MethVarargs(name, isStatic, sig));
+            case NOARGS -> new ExternalFunctionWrapperFactory(MethNoargs.class, MethNoargs.SIGNATURE, name,
+                            () -> new MethNoargs(name, isStatic, sig));
+            case O -> new ExternalFunctionWrapperFactory(MethO.class, MethO.SIGNATURE, name,
+                            () -> new MethO(name, isStatic, sig));
+            case FASTCALL -> new ExternalFunctionWrapperFactory(MethFastcall.class, MethFastcall.SIGNATURE, name,
+                            () -> new MethFastcall(name, isStatic, sig));
+            case FASTCALL_WITH_KEYWORDS -> new ExternalFunctionWrapperFactory(MethFastcallWithKeywords.class, MethFastcallWithKeywords.SIGNATURE, name,
+                            () -> new MethFastcallWithKeywords(name, isStatic, sig));
+            case METHOD -> new ExternalFunctionWrapperFactory(MethMethod.class, MethMethod.SIGNATURE, name,
+                            () -> new MethMethod(name, isStatic, sig));
         };
     }
 

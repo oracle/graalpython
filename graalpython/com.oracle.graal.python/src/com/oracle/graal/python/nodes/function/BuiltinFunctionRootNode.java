@@ -36,7 +36,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBaseRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBase;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -102,7 +102,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
         this.wrapsSlotForClass = wrapsSlotForClass;
-        this.isCaptureForTraces = WrapperBaseRoot.class.isAssignableFrom(factory.getNodeClass());
+        this.isCaptureForTraces = WrapperBase.class.isAssignableFrom(factory.getNodeClass());
         if (builtin.callerFlags() != 0) {
             updateCallerFlags(builtin.callerFlags());
         }

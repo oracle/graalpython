@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.test;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,7 +49,6 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -68,16 +68,17 @@ import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBaseRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.Getter;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethO;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBase;
+import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltinsFactory.GetLocalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinFrameArgsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -117,40 +119,40 @@ public class ExternalFunctionWrapperTest {
     }
 
     private static final List<Spec> SPECS = List.of(
-                    method("MethNoargsRoot", "NOARGS", "self", -1, false),
-                    method("MethORoot", "O", "self,arg", -1, false),
-                    method("MethVarargsRoot", "VARARGS", "self", 1, false),
-                    method("MethKeywordsRoot", "KEYWORDS", "self", 1, true),
-                    method("MethFastcallRoot", "FASTCALL", "self", 1, false),
-                    method("MethFastcallWithKeywordsRoot", "FASTCALL_WITH_KEYWORDS", "self", 1, true),
-                    method("MethMethodRoot", "METHOD", "self,cls", 1, true),
+                    method("MethNoargs", "NOARGS", "self", -1, false),
+                    method("MethO", "O", "self,arg", -1, false),
+                    method("MethVarargs", "VARARGS", "self", 1, false),
+                    method("MethKeywords", "KEYWORDS", "self", 1, true),
+                    method("MethFastcall", "FASTCALL", "self", 1, false),
+                    method("MethFastcallWithKeywords", "FASTCALL_WITH_KEYWORDS", "self", 1, true),
+                    method("MethMethod", "METHOD", "self,cls", 1, true),
                     descriptor("MethUnaryFunc", "UNARYFUNC", "self", -1, false, false, true, false),
-                    descriptor("MethNewRoot", "NEW", "self", 1, true, true, true, false),
-                    descriptor("MethCallRoot", "CALL", "self", 1, true, true, true, false),
-                    descriptor("MethInitRoot", "INIT", "self", 1, true, true, true, false),
-                    descriptor("MethInquiryRoot", "INQUIRYPRED", "self", -1, false, false, true, false),
-                    descriptor("IndexArgFuncRootNode", "INDEXARGFUNC", "self,i", -1, false, false, true, false),
-                    descriptor("GetAttrFuncRootNode", "GETATTR", "self,key", -1, false, false, true, false),
-                    descriptor("SetAttrFuncRootNode", "SETATTR", "self,key,value", -1, false, false, true, false),
-                    descriptor("SetAttrOFuncRootNode", "SETATTRO", "self,name,value", -1, false, false, true, false),
-                    descriptor("RichCmpFuncRootNode", "RICHCMP", "self,other,op", -1, false, false, true, false),
-                    descriptor("GetItemRootNode", "SQ_ITEM", "self,i", -1, false, false, true, false),
-                    descriptor("SetItemRootNode", "SQ_SETITEM", "self,i,value", -1, false, false, true, false),
-                    descriptor("SqDelItemRootNode", "SQ_DELITEM", "self,key", -1, false, false, true, false),
-                    descriptor("DescrGetRootNode", "DESCR_GET", "self,obj,type", -1, false, false, true, false),
-                    descriptor("DescrDeleteRootNode", "DESCR_DELETE", "self,obj", -1, false, false, true, false),
-                    descriptor("DelAttrRootNode", "DELATTRO", "self,obj", -1, false, false, true, false),
-                    descriptor("MpDelItemRootNode", "MP_DELITEM", "self,key", -1, false, false, true, false),
-                    descriptor("MethTernaryFuncRoot", "TERNARYFUNC,TERNARYFUNC_R", "self,other,third", -1, false, false, false, false),
-                    descriptor("MethRichcmpOpRootNode", "GT,GE,LE,LT,EQ,NE", "self,other", -1, false, false, true, false),
-                    descriptor("IterNextFuncRootNode", "ITERNEXT", "self", -1, false, true, true, false),
-                    descriptor("GetterRoot", "GETTER", "self", -1, false, false, true, true),
-                    descriptor("SetterRoot", "SETTER", "self,value", -1, false, false, true, true),
-                    descriptor("MethLenfuncRoot", "LENFUNC,HASHFUNC", "self", -1, false, false, true, false),
-                    descriptor("MethObjObjProcRoot", "OBJOBJPROC", "self,value", -1, false, false, true, false),
-                    descriptor("MethObjObjArgProcRoot", "OBJOBJARGPROC", "self,key,value", -1, false, false, true, false),
-                    descriptor("MethBinaryRoot", "BINARYFUNC,BINARYFUNC_L,BINARYFUNC_R", "self,other", -1, false, false, true, false),
-                    descriptor("MethDescrSetRoot", "DESCR_SET", "self,instance,value", -1, false, false, true, false));
+                    descriptor("MethNew", "NEW", "self", 1, true, true, true, false),
+                    descriptor("MethCall", "CALL", "self", 1, true, true, true, false),
+                    descriptor("MethInit", "INIT", "self", 1, true, true, true, false),
+                    descriptor("MethInquiry", "INQUIRYPRED", "self", -1, false, false, true, false),
+                    descriptor("IndexArgFuncNode", "INDEXARGFUNC", "self,i", -1, false, false, true, false),
+                    descriptor("GetAttrFuncNode", "GETATTR", "self,key", -1, false, false, true, false),
+                    descriptor("SetAttrFuncNode", "SETATTR", "self,key,value", -1, false, false, true, false),
+                    descriptor("SetAttrOFuncNode", "SETATTRO", "self,name,value", -1, false, false, true, false),
+                    descriptor("RichCmpFuncNode", "RICHCMP", "self,other,op", -1, false, false, true, false),
+                    descriptor("GetItemNode", "SQ_ITEM", "self,i", -1, false, false, true, false),
+                    descriptor("SetItemNode", "SQ_SETITEM", "self,i,value", -1, false, false, true, false),
+                    descriptor("SqDelItemNode", "SQ_DELITEM", "self,key", -1, false, false, true, false),
+                    descriptor("DescrGetNode", "DESCR_GET", "self,obj,type", -1, false, false, true, false),
+                    descriptor("DescrDeleteNode", "DESCR_DELETE", "self,obj", -1, false, false, true, false),
+                    descriptor("DelAttrNode", "DELATTRO", "self,obj", -1, false, false, true, false),
+                    descriptor("MpDelItemNode", "MP_DELITEM", "self,key", -1, false, false, true, false),
+                    descriptor("MethTernaryFunc", "TERNARYFUNC,TERNARYFUNC_R", "self,other,third", -1, false, false, false, false),
+                    descriptor("MethRichcmpOpNode", "GT,GE,LE,LT,EQ,NE", "self,other", -1, false, false, true, false),
+                    descriptor("IterNextFuncNode", "ITERNEXT", "self", -1, false, true, true, false),
+                    descriptor("Getter", "GETTER", "self", -1, false, false, true, true),
+                    descriptor("Setter", "SETTER", "self,value", -1, false, false, true, true),
+                    descriptor("MethLenfunc", "LENFUNC,HASHFUNC", "self", -1, false, false, true, false),
+                    descriptor("MethObjObjProc", "OBJOBJPROC", "self,value", -1, false, false, true, false),
+                    descriptor("MethObjObjArgProc", "OBJOBJARGPROC", "self,key,value", -1, false, false, true, false),
+                    descriptor("MethBinary", "BINARYFUNC,BINARYFUNC_L,BINARYFUNC_R", "self,other", -1, false, false, true, false),
+                    descriptor("MethDescrSet", "DESCR_SET", "self,instance,value", -1, false, false, true, false));
 
     @Before
     public void enter() {
@@ -189,7 +191,7 @@ public class ExternalFunctionWrapperTest {
         return Arrays.stream(names).map(TruffleString::toJavaStringUncached).toList();
     }
 
-    private static List<Field> readerFields(WrapperBaseRoot body) {
+    private static List<Field> readerFields(WrapperBase body) {
         List<Field> fields = new ArrayList<>();
         for (Class<?> owner = body.getClass(); owner != null; owner = owner.getSuperclass()) {
             for (Field field : owner.getDeclaredFields()) {
@@ -202,7 +204,7 @@ public class ExternalFunctionWrapperTest {
         return fields;
     }
 
-    private static void initializeReaders(WrapperBaseRoot body, Signature signature) throws Exception {
+    private static void initializeReaders(WrapperBase body, Signature signature) throws Exception {
         // Initialize the production helper groups without making a native call. The C API suite
         // separately exercises the guards on first and repeated real wrapper invocations.
         for (Class<?> owner = body.getClass(); owner != null; owner = owner.getSuperclass()) {
@@ -215,12 +217,12 @@ public class ExternalFunctionWrapperTest {
         }
         for (Field field : readerFields(body)) {
             if (field.getName().equals("readClosureNode")) {
-                field.set(body, invoke(ExternalFunctionNodes.GetterRoot.class, null, "createReadClosureNode", new Class<?>[]{Signature.class}, signature));
+                field.set(body, invoke(Getter.class, null, "createReadClosureNode", new Class<?>[]{Signature.class}, signature));
             }
         }
     }
 
-    private static List<ReadArgumentNode> checkReaders(WrapperBaseRoot body, Spec spec, boolean isStatic, VirtualFrame frame, Object[] positional,
+    private static List<ReadArgumentNode> checkReaders(WrapperBase body, Spec spec, boolean isStatic, VirtualFrame frame, Object[] positional,
                     Object callable, Object closure, Object[] extras, PKeyword[] keywords) throws Exception {
         List<ReadArgumentNode> readers = new ArrayList<>();
         Map<Node, Integer> counts = new IdentityHashMap<>();
@@ -267,7 +269,7 @@ public class ExternalFunctionWrapperTest {
         assertEquals(spec.vararg == -1 ? 0 : 1, varargs);
         assertEquals(spec.kwargs ? 1 : 0, kwargs);
         assertSame(isStatic ? com.oracle.graal.python.builtins.objects.PNone.NO_VALUE : positional[0],
-                        invoke(WrapperBaseRoot.class, body, "readSelf", new Class<?>[]{VirtualFrame.class}, frame));
+                        invoke(WrapperBase.class, body, "readSelf", new Class<?>[]{VirtualFrame.class}, frame));
         return readers;
     }
 
@@ -345,7 +347,7 @@ public class ExternalFunctionWrapperTest {
                     System.arraycopy(positional, upfront, user, 0, positional.length - upfront);
                     System.arraycopy(extras, 0, user, positional.length - upfront, extras.length);
                     Object[] bound = CreateArgumentsNode.executeUncached(NAME, user, keywords, signature, positional[0], cls, new Object[0], defaults, true);
-                    WrapperBaseRoot body = (WrapperBaseRoot) production.getFactory().createNode();
+                    WrapperBase body = (WrapperBase) production.getFactory().createNode();
                     initializeReaders(body, signature);
                     new AdoptionRoot(body).getCallTarget();
                     VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(bound, FrameDescriptor.newBuilder().build());
@@ -383,8 +385,8 @@ public class ExternalFunctionWrapperTest {
                 assertEquals(ExternalFunctionNodes.class.getName() + "$" + spec.body, factory.getNodeClass().getName());
                 assertEquals(List.of(List.of()), factory.getNodeSignatures());
                 assertEquals(List.of(), factory.getExecutionSignature());
-                WrapperBaseRoot body = (WrapperBaseRoot) factory.createNode();
-                WrapperBaseRoot other = (WrapperBaseRoot) factory.createNode();
+                WrapperBase body = (WrapperBase) factory.createNode();
+                WrapperBase other = (WrapperBase) factory.createNode();
                 assertNotSame(body, other);
                 assertTrue(PythonBuiltinFrameArgsNode.class.isAssignableFrom(body.getClass()));
                 assertFalse(PythonBuiltinNode.class.isAssignableFrom(body.getClass()));
@@ -406,7 +408,7 @@ public class ExternalFunctionWrapperTest {
                         assertFalse(otherCounts.containsKey(reader));
                     }
                 }
-                Field self = WrapperBaseRoot.class.getDeclaredField("readSelfNode");
+                Field self = WrapperBase.class.getDeclaredField("readSelfNode");
                 self.setAccessible(true);
                 assertNotNull(self.get(body));
                 if (spec.method && !convention.equals("METHOD")) {
@@ -511,7 +513,7 @@ public class ExternalFunctionWrapperTest {
         },
                         reference.getFactory().getNodeClass(), MethodDescriptorWrapper.NOARGS, NAME, true, false));
         List<BuiltinFunctionRootNode> variants = new ArrayList<>();
-        variants.add(language.createCachedExternalFunWrapperRootNode(l -> freshRoot(), ExternalFunctionNodes.MethORoot.class, MethodDescriptorWrapper.NOARGS, NAME, true, false));
+        variants.add(language.createCachedExternalFunWrapperRootNode(l -> freshRoot(), MethO.class, MethodDescriptorWrapper.NOARGS, NAME, true, false));
         variants.add(language.createCachedExternalFunWrapperRootNode(l -> freshRoot(), reference.getFactory().getNodeClass(), MethodDescriptorWrapper.O, NAME, true, false));
         variants.add(language.createCachedExternalFunWrapperRootNode(l -> freshRoot(), reference.getFactory().getNodeClass(), MethodDescriptorWrapper.NOARGS, NAME, false, false));
         variants.add(language.createCachedExternalFunWrapperRootNode(l -> freshRoot(), reference.getFactory().getNodeClass(), MethodDescriptorWrapper.NOARGS, NAME, true, true));
