@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -174,11 +175,12 @@ public abstract class PyLongFromUnicodeObject extends Node {
             int b = 0;
             int e = str.length();
 
-            while (b < e && Character.isWhitespace(str.charAt(b))) {
+            // Py_UNICODE_ISSPACE / str.isspace, not Java Character.isWhitespace
+            while (b < e && StringUtils.isSpace(str.charAt(b))) {
                 b++;
             }
 
-            while (e > b && Character.isWhitespace(str.charAt(e - 1))) {
+            while (e > b && StringUtils.isSpace(str.charAt(e - 1))) {
                 e--;
             }
 
