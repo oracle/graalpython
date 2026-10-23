@@ -141,7 +141,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -168,8 +167,10 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -182,7 +183,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -408,7 +408,8 @@ public class PUnpickler extends PythonBuiltinObject {
         @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private PyMemoryViewFromObject memoryViewNode;
         @Child private MemoryViewBuiltins.ToReadonlyNode toReadonlyNode;
-        @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
+        @Child private PyObjectGetBuffer getBufferNode;
+        @Child private PyBufferRelease releaseBufferNode;
         @Child private PythonBufferAccessLibrary bufferAccessLibrary;
 
         @Child private TruffleString.ParseLongNode tsParseLongNode;
@@ -416,10 +417,6 @@ public class PUnpickler extends PythonBuiltinObject {
         @Child private TruffleString.ParseIntNode tsParseIntNode;
 
         @CompilationFinal private boolean seenFileRead;
-
-        // we only need the reference, doesn't matter that the object may not yet be fully
-        // constructed
-        @SuppressWarnings("this-escape") private final InteropCallData interopCallData = InteropCallData.createFor(this);
 
         protected TruffleString castToString(Object value) {
             if (castToTruffleStringNode == null) {
@@ -511,12 +508,20 @@ public class PUnpickler extends PythonBuiltinObject {
             return toReadonlyNode;
         }
 
-        protected PythonBufferAcquireLibrary getBufferAcquireLibrary() {
-            if (bufferAcquireLibrary == null) {
+        private PyBufferRelease getReleaseBufferNode() {
+            if (releaseBufferNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                bufferAcquireLibrary = insert(PythonBufferAcquireLibrary.getFactory().createDispatched(3));
+                releaseBufferNode = insert(PyBufferRelease.create());
             }
-            return bufferAcquireLibrary;
+            return releaseBufferNode;
+        }
+
+        protected PyObjectGetBuffer getBufferNode() {
+            if (getBufferNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBufferNode = insert(PyObjectGetBuffer.create());
+            }
+            return getBufferNode;
         }
 
         protected PythonBufferAccessLibrary getBufferAccessLibrary() {
@@ -558,7 +563,7 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         protected int setStringInput(PUnpickler self, VirtualFrame frame, Object input) {
-            Object buffer = getBufferAcquireLibrary().acquire(input, BufferFlags.PyBUF_CONTIG_RO, frame, interopCallData);
+            Object buffer = getBufferNode().execute(frame, input, BufferFlags.PyBUF_CONTIG_RO);
             try {
                 self.inputBuffer = getBufferAccessLibrary().getCopiedByteArray(buffer);
                 self.inputLen = getBufferAccessLibrary().getBufferLength(buffer);
@@ -566,7 +571,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 self.prefetchedIdx = self.inputLen;
                 return self.inputLen;
             } finally {
-                getBufferAccessLibrary().release(input, frame, interopCallData);
+                getReleaseBufferNode().execute(frame, buffer);
             }
         }
 

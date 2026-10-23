@@ -50,12 +50,13 @@ import com.oracle.graal.python.builtins.modules.TRegexUtil;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyBufferRelease;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -374,20 +374,19 @@ public class PatternNodes {
 
             public abstract TruffleString execute(VirtualFrame frame, Object buffer);
 
-            @Specialization(limit = "3")
+            @Specialization
             static TruffleString convert(VirtualFrame frame, Object bytesLikeObject,
                             @Bind Node inliningTarget,
-                            @Shared @Cached("createFor($node)") IndirectCallData.InteropCallData callData,
                             @Cached(inline = true) BufferToTruffleStringInnerNode innerNode,
-                            @CachedLibrary("bytesLikeObject") PythonBufferAcquireLibrary bufferAcquireLib,
-                            @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib) {
+                            @Cached PyObjectGetBuffer getBuffer,
+                            @Cached PyBufferRelease releaseBuffer) {
                 Object buffer = null;
                 try {
-                    buffer = bufferAcquireLib.acquireReadonly(bytesLikeObject, frame, callData);
+                    buffer = getBuffer.executeReadonly(frame, bytesLikeObject);
                     return innerNode.execute(inliningTarget, buffer);
                 } finally {
                     if (buffer != null) {
-                        bufferLib.release(buffer, frame, callData);
+                        releaseBuffer.execute(frame, buffer);
                     }
                 }
             }

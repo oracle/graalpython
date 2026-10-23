@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -52,7 +53,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -64,8 +64,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyBufferRelease;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -75,7 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -118,16 +120,21 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             return PFactory.createBytes(language, PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
         }
 
-        @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
+        @Specialization(guards = "!isNoValue(bufferObj)")
         static Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached SSLOperationNode sslOperationNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
-                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, callData);
+                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
+            Object buffer;
+            try {
+                buffer = getBuffer.execute(frame, bufferObj, BufferFlags.PyBUF_WRITABLE);
+            } catch (PException e) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, "read", bufferObj);
+            }
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 int toReadLen = len;
@@ -153,7 +160,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 }
                 return readBytes;
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -170,9 +177,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached SSLOperationNode sslOperationNode) {
+                        @Cached SSLOperationNode sslOperationNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int length = bufferLib.getBufferLength(buffer);
@@ -180,7 +187,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 sslOperationNode.write(frame, inliningTarget, self, input);
                 return length;
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 

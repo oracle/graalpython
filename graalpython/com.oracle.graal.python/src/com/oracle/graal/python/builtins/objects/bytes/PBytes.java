@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,29 +25,20 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
-import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PBytes extends PBytesLike {
 
     public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
@@ -99,13 +90,4 @@ public final class PBytes extends PBytesLike {
         throw UnsupportedMessageException.create();
     }
 
-    @ExportMessage
-    Object acquire(int flags,
-                    @Bind Node inliningTarget,
-                    @Cached PRaiseNode raiseNode) {
-        if ((flags & BufferFlags.PyBUF_WRITABLE) != 0) {
-            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
-        }
-        return this;
-    }
 }

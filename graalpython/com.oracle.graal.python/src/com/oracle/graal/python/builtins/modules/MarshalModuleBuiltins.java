@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -100,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -108,6 +108,8 @@ import com.oracle.graal.python.lib.PyListCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PySetCheckExactNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
@@ -125,7 +127,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -257,11 +258,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
                         @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object buffer = callNode.executeObject(frame, file, 0);
-            if (!bufferLib.hasBuffer(buffer)) {
+            if (!checkBufferNode.execute(buffer)) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
             }
             try {
@@ -284,9 +285,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object buffer, boolean allowCode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -301,7 +302,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (Marshal.MarshalError me) {
                 throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -978,17 +979,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(TYPE_DSL_SOURCE | flag);
                     writeSource(s);
                 } else {
-                    PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getFactory().getUncached(v);
-                    if (acquireLib.hasBuffer(v)) {
+                    if (PyObjectCheckBuffer.executeUncached(v)) {
                         writeByte(TYPE_STRING | flag);
-                        Object buf = acquireLib.acquireReadonly(v);
+                        Object buf = PyObjectGetBuffer.getUncached().executeReadonly(null, v);
                         PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getFactory().getUncached(buf);
                         try {
                             int len = accessLib.getBufferLength(buf);
                             writeSize(len);
                             out.write(accessLib.getInternalOrCopiedByteArray(buf), 0, len);
                         } finally {
-                            accessLib.release(buf);
+                            PyBufferRelease.getUncached().execute(null, buf);
                         }
                     } else {
                         writeByte(TYPE_UNKNOWN);

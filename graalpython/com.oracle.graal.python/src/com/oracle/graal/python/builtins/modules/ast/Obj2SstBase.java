@@ -59,7 +59,6 @@ import java.util.function.IntFunction;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyEnterRecursiveCallNode;
@@ -78,6 +78,7 @@ import com.oracle.graal.python.lib.PyFrozenSetCheckExactNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -94,8 +95,8 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class Obj2SstBase {
@@ -230,13 +231,12 @@ abstract class Obj2SstBase {
             return null;
         }
         if (PyBytesCheckExactNode.executeUncached(obj)) {
-            PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getUncached();
             PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getUncached();
-            Object buf = acquireLib.acquireReadonly(obj);
+            Object buf = PyObjectGetBuffer.getUncached().executeReadonly(null, obj);
             try {
                 return accessLib.getCopiedByteArray(buf);
             } finally {
-                accessLib.release(buf);
+                PyBufferRelease.getUncached().execute(null, buf);
             }
         }
         if (PyUnicodeCheckExactNode.executeUncached(obj)) {
@@ -301,12 +301,12 @@ abstract class Obj2SstBase {
             return ConstantValue.ofCodePoints(PythonUtils.truffleStringToCodePoints(ps.getValueUncached()));
         }
         if (obj instanceof PBytes && PyBytesCheckExactNode.executeUncached(obj)) {
-            Object buf = PythonBufferAcquireLibrary.getUncached().acquireReadonly(obj);
+            Object buf = PyObjectGetBuffer.getUncached().executeReadonly(null, obj);
             PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getFactory().getUncached(buf);
             try {
                 return ConstantValue.ofBytes(accessLib.getCopiedByteArray(buf));
             } finally {
-                accessLib.release(buf);
+                PyBufferRelease.getUncached().execute(null, buf);
             }
         }
         boolean isTuple = PyTupleCheckExactNode.executeUncached(obj);

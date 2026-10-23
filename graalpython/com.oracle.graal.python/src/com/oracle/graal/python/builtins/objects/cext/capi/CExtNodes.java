@@ -1377,10 +1377,11 @@ public abstract class CExtNodes {
     public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
 
-        public abstract PMemoryView execute(Node inliningTarget, PythonNativeObject object, int flags);
+        public abstract PMemoryView execute(VirtualFrame frame, Node inliningTarget, PythonNativeObject object, int flags);
 
         @Specialization
-        static PMemoryView fromNative(Node inliningTarget, PythonNativeObject buf, int flags,
+        static PMemoryView fromNative(VirtualFrame frame, Node inliningTarget, PythonNativeObject buf, int flags,
+                        @Cached("createFor($node)") BoundaryCallData callData,
                         @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached NativeToPythonInternalNode asPythonObjectNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
@@ -1388,7 +1389,7 @@ public abstract class CExtNodes {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
-                long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(null, C_API_TIMING, context.ensureNativeContext(), BoundaryCallData.getUncached(),
+                long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(frame, C_API_TIMING, context.ensureNativeContext(), callData,
                                 context.getThreadState(PythonLanguage.get(inliningTarget)), callable, bufPointer, flags);
                 return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeTransfer(inliningTarget, result));
             } finally {

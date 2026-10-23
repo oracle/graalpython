@@ -128,7 +128,6 @@ import com.oracle.graal.python.builtins.modules.io.IONodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -171,6 +170,7 @@ import com.oracle.graal.python.compiler.AstOptimizer;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
@@ -192,6 +192,7 @@ import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetAIter;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -269,7 +270,6 @@ import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1062,7 +1062,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(limit = "3")
         @SuppressWarnings("truffle-static-method")
         Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, boolean dontInherit, int optimize, int featureVersion,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
@@ -1099,7 +1099,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
                     return wrapRootCallTarget(rootCallTarget, filename);
                 }
-                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, switchEncodingNode, raiseNode);
+                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, getBuffer, bufferLib, switchEncodingNode, raiseNode);
                 checkSource(source);
                 return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion);
             } finally {
@@ -1166,7 +1166,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         // modeled after _Py_SourceAsString
-        TruffleString sourceAsString(VirtualFrame frame, Node inliningTarget, Object source, TruffleString filename, InteropLibrary interopLib, PythonBufferAcquireLibrary acquireLib,
+        TruffleString sourceAsString(VirtualFrame frame, Node inliningTarget, Object source, TruffleString filename, InteropLibrary interopLib, PyObjectGetBuffer getBuffer,
                         PythonBufferAccessLibrary bufferLib, TruffleString.SwitchEncodingNode switchEncodingNode, PRaiseNode raiseNode) {
             if (interopLib.isString(source)) {
                 try {
@@ -1179,7 +1179,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // buffers, since that's fast for us anyway
                 Object buffer;
                 try {
-                    buffer = acquireLib.acquireReadonly(source, frame, InteropCallData.getUncached());
+                    buffer = getBuffer.executeReadonly(frame, source);
                 } catch (PException e) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
                 }
@@ -1188,7 +1188,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     int bytesLen = bufferLib.getBufferLength(source);
                     return doDecodeSource(getContext(), source, filename, bytes, bytesLen);
                 } finally {
-                    bufferLib.release(buffer, frame, InteropCallData.getUncached());
+                    PyBufferRelease.getUncached().execute(frame, buffer);
                 }
             }
         }

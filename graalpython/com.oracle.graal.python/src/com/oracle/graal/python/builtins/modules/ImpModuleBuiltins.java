@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -452,7 +453,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         static Object run(TruffleString name, Object dataObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 byte[] bytes;
@@ -462,7 +464,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                     bytes = bufferLib.getInternalOrCopiedByteArray(dataObj);
                     size = bufferLib.getBufferLength(dataObj);
                 } finally {
-                    bufferLib.release(dataObj);
+                    releaseBuffer.execute(null, dataObj);
                 }
                 if (size == 0) {
                     /* Does not contain executable code. */
@@ -727,14 +729,15 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "2")
-        static PBytes run(long magicNumber, Object sourceBuffer,
+        static PBytes run(VirtualFrame frame, long magicNumber, Object sourceBuffer,
                         @CachedLibrary("sourceBuffer") PythonBufferAccessLibrary bufferLib,
-                        @Bind PythonLanguage language) {
+                        @Bind PythonLanguage language,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 byte[] hash = hashSource(magicNumber, bufferLib.getInternalOrCopiedByteArray(sourceBuffer), bufferLib.getBufferLength(sourceBuffer));
                 return PFactory.createBytes(language, hash);
             } finally {
-                bufferLib.release(sourceBuffer);
+                releaseBuffer.execute(frame, sourceBuffer);
             }
         }
 

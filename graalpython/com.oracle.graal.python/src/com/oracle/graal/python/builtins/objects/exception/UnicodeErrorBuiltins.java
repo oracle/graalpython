@@ -51,9 +51,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.lib.PyBufferRelease;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -138,17 +138,17 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @Specialization(guards = {"!isPBytes(value)", "!isString(value)"}, limit = "3")
+        @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
         static PBytes doOther(VirtualFrame frame, Object value,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
-                        @Bind PythonLanguage language) {
-            Object buffer = acquireLib.acquireReadonly(value, frame, callData);
+                        @Bind PythonLanguage language,
+                        @Cached PyBufferRelease releaseBuffer) {
+            Object buffer = getBuffer.executeReadonly(frame, value);
             try {
                 return PFactory.createBytes(language, bufferLib.getCopiedByteArray(buffer));
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
     }

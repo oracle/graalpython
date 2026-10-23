@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -58,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -66,10 +66,11 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
@@ -570,6 +571,7 @@ public class MemoryViewNodes {
         }
     }
 
+    @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
     public abstract static class ReleaseNode extends Node {
 
@@ -590,12 +592,11 @@ public class MemoryViewNodes {
         @Specialization(guards = {"self.getReference() != null"})
         static void releaseNative(VirtualFrame frame, PMemoryView self,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached ReleaseBufferNode releaseNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             if (self.checkShouldReleaseBuffer()) {
-                releaseNode.execute(frame, inliningTarget, callData, self.getLifecycleManager());
+                releaseNode.execute(frame, inliningTarget, self.getLifecycleManager());
             }
             self.setReleased();
         }
@@ -606,36 +607,31 @@ public class MemoryViewNodes {
     @GenerateCached(false)
     public abstract static class ReleaseBufferNode extends Node {
 
-        public abstract void execute(Node inliningTarget, BufferLifecycleManager buffer);
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_GRAALPY_RELEASE_BUFFER);
+
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, BufferLifecycleManager buffer);
 
         public static void executeUncached(BufferLifecycleManager buffer) {
-            MemoryViewNodesFactory.ReleaseBufferNodeGen.getUncached().execute(null, buffer);
+            MemoryViewNodesFactory.ReleaseBufferNodeGen.getUncached().execute(null, null, buffer);
         }
 
-        public final void execute(VirtualFrame frame, Node inliningTarget, InteropCallData callData, BufferLifecycleManager buffer) {
-            Object state = InteropCallContext.enter(frame, inliningTarget, callData);
+        @Specialization
+        static void doCApiCached(VirtualFrame frame, NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType buffer,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData callData) {
+            Object savedState = BoundaryCallContext.enter(frame, callData);
             try {
-                execute(inliningTarget, buffer);
+                var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_GRAALPY_RELEASE_BUFFER);
+                ExternalFunctionInvoker.invokeGRAALPY_RELEASE_BUFFER(C_API_TIMING, callable, buffer.bufferStructPointer);
             } finally {
-                InteropCallContext.exit(frame, inliningTarget, callData, state);
+                BoundaryCallContext.exit(frame, callData, savedState);
             }
         }
 
         @Specialization
-        static void doCApiCached(NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType buffer,
-                        @Bind Node inliningTarget) {
-            try {
-                ExternalFunctionInvoker.invokeGRAALPY_RELEASE_BUFFER(CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_GRAALPY_RELEASE_BUFFER).getAddress(),
-                                buffer.bufferStructPointer);
-            } catch (Throwable t) {
-                throw CompilerDirectives.shouldNotReachHere(t);
-            }
-        }
-
-        @Specialization
-        static void doCExtBuffer(NativeBufferLifecycleManagerFromSlot buffer,
+        static void doCExtBuffer(VirtualFrame frame, NativeBufferLifecycleManagerFromSlot buffer,
                         @Cached(inline = false) CallNode callNode) {
-            callNode.executeWithoutFrame(buffer.releaseFunction, buffer.self, buffer.buffer);
+            callNode.execute(frame, buffer.releaseFunction, buffer.self, buffer.buffer);
         }
 
         @Fallback

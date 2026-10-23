@@ -63,13 +63,14 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -147,7 +148,8 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
         static PTokenizerIter tokenizerIterBytes(Object cls, Object readline, boolean extraTokens, TruffleString encoding,
                         @Bind Node inliningTarget,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Charset charset;
             try {
                 charset = getCharset(Tokenizer.getNormalName(encoding.toJavaStringUncached()));
@@ -169,7 +171,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
 
                 Object buffer;
                 try {
-                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(o);
+                    buffer = PyObjectGetBuffer.getUncached().executeReadonly(null, o);
                 } catch (PException e) {
                     throw PRaiseNode.raiseStatic(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
                 }
@@ -180,7 +182,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                     bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                     len = bufferLib.getBufferLength(buffer);
                 } finally {
-                    bufferLib.release(buffer);
+                    releaseBuffer.execute(null, buffer);
                 }
                 String line = charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString();
                 return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));

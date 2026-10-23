@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -97,7 +98,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -543,12 +543,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("truffle-static-method")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached RawReadNode rawReadNode,
-                        @Cached FillBufferNode fillBufferNode) {
+                        @Cached FillBufferNode fillBufferNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(inliningTarget, self);
@@ -623,7 +623,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 return written;
             } finally {
                 EnterBufferedNode.leave(self);
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 

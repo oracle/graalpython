@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,22 +40,20 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class WritableBufferConversionNode extends ArgumentCastNode {
@@ -65,18 +63,15 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNode {
         this.builtinName = builtinName;
     }
 
-    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-    @SuppressWarnings("truffle-static-method")
+    @Specialization
     Object doObject(VirtualFrame frame, Object value,
                     @Bind Node inliningTarget,
-                    @Bind PythonContext context,
-                    @Cached("createFor($node)") InteropCallData callData,
-                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PyObjectGetBuffer getBuffer,
+                    @Cached PRaiseNode raise) {
         try {
-            return acquireLib.acquireWritable(value, frame, context, context.getLanguage(inliningTarget), callData);
+            return getBuffer.execute(frame, value, BufferFlags.PyBUF_WRITABLE);
         } catch (PException e) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
         }
     }
 

@@ -64,9 +64,11 @@ import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -77,7 +79,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
@@ -203,9 +204,9 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached CastToTruffleStringNode castToString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -213,21 +214,22 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gilNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             auditNode.audit(frame, inliningTarget, T_FCNT_IOCTL, fd, request, arg);
 
             int intArg = 0;
             if (arg != PNone.NO_VALUE) {
                 Object buffer = null;
                 // Buffer argument
-                if (acquireLib.hasBuffer(arg)) {
+                if (checkBufferNode.execute(arg)) {
                     boolean writable = false;
                     try {
-                        buffer = acquireLib.acquireWritable(arg, frame, callData);
+                        buffer = getBuffer.executeWritable(frame, arg);
                         writable = true;
                     } catch (PException e) {
                         try {
-                            buffer = acquireLib.acquireReadonly(arg, frame, callData);
+                            buffer = getBuffer.executeReadonly(frame, arg);
                         } catch (PException e1) {
                             // ignore
                         }
@@ -270,7 +272,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                 }
                             }
                         } finally {
-                            bufferLib.release(buffer, frame, callData);
+                            releaseBuffer.execute(frame, buffer);
                         }
                     }
                 }

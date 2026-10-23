@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
@@ -76,9 +75,12 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -98,7 +100,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -281,12 +282,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             setItemSliceNode.execute(frame, inliningTarget, storage, info, value, false);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
+        @Specialization(guards = {"!isNoValue(value)", "checkBufferNode.execute(value)"}, limit = "1")
         static void doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -294,14 +295,15 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
                         @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, callData);
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
+            Object buffer = getBuffer.executeReadonly(frame, value);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = PFactory.createBytes(language, bufferLib.getCopiedByteArray(value));
                 doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -422,24 +424,24 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             return extendWithBuffer(self, other, inliningTarget, ensureCapacityNode, bufferLib, raiseNode);
         }
 
-        @Specialization(guards = "!isBytes(other)", limit = "3")
+        @Specialization(guards = "!isBytes(other)")
         static PByteArray add(VirtualFrame frame, PByteArray self, Object other,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @Shared @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             Object otherBuffer;
             try {
-                otherBuffer = bufferAcquireLib.acquireReadonly(other, frame, callData);
+                otherBuffer = getBuffer.executeReadonly(frame, other);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
             try {
                 return extendWithBuffer(self, otherBuffer, inliningTarget, ensureCapacityNode, bufferLib, raiseNode);
             } finally {
-                bufferLib.release(otherBuffer, frame, callData);
+                releaseBuffer.execute(frame, otherBuffer);
             }
         }
 
@@ -602,28 +604,29 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isBytes(source)", limit = "3")
+        @Specialization(guards = "!isBytes(source)")
         static PNone doGeneric(VirtualFrame frame, PByteArray self, Object source,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("source") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile bufferProfile,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached("createExtend()") @Shared SequenceStorageNodes.ExtendNode extendNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             self.checkCanResize(inliningTarget, raiseNode);
             byte[] b;
-            if (bufferProfile.profile(inliningTarget, bufferAcquireLib.hasBuffer(source))) {
-                Object buffer = bufferAcquireLib.acquireReadonly(source, frame, callData);
+            if (bufferProfile.profile(inliningTarget, checkBufferNode.execute(source))) {
+                Object buffer = getBuffer.executeReadonly(frame, source);
                 try {
                     // TODO avoid copying
                     b = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, callData);
+                    releaseBuffer.execute(frame, buffer);
                 }
             } else {
                 try {
@@ -836,32 +839,33 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             return compareByteArrays(op, getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
         }
 
-        @Specialization(guards = {"check.execute(inliningTarget, self)", "acquireLib.hasBuffer(other)"}, limit = "3")
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "checkBufferNode.execute(other)"}, limit = "1")
         @InliningCutoff
         static Object cmp(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyByteArrayCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
                         @Exclusive @Cached GetInternalByteArrayNode getArray,
-                        @CachedLibrary("other") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+                        @Exclusive @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyBufferRelease releaseBuffer) {
             SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
-            Object otherBuffer = acquireLib.acquireReadonly(other, frame, callData);
+            Object otherBuffer = getBuffer.executeReadonly(frame, other);
             try {
                 return compareByteArrays(op, getArray.execute(inliningTarget, selfStorage), selfStorage.length(),
                                 bufferLib.getInternalOrCopiedByteArray(otherBuffer), bufferLib.getBufferLength(otherBuffer));
             } finally {
-                bufferLib.release(otherBuffer);
+                releaseBuffer.execute(frame, otherBuffer);
             }
         }
 
-        @Specialization(guards = {"check.execute(inliningTarget, self)", "!acquireLib.hasBuffer(other)"})
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "!checkBufferNode.execute(other)"}, limit = "1")
         @SuppressWarnings("unused")
         static Object cmp(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyByteArrayCheckNode check,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib) {
+                        @Exclusive @Cached PyObjectCheckBuffer checkBufferNode) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 

@@ -515,6 +515,13 @@ class TestObject(unittest.TestCase):
         )
         obj = TestType()
         assert obj.get_bufcount() == 0
+        assert bytes(obj) == bytes([123, 124, 125, 126])
+        assert obj.get_bufcount() == 0
+        assert struct.unpack("4B", obj) == (123, 124, 125, 126)
+        assert obj.get_bufcount() == 0
+        with self.assertRaises(struct.error):
+            struct.unpack("B", obj)
+        assert obj.get_bufcount() == 0
         mv1 = memoryview(obj)
         assert mv1[3] == 126
         assert obj.get_bufcount() == 1

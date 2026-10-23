@@ -45,24 +45,21 @@ import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 
 import java.nio.ByteOrder;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.lib.PyBufferRelease;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * A library for accessing buffers obtained using {@link PythonBufferAcquireLibrary}. The buffer
- * should always be released using {@link #release} after the access is finished. It is also
+ * A library for accessing buffers obtained using {@link PyObjectGetBuffer}. The buffer
+ * should always be released using {@link PyBufferRelease} after the access is finished. It is also
  * permissible to use this library to access the underlying memory of {@link PBytesLike} objects
  * that implement the API directly (i.e. as an equivalent of {@code PyBytes_AsStringAndSize}) - in
  * that case, the buffer doesn't need to be acquired or released.
@@ -88,7 +85,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * Whether this object responds to this buffer API.<br/>
      * <strong>Use this method with caution and only when absolutely needed</strong>. Code using
      * buffers must know whether it works with a buffer object or not. Therefore, buffers
-     * <strong>should be acquired first</strong> using {@link PythonBufferAcquireLibrary}. Use
+     * <strong>should be acquired first</strong> using {@link PyObjectGetBuffer}. Use
      * {@link #assertIsBuffer(Object)} for assertions.
      */
     @Abstract
@@ -101,43 +98,6 @@ public abstract class PythonBufferAccessLibrary extends Library {
      */
     public static void assertIsBuffer(Object receiver) {
         assert PythonBufferAccessLibrary.getUncached().isBuffer(receiver);
-    }
-
-    /**
-     * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
-     * multiple times on the same buffer. If the caller has access to a VirtualFrame
-     * {@link #release(Object, VirtualFrame, InteropCallData)} or
-     * {@link #release(Object, VirtualFrame, PythonContext, PythonLanguage, InteropCallData)} should
-     * be used. If the caller doesn't have access to a VirtualFrame it must be ensured that an
-     * IndirectCallContext was already created in the call path.
-     */
-    public void release(@SuppressWarnings("unused") Object receiver) {
-    }
-
-    /**
-     * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
-     * multiple times on the same buffer.
-     */
-    public final void release(Object receiver, VirtualFrame frame, InteropCallData callData) {
-        Object savedState = InteropCallContext.enter(frame, this, callData);
-        try {
-            release(receiver);
-        } finally {
-            InteropCallContext.exit(frame, this, callData, savedState);
-        }
-    }
-
-    /**
-     * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
-     * multiple times on the same buffer.
-     */
-    public final void release(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, InteropCallData callData) {
-        Object savedState = InteropCallContext.enter(frame, language, context, callData);
-        try {
-            release(receiver);
-        } finally {
-            InteropCallContext.exit(frame, language, context, savedState);
-        }
     }
 
     /**

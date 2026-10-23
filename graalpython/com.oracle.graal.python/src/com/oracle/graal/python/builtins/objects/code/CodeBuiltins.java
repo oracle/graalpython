@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -73,7 +74,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -648,10 +648,10 @@ public final class CodeBuiltins extends PythonBuiltins {
                         TruffleString coName, TruffleString coQualname,
                         Object coLnotab, @SuppressWarnings("unused") Object coExceptiontable,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 return createCodeNode.execute(frame,
                                 coArgcount == -1 ? self.co_argcount() : coArgcount,
@@ -673,10 +673,10 @@ public final class CodeBuiltins extends PythonBuiltins {
                                 PGuards.isNone(coLnotab) ? self.getLinetable() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {
                 if (!PGuards.isNone(coCode)) {
-                    bufferLib.release(coCode, frame, callData);
+                    releaseBuffer.execute(frame, coCode);
                 }
                 if (!PGuards.isNone(coLnotab)) {
-                    bufferLib.release(coLnotab, frame, callData);
+                    releaseBuffer.execute(frame, coLnotab);
                 }
             }
         }

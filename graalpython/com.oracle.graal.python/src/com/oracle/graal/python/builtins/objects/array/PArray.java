@@ -34,7 +34,6 @@ import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -66,7 +65,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public final class PArray extends PythonBuiltinObject {
@@ -219,12 +217,6 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasBuffer() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }
@@ -232,11 +224,6 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     int getBufferLength() {
         return storage.length();
-    }
-
-    @ExportMessage
-    Object acquire(@SuppressWarnings("unused") int flags) {
-        return this;
     }
 
     @ExportMessage

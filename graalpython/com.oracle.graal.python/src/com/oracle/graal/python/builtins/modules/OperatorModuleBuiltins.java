@@ -51,9 +51,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.GetLength;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
@@ -85,7 +85,9 @@ import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
+import com.oracle.graal.python.lib.PyObjectCheckBuffer;
 import com.oracle.graal.python.lib.PyObjectDelItem;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
@@ -108,8 +110,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -666,31 +666,30 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         static boolean compare(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached CastToJavaStringNode cast,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @Cached PyObjectCheckBuffer checkBufferNode,
+                        @Cached PyObjectGetBuffer getBuffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyBufferRelease releaseBuffer) {
             try {
                 String leftString = cast.execute(left);
                 String rightString = cast.execute(right);
                 return tscmp(leftString, rightString);
             } catch (CannotCastException e) {
-                if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
+                if (!checkBufferNode.execute(left) || !checkBufferNode.execute(right)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
-                Object savedState = InteropCallContext.enter(frame, inliningTarget, callData);
-                Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
+                Object leftBuffer = getBuffer.executeReadonly(frame, left);
                 try {
-                    Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
+                    Object rightBuffer = getBuffer.executeReadonly(frame, right);
                     try {
                         return tscmp(bufferLib.getCopiedByteArray(leftBuffer), bufferLib.getCopiedByteArray(rightBuffer));
                     } finally {
-                        bufferLib.release(rightBuffer);
+                        releaseBuffer.execute(frame, rightBuffer);
                     }
                 } finally {
-                    bufferLib.release(leftBuffer);
-                    InteropCallContext.exit(frame, inliningTarget, callData, savedState);
+                    releaseBuffer.execute(frame, leftBuffer);
                 }
             }
         }

@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.modules.TRegexUtil;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -130,9 +129,11 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectFormat;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -162,7 +163,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -275,24 +275,24 @@ public final class StringBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
         static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
                         @Exclusive @Cached InlinedConditionProfile isPStringProfile,
-                        @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @Exclusive @Cached PyObjectGetBuffer getBuffer,
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PyUnicodeCheckNode stringCheckNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Shared("releaseBuffer") @Cached PyBufferRelease releaseBuffer) {
             checkEncodingAndErrors(inliningTarget, encoding, errors, stringCheckNode, raiseNode);
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj, frame, callData);
+                buffer = getBuffer.executeReadonly(frame, obj);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
@@ -309,7 +309,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 
@@ -338,23 +338,23 @@ public final class StringBuiltins extends PythonBuiltins {
                         "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Exclusive @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Exclusive @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
                         @Exclusive @Cached InlinedConditionProfile isPStringProfile,
-                        @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @Exclusive @Cached PyObjectGetBuffer getBuffer,
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
                         @Exclusive @Cached CExtNodes.StringSubtypeNew subtypeNew,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PyUnicodeCheckNode stringCheckNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Shared @Cached PyBufferRelease releaseBuffer) {
             checkEncodingAndErrors(inliningTarget, encoding, errors, stringCheckNode, raiseNode);
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj, frame, callData);
+                buffer = getBuffer.executeReadonly(frame, obj);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
@@ -369,7 +369,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {
-                bufferLib.release(buffer, frame, callData);
+                releaseBuffer.execute(frame, buffer);
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(value = PythonBufferAcquireLibrary.class, delegateTo = "delegate")
 public final class PBytesIOBuffer extends PythonBuiltinObject {
 
     private final PBytesIO source;
@@ -56,6 +53,10 @@ public final class PBytesIOBuffer extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.source = source;
         this.delegate = source.getBuf();
+    }
+
+    public PByteArray getDelegate() {
+        return delegate;
     }
 
     public PBytesIO getSource() {

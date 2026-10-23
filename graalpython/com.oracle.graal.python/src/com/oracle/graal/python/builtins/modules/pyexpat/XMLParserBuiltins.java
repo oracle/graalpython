@@ -85,15 +85,16 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -937,7 +938,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             }
             return Arrays.copyOfRange(internalByteArray.getArray(), internalByteArray.getOffset(), internalByteArray.getOffset() + chunkLen);
         }
-        Object buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(data);
+        Object buffer = PyObjectGetBuffer.getUncached().executeReadonly(null, data);
         try {
             PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getUncached();
             int chunkLen = accessLib.getBufferLength(buffer);
@@ -948,7 +949,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             accessLib.readIntoByteArray(buffer, 0, bytes, 0, chunkLen);
             return bytes;
         } finally {
-            PythonBufferAccessLibrary.getUncached().release(buffer);
+            PyBufferRelease.getUncached().execute(null, buffer);
         }
     }
 

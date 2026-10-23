@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -100,9 +99,11 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetBuffer;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -622,7 +623,8 @@ public class PPickler extends PythonBuiltinObject {
         @Child private PyObjectStrAsObjectNode pyObjectStrAsObjectNode;
         @Child private PyObjectIsTrueNode isTrueNode;
         @Child private IsNode isNode;
-        @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
+        @Child private PyObjectGetBuffer getBufferNode;
+        @Child private PyBufferRelease releaseBufferNode;
         @Child private PythonBufferAccessLibrary bufferLibrary;
         @Child private PyCallableCheckNode callableCheckNode;
         @Child private PyObjectReprAsTruffleStringNode reprNode;
@@ -1096,12 +1098,20 @@ public class PPickler extends PythonBuiltinObject {
             return getIterNode.executeCached(frame, object);
         }
 
-        private PythonBufferAcquireLibrary getBufferAcquireLibrary() {
-            if (bufferAcquireLibrary == null) {
+        private PyBufferRelease getReleaseBufferNode() {
+            if (releaseBufferNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                bufferAcquireLibrary = insert(PythonBufferAcquireLibrary.getFactory().createDispatched(3));
+                releaseBufferNode = insert(PyBufferRelease.create());
             }
-            return bufferAcquireLibrary;
+            return releaseBufferNode;
+        }
+
+        private PyObjectGetBuffer getBufferNode() {
+            if (getBufferNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBufferNode = insert(PyObjectGetBuffer.create());
+            }
+            return getBufferNode;
         }
 
         private PythonBufferAccessLibrary getBufferLibrary() {
@@ -1699,7 +1709,7 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         private void saveBytes(VirtualFrame frame, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PBytes obj) {
-            Object buffer = getBufferAcquireLibrary().acquireReadonly(obj);
+            Object buffer = getBufferNode().executeReadonly(frame, obj);
             PythonBufferAccessLibrary bufferLib = getBufferLibrary();
             try {
                 if (proto < 3) {
@@ -1728,7 +1738,7 @@ public class PPickler extends PythonBuiltinObject {
                     saveBytesData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } finally {
-                bufferLib.release(buffer);
+                getReleaseBufferNode().execute(frame, buffer);
             }
         }
 
@@ -2247,7 +2257,7 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         private void saveBytearray(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PPickler pickler, int proto, boolean fastMode, PByteArray obj) {
-            Object buffer = getBufferAcquireLibrary().acquireReadonly(obj);
+            Object buffer = getBufferNode().executeReadonly(frame, obj);
             PythonBufferAccessLibrary bufferLib = getBufferLibrary();
             try {
                 if (proto < 5) {
@@ -2268,7 +2278,7 @@ public class PPickler extends PythonBuiltinObject {
                     saveBytearrayData(frame, pickler, proto, fastMode, obj, buffer, bufferLib);
                 }
             } finally {
-                bufferLib.release(buffer);
+                getReleaseBufferNode().execute(frame, buffer);
             }
         }
 

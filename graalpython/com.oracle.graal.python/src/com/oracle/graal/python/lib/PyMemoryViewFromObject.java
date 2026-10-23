@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
@@ -62,7 +61,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -101,10 +99,10 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     }
 
     @Specialization
-    static PMemoryView fromNative(PythonNativeObject object,
+    static PMemoryView fromNative(VirtualFrame frame, PythonNativeObject object,
                     @Bind Node inliningTarget,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
-        return fromNativeNode.execute(inliningTarget, object, BufferFlags.PyBUF_FULL_RO);
+        return fromNativeNode.execute(frame, inliningTarget, object, BufferFlags.PyBUF_FULL_RO);
     }
 
     @Specialization
@@ -130,8 +128,8 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     @Fallback
     static PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @Bind Node inliningTarget,
-                    @Cached("createFor($node)") InteropCallData interopCallData,
-                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @Cached PyObjectCheckBuffer checkBufferNode,
+                    @Cached PyObjectGetBuffer getBuffer,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,
                     @Cached InlinedConditionProfile isBuiltinClassTypeProfile,
@@ -185,9 +183,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                             cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
                             format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
-        } else if (bufferAcquireLib.hasBuffer(object)) {
-            // Managed object that implements PythonBufferAcquireLibrary
-            Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, interopCallData);
+        } else if (checkBufferNode.execute(object)) {
+            // Managed object supporting the buffer protocol
+            Object buffer = getBuffer.execute(frame, object, BufferFlags.PyBUF_FULL_RO);
             return PFactory.createMemoryViewForManagedObject(context.getLanguage(inliningTarget), buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer),
                             bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
