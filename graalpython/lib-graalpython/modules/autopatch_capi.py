@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -138,7 +138,7 @@ def replace_field_access(contents, match, replacement, assignment):
                 break
         idx = consume_whitespace_backwards(idx)
 
-    receiver_start = consume_whitespace_forward(idx)
+    receiver_start = consume_whitespace_forward(max(idx, 0))
     receiver_string = contents[receiver_start: start - 1]
 
     if assignment is not None:
@@ -149,7 +149,7 @@ def replace_field_access(contents, match, replacement, assignment):
             # this looks like an assignment, determine the value
             idx = consume_whitespace_forward(idx + 1)
             value_start = idx
-            while idx < len(contents) - 2:
+            while idx < len(contents):
                 c = contents[idx]
                 c2 = contents[idx: idx + 2]
                 if c == '(' or c == '[' or (c == '<' and c2 != '<=' and c2 != '<<'):
@@ -179,7 +179,7 @@ auto_replacements = {
                     r'\+\+([\d\w_]+)->ob_refcnt': (replace_pre, '(Py_SET_REFCNT(%receiver, Py_REFCNT(%receiver) + 1), Py_REFCNT(%receiver))'),
                     # avoid direct access:
                     r'\W(ob_type)\W': (replace_field_access, 'Py_TYPE(%receiver)'),
-                    r'\W(ob_refcnt)\W': (replace_field_access, 'Py_REFCNT(%receiver)'),
+                    r'\W(ob_refcnt)\W': (replace_field_access, 'Py_REFCNT(%receiver)', 'Py_SET_REFCNT(%receiver, %value)'),
                     r'\W(ob_item)\W': (replace_field_access, 'PySequence_Fast_ITEMS((PyObject*)%receiver)'),
                     r'^\s*()(std::)?free\((const_cast<char \*>)?\(?\w+->m_ml->ml_doc\)?\);': (simple_replace, '//'),
                     r'\W(m_ml\s*->\s*ml_doc)\W': (replace_field_access, 'GraalPyCFunction_GetDoc((PyObject*)(%receiver))', 'GraalPyCFunction_SetDoc((PyObject*)(%receiver), %value)'),

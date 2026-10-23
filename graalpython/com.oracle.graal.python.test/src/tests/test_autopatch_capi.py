@@ -137,3 +137,30 @@ if sys.implementation.name == 'graalpy':
             PySequence_Fast_ITEMS((PyObject*)L)[len] = x;
             ''',
         )
+
+
+    def test_replace_refcnt_assignment():
+        check_autopatched(
+            'obj->ob_refcnt = 1;',
+            'Py_SET_REFCNT(obj, 1);',
+        )
+        check_autopatched(
+            '''
+            #else
+                op->ob_refcnt = _Py_IMMORTAL_REFCNT;
+            #endif
+            ''',
+            '''
+            #else
+                Py_SET_REFCNT(op, _Py_IMMORTAL_REFCNT);
+            #endif
+            ''',
+        )
+        check_autopatched(
+            '((PyObject*)obj)->ob_refcnt = compute_refcnt(obj, 1);',
+            'Py_SET_REFCNT(((PyObject*)obj), compute_refcnt(obj, 1));',
+        )
+        check_autopatched(
+            'if (obj->ob_refcnt == 1) return obj->ob_refcnt;',
+            'if (Py_REFCNT(obj) == 1) return Py_REFCNT(obj);',
+        )
