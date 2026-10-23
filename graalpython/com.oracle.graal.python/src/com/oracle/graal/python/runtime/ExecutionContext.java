@@ -217,7 +217,7 @@ public abstract class ExecutionContext {
                     if (thisInfo.getPyFrame() != null && !CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsLasti(callerFlags)) {
                         thisInfo.getPyFrame().setLastCallerFlags(callerFlags);
                     } else {
-                        PFrame pyFrame = materialize.executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
+                        PFrame pyFrame = materialize.executeOnStack(false, callerFlags, frame);
                         assert thisInfo.getPyFrame() == pyFrame;
                         assert pyFrame.getRef() == thisInfo;
                     }
@@ -430,6 +430,7 @@ public abstract class ExecutionContext {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
             }
+            ensureMaterializeNode().execute(location, false, CallerFlags.NEEDS_MATERIALIZED_LOCALS, frame);
             Reference callerInfo = info.getCallerInfo();
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
@@ -452,12 +453,6 @@ public abstract class ExecutionContext {
             // go to the other branch and setNeedsCallerFrame. This helps to prevent one-off
             // initializations (importing a module) from invalidating the assumption
 
-            PFrame pFrame = ensureMaterializeNode().execute(location, false, false, frame);
-            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
-            if (bytecodeNode != null) {
-                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
-                assert !pFrame.outdatedCallerFlags(CallerFlags.ALL_FRAME_FLAGS);
-            }
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
             info.setCallerInfo(callerInfo);
@@ -702,7 +697,7 @@ public abstract class ExecutionContext {
                 info = PArguments.getCurrentFrameInfo(frame);
                 pythonThreadState.setTopFrameInfo(info);
                 if (CallerFlags.needsPFrame(callerFlags)) {
-                    callData.getMaterializeFrameNode().executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
+                    callData.getMaterializeFrameNode().executeOnStack(false, callerFlags, frame);
                 } else if (info.getPyFrame() != null) {
                     info.getPyFrame().setLastCallerFlags(callerFlags);
                 }

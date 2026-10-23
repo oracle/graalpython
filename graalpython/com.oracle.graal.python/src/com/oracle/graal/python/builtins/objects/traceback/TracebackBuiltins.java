@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -223,7 +224,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                                             rootNode, pException.getTracebackFrameCount(), pException.getTracebackStartIndex(), Arrays.toString(stackTrace.toArray()));
             // create the PFrame and refresh frame values
             Frame frame = PGenerator.unwrapDSLGeneratorFrame(element);
-            return materializeFrameNode.execute(location, true, true, frame);
+            return materializeFrameNode.execute(location, true, CallerFlags.NEEDS_MATERIALIZED_LOCALS, frame);
         }
     }
 

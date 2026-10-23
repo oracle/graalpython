@@ -833,7 +833,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     private PFrame ensurePyFrame(VirtualFrame frame, BytecodeNode location) {
-        return getTracingNodes(location).materializeFrameNode.executeOnStack(frame, location, true, false);
+        return getTracingNodes(location).materializeFrameNode.executeOnStack(frame, location, true, 0);
     }
 
     @InliningCutoff

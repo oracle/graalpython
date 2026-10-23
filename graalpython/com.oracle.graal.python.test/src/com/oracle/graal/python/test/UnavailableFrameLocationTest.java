@@ -108,14 +108,14 @@ public class UnavailableFrameLocationTest {
                                 ReadFrameNode.AllPythonFramesSelector.INSTANCE, 0, CallerFlags.ALL_FRAME_FLAGS);
                 assertNotNull(result);
                 MaterializeFrameNode materialize = MaterializeFrameNode.getUncached();
-                assertThrows(AssertionError.class, () -> materialize.execute(null, false, false, result.frame()));
+                assertThrows(AssertionError.class, () -> materialize.execute(null, false, 0, result.frame()));
                 BytecodeFrame captured = null;
                 if (captureFirst) {
-                    captured = materialize.execute(result.callNode(), true, true, result.frame()).getBytecodeFrame();
+                    captured = materialize.execute(result.callNode(), true, CallerFlags.NEEDS_LOCALS, result.frame()).getBytecodeFrame();
                     assertNotNull(captured);
                 }
                 Node unavailable = PythonLanguage.get(null).unavailableSafepointLocation;
-                PFrame pyFrame = materialize.execute(unavailable, true, true, result.frame());
+                PFrame pyFrame = materialize.execute(unavailable, true, CallerFlags.NEEDS_LOCALS, result.frame());
                 assertNull(pyFrame.getBytecodeNode());
                 assertEquals(-1, pyFrame.getBci());
                 assertEquals(-1, pyFrame.getLine());
@@ -126,7 +126,7 @@ public class UnavailableFrameLocationTest {
                 checkLocals.execute(context.asValue(pyFrame), captureFirst);
 
                 // A later observation with a valid location must resume normal locals capture.
-                assertSame(pyFrame, materialize.execute(result.callNode(), true, true, result.frame()));
+                assertSame(pyFrame, materialize.execute(result.callNode(), true, CallerFlags.NEEDS_LOCALS, result.frame()));
                 assertNotNull(pyFrame.getBytecodeNode());
                 assertNotNull(pyFrame.getBytecodeFrame());
                 assertTrue(pyFrame.hasMaterializedFrame() || pyFrame.syncsLocals());

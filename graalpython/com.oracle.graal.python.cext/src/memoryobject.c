@@ -186,9 +186,9 @@ PyTypeObject _PyManagedBuffer_Type = {
 
 /* In the process of breaking reference cycles mbuf_release() can be
    called before memory_release(). */
-// GraalPy change: don't use the manager
+// GraalPy change: upcall
 #define BASE_INACCESSIBLE(mv) \
-    (((PyMemoryViewObject *)mv)->flags&_Py_MEMORYVIEW_RELEASED)
+    GraalPyPrivate_MemoryViewIsReleased((PyObject *)(mv))
 
 #define CHECK_RELEASED(mv) \
     if (BASE_INACCESSIBLE(mv)) {                                  \
@@ -1513,88 +1513,13 @@ memoryview_toreadonly_impl(PyMemoryViewObject *self)
 Py_LOCAL_SYMBOL int // GraalPy change: hidden for capi.c
 memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
 {
-    Py_buffer *base = &self->view;
-    int baseflags = self->flags;
-
-    CHECK_RELEASED_INT(self);
-    CHECK_RESTRICTED_INT(self);
-
-    /* start with complete information */
-    *view = *base;
-    view->obj = NULL;
-
-    if (REQ_WRITABLE(flags) && base->readonly) {
-        PyErr_SetString(PyExc_BufferError,
-            "memoryview: underlying buffer is not writable");
-        return -1;
-    }
-    if (!REQ_FORMAT(flags)) {
-        /* NULL indicates that the buffer's data type has been cast to 'B'.
-           view->itemsize is the _previous_ itemsize. If shape is present,
-           the equality product(shape) * itemsize = len still holds at this
-           point. The equality calcsize(format) = itemsize does _not_ hold
-           from here on! */
-        view->format = NULL;
-    }
-
-    if (REQ_C_CONTIGUOUS(flags) && !MV_C_CONTIGUOUS(baseflags)) {
-        PyErr_SetString(PyExc_BufferError,
-            "memoryview: underlying buffer is not C-contiguous");
-        return -1;
-    }
-    if (REQ_F_CONTIGUOUS(flags) && !MV_F_CONTIGUOUS(baseflags)) {
-        PyErr_SetString(PyExc_BufferError,
-            "memoryview: underlying buffer is not Fortran contiguous");
-        return -1;
-    }
-    if (REQ_ANY_CONTIGUOUS(flags) && !MV_ANY_CONTIGUOUS(baseflags)) {
-        PyErr_SetString(PyExc_BufferError,
-            "memoryview: underlying buffer is not contiguous");
-        return -1;
-    }
-    if (!REQ_INDIRECT(flags) && (baseflags & _Py_MEMORYVIEW_PIL)) {
-        PyErr_SetString(PyExc_BufferError,
-            "memoryview: underlying buffer requires suboffsets");
-        return -1;
-    }
-    if (!REQ_STRIDES(flags)) {
-        if (!MV_C_CONTIGUOUS(baseflags)) {
-            PyErr_SetString(PyExc_BufferError,
-                "memoryview: underlying buffer is not C-contiguous");
-            return -1;
-        }
-        view->strides = NULL;
-    }
-    if (!REQ_SHAPE(flags)) {
-        /* PyBUF_SIMPLE or PyBUF_WRITABLE: at this point buf is C-contiguous,
-           so base->buf = ndbuf->data. */
-        if (view->format != NULL) {
-            /* PyBUF_SIMPLE|PyBUF_FORMAT and PyBUF_WRITABLE|PyBUF_FORMAT do
-               not make sense. */
-            PyErr_Format(PyExc_BufferError,
-                "memoryview: cannot cast to unsigned bytes if the format flag "
-                "is present");
-            return -1;
-        }
-        /* product(shape) * itemsize = len and calcsize(format) = itemsize
-           do _not_ hold from here on! */
-        view->ndim = 1;
-        view->shape = NULL;
-    }
-
-
-    view->obj = Py_NewRef(self);
-    self->exports++;
-
-    return 0;
+    return GraalPyPrivate_MemoryViewGetBuffer((PyObject *)self, view, flags);
 }
 
 Py_LOCAL_SYMBOL void // GraalPy change: hidden for capi.c
 memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view)
 {
-    self->exports--;
-    return;
-    /* PyBuffer_Release() decrements view->obj after this function returns. */
+    GraalPyPrivate_MemoryViewReleaseBuffer((PyObject *)self, view);
 }
 
 #if 0 // GraalPy change
@@ -3525,11 +3450,11 @@ GraalPyPrivate_ReleaseBuffer(Py_buffer* buffer)
 Py_buffer *
 GraalPyMemoryView_GET_BUFFER(PyObject *op)
 {
-    return &_PyMemoryView_CAST(op)->view;
+    return GraalPyPrivate_MemoryViewBuffer(op);
 }
 
 PyObject *
 GraalPyMemoryView_GET_BASE(PyObject *op)
 {
-    return _PyMemoryView_CAST(op)->view.obj;
+    return GraalPyPrivate_MemoryViewBase(op);
 }

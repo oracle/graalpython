@@ -101,6 +101,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
@@ -752,7 +753,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Override
             public Object execute(VirtualFrame frame) {
                 Object[] arguments = PArguments.create();
-                PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
+                PFrame pFrame = materializeFrameNode.execute(this, false, CallerFlags.NEEDS_LOCALS, frame);
                 Object pLocals = getFrameLocalsNode.executeCached(frame, pFrame, true);
                 PArguments.setSpecialArgument(arguments, pLocals);
                 PArguments.setCodeObject(arguments, PFactory.createCode(getLanguage(PythonLanguage.class), callTarget));
