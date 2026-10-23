@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.truffle;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -75,7 +76,7 @@ public abstract class TruffleStringMigrationHelpers {
     }
 
     public static void assertContainsNoJavaString(Object[] elements) {
-        assert !containsJavaString(elements);
+        assert !PythonOptions.detailedAssertionsEnabled() || !containsJavaString(elements);
     }
 
     private static boolean containsJavaString(Object[] elements) {

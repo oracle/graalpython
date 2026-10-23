@@ -1183,8 +1183,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<? extends Node> key) {
-        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
-        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
+        assert !PythonOptions.detailedAssertionsEnabled() || RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
+        assert !PythonOptions.detailedAssertionsEnabled() || RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
         return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
     }
 

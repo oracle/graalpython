@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -132,7 +133,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "self.cachedLength >= 0")
         static int cachedLength(DynamicObjectStorage self) {
-            assert self.cachedLength == actualLength(self) : "stale DynamicObjectStorage length";
+            assert !PythonOptions.detailedAssertionsEnabled() || self.cachedLength == actualLength(self) : "stale DynamicObjectStorage length";
             return self.cachedLength;
         }
 

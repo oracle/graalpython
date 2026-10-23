@@ -1599,9 +1599,10 @@ def main_run(args):
     if IS_GRAALPY:
         if not get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
             # noinspection PyUnresolvedReferences
-            if not __graalpython__.java_assert():
+            if not __graalpython__.java_assert(detailed=True):
                 sys.exit(
-                    "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check\n")
+                    "Detailed Java assertions are not enabled, refusing to run. Add --vm.ea --vm.Dpython.DetailedAsserts=true to your invocation. "
+                    "Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check.\n")
         # noinspection PyUnresolvedReferences
         if not hasattr(__graalpython__, 'tdebug'):
             sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")

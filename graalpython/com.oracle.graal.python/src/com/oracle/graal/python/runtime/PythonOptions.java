@@ -74,6 +74,23 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
+    private static final boolean DETAILED_ASSERTIONS = Boolean.getBoolean("python.DetailedAsserts");
+
+    /**
+     * Enables expensive internal checks only when assertions are enabled for PythonOptions and
+     * {@code -Dpython.DetailedAsserts=true} was set at class initialization.
+     */
+    public static boolean detailedAssertionsEnabled() {
+        return assertionsEnabled() && DETAILED_ASSERTIONS;
+    }
+
+    @SuppressWarnings("all")
+    private static boolean assertionsEnabled() {
+        boolean enabled = false;
+        assert (enabled = true) == true;
+        return enabled;
+    }
+
     private static final String J_STRING_LIST_SEPARATOR = "🏆";
     private static final TruffleString T_STRING_LIST_SEPARATOR = tsLiteral(J_STRING_LIST_SEPARATOR);
 

@@ -49,6 +49,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -93,21 +94,21 @@ public final class BytecodeDSLCodeUnit {
     public BytecodeDSLCodeUnit(TruffleString name, TruffleString qualname, int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int flags, TruffleString[] names, TruffleString[] varnames,
                     TruffleString[] cellvars, TruffleString[] freevars, Object[] constants, int startLine, int startColumn, int endLine, int endColumn,
                     int classcellIndex, int selfIndex, int yieldFromGeneratorIndex, int instrumentationDataIndex, int maxProfileCEventStackSize, BytecodeSupplier supplier) {
-        assert isInterned(name);
+        assert !PythonOptions.detailedAssertionsEnabled() || isInterned(name);
         this.name = name;
-        assert qualname == null || isInterned(qualname);
+        assert !PythonOptions.detailedAssertionsEnabled() || qualname == null || isInterned(qualname);
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
         this.flags = flags;
-        assert isInterned(names);
+        assert !PythonOptions.detailedAssertionsEnabled() || isInterned(names);
         this.names = names;
-        assert isInterned(varnames);
+        assert !PythonOptions.detailedAssertionsEnabled() || isInterned(varnames);
         this.varnames = varnames;
-        assert isInterned(cellvars);
+        assert !PythonOptions.detailedAssertionsEnabled() || isInterned(cellvars);
         this.cellvars = cellvars;
-        assert isInterned(freevars);
+        assert !PythonOptions.detailedAssertionsEnabled() || isInterned(freevars);
         this.freevars = freevars;
         this.constants = constants;
         this.startLine = startLine;

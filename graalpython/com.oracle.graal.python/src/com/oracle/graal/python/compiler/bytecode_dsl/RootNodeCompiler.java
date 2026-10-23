@@ -149,6 +149,7 @@ import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
@@ -765,7 +766,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         lastTracedLine = -1;
         this.inExceptStar = false;
         temporaryLocals.clear();
-        if (ASSERTIONS_ENABLED) {
+        if (TEMP_LOCAL_TRACKING_ENABLED) {
             temporaryLocalsTraces.clear();
         }
     }
@@ -798,7 +799,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         b.endRoot();
         endSourceSection(b);
         b.endSource();
-        if (ASSERTIONS_ENABLED && !temporaryLocalsTraces.isEmpty()) {
+        if (TEMP_LOCAL_TRACKING_ENABLED && !temporaryLocalsTraces.isEmpty()) {
             throw new AssertionError(this.qualName + "\n\n" + formatTempLocalsStackTraces());
         }
     }
@@ -818,24 +819,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return sb.toString();
     }
 
-    private static final boolean ASSERTIONS_ENABLED = assertionsEnabled();
+    private static final boolean TEMP_LOCAL_TRACKING_ENABLED = PythonOptions.detailedAssertionsEnabled();
     private static final boolean TRACK_TEMP_LOCALS = Boolean.getBoolean("org.graalvm.python.trackTempLocals");
 
-    @SuppressWarnings("all")
-    private static boolean assertionsEnabled() {
-        boolean enabled = false;
-        assert (enabled = true) == true;
-        return enabled;
-    }
-
-    private HashMap<BytecodeLocal, Object> temporaryLocalsTraces = ASSERTIONS_ENABLED ? new HashMap<>() : null;
+    private HashMap<BytecodeLocal, Object> temporaryLocalsTraces = TEMP_LOCAL_TRACKING_ENABLED ? new HashMap<>() : null;
     private HashSet<BytecodeLocal> temporaryLocals = new HashSet<>();
 
     private BytecodeLocal beginTemporaryLocal(Builder b) {
         BytecodeLocal local = b.createLocal();
         temporaryLocals.add(local);
         assert isTemporaryLocal(local);
-        if (ASSERTIONS_ENABLED) {
+        if (TEMP_LOCAL_TRACKING_ENABLED) {
             Object previous = temporaryLocalsTraces.put(local, TRACK_TEMP_LOCALS ? new RuntimeException() : local);
             if (previous != null) {
                 throw new AssertionError();
@@ -876,7 +870,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (!temporaryLocals.remove(local)) {
             throw new AssertionError();
         }
-        if (ASSERTIONS_ENABLED) {
+        if (TEMP_LOCAL_TRACKING_ENABLED) {
             if (temporaryLocalsTraces.remove(local) == null) {
                 throw new AssertionError();
             }

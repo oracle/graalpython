@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.nodes.Node;
@@ -108,7 +109,7 @@ public final class MroShape {
                 if ((getShapeFlagsUncached.execute(managedClass) & HAS_NO_VALUE_PROPERTIES) != 0) {
                     return null;
                 }
-                assert hasNoNoValueProperties(managedClass);
+                assert !PythonOptions.detailedAssertionsEnabled() || hasNoNoValueProperties(managedClass);
                 mroShape = mroShape.add(managedClass.getShape());
             } else {
                 return null;

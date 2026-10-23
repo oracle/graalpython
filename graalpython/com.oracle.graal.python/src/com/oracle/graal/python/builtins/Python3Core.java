@@ -1275,7 +1275,7 @@ public abstract class Python3Core {
 
     private void populateBuiltins() {
         sysModule = builtinModules.get(T_SYS);
-        assert PythonBuiltinClassType.verifySlotsConventions(builtins);
+        assert !PythonOptions.detailedAssertionsEnabled() || PythonBuiltinClassType.verifySlotsConventions(builtins);
         for (PythonBuiltins builtin : builtins) {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);

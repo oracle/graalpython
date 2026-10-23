@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.HiddenAttr.ReadNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -100,13 +101,13 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization(guards = {"object.getShape() == cachedShape", "hasNoDict(cachedShape)"}, limit = "1")
     static PDict getNoDictCachedShape(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape) {
-        assert getDictUncached(object) == null;
+        assert !PythonOptions.detailedAssertionsEnabled() || getDictUncached(object) == null;
         return null;
     }
 
     @Specialization(guards = "hasNoDict(object.getShape())", replaces = "getNoDictCachedShape")
     static PDict getNoDict(@SuppressWarnings("unused") PythonObject object) {
-        assert getDictUncached(object) == null;
+        assert !PythonOptions.detailedAssertionsEnabled() || getDictUncached(object) == null;
         return null;
     }
 

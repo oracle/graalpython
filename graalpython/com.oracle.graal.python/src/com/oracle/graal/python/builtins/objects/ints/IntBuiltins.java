@@ -139,6 +139,7 @@ import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
@@ -217,7 +218,7 @@ public final class IntBuiltins extends PythonBuiltins {
             if (isPrimitiveIntProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PInt)) {
                 return result;
             } else {
-                assert IsSubtypeNode.getUncached().execute(cls, PythonBuiltinClassType.PInt);
+                assert !PythonOptions.detailedAssertionsEnabled() || IsSubtypeNode.getUncached().execute(cls, PythonBuiltinClassType.PInt);
                 PInt managedInt = createIntSubclassNode.execute(inliningTarget, cls, result, getInstanceShape.execute(cls));
                 if (needsNativeAllocationNode.execute(inliningTarget, cls)) {
                     // needsNativeAllocationNode acts as branch profile

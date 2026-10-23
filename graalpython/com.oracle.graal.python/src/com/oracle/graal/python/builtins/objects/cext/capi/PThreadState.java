@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
@@ -112,7 +113,8 @@ public abstract class PThreadState {
 
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict != null) {
-            assert PythonToNativeInternalNode.executeUncached(threadStateDict, false) == CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict);
+            assert !PythonOptions.detailedAssertionsEnabled() || PythonToNativeInternalNode.executeUncached(threadStateDict, false) == CStructAccess.readPtrField(nativeThreadState,
+                            CFields.PyThreadState__dict);
             return threadStateDict;
         }
 
