@@ -233,6 +233,12 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT64})
         abstract int call_msvcrt_locking(int fd, int mode, long nbytes);
 
+        @DowncallSignature(returnType = SINT32, argumentTypes = {})
+        abstract int call_msvcrt_kbhit();
+
+        @DowncallSignature(returnType = SINT32)
+        abstract int supports_virtual_terminal();
+
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
         abstract int call_pipe2(long pipefd);
 
@@ -887,6 +893,22 @@ public final class NativePosixSupport extends PosixSupport {
         if (posixNativeFunctionInvoker.call_msvcrt_locking(fd, mode, nbytes) != 0) {
             throw getErrnoAndThrowPosixException();
         }
+    }
+
+    @Override
+    @TruffleBoundary
+    public int msvcrtKbhit() throws PosixException {
+        int result = posixNativeFunctionInvoker.call_msvcrt_kbhit();
+        if (result < 0) {
+            throw getErrnoAndThrowPosixException();
+        }
+        return result;
+    }
+
+    @Override
+    @TruffleBoundary
+    public boolean supportsVirtualTerminal() {
+        return posixNativeFunctionInvoker.supports_virtual_terminal() != 0;
     }
 
     @Override

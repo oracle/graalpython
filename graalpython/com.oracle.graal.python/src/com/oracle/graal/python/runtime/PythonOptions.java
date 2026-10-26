@@ -441,6 +441,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.INTERNAL, help = "The list of the original command line arguments passed to the Python executable.") //
     public static final OptionKey<TruffleString> OrigArgv = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
+    @Option(category = OptionCategory.INTERNAL, help = "The list of -X options passed to the Python executable.") //
+    public static final OptionKey<TruffleString> XOptions = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
+
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
     public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);
 
@@ -618,6 +621,32 @@ public final class PythonOptions {
     public static TruffleString[] getOrigArgv(PythonContext context) {
         return StringUtils.split(context.getOption(OrigArgv), T_STRING_LIST_SEPARATOR, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
                         TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
+    }
+
+    @TruffleBoundary
+    public static TruffleString[] getXOptions(PythonContext context) {
+        String serialized = context.getOption(XOptions).toJavaStringUncached();
+        List<TruffleString> options = new ArrayList<>();
+        int offset = 0;
+        while (offset < serialized.length()) {
+            int colon = serialized.indexOf(':', offset);
+            if (colon < 0) {
+                throw new IllegalArgumentException("Invalid serialized XOptions");
+            }
+            int length;
+            try {
+                length = Integer.parseInt(serialized.substring(offset, colon));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid serialized XOptions", e);
+            }
+            offset = colon + 1;
+            if (length < 0 || length > serialized.length() - offset) {
+                throw new IllegalArgumentException("Invalid serialized XOptions");
+            }
+            options.add(PythonUtils.toTruffleStringUncached(serialized.substring(offset, offset + length)));
+            offset += length;
+        }
+        return options.toArray(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
     }
 
     /**

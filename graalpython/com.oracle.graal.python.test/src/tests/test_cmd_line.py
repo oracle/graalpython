@@ -98,6 +98,16 @@ class CmdLineTest(unittest.TestCase):
                 result = self.run_cpu_count(cpu_count_env=value)
                 self.assertNotEqual(0, result.returncode)
 
+    def test_xoptions(self):
+        result = subprocess.run(
+            [sys.executable, '-Xa', '-Xb=c,d=e', '-Xc', '-Xa=overridden', '-X', '', '-c',
+             "import sys; print(tuple(sys._xoptions[key] for key in ('a', 'b', 'c', '')))"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result)
+        self.assertEqual("('overridden', 'c,d=e', True, True)", result.stdout.strip())
+
     def test_stdin_script_exit_code(self):
         code = "import sys\nsys.exit(42)\n"
         result = subprocess.run([sys.executable], input=code, text=True)

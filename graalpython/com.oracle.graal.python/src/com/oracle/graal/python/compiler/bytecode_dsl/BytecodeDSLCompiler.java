@@ -176,17 +176,6 @@ public class BytecodeDSLCompiler {
         return null;
     }
 
-    public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, boolean interactiveTerminal, boolean allowIncompleteInput) {
-        EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
-        if (interactiveTerminal) {
-            flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
-        }
-        if (allowIncompleteInput) {
-            flags.add(AbstractParser.Flags.ALLOW_INCOMPLETE_INPUT);
-        }
-        return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
-    }
-
     public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {
         return new Parser(src, errorCb, inputType, flags, featureVersion);
     }

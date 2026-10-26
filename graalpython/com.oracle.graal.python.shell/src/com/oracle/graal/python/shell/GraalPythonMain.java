@@ -162,6 +162,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private int repeatedRuns = 1;
     private boolean snaptshotStartup = false;
     private boolean warnDefaultEncoding = false;
+    private final List<String> xOptions = new ArrayList<>();
     private int intMaxStrDigits = -1;
     private int cpuCount = -1;
     private boolean cpuCountXOptionSet = false;
@@ -462,6 +463,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         case 'X':
                             // CPython ignores unknown/unsupported -X options, so we can do that too
                             String xOption = getShortOptionParameter(argumentIterator, remainder, 'X');
+                            xOptions.add(xOption);
                             if ("warn_default_encoding".equals(xOption)) {
                                 warnDefaultEncoding = true;
                             } else if (xOption.startsWith("int_max_str_digits")) {
@@ -857,6 +859,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
         origArgs.add(0, toAbsolutePath(executable));
         contextBuilder.option("python.OrigArgv", String.join(STRING_LIST_DELIMITER, origArgs));
+        StringBuilder serializedXOptions = new StringBuilder();
+        for (String xOption : xOptions) {
+            serializedXOptions.append(xOption.length()).append(':').append(xOption);
+        }
+        contextBuilder.option("python.XOptions", serializedXOptions.toString());
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
@@ -929,8 +936,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 }
 
+                boolean basicReplRequested = !tty || (!ignoreEnv && getBoolEnv("PYTHON_BASIC_REPL"));
                 sysModule.putMember("_console_handler", consoleHandler);
-                if (tty && !isolateFlag && (inspectFlag || (commandString == null && inputFile == null))) {
+                if (basicReplRequested && tty && !isolateFlag && (inspectFlag || (commandString == null && inputFile == null))) {
                     evalInternal(context, "import readline, rlcompleter");
                 }
 
@@ -949,8 +957,18 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 }
                 if ((tty && commandString == null && inputFile == null) || inspectFlag) {
+                    boolean inspecting = commandString != null || inputFile != null;
                     inspectFlag = false;
-                    rc = readEvalPrint(context, consoleHandler, sysModule);
+                    runInteractiveHook(sysModule);
+                    if (inspecting) {
+                        // The inspected program may have changed os.environ since the launcher started.
+                        basicReplRequested = !tty || (!ignoreEnv && evalInternal(context, "import os; bool(os.environ.get('PYTHON_BASIC_REPL'))").asBoolean());
+                    }
+                    if (!basicReplRequested && canUsePyRepl(context)) {
+                        rc = readEvalPrintPyRepl(context, inspecting);
+                    } else {
+                        rc = readEvalPrint(context, consoleHandler, sysModule);
+                    }
                 }
             } catch (RuntimeException e) {
                 if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
@@ -1343,6 +1361,55 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
+    private boolean canUsePyRepl(Context context) {
+        try {
+            return evalInternal(context, """
+                            from _pyrepl.main import CAN_USE_PYREPL, FAIL_REASON
+                            if not CAN_USE_PYREPL and FAIL_REASON:
+                                import sys
+                                from _pyrepl.trace import trace
+                                trace(FAIL_REASON)
+                                print(FAIL_REASON, file=sys.stderr)
+                            CAN_USE_PYREPL""").asBoolean();
+        } catch (PolyglotException e) {
+            return false;
+        }
+    }
+
+    private int readEvalPrintPyRepl(Context context, boolean inspecting) {
+        String source;
+        if (inspecting) {
+            source = """
+                            from _pyrepl.main import interactive_console
+                            interactive_console()""";
+        } else {
+            source = """
+                            import runpy
+                            runpy._run_module_as_main('_pyrepl')""";
+        }
+        try {
+            evalInternal(context, source);
+            return 0;
+        } catch (PolyglotException e) {
+            if (e.isExit()) {
+                return e.getExitStatus();
+            }
+            throw e;
+        }
+    }
+
+    private static void runInteractiveHook(Value sysModule) {
+        Value hook = null;
+        try {
+            hook = sysModule.getMember("__interactivehook__");
+        } catch (PolyglotException e) {
+            // ignore
+        }
+        if (hook != null) {
+            hook.execute();
+        }
+    }
+
     /**
      * The read-eval-print loop, which can take input from a console, command line expression or a
      * file. There are two ways the repl can terminate:
@@ -1355,15 +1422,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
      */
     private int readEvalPrint(Context context, ConsoleHandler consoleHandler, Value sysModule) {
         try {
-            Value hook = null;
-            try {
-                hook = sysModule.getMember("__interactivehook__");
-            } catch (PolyglotException e) {
-                // ignore
-            }
-            if (hook != null) {
-                hook.execute();
-            }
             while (true) { // processing inputs
                 boolean doEcho = doEcho(context);
                 String ps1 = doEcho ? sysModule.getMember("ps1").asString() : null;
@@ -1498,7 +1556,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private Value evalInternal(Context context, String code) {
-        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).buildLiteral());
+        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).option("python.NewGlobals", "true").buildLiteral());
     }
 
     /**

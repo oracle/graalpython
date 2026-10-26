@@ -274,6 +274,20 @@ public final class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final int msvcrtKbhit() throws PosixException {
+        checkNotInPreInitialization();
+        return nativePosixSupport.msvcrtKbhit();
+    }
+
+    @Override
+    @TruffleBoundary
+    public final boolean supportsVirtualTerminal() {
+        checkNotInPreInitialization();
+        return nativePosixSupport.supportsVirtualTerminal();
+    }
+
+    @Override
+    @TruffleBoundary
     public final int[] pipe() throws PosixException {
         checkNotInPreInitialization();
         return nativePosixSupport.pipe();

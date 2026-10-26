@@ -82,6 +82,20 @@ def test_compile_unrecognised_flags_message():
         assert False, "ValueError was not raised"
 
 
+def test_dont_imply_dedent():
+    flags = 0x4000 | 0x200  # PyCF_ALLOW_INCOMPLETE_INPUT | PyCF_DONT_IMPLY_DEDENT
+    source = "def foo():\n    return 42"
+
+    try:
+        compile(source, "<input>", "single", flags)
+    except _IncompleteInputError:
+        pass
+    else:
+        assert False, "_IncompleteInputError was not raised"
+
+    assert compile(source + "\n", "<input>", "single", flags)
+
+
 def test_lambdas_as_function_default_argument_values():
     globs = {}
     exec("""
