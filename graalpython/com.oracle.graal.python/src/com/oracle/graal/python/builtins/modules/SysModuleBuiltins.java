@@ -694,7 +694,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         PList sysPaths = PFactory.createList(language, path);
         sys.setAttribute(tsInternedLiteral("path"), sysPaths);
         sys.setAttribute(tsInternedLiteral("flags"), PFactory.createStructSeq(language, SysModuleBuiltins.FLAGS_DESC,
-                        PInt.intValue(!language.getEngineOption(PythonOptions.PythonOptimizeFlag)), // debug
+                        0, // debug
                         PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
                         PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
                         PInt.intValue(language.getEngineOption(PythonOptions.PythonOptimizeFlag)), // optimize
