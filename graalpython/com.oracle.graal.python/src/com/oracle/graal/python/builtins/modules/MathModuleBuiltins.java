@@ -255,6 +255,22 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "cbrt", minNumOfPositionalArgs = 1, doc = "Return the cube root of x.")
+    @GenerateNodeFactory
+    public abstract static class CbrtNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static double doGeneric(VirtualFrame frame, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached MathUnaryHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, value, CbrtNode::compute);
+        }
+
+        private static double compute(Node inliningTarget, double value, PRaiseNode raiseNode) {
+            return Math.cbrt(value);
+        }
+    }
+
     @Builtin(name = "exp", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExpNode extends PythonUnaryBuiltinNode {
@@ -268,6 +284,24 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         private static double compute(Node inliningTarget, double value, PRaiseNode raiseNode) {
             double result = Math.exp(value);
+            checkMathRangeError(Double.isFinite(value) && Double.isInfinite(result), inliningTarget, raiseNode);
+            return result;
+        }
+    }
+
+    @Builtin(name = "exp2", minNumOfPositionalArgs = 1, doc = "Return 2 raised to the power of x.")
+    @GenerateNodeFactory
+    public abstract static class Exp2Node extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static double doGeneric(VirtualFrame frame, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached MathUnaryHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, value, Exp2Node::compute);
+        }
+
+        private static double compute(Node inliningTarget, double value, PRaiseNode raiseNode) {
+            double result = Math.pow(2.0, value);
             checkMathRangeError(Double.isFinite(value) && Double.isInfinite(result), inliningTarget, raiseNode);
             return result;
         }
