@@ -533,19 +533,16 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             if (k.equals(BigInteger.ZERO)) {
                 return BigInteger.ONE;
             }
+            return permProduct(n, k);
+        }
+
+        // P(n, k) = P(n, j) * P(n - j, k - j) keeps the operands balanced.
+        private static BigInteger permProduct(BigInteger n, BigInteger k) {
             if (k.equals(BigInteger.ONE)) {
                 return n;
             }
-
-            BigInteger result = n;
-            BigInteger factor = n;
-            BigInteger i = BigInteger.ONE;
-            while (i.compareTo(k) < 0) {
-                factor = factor.subtract(BigInteger.ONE);
-                result = result.multiply(factor);
-                i = i.add(BigInteger.ONE);
-            }
-            return result;
+            BigInteger j = k.shiftRight(1);
+            return permProduct(n, j).multiply(permProduct(n.subtract(j), k.subtract(j)));
         }
 
         @Specialization
