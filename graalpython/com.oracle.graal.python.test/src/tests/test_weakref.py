@@ -322,3 +322,32 @@ def test_proxy_call():
     proxy = weakref.proxy(a)
     assert callable(proxy) is True
     assert proxy() == 42
+
+
+def test_weakref_with_callback_object_type_support():
+    def callback(ref):
+        pass
+
+    for obj in ({}, [1, 2], 42, None):
+        for create in (weakref.ref, weakref.proxy):
+            try:
+                create(obj, callback)
+            except TypeError:
+                pass
+            else:
+                assert False, "should throw TypeError for unsupported objects"
+
+
+def test_weakref_builtin_types_with_weaklist():
+    import _queue, _struct, array, collections, contextvars, mmap, typing
+
+    def callback(ref):
+        pass
+
+    P = typing.ParamSpec('P')
+    objs = [collections.deque(), array.array('b'), mmap.mmap(-1, 1), contextvars.copy_context(),
+            _queue.SimpleQueue(), _struct.Struct('b'), typing.TypeVar('T'), typing.TypeVarTuple('Ts'),
+            P, P.args, P.kwargs]
+    for obj in objs:
+        assert weakref.ref(obj)() is obj
+        assert weakref.ref(obj, callback)() is obj
