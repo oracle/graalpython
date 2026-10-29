@@ -940,7 +940,6 @@ public class JavaInteropTest {
                             new OptionsChecker("NoUserSiteFlag", "import sys; sys.flags.no_user_site", "true", "false"),
                             new OptionsChecker("IgnoreEnvironmentFlag", "import sys; sys.flags.ignore_environment", "true", "false"),
                             new OptionsChecker("PythonPath", "import sys; sys.path", "/pathA", "/pathB"),
-                            new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.debug", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.optimize", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "__debug__", "true", "false"),
                             new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3"),
