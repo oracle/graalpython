@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -57,3 +57,13 @@ def test_import():
     except ImportError:
         imported = False
     assert imported
+
+
+def test_tuplegetter_arguments():
+    from collections import _tuplegetter
+    assert_raises(TypeError, _tuplegetter)
+    assert_raises(TypeError, _tuplegetter, 0)
+    assert_raises(TypeError, _tuplegetter, 0, None, 1)
+    assert_raises(TypeError, _tuplegetter, 0, doc=None)
+    assert_raises(TypeError, _tuplegetter, index=0, doc=None)
+    assert _tuplegetter(1, 'doc').__get__((10, 20)) == 20
