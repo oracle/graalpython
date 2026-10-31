@@ -61,6 +61,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_NEWLINES;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READLINE;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS;
+import static com.oracle.graal.python.nodes.ErrorMessages.INITIAL_VALUE_MUST_BE_STR_OR_NONE_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
@@ -116,11 +117,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -280,17 +283,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(name = "StringIO", minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_value", "newline"})
-    @ArgumentClinic(name = "initial_value", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return StringIOBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
+    public abstract static class InitNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        static PNone init(VirtualFrame frame, PStringIO self, TruffleString initialValue, Object newlineArg,
+        static PNone init(VirtualFrame frame, PStringIO self, Object initialValueArg, Object newlineArg,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode lazyRaiseNode,
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
@@ -303,6 +300,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached IONodes.ToTruffleStringNode toTruffleStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             TruffleString newline;
@@ -317,6 +315,16 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
             if (newline != null) {
                 validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
+            }
+            TruffleString initialValue;
+            if (PGuards.isPNone(initialValueArg)) {
+                initialValue = T_EMPTY_STRING;
+            } else {
+                try {
+                    initialValue = castToStringNode.execute(inliningTarget, initialValueArg);
+                } catch (CannotCastException e) {
+                    throw raiseNode.raise(inliningTarget, TypeError, INITIAL_VALUE_MUST_BE_STR_OR_NONE_NOT_P, initialValueArg);
+                }
             }
             self.setOK(false);
             self.clearAll();

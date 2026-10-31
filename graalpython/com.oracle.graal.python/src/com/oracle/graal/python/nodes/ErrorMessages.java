@@ -999,6 +999,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INPUT_FMT_NOT_SUPPORTED_BY_DECODER = tsLiteral("Input format not supported by decoder");
     public static final TruffleString INVALID_UNSUPPORTED_OPTIONS = tsLiteral("Invalid or unsupported options");
     public static final TruffleString INDENT_MUST_BE_STR_OR_NONE_NOT_P = tsLiteral("indent must be str or None, not %p");
+    public static final TruffleString INITIAL_VALUE_MUST_BE_STR_OR_NONE_NOT_P = tsLiteral("initial_value must be str or None, not %p");
     public static final TruffleString CORRUPT_INPUT_DATA = tsLiteral("Corrupt input data");
     public static final TruffleString INSUFFICIENT_BUFFER_SPACE = tsLiteral("Insufficient buffer space");
     public static final TruffleString INTERNAL_ERROR = tsLiteral("Internal error");
