@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -129,6 +131,17 @@ public abstract class PyObjectSetItem extends Node {
                         @Exclusive @Cached CallSlotSqAssItemNode callSqItem) {
             int index = indexForSqSlot.execute(frame, inliningTarget, object, slots, key);
             callSqItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, index, value);
+        }
+
+        @Specialization(guards = {"slots.mp_ass_subscript() == null", "slots.sq_ass_item() == null", "slots.has_as_sequence()"})
+        @InliningCutoff
+        static void doSequenceNoAssItem(VirtualFrame frame, Node inliningTarget, Object object, @SuppressWarnings("unused") TpSlots slots, Object key, @SuppressWarnings("unused") Object value,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode) {
+            if (indexCheckNode.execute(inliningTarget, key) && indexNode.execute(frame, inliningTarget, key) instanceof PInt pint && pint.bitLength() >= Long.SIZE) {
+                throw PRaiseNode.raiseStatic(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
+            }
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, object);
         }
 
         @Fallback
