@@ -173,3 +173,10 @@ os._exit(0)
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.rstrip().endswith("ok"), result.stdout
+
+
+def test_rlock_new_ignores_arguments():
+    import _thread
+
+    assert type(_thread.RLock(0)) is _thread.RLock
+    assert type(_thread.RLock(x=1)) is _thread.RLock

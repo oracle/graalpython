@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -85,11 +87,12 @@ public final class RLockBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = "RLock", minNumOfPositionalArgs = 1)
+    @SlotSignature(name = "RLock", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
+    public abstract static class ConstructRLockNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
-        PRLock construct(Object cls,
+        PRLock construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createRLock(cls, getInstanceShape.execute(cls));
         }
