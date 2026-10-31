@@ -70,6 +70,7 @@ def test_log_base_none():
     assert_raises(ValueError, math.log, -1, None)
     assert math.log(1) == 0.0
     assert math.log(1.0) == 0.0
+    assert 48.52 < math.log(2**70) < 48.53
 
 
 def test_log_value_checked_before_base():
