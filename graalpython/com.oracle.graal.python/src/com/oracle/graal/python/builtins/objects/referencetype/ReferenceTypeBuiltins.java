@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -160,9 +160,13 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
         static PReferenceType refTypeWithCallback(Object cls, Object object, Object callback,
                         @Bind Node inliningTarget,
+                        @Cached.Exclusive @Cached GetClassNode getClassNode,
                         @Cached.Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            if (getClassNode.execute(inliningTarget, object) instanceof PythonBuiltinClassType type && type.getWeaklistoffset() == 0) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
+            }
             return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), object, callback, getWeakReferenceQueue(inliningTarget, readQueueNode));
         }
 
