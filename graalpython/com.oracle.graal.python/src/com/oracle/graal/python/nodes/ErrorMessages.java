@@ -762,6 +762,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TIMED_OUT = tsLiteral("timed out");
     public static final TruffleString TIMEOUT_VALUE_MUST_BE_POSITIVE = tsLiteral("timeout value must be positive");
     public static final TruffleString TIMEOUT_VALUE_OUT_OF_RANGE = tsLiteral("Timeout value out of range");
+    public static final TruffleString TIMEOUT_DOESNT_FIT_INTO_C_TIMEVAL = tsLiteral("timeout doesn't fit into C timeval");
     public static final TruffleString TIMEOUT_VALUE_TOO_LARGE = tsLiteral("timeout value is too large");
     public static final TruffleString TIMESTAMP_OUT_OF_RANGE = tsLiteral("timestamp out of range for platform time_t");
     public static final TruffleString TOLERANCE_MUST_NON_NEGATIVE = tsLiteral("tolerances must be non-negative");
