@@ -574,11 +574,30 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_floor_divide, isComplex = true)
     @GenerateNodeFactory
-    abstract static class FloorDivNode extends AbstractNumericBinaryBuiltin {
+    public abstract static class FloorDivNode extends AbstractNumericBinaryBuiltin {
         @Override
         protected Object op(double left, double right) {
             raiseDivisionByZero(right == 0);
-            return Math.floor(left / right);
+            return floorDiv(left, right);
+        }
+
+        public static double floorDiv(double left, double right) {
+            // See cpython://Objects/floatobject.c#_float_div_mod.
+            double mod = left % right;
+            // Derive the quotient from the remainder: left / right may round up to an integer.
+            double div = (left - mod) / right;
+            if (mod != 0.0 && (right < 0) != (mod < 0)) {
+                div -= 1.0;
+            }
+            if (div != 0.0) {
+                // Floating-point arithmetic may leave div just below an integer.
+                double floordiv = Math.floor(div);
+                if (div - floordiv > 0.5) {
+                    floordiv += 1.0;
+                }
+                return floordiv;
+            }
+            return Math.copySign(0.0, left / right);
         }
     }
 
@@ -590,7 +609,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         protected PTuple op(double left, double right) {
             raiseDivisionByZero(right == 0);
             PythonLanguage language = PythonLanguage.get(this);
-            return PFactory.createTuple(language, new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
+            return PFactory.createTuple(language, new Object[]{FloorDivNode.floorDiv(left, right), ModNode.mod(left, right)});
         }
     }
 

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.lib.fastpath;
 
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntToLongTypes;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -80,7 +81,7 @@ public abstract class PyNumberFloorDivideFastPathsBase extends BinaryOpNode {
 
     @Specialization(guards = "!isZero(right)")
     public static double doDD(double left, double right) {
-        return Math.floor(left / right);
+        return FloatBuiltins.FloorDivNode.floorDiv(left, right);
     }
 
     public static boolean specialCase(int left, int right) {
