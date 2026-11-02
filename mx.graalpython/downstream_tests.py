@@ -132,38 +132,20 @@ def downstream_test_pydantic_core(graalpy, testdir):
     env = os.environ.copy()
     env['UV_PYTHON_DOWNLOADS'] = 'never'
     env['UV_PYTHON'] = str(graalpy)
-    # Needed for rpds-py dependency
-    env['UNSAFE_PYO3_SKIP_VERSION_CHECK'] = '1'
-    # Commands taken from upstream. The upstream has some TODOs so we'll likely need to sync this again soon
-    run(
-        ['uv', 'sync', '--directory', 'pydantic-core', '--group', 'testing-extra', '--no-install-package', 'pydantic-core'],
-        cwd=repo,
-        env=env,
-    )
+    env['RUST_BACKTRACE'] = '1'
+    # Keep dependency installation in sync with upstream's core-test-graalpy CI job.
     run(
         [
-            'uv', 'sync', '--group', 'testing-extra', '--no-install-package', 'pydantic-core',
-            '--no-install-package', 'pytest-memray', '--no-install-package', 'memray',
-            '--no-install-package', 'pytest-codspeed', '--no-install-package', 'cffi', '--inexact',
-            # GraalPy change: greenlet crashes on import
-            '--no-install-package', 'greenlet',
-            # The latest rpds-py release does not yet include the PyO3 fix needed by GraalPy
-            '--no-install-package', 'rpds-py',
+            'uv', 'sync', '--all-packages', '--group', 'testing-extra',
+            '--no-install-package', 'pytest-codspeed', '--no-install-package', 'cffi',
+            # SQLAlchemy is only needed for docs tests and fails to import on GraalPy 3.13.
+            '--no-install-package', 'sqlalchemy', '--no-install-package', 'greenlet',
         ],
         cwd=repo,
         env=env,
     )
     del env['UV_PYTHON']
-    run(
-        ['uv', 'pip', 'install', 'rpds-py @ git+https://github.com/crate-py/rpds.git@main', '--no-deps', '--force-reinstall'],
-        cwd=repo,
-        env=env,
-    )
-    run(
-        ['uv', 'pip', 'install', './pydantic-core', '--no-deps', '--force-reinstall'],
-        cwd=repo,
-        env=env,
-    )
+    run(['uv', 'pip', 'freeze', '--python', str(repo / '.venv' / 'bin' / 'python')], cwd=repo, env=env)
     run(
         ['uv', 'run', '--no-sync', 'pytest', 'tests/pydantic_core', '--ignore=tests/pydantic_core/test_docstrings.py'],
         cwd=repo,
