@@ -125,7 +125,7 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
     @Override
     public Object getIndicativeValue() {
-        return 0;
+        return 0L;
     }
 
     @Override
