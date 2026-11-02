@@ -1688,19 +1688,24 @@ public final class NativePosixSupport extends PosixSupport {
     @Override
     @TruffleBoundary
     public Object readlinkat(int dirFd, Object path) throws PosixException {
-        int bufferBytes = WINDOWS ? PATH_MAX.value * 2 : PATH_MAX.value;
-        byte[] buffer = new byte[bufferBytes];
+        // Windows reparse data can contain up to 16 KiB, including the UTF-16 target.
+        // Symlink targets can be longer than Windows PATH_MAX (260 characters).
+        int bufferBytes = WINDOWS ? 16 * 1024 : PATH_MAX.value;
+        int bufferSize = WINDOWS ? bufferBytes / 2 : bufferBytes;
         long pathPtr = pathToNativeCString(path);
         try {
             long nativeBuffer = NativeMemory.mallocByteArrayOrNull(bufferBytes);
             try {
-                long n = posixNativeFunctionInvoker.call_readlinkat(dirFd, pathPtr, nativeBuffer, PATH_MAX.value);
+                long n = posixNativeFunctionInvoker.call_readlinkat(dirFd, pathPtr, nativeBuffer, bufferSize);
+                if (WINDOWS && n == -2) {
+                    throw new NotASymbolicLinkException();
+                }
                 if (n < 0) {
                     throw getErrnoAndThrowPosixException();
                 }
                 int byteLength = WINDOWS ? Math.toIntExact(n * 2) : Math.toIntExact(n);
-                NativeMemory.readByteArrayElements(nativeBuffer, 0, buffer, 0, byteLength);
-                byte[] result = PythonUtils.arrayCopyOfRange(buffer, 0, byteLength);
+                byte[] result = new byte[byteLength];
+                NativeMemory.readByteArrayElements(nativeBuffer, 0, result, 0, byteLength);
                 return WINDOWS ? new WidePath(result) : new NarrowPath(result);
             } finally {
                 NativeMemory.free(nativeBuffer);

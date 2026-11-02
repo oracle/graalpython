@@ -127,6 +127,7 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.Buffer;
+import com.oracle.graal.python.runtime.PosixSupport.NotASymbolicLinkException;
 import com.oracle.graal.python.runtime.PosixSupport.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
@@ -2594,6 +2595,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile wasBufferLikeProfile,
                         @Cached OpaquePathToBytesNode opaquePathToBytesNode,
                         @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 Object link = context.getPosixSupport().readlinkat(dirFd, path.value);
@@ -2602,6 +2604,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 } else {
                     return getPathAsStringNode.execute(inliningTarget, context.getPosixSupport(), link);
                 }
+            } catch (NotASymbolicLinkException e) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_A_SYMBOLIC_LINK);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }

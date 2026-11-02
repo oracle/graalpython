@@ -503,6 +503,12 @@ public abstract class PosixSupport {
         }
     }
 
+    /** Raised by Windows readlink for a reparse point that is not a symbolic link or junction. */
+    public static final class NotASymbolicLinkException extends PosixException {
+
+        private static final long serialVersionUID = 1L;
+    }
+
     /**
      * Exception that may be thrown by all the messages. It indicates that given functionality is
      * not available in given implementation. In the future, there will be methods to query if

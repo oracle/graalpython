@@ -224,6 +224,47 @@ class NtSymlinkTests(unittest.TestCase):
                 self.skipTest('symlink creation requires Windows privilege or Developer Mode')
             raise
 
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend resolves symlink targets instead of reading link text')
+    def test_readlink_long_target(self):
+        targets = ['x' * length for length in (259, 260, 261)]
+        targets += ['sub/' * 90 + 'missing', 'sub/' * 750 + 'missing-\U0001f40d']
+        with tempfile.TemporaryDirectory() as directory:
+            link = os.path.join(directory, 'link')
+            for target in targets:
+                with self.subTest(length=len(target)):
+                    self.create_link(target, link)
+                    try:
+                        self.assertEqual(target, os.readlink(link))
+                        self.assertEqual(os.fsencode(target), os.readlink(os.fsencode(link)))
+                    finally:
+                        os.unlink(link)
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend resolves symlink targets instead of reading link text')
+    def test_dangling_relative_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / '.lock'
+            self.create_link(str(os.getpid()), lock)
+            self.assertTrue(lock.is_symlink())
+            self.assertFalse(lock.exists())
+            self.assertEqual(os.readlink(lock), str(os.getpid()))
+            with self.assertRaises(FileNotFoundError):
+                lock.stat()
+            lock.unlink()
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend resolves symlink targets instead of reading link text')
+    def test_unicode_file_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / 'target_\u03be'
+            target.write_text('contents')
+            link = root / 'link_\u03be'
+            self.create_link(target.name, link)
+            self.assertTrue(link.is_symlink())
+            self.assertTrue(link.is_file())
+            self.assertEqual(os.readlink(link), target.name)
+            self.assertEqual(link.read_text(), 'contents')
+            link.unlink()
+
     @unittest.skipIf(JAVA_BACKEND, 'Java backend does not support Windows directory symlink semantics')
     def test_directory_target(self):
         for explicit_directory in (False, True):
@@ -329,3 +370,11 @@ class NtSymlinkTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 os.symlink('other', link)
             link.unlink()
+
+    def test_readlink_regular_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'file'
+            path.write_text('contents')
+            with self.assertRaises(OSError) as caught:
+                os.readlink(path)
+            self.assertEqual(caught.exception.errno, errno.EINVAL)

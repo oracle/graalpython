@@ -52,6 +52,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <winver.h>
+#include <winioctl.h>
 #include <direct.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -2155,6 +2156,30 @@ GP_EXPORT int32_t call_fchmod(int32_t fd, int32_t mode) {
     }
     return win32_hchmod((HANDLE) handle, mode);
 }
+/* Same reparse-point layout used by CPython's Modules/winreparse.h. */
+typedef struct {
+    ULONG tag;
+    USHORT data_length;
+    USHORT reserved;
+    union {
+        struct {
+            USHORT name_offset;
+            USHORT name_length;
+            USHORT print_offset;
+            USHORT print_length;
+            ULONG flags;
+            WCHAR path[1];
+        } symlink;
+        struct {
+            USHORT name_offset;
+            USHORT name_length;
+            USHORT print_offset;
+            USHORT print_length;
+            WCHAR path[1];
+        } mount;
+    } data;
+} win_reparse_data;
+
 GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *buf, uint64_t size) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
@@ -2163,14 +2188,52 @@ GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *b
     if (win_path_init(&prepared, path) != 0) {
         return -1;
     }
-    DWORD attributes = GetFileAttributesW(prepared.value);
-    DWORD error = attributes == INVALID_FILE_ATTRIBUTES ? GetLastError() : ERROR_SUCCESS;
+    HANDLE handle = CreateFileW(prepared.value, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    DWORD error = GetLastError();
     win_path_clear(&prepared);
-    if (attributes == INVALID_FILE_ATTRIBUTES) {
+    if (handle == INVALID_HANDLE_VALUE) {
         set_win_errno(error);
         return -1;
     }
-    return unsupported();
+    union {
+        win_reparse_data reparse;
+        char buffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+    } data;
+    DWORD returned;
+    BOOL success = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, &data, sizeof(data), &returned, NULL);
+    error = GetLastError();
+    CloseHandle(handle);
+    if (!success) {
+        set_win_errno(error);
+        return -1;
+    }
+    size_t offset;
+    size_t length;
+    if (data.reparse.tag == IO_REPARSE_TAG_SYMLINK) {
+        offset = offsetof(win_reparse_data, data.symlink.path) + data.reparse.data.symlink.name_offset;
+        length = data.reparse.data.symlink.name_length;
+    } else if (data.reparse.tag == IO_REPARSE_TAG_MOUNT_POINT) {
+        offset = offsetof(win_reparse_data, data.mount.path) + data.reparse.data.mount.name_offset;
+        length = data.reparse.data.mount.name_length;
+    } else {
+        /* Distinguish a non-link reparse point from a Win32 failure. */
+        return -2;
+    }
+    if (offset + length > returned || length % sizeof(wchar_t) != 0) {
+        set_posix_errno(EINVAL);
+        return -1;
+    }
+    const wchar_t *name = (const wchar_t *)((char *)&data + offset);
+    uint64_t characters = length / sizeof(wchar_t);
+    if (characters > size) {
+        characters = size;
+    }
+    memcpy(buf, name, characters * sizeof(wchar_t));
+    if (characters > 4 && wcsncmp(buf, L"\\??\\", 4) == 0) {
+        buf[1] = L'\\';
+    }
+    return characters;
 }
 GP_EXPORT int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) { return unsupported(); }
 GP_EXPORT int32_t call_wcoredump(int32_t status) { return 0; }
