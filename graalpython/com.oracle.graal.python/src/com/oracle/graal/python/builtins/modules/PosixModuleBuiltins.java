@@ -1719,12 +1719,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, @SuppressWarnings("unused") boolean targetIsDir, int dirFd,
+        static PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, boolean targetIsDir, int dirFd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                context.getPosixSupport().symlinkat(src.value, dirFd, dst.value);
+                context.getPosixSupport().symlinkat(src.value, dirFd, dst.value, targetIsDir);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
             }

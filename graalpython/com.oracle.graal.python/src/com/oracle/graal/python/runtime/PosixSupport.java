@@ -1091,7 +1091,7 @@ public abstract class PosixSupport {
     public abstract void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;
 
     @TruffleBoundary
-    public abstract void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException;
+    public abstract void symlinkat(Object target, int linkpathDirFd, Object linkpath, boolean targetIsDirectory) throws PosixException;
 
     @TruffleBoundary
     public abstract void mkdirat(int dirFd, Object pathname, int mode) throws PosixException;

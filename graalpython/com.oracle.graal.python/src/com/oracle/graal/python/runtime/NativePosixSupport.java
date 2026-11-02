@@ -290,8 +290,8 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER, SINT32})
         abstract int call_linkat(int oldDirFd, long oldPath, int newDirFd, long newPath, int flags);
 
-        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER})
-        abstract int call_symlinkat(long target, int dirFd, long linkpath);
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER, SINT32})
+        abstract int call_symlinkat(long target, int dirFd, long linkpath, int targetIsDirectory);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
         abstract int call_mkdirat(int dirFd, long pathname, int mode);
@@ -1296,13 +1296,13 @@ public final class NativePosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
+    public void symlinkat(Object target, int linkpathDirFd, Object linkpath, boolean targetIsDirectory) throws PosixException {
         long targetPtr = NULLPTR;
         long linkpathPtr = NULLPTR;
         try {
             targetPtr = pathToNativeCString(target);
             linkpathPtr = pathToNativeCString(linkpath);
-            int result = posixNativeFunctionInvoker.call_symlinkat(targetPtr, linkpathDirFd, linkpathPtr);
+            int result = posixNativeFunctionInvoker.call_symlinkat(targetPtr, linkpathDirFd, linkpathPtr, targetIsDirectory ? 1 : 0);
             if (result != 0) {
                 throw getErrnoAndThrowPosixException();
             }

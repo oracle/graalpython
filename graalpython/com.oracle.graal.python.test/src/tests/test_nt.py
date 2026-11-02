@@ -212,3 +212,120 @@ class NtTests(unittest.TestCase):
         with self.assertRaises(OSError) as error:
             os.fchmod(-1, 0o666)
         self.assertEqual(errno.EBADF, error.exception.errno)
+
+
+@unittest.skipUnless(sys.platform == 'win32', 'requires Windows')
+class NtSymlinkTests(unittest.TestCase):
+    def create_link(self, source, destination, **kwargs):
+        try:
+            os.symlink(source, destination, **kwargs)
+        except OSError as exc:
+            if getattr(exc, 'winerror', None) == 1314:
+                self.skipTest('symlink creation requires Windows privilege or Developer Mode')
+            raise
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend does not support Windows directory symlink semantics')
+    def test_directory_target(self):
+        for explicit_directory in (False, True):
+            with self.subTest(explicit_directory=explicit_directory):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    (root / 'target').mkdir()
+                    link = root / 'link'
+                    self.create_link('target', link, target_is_directory=explicit_directory)
+                    self.assertTrue(link.is_symlink())
+                    self.assertTrue(link.is_dir())
+                    os.rmdir(link)
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend does not support Windows directory symlink semantics')
+    def test_directory_target_at_long_path_threshold(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            padding = 250 - len(str(root / 'parent' / 'link')) - 1
+            if padding < 1:
+                self.skipTest('temporary directory path is too long for the threshold test')
+            root /= 'd' * padding
+            target = root / 'target'
+            target.mkdir(parents=True)
+            (target / 'contents').write_text('preserved')
+            parent = root / 'parent'
+            parent.mkdir()
+            link = parent / 'link'
+            self.assertEqual(len(str(link)), 250)
+            self.create_link('..\\target', link)
+            try:
+                self.assertTrue(link.is_dir())
+                self.assertEqual((link / 'contents').read_text(), 'preserved')
+            finally:
+                link.unlink()
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend does not support Windows directory symlink semantics')
+    def test_unlink_directory_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / 'target'
+            target.mkdir()
+            (target / 'contents').write_text('preserved')
+            for dangling in (False, True):
+                for unlink in (os.unlink, Path.unlink):
+                    with self.subTest(dangling=dangling, unlink=unlink):
+                        link = root / 'link'
+                        self.create_link('missing' if dangling else 'target', link, target_is_directory=True)
+                        unlink(link)
+                        self.assertFalse(link.is_symlink())
+                        self.assertEqual((target / 'contents').read_text(), 'preserved')
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend does not implement Windows permissions')
+    def test_lstat_symlink_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'target'
+            target.write_bytes(b'0123456789')
+            link = Path(directory) / 'link'
+            self.create_link(target.name, link)
+            try:
+                for mode in (0o444, 0o666):
+                    os.chmod(link, mode, follow_symlinks=False)
+                    for result in (os.lstat(link), os.stat(link, follow_symlinks=False)):
+                        self.assertTrue(stat.S_ISLNK(result.st_mode))
+                        self.assertEqual(result.st_size, 0)
+                        self.assertEqual(bool(result.st_mode & stat.S_IWRITE), bool(mode & stat.S_IWRITE))
+                    self.assertEqual(os.stat(link).st_size, 10)
+                    self.assertTrue(os.stat(link).st_mode & stat.S_IWRITE)
+                    self.assertNotEqual(os.lstat(link).st_ino, os.stat(target).st_ino)
+            finally:
+                os.chmod(link, 0o666, follow_symlinks=False)
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend does not support Windows directory symlink semantics')
+    def test_lstat_symlink_executable_extensions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / 'target'
+            target.write_text('contents')
+            for extension in ('.exe', '.BAT', '.cmd', '.CoM', '.txt', ''):
+                with self.subTest(extension=extension):
+                    link = root / ('link' + extension)
+                    self.create_link(target.name, link)
+                    try:
+                        for result in (os.lstat(link), os.stat(link, follow_symlinks=False)):
+                            self.assertTrue(stat.S_ISLNK(result.st_mode))
+                            self.assertEqual(result.st_mode & 0o111,
+                                             0o111 if extension.lower() in ('.exe', '.bat', '.cmd', '.com') else 0)
+                    finally:
+                        link.unlink()
+
+    @unittest.skipIf(JAVA_BACKEND, 'Java backend does not support Windows directory symlink semantics')
+    def test_dangling_directory_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            link = Path(directory) / 'link'
+            self.create_link('missing', link, target_is_directory=True)
+            self.assertTrue(link.is_symlink())
+            self.assertFalse(link.exists())
+            os.rmdir(link)
+
+    def test_existing_destination(self):
+        with tempfile.TemporaryDirectory() as directory:
+            link = Path(directory) / 'link'
+            self.create_link('missing', link)
+            with self.assertRaises(FileExistsError):
+                os.symlink('other', link)
+            link.unlink()

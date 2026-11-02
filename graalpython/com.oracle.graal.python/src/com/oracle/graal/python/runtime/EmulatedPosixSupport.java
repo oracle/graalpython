@@ -1524,7 +1524,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
-    public void symlinkat(Object target, int linkDirFd, Object link) throws PosixException {
+    public void symlinkat(Object target, int linkDirFd, Object link, boolean targetIsDirectory) throws PosixException {
         TruffleFile linkFile = resolvePath(linkDirFd, pathToJavaString(link));
         TruffleFile targetFile = getTruffleFile(pathToJavaString(target));
         try {

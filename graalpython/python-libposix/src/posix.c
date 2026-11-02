@@ -1737,7 +1737,25 @@ GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t 
             }
         }
     } else {
-        result = _wunlink(path.value);
+        WIN32_FIND_DATAW info;
+        HANDLE findHandle = FindFirstFileW(path.value, &info);
+        int directoryLink = 0;
+        if (findHandle != INVALID_HANDLE_VALUE) {
+            directoryLink = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
+                            (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+                            (info.dwReserved0 == IO_REPARSE_TAG_SYMLINK || info.dwReserved0 == IO_REPARSE_TAG_MOUNT_POINT);
+            FindClose(findHandle);
+        }
+        if (directoryLink) {
+            result = RemoveDirectoryW(path.value) ? 0 : -1;
+            if (result != 0) {
+                set_win_errno(GetLastError());
+                win_path_clear(&path);
+                return -1;
+            }
+        } else {
+            result = _wunlink(path.value);
+        }
     }
     if (result != 0) {
         capture_errno();
@@ -1747,7 +1765,67 @@ GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t 
 }
 
 GP_EXPORT int32_t call_linkat(int32_t oldDirFd, const wchar_t *oldPath, int32_t newDirFd, const wchar_t *newPath, int32_t flags) { return unsupported(); }
-GP_EXPORT int32_t call_symlinkat(const wchar_t *target, int32_t dirFd, const wchar_t *linkpath) { return unsupported(); }
+
+/* Like CPython's _check_dirW, resolve a relative target against the link's parent. */
+static int symlink_target_is_directory(const wchar_t *target, const wchar_t *linkpath) {
+    const wchar_t *resolved = target;
+    wchar_t *allocated = NULL;
+    if (target[0] != L'\\' && target[0] != L'/' && !(target[0] && target[1] == L':')) {
+        const wchar_t *backslash = wcsrchr(linkpath, L'\\');
+        const wchar_t *slash = wcsrchr(linkpath, L'/');
+        const wchar_t *separator = backslash;
+        if (slash && (!separator || slash > separator)) {
+            separator = slash;
+        }
+        if (separator) {
+            size_t parent_len = separator - linkpath + 1;
+            size_t target_len = wcslen(target);
+            allocated = malloc((parent_len + target_len + 1) * sizeof(wchar_t));
+            if (!allocated) {
+                return 0;
+            }
+            memcpy(allocated, linkpath, parent_len * sizeof(wchar_t));
+            memcpy(allocated + parent_len, target, (target_len + 1) * sizeof(wchar_t));
+            resolved = allocated;
+        }
+    }
+    /* Normalize the joined target before adding an extended path prefix: Win32
+     * does not resolve dot components or forward slashes in extended paths. */
+    win_path_t prepared;
+    DWORD attributes = INVALID_FILE_ATTRIBUTES;
+    if (win_path_init(&prepared, resolved) == 0) {
+        attributes = GetFileAttributesW(prepared.value);
+        win_path_clear(&prepared);
+    }
+    free(allocated);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+GP_EXPORT int32_t call_symlinkat(const wchar_t *target, int32_t dirFd, const wchar_t *linkpath, int32_t target_is_directory) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    win_path_t path;
+    if (win_path_init(&path, linkpath) != 0) {
+        return -1;
+    }
+    DWORD flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    if (target_is_directory || symlink_target_is_directory(target, linkpath)) {
+        flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+    }
+    BOOLEAN result = CreateSymbolicLinkW(path.value, target, flags);
+    if (!result && GetLastError() == ERROR_INVALID_PARAMETER) {
+        flags &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+        result = CreateSymbolicLinkW(path.value, target, flags);
+    }
+    if (!result) {
+        set_win_errno(GetLastError());
+        win_path_clear(&path);
+        return -1;
+    }
+    win_path_clear(&path);
+    return 0;
+}
 
 GP_EXPORT int32_t call_mkdirat(int32_t dirFd, const wchar_t *pathname, int32_t mode) {
     if (!is_default_dir_fd(dirFd)) {
@@ -3022,7 +3100,8 @@ int32_t call_linkat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, con
     CAPTURE_ERRNO_AND_RETURN(-1, linkat(oldDirFd, oldPath, newDirFd, newPath, flags));
 }
 
-int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
+int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath, int32_t target_is_directory) {
+    (void)target_is_directory;  /* Only used by Windows. */
     CAPTURE_ERRNO_AND_RETURN(-1, symlinkat(target, dirFd, linkpath));
 }
 
