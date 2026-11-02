@@ -49,6 +49,7 @@ from pip._vendor.packaging.specifiers import SpecifierSet  # pylint: disable=no-
 ALLOWED_LICENSES = {
     'UPL',  # https://spdx.org/licenses/UPL-1.0.html
     'MIT',  # https://spdx.org/licenses/MIT.html
+    'MIT-0',  # https://spdx.org/licenses/MIT-0.html
     'BSD-3-Clause',  # https://spdx.org/licenses/BSD-3-Clause.html
     'BSD-2-Clause',  # https://spdx.org/licenses/BSD-2-Clause.html
     'Apache-2.0',  # https://spdx.org/licenses/Apache-2.0.html
