@@ -38,6 +38,7 @@
 # SOFTWARE.
 import errno
 import os
+from pathlib import Path
 import stat
 import sys
 import tempfile
@@ -49,6 +50,23 @@ JAVA_BACKEND = sys.implementation.name == 'graalpy' and __graalpython__.posix_mo
 
 @unittest.skipUnless(sys.platform == 'win32', 'requires Windows')
 class NtTests(unittest.TestCase):
+
+    @unittest.skipIf(JAVA_BACKEND, 'requires the Windows native POSIX backend')
+    def test_app_execution_alias_stat(self):
+        local_app_data = os.environ.get('LOCALAPPDATA')
+        if not local_app_data:
+            self.skipTest('requires a WindowsApps directory')
+        root = Path(local_app_data) / 'Microsoft' / 'WindowsApps'
+        aliases = list(root.glob('*.exe'))
+        if not aliases:
+            self.skipTest('requires an app execution alias')
+        for alias in aliases:
+            with self.subTest(alias=alias):
+                result = os.stat(alias)
+                self.assertEqual(result, os.lstat(alias))
+                self.assertTrue(stat.S_ISREG(result.st_mode))
+                self.assertTrue(alias.exists())
+                self.assertTrue(alias.is_file())
 
     def _create_symlink(self, target, link):
         import ctypes

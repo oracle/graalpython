@@ -91,6 +91,9 @@ includes = '''
 # include <windows.h>
 # include <sys/locking.h>
 # include <sys/stat.h>
+# ifndef S_IFLNK
+#  define S_IFLNK 0xA000
+# endif
 # ifndef PATH_MAX
 #  define PATH_MAX MAX_PATH
 # endif

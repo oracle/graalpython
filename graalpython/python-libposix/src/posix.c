@@ -66,6 +66,9 @@
 
 #include "errno_capture.h"
 
+/* CPython's file type for Windows symbolic links (absent from the CRT). */
+#define GP_S_IFLNK 0xA000
+
 #ifndef SO_UPDATE_ACCEPT_CONTEXT
 #define SO_UPDATE_ACCEPT_CONTEXT 0x700B
 #endif
@@ -988,16 +991,80 @@ static void stat_handle_to_longs(HANDLE handle, int64_t *out) {
     }
 }
 
-static void stat_path_handle_to_longs(const wchar_t *path, int32_t followSymlinks, int64_t *out) {
+static void stat_attributes_to_longs(DWORD attributes, DWORD sizeHigh, DWORD sizeLow, FILETIME accessTime, FILETIME writeTime, FILETIME creationTime, int64_t *out);
+
+static int stat_path_handle_to_longs(const wchar_t *path, int32_t followSymlinks, int64_t *out) {
     DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
+    BOOL isUnhandledTag = FALSE;
     if (!followSymlinks) {
         flags |= FILE_FLAG_OPEN_REPARSE_POINT;
     }
     HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, flags, NULL);
-    if (handle != INVALID_HANDLE_VALUE) {
-        stat_handle_to_longs(handle, out);
-        CloseHandle(handle);
+    if (handle == INVALID_HANDLE_VALUE && followSymlinks && GetLastError() == ERROR_CANT_ACCESS_FILE) {
+        /* Like CPython, retry unhandled reparse points (e.g. app execution
+         * aliases) without traversing, then check their tag below. */
+        followSymlinks = FALSE;
+        isUnhandledTag = TRUE;
+        handle = CreateFileW(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                             NULL, OPEN_EXISTING, flags | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+        if (handle == INVALID_HANDLE_VALUE) {
+            set_win_errno(ERROR_CANT_ACCESS_FILE);
+            return -1;
+        }
     }
+    if (handle == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        if (!followSymlinks && (error == ERROR_ACCESS_DENIED || error == ERROR_SHARING_VIOLATION)) {
+            WIN32_FIND_DATAW info;
+            HANDLE findHandle = FindFirstFileW(path, &info);
+            if (findHandle != INVALID_HANDLE_VALUE) {
+                FindClose(findHandle);
+                /* Like CPython, lstat can use directory metadata for a name-surrogate
+                 * reparse point even when its handle cannot be opened. */
+                if ((info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+                    IsReparseTagNameSurrogate(info.dwReserved0)) {
+                    stat_attributes_to_longs(info.dwFileAttributes, info.nFileSizeHigh, info.nFileSizeLow,
+                                            info.ftLastAccessTime, info.ftLastWriteTime, info.ftCreationTime, out);
+                    if (info.dwReserved0 == IO_REPARSE_TAG_SYMLINK) {
+                        out[0] = (out[0] & ~_S_IFMT) | GP_S_IFLNK;
+                    }
+                    return 0;
+                }
+            }
+        }
+        DWORD attributes = GetFileAttributesW(path);
+        if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+            set_win_errno(error);
+            return -1;
+        }
+        return 0;
+    }
+    if (!followSymlinks) {
+        FILE_ATTRIBUTE_TAG_INFO tag;
+        BOOL hasTag = GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &tag, sizeof(tag));
+        if (isUnhandledTag && (!hasTag || IsReparseTagNameSurrogate(tag.ReparseTag))) {
+            /* Traversing failed for this link or its target; do not report the link
+             * itself as a successful stat of the target. */
+            CloseHandle(handle);
+            set_win_errno(ERROR_CANT_ACCESS_FILE);
+            return -1;
+        }
+        if (hasTag && tag.ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+            BY_HANDLE_FILE_INFORMATION info;
+            if (!GetFileInformationByHandle(handle, &info)) {
+                DWORD error = GetLastError();
+                CloseHandle(handle);
+                set_win_errno(error);
+                return -1;
+            }
+            stat_attributes_to_longs(info.dwFileAttributes, info.nFileSizeHigh, info.nFileSizeLow,
+                                    info.ftLastAccessTime, info.ftLastWriteTime, info.ftCreationTime, out);
+            out[0] = (out[0] & ~_S_IFMT) | GP_S_IFLNK;
+        }
+    }
+    stat_handle_to_longs(handle, out);
+    CloseHandle(handle);
+    return 0;
 }
 
 static void stat_attributes_to_longs(DWORD attributes, DWORD sizeHigh, DWORD sizeLow, FILETIME accessTime, FILETIME writeTime, FILETIME creationTime, int64_t *out) {
@@ -1541,9 +1608,19 @@ GP_EXPORT int32_t call_fstatat(int32_t dirFd, const wchar_t *path, int32_t follo
     int result = _wstat64(prepared.value, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
-        stat_path_handle_to_longs(prepared.value, followSymlinks, out);
     } else {
         result = stat_path_attributes_to_longs(prepared.value, out);
+    }
+    if (result == 0) {
+        result = stat_path_handle_to_longs(prepared.value, followSymlinks, out);
+    }
+    if (result == 0 && (out[0] & _S_IFMT) != _S_IFDIR) {
+        /* Match CPython's update_st_mode_from_path, including for symlinks. */
+        const wchar_t *extension = wcsrchr(prepared.value, L'.');
+        if (extension && (_wcsicmp(extension, L".exe") == 0 || _wcsicmp(extension, L".bat") == 0 ||
+                          _wcsicmp(extension, L".cmd") == 0 || _wcsicmp(extension, L".com") == 0)) {
+            out[0] |= 0111;
+        }
     }
     win_path_clear(&prepared);
     return result;
