@@ -304,6 +304,25 @@ class TestPyTuple(CPyExtTestCase):
 
 
 class TestNativeTupleStorage(unittest.TestCase):
+    def test_pickle_native_tuple_booleans(self):
+        NativeBoolTupleFactory = CPyExtType(
+            "NativeBoolTupleFactory",
+            """
+            static PyObject* get_tuple(PyObject* cls) {
+                return PyTuple_Pack(2, Py_False, Py_True);
+            }
+            """,
+            tp_methods='{"get_tuple", (PyCFunction)get_tuple, METH_NOARGS | METH_CLASS, ""}',
+        )
+
+        native_tuple = NativeBoolTupleFactory.get_tuple()
+        assert is_native_object(native_tuple)
+        for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(protocol=protocol):
+                restored = pickle.loads(pickle.dumps(native_tuple, protocol=protocol))
+                assert restored[0] is False
+                assert restored[1] is True
+
     def test_marshal_native_tuple(self):
         import marshal
 
