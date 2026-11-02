@@ -51,6 +51,67 @@ toHex = float.hex
 
 class BasicTests(unittest.TestCase):
 
+    def test_floor_divmod_rounding(self):
+        cases = [
+            (1.0, 0.1, 9.0, 0.09999999999999995),
+            (-1.0, -0.1, 9.0, -0.09999999999999995),
+            (-1.0, 0.1, -10.0, 5.551115123125783e-17),
+            (1.0, -0.1, -10.0, -5.551115123125783e-17),
+            (-32.0, -0.8, 39.0, -0.7999999999999983),
+            (1, 0.1, 9.0, 0.09999999999999995),
+            (1.0, 3, 0.0, 1.0),
+            (1.0, 0.25, 4.0, 0.0),
+            (1.0, -0.25, -4.0, -0.0),
+            # The quotient derived from the remainder is 6.999999999999999.
+            (54.3632596643497, 7.401038915431183, 7.0, 2.5559872563314165),
+            (1e308, 1e-308, INF, 3.498445546245627e-309),
+        ]
+        for a, b, q, r in cases:
+            with self.subTest(a=a, b=b):
+                self.assertEqual(a // b, q)
+                self.assertEqual(float.__floordiv__(float(a), b), q)
+                self.assertEqual(a % b, r)
+                self.assertEqual(divmod(a, b), (q, r))
+                self.assertIs(type(a // b), float)
+                if q != INF:
+                    self.assertAlmostEqual(q * b + r, a)
+
+    def test_floor_divmod_signed_zero(self):
+        for a in (0.0, -0.0, 1.0, -1.0, 1e-300, -1e-300):
+            for b in (2.0, -2.0, 1e300, -1e300, INF, -INF):
+                with self.subTest(a=a, b=b):
+                    expected_q = -1.0 if a != 0.0 and (a < 0) != (b < 0) else copysign(0.0, a / b)
+                    q, r = divmod(a, b)
+                    self.assertEqual(q, expected_q)
+                    self.assertEqual(a // b, expected_q)
+                    self.assertEqual(copysign(1.0, q), copysign(1.0, expected_q))
+                    self.assertEqual(copysign(1.0, a // b), copysign(1.0, expected_q))
+                    self.assertEqual(r, a % b)
+                    self.assertEqual(copysign(1.0, r), copysign(1.0, b))
+
+    def test_floor_divmod_nonfinite(self):
+        for a in (INF, -INF, NAN):
+            for b in (1.0, -1.0, INF, -INF, NAN):
+                with self.subTest(a=a, b=b):
+                    self.assertTrue(isnan(a // b))
+                    q, r = divmod(a, b)
+                    self.assertTrue(isnan(q))
+                    self.assertTrue(isnan(r))
+        for a in (0.0, 1.0, -1.0):
+            self.assertTrue(isnan(a // NAN))
+            q, r = divmod(a, NAN)
+            self.assertTrue(isnan(q))
+            self.assertTrue(isnan(r))
+
+    def test_floor_divmod_zero_divisor(self):
+        for a in (0.0, 1.0, -1.0, INF, NAN):
+            for b in (0.0, -0.0):
+                with self.subTest(a=a, b=b):
+                    with self.assertRaises(ZeroDivisionError):
+                        a // b
+                    with self.assertRaises(ZeroDivisionError):
+                        divmod(a, b)
+
     def test_is_integer(self):
         assert not (3.14).is_integer()
         assert not (-3.14).is_integer()
