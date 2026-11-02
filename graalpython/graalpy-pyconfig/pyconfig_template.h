@@ -61,6 +61,16 @@
 # endif
 #endif
 
+// CPython defines MS_WIN32 on both 32-bit and 64-bit Windows.
+#ifdef MS_WINDOWS
+# ifndef MS_WIN32
+#  define MS_WIN32
+# endif
+# if defined(_WIN64) && !defined(MS_WIN64)
+#  define MS_WIN64
+# endif
+#endif
+
 /* If Cython is involved, avoid accesses to internal structures. While we are
  * supporting this in many cases, it still involves overhead. */
 #define CYTHON_USE_TYPE_SLOTS 0
