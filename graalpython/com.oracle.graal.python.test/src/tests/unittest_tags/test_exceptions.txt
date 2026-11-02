@@ -10,9 +10,11 @@ test.test_exceptions.ExceptionTests.testInvalidTraceback @ darwin-arm64,linux-aa
 test.test_exceptions.ExceptionTests.testKeywordArgs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.testNoneClearsTracebackAttr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.testRaising @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.ExceptionTests.testSettingException @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ExceptionTests.testSyntaxErrorMessage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.testSyntaxErrorMissingParens @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.testWithTraceback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.ExceptionTests.test_MemoryError @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ExceptionTests.test_WindowsError @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_assert_shadowing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 # Disabled due to transient stack overflow that fails to get caught and crashes the VM
@@ -25,6 +27,7 @@ test.test_exceptions.ExceptionTests.test_error_offset_continuation_characters @ 
 test.test_exceptions.ExceptionTests.test_exception_cleanup_names @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_exception_cleanup_names2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_exception_target_in_nested_scope @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.ExceptionTests.test_exception_with_doc @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ExceptionTests.test_generator_doesnt_retain_old_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_generator_doesnt_retain_old_exc2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_generator_finalizing_and_sys_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -34,11 +37,13 @@ test.test_exceptions.ExceptionTests.test_generator_leaking3 @ darwin-arm64,linux
 test.test_exceptions.ExceptionTests.test_generator_leaking4 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_invalid_setattr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_invalid_setstate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.ExceptionTests.test_memory_error_cleanup @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ExceptionTests.test_memory_error_subclasses @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_no_hang_on_context_chain_cycle2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_notes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_raise_does_not_create_context_chain_cycle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_raise_in_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.ExceptionTests.test_recursion_normalizing_infinite_exception @ darwin-arm64,win32-AMD64
 test.test_exceptions.ExceptionTests.test_setstate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_unhandled @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -65,7 +70,3 @@ test.test_exceptions.SyntaxErrorTests.test_encodings @ darwin-arm64,linux-aarch6
 test.test_exceptions.SyntaxErrorTests.test_range_of_offsets @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.SyntaxErrorTests.test_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.SyntaxErrorTests.test_syntax_error_memory_leak @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_exceptions.ExceptionTests.testSettingException @ linux-x86_64
-test.test_exceptions.ExceptionTests.test_MemoryError @ linux-x86_64
-test.test_exceptions.ExceptionTests.test_exception_with_doc @ linux-x86_64
-test.test_exceptions.ExceptionTests.test_memory_error_cleanup @ linux-x86_64

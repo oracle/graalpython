@@ -126,6 +126,7 @@ test.test_bytes.ByteArrayTest.test_mutating_index_inbounds @ darwin-arm64,linux-
 test.test_bytes.ByteArrayTest.test_nohash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.ByteArrayTest.test_none_arguments @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.ByteArrayTest.test_nosort @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_bytes.ByteArrayTest.test_obsolete_write_lock @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bytes.ByteArrayTest.test_ord @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.ByteArrayTest.test_partition @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.ByteArrayTest.test_partition_bytearray_doesnt_share_nullstring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -285,4 +286,3 @@ test.test_bytes.BytesTest.test_strip_int_error @ darwin-arm64,linux-aarch64,linu
 test.test_bytes.BytesTest.test_strip_string_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.BytesTest.test_translate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bytes.BytesTest.test_xjust_int_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_bytes.ByteArrayTest.test_obsolete_write_lock @ linux-x86_64

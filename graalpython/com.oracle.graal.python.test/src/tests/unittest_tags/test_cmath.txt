@@ -12,6 +12,7 @@ test.test_cmath.CMathTests.test_isinf @ darwin-arm64,linux-aarch64,linux-aarch64
 test.test_cmath.CMathTests.test_isnan @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.CMathTests.test_phase @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.CMathTests.test_polar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_cmath.CMathTests.test_polar_errno @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmath.CMathTests.test_rect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.CMathTests.test_specific_values @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.CMathTests.test_user_object @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -30,4 +31,3 @@ test.test_cmath.IsCloseTests.test_near_zero @ darwin-arm64,linux-aarch64,linux-a
 test.test_cmath.IsCloseTests.test_negative_tolerances @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.IsCloseTests.test_reject_complex_tolerances @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmath.IsCloseTests.test_zero_tolerance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_cmath.CMathTests.test_polar_errno @ linux-x86_64
