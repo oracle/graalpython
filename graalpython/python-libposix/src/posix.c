@@ -1928,6 +1928,45 @@ GP_EXPORT int32_t call_faccessat(int32_t dirFd, const wchar_t *path, int32_t mod
     return result;
 }
 
+static int win32_lchmod(const wchar_t *path, int32_t mode) {
+    DWORD attributes = GetFileAttributesW(path);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if (mode & _S_IWRITE) {
+        attributes &= ~FILE_ATTRIBUTE_READONLY;
+    } else {
+        attributes |= FILE_ATTRIBUTE_READONLY;
+    }
+    if (!SetFileAttributesW(path, attributes)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+static int win32_hchmod(HANDLE handle, int32_t mode) {
+    FILE_BASIC_INFO info;
+    if (!GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info))) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if (mode & _S_IWRITE) {
+        /* Match CPython's win32_hchmod (Modules/posixmodule.c), including its bug:
+         * if READONLY is the only attribute, clearing it produces zero, which
+         * SetFileInformationByHandle treats as leaving attributes unchanged. */
+        info.FileAttributes &= ~FILE_ATTRIBUTE_READONLY;
+    } else {
+        info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
+    }
+    if (!SetFileInformationByHandle(handle, FileBasicInfo, &info, sizeof(info))) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
 GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const wchar_t *path, int32_t mode, int32_t followSymlinks) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
@@ -1936,20 +1975,30 @@ GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const wchar_t *path, int32_t mode
     if (win_path_init(&prepared, path) != 0) {
         return -1;
     }
-    int result = _wchmod(prepared.value, mode);
-    if (result != 0) {
-        capture_errno();
+    int result;
+    if (followSymlinks) {
+        HANDLE handle = CreateFileW(prepared.value, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES,
+                                   0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        if (handle == INVALID_HANDLE_VALUE) {
+            set_win_errno(GetLastError());
+            result = -1;
+        } else {
+            result = win32_hchmod(handle, mode);
+            CloseHandle(handle);
+        }
+    } else {
+        result = win32_lchmod(prepared.value, mode);
     }
     win_path_clear(&prepared);
     return result;
 }
 
 GP_EXPORT int32_t call_fchmod(int32_t fd, int32_t mode) {
-    (void) mode;
-    if (get_osfhandle_noraise(fd) == -1) {
+    intptr_t handle = get_osfhandle_noraise(fd);
+    if (handle == -1) {
         return -1;
     }
-    return unsupported();
+    return win32_hchmod((HANDLE) handle, mode);
 }
 GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *buf, uint64_t size) {
     if (!is_default_dir_fd(dirFd)) {

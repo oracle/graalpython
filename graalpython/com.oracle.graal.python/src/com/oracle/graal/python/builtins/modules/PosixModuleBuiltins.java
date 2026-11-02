@@ -2387,9 +2387,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
-    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "DEFAULT_FOLLOW_SYMLINKS", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
     abstract static class ChmodNode extends PythonClinicBuiltinNode {
+
+        static final boolean DEFAULT_FOLLOW_SYMLINKS = PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

@@ -1914,6 +1914,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (path == null) {
             throw posixException(OSErrorEnum.EBADF);
         }
+        if (getPythonOS() == PLATFORM_WIN32) {
+            // Match the no-op Windows behavior of fchmodat in this backend.
+            return;
+        }
         TruffleFile file = getTruffleFile(path);
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         try {

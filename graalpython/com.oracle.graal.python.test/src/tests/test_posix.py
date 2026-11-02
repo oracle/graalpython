@@ -381,8 +381,12 @@ class PosixTests(unittest.TestCase):
             self.assertIsNone(error.exception.winerror)
 
         assert_crt_error(lambda: os.rename(missing_path, missing_path + '.renamed'), errno.ENOENT)
-        assert_crt_error(lambda: os.chmod(missing_path, 0o600), errno.ENOENT)
         assert_crt_error(lambda: os.listdir(''), errno.ENOENT)
+
+        with self.assertRaises(OSError) as chmod_error:
+            os.chmod(missing_path, 0o600)
+        self.assertEqual(errno.ENOENT, chmod_error.exception.errno)
+        self.assertEqual(2, chmod_error.exception.winerror)  # ERROR_FILE_NOT_FOUND
 
         import socket
         first = socket.socket()
