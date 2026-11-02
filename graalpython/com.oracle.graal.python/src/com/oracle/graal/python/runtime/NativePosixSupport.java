@@ -3700,7 +3700,7 @@ public final class NativePosixSupport extends PosixSupport {
     // CPython performs this mapping in PC/errmap.h:winerror_to_errno().
     private static int winapiErrorToErrno(int error) {
         WinAPIError winAPIError = WinAPIError.fromNumber(error);
-        return winAPIError == null ? error : winAPIError.getDefaultErrnoNumber();
+        return winAPIError == null ? OSErrorEnum.EINVAL.getNumber() : winAPIError.getDefaultErrnoNumber();
     }
 
     // CPython handles Winsock errors in PC/errmap.h:winerror_to_errno().
@@ -3712,12 +3712,37 @@ public final class NativePosixSupport extends PosixSupport {
     private enum WinAPIError {
         ERROR_FILE_NOT_FOUND(2, OSErrorEnum.ENOENT),
         ERROR_PATH_NOT_FOUND(3, OSErrorEnum.ENOENT),
+        ERROR_TOO_MANY_OPEN_FILES(4, OSErrorEnum.EMFILE),
         ERROR_ACCESS_DENIED(5, OSErrorEnum.EACCES),
+        ERROR_INVALID_HANDLE(6, OSErrorEnum.EBADF),
+        ERROR_INVALID_DRIVE(15, OSErrorEnum.ENOENT),
+        ERROR_CURRENT_DIRECTORY(16, OSErrorEnum.EACCES),
+        ERROR_NOT_SAME_DEVICE(17, OSErrorEnum.EXDEV),
+        ERROR_NO_MORE_FILES(18, OSErrorEnum.ENOENT),
+        ERROR_WRITE_PROTECT(19, OSErrorEnum.EACCES),
+        ERROR_NOT_READY(21, OSErrorEnum.EACCES),
+        ERROR_SHARING_VIOLATION(32, OSErrorEnum.EACCES),
+        ERROR_LOCK_VIOLATION(33, OSErrorEnum.EACCES),
+        ERROR_BAD_NETPATH(53, OSErrorEnum.ENOENT),
+        ERROR_NETWORK_ACCESS_DENIED(65, OSErrorEnum.EACCES),
+        ERROR_BAD_NET_NAME(67, OSErrorEnum.ENOENT),
+        ERROR_FILE_EXISTS(80, OSErrorEnum.EEXIST),
+        ERROR_CANNOT_MAKE(82, OSErrorEnum.EACCES),
         ERROR_INVALID_PARAMETER(87, OSErrorEnum.EINVAL),
+        ERROR_BROKEN_PIPE(109, OSErrorEnum.EPIPE),
+        ERROR_DISK_FULL(112, OSErrorEnum.ENOSPC),
         ERROR_INVALID_NAME(123, OSErrorEnum.EINVAL),
+        ERROR_DIR_NOT_EMPTY(145, OSErrorEnum.ENOTEMPTY),
+        ERROR_BAD_PATHNAME(161, OSErrorEnum.ENOENT),
+        ERROR_ALREADY_EXISTS(183, OSErrorEnum.EEXIST),
+        ERROR_FILENAME_EXCED_RANGE(206, OSErrorEnum.ENOENT),
+        ERROR_NO_DATA(232, OSErrorEnum.EPIPE),
+        WAIT_TIMEOUT(258, OSErrorEnum.ETIMEDOUT),
         ERROR_DIRECTORY(267, OSErrorEnum.ENOTDIR),
         ERROR_TOO_MANY_POSTS(298),
-        ERROR_NO_UNICODE_TRANSLATION(1113, OSErrorEnum.ENOENT);
+        ERROR_NO_UNICODE_TRANSLATION(1113, OSErrorEnum.ENOENT),
+        ERROR_PRIVILEGE_NOT_HELD(1314, OSErrorEnum.EINVAL),
+        ERROR_NOT_A_REPARSE_POINT(4390, OSErrorEnum.EINVAL);
 
         private final int number;
         private final OSErrorEnum defaultErrno;
