@@ -107,10 +107,14 @@ import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class ToNativeTypeNode {
 
-    private static long allocatePyAsyncMethods(TpSlots slots) {
-        long mem = CStructAccess.allocate(CStructs.PyAsyncMethods);
-        writeGroupSlots(CFields.PyTypeObject__tp_as_async, slots, mem);
-        return mem;
+    private static long initializeSlotGroup(TpSlots slots, boolean hasSlots, long typePointer, boolean heaptype,
+                    CFields heapField, CFields groupField, CStructs groupStruct) {
+        if (!heaptype && !hasSlots) {
+            return NULLPTR;
+        }
+        long groupPointer = heaptype ? typePointer + heapField.offset() : CStructAccess.allocate(groupStruct);
+        writeGroupSlots(groupField, slots, groupPointer);
+        return groupPointer;
     }
 
     private static void writeGroupSlots(CFields groupField, TpSlots slots, long groupPointer) {
@@ -119,24 +123,6 @@ public abstract class ToNativeTypeNode {
                 CStructAccess.writePtrField(groupPointer, def.getNativeField(), def.getNativeValue(slots, NULLPTR));
             }
         }
-    }
-
-    private static long allocatePyMappingMethods(TpSlots slots) {
-        long mem = CStructAccess.allocate(CStructs.PyMappingMethods);
-        writeGroupSlots(CFields.PyTypeObject__tp_as_mapping, slots, mem);
-        return mem;
-    }
-
-    private static long allocatePyNumberMethods(TpSlots slots) {
-        long mem = CStructAccess.allocate(CStructs.PyNumberMethods);
-        writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, mem);
-        return mem;
-    }
-
-    private static long allocatePySequenceMethods(TpSlots slots) {
-        long mem = CStructAccess.allocate(CStructs.PyNumberMethods);
-        writeGroupSlots(CFields.PyTypeObject__tp_as_sequence, slots, mem);
-        return mem;
     }
 
     private static long lookup(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
@@ -196,11 +182,25 @@ public abstract class ToNativeTypeNode {
         } else {
             weaklistoffset = lookupSize(clazz, PyTypeObject__tp_weaklistoffset, HiddenAttr.WEAKLISTOFFSET);
         }
-        long asAsync = slots.has_as_async() ? allocatePyAsyncMethods(slots) : NULLPTR;
-        long asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots) : NULLPTR;
-        long asSequence = slots.has_as_sequence() ? allocatePySequenceMethods(slots) : NULLPTR;
-        long asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots) : NULLPTR;
+        // Like CPython's type_new_alloc, every heap type owns all slot groups,
+        // even when empty. Extensions may populate the embedded structures.
+        long asAsync = initializeSlotGroup(slots, slots.has_as_async(), mem, heaptype,
+                        CFields.PyHeapTypeObject__as_async, CFields.PyTypeObject__tp_as_async, CStructs.PyAsyncMethods);
+        long asNumber = initializeSlotGroup(slots, slots.has_as_number(), mem, heaptype,
+                        CFields.PyHeapTypeObject__as_number, CFields.PyTypeObject__tp_as_number, CStructs.PyNumberMethods);
+        long asSequence = initializeSlotGroup(slots, slots.has_as_sequence(), mem, heaptype,
+                        CFields.PyHeapTypeObject__as_sequence, CFields.PyTypeObject__tp_as_sequence, CStructs.PySequenceMethods);
+        long asMapping = initializeSlotGroup(slots, slots.has_as_mapping(), mem, heaptype,
+                        CFields.PyHeapTypeObject__as_mapping, CFields.PyTypeObject__tp_as_mapping, CStructs.PyMappingMethods);
         long asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
+        if (heaptype) {
+            long heapBuffer = CStructAccess.getFieldPtr(mem, CFields.PyHeapTypeObject__as_buffer);
+            if (asBuffer != NULLPTR) {
+                writePtrField(heapBuffer, CFields.PyBufferProcs__bf_getbuffer, readPtrField(asBuffer, CFields.PyBufferProcs__bf_getbuffer));
+                writePtrField(heapBuffer, CFields.PyBufferProcs__bf_releasebuffer, readPtrField(asBuffer, CFields.PyBufferProcs__bf_releasebuffer));
+            }
+            asBuffer = heapBuffer;
+        }
         writeLongField(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
         writePtrField(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
         writeLongField(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
@@ -292,11 +292,6 @@ public abstract class ToNativeTypeNode {
 
         if (heaptype) {
             assert (flags & TypeFlags.HEAPTYPE) != 0;
-            writePtrField(mem, CFields.PyHeapTypeObject__as_async, asAsync);
-            writePtrField(mem, CFields.PyHeapTypeObject__as_number, asNumber);
-            writePtrField(mem, CFields.PyHeapTypeObject__as_mapping, asMapping);
-            writePtrField(mem, CFields.PyHeapTypeObject__as_sequence, asSequence);
-            writePtrField(mem, CFields.PyHeapTypeObject__as_buffer, asBuffer);
             writePtrField(mem, CFields.PyHeapTypeObject__ht_name, PythonToNativeInternalNode.executeNewRefUncached(clazz.getName()));
             writePtrField(mem, CFields.PyHeapTypeObject__ht_qualname, PythonToNativeInternalNode.executeNewRefUncached(clazz.getQualName()));
             writePtrField(mem, CFields.PyHeapTypeObject__ht_module, NULLPTR);
