@@ -47,7 +47,7 @@ local common = import "graal/ci/common.jsonnet";
             if !std.objectHas(b, "notify_groups") && std.objectHas(b, "targets") && (b.targets == ["gate"] || b.targets == ["post-merge"]) then
                 {}
             else
-                {notify_groups: ["tim.felgentreff@oracle.com"]}
+                {notify_groups: ["michael.simacek@oracle.com"]}
         )
         for b in builds
     ],
