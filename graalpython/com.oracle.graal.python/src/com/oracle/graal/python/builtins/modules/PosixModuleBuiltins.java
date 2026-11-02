@@ -373,10 +373,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             environ.setItem(key, val);
         }
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            // XXX: Until we fix pip
-            environ.setItem(toEnv(language, "PIP_NO_CACHE_DIR"), toEnv(language, "0"));
-        }
         // XXX: Until a pyo3 version that doesn't have a different maximum version for GraalPy than
         // CPython gets widespread
         environ.setItem(toEnv(language, "UNSAFE_PYO3_SKIP_VERSION_CHECK"), toEnv(language, "1"));
