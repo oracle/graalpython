@@ -211,6 +211,20 @@ ExceptionSubclass = CPyExtType(
 
 
 class TestPyErr(CPyExtTestCase):
+    if sys.platform == 'win32':
+        test_PyExc_WindowsError = CPyExtFunction(
+            lambda args: OSError,
+            lambda: ((),),
+            code="""PyObject* get_PyExc_WindowsError(void) {
+                return Py_NewRef(PyExc_WindowsError);
+            }
+            """,
+            resultspec='O',
+            argspec='',
+            arguments=[],
+            callfunction='get_PyExc_WindowsError',
+        )
+
 
     test_PyErr_SetString = CPyExtFunctionVoid(
         _reference_setstring,
