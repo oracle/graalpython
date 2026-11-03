@@ -2306,7 +2306,6 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
-    @TruffleBoundary
     @SuppressWarnings("static-method")
     public byte mmapReadByte(Object mmap, long index) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2318,7 +2317,6 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
-    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapWriteByte(Object mmap, long index, byte value) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2327,7 +2325,6 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
-    @TruffleBoundary
     @SuppressWarnings("static-method")
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2337,7 +2334,6 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
-    @TruffleBoundary
     @SuppressWarnings("static-method")
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
@@ -2368,7 +2364,6 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @Override
-    @TruffleBoundary
     @SuppressWarnings("static-method")
     public long mmapGetPointer(Object mmap) {
         MMapHandle handle = (MMapHandle) mmap;
