@@ -142,11 +142,11 @@ public abstract class CallBinaryMethodNode extends AbstractCallMethodNode {
     }
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "hasSimpleSignature(cachedFunc, 2)", "func == cachedFunc"}, excludeForUncached = true, //
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 2)", "isSameFunction(func, cachedFunc)"}, excludeForUncached = true, //
                     assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction func, Object arg1, Object arg2,
+    public static Object callPFunction(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2,
                     @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached(value = "func", weak = true) PFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached(value = "asFunction(func)", weak = true) PFunction cachedFunc,
                     @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
                     @Exclusive @Cached FunctionDirectInvokeNode invokeNode) {
         Object[] args = PArguments.create(2);

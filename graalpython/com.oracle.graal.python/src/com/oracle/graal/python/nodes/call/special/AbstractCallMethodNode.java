@@ -140,6 +140,15 @@ public abstract class AbstractCallMethodNode extends Node {
         return true;
     }
 
+    // The cached function's identity implies its type; only check the type when caching it.
+    public static PFunction asFunction(Object func) {
+        return func instanceof PFunction function ? function : null;
+    }
+
+    public static boolean isSameFunction(Object func, PFunction cachedFunc) {
+        return func == cachedFunc;
+    }
+
     @Idempotent
     public static boolean hasSimpleSignature(PFunction fun, int positionalArgCount) {
         // TODO: GR-78023 make LoadVariableArguments and LoadKeywordArguments check argument array bounds,
