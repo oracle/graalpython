@@ -43,12 +43,14 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.annotations.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Int;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyFrameObject;
+import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -59,10 +61,13 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.lib.PyTraceBackPrint;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,6 +75,22 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextTracebackBuiltins {
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct, retConversion = int.class, argConversions = {NativeToPythonNode.class, NativeToPythonNode.class})
+    abstract static class PyTraceBack_Print extends CApiBinaryBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static int print(Object traceback, Object file,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
+                        @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode) {
+            if (traceback != PNone.NO_VALUE) {
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, context.getSysModule(), file, traceback, false, false, 0, null);
+            }
+            return 0;
+        }
+    }
 
     @CApiBuiltin(ret = Void, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct, retConversion = void.class, argConversions = {CharPtrToPythonNode.class,
                     CharPtrToPythonNode.class, int.class})

@@ -67,6 +67,7 @@ test.test_socket.GeneralModuleTests.testIPv6toString @ darwin-arm64,linux-aarch6
 test.test_socket.GeneralModuleTests.testInterpreterCrash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testNewAttributes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testNtoH @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_socket.GeneralModuleTests.testNtoHErrors @ linux-x86_64
 test.test_socket.GeneralModuleTests.testRefCountGetNameInfo @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testSendAfterClose @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testSendtoErrors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

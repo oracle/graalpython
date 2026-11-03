@@ -83,7 +83,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
-import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -141,11 +140,10 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -527,22 +525,28 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_FindChar extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction > 0"})
-        static long find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
+        static long find(Object string, int c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached FindNode findNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
+            if (c < 0 || c > Character.MAX_CODE_POINT) {
+                return -1;
+            }
             return (Integer) findNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static long find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
+        static long find(Object string, int c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached RFindNode rFindNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
+            if (c < 0 || c > Character.MAX_CODE_POINT) {
+                return -1;
+            }
             return (Integer) rFindNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
@@ -733,32 +737,22 @@ public final class PythonCextUnicodeBuiltins {
                     NativeToPythonNode.class, long.class, long.class, int.class})
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Tailmatch extends CApi5BuiltinNode {
-        @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Shared @Cached PySliceNew sliceNode,
-                        @Shared @Cached CallNode callNode,
-                        @Cached EndsWithNode endsWith,
+        @Specialization(guards = {"direction > 0", "isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
+        static long tailmatchEnd(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Exclusive @Cached PrefixSuffixNode endsWith,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
-            Object slice = callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
-            return (boolean) endsWith.execute(null, slice, substring, start, end) ? 1 : 0;
+            return endsWith.endsWith(string, substring, castLong(start), castLong(end)) ? 1 : 0;
         }
 
-        @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Shared @Cached PySliceNew sliceNode,
-                        @Shared @Cached CallNode callNode,
-                        @Cached StartsWithNode startsWith,
+        @Specialization(guards = {"direction <= 0", "isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
+        static long tailmatchStart(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Exclusive @Cached PrefixSuffixNode startsWith,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
-            Object slice = callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
-            return (boolean) startsWith.execute(null, slice, substring, start, end) ? 1 : 0;
+            return startsWith.startsWith(string, substring, castLong(start), castLong(end)) ? 1 : 0;
         }
 
         @SuppressWarnings("unused")
@@ -795,36 +789,11 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
                     NativeToPythonNode.class, NativeToPythonNode.class, long.class})
-    @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Replace extends CApiQuaternaryBuiltinNode {
-        @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
+        @Specialization
         static Object replace(Object s, Object substr, Object replstr, long count,
-                        @Shared @Cached ReplaceNode replaceNode) {
-            return replaceNode.execute(null, s, substr, replstr, count);
-        }
-
-        @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
-                        "isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)",
-                        "isStringSubtype(inliningTarget, substr, getClassNode, isSubtypeNode)",
-                        "isStringSubtype(inliningTarget, replstr, getClassNode, isSubtypeNode)"})
-        static Object replace(Object s, Object substr, Object replstr, long count,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Shared @Cached ReplaceNode replaceNode,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return replace(s, substr, replstr, count, replaceNode);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
-                        "!isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)",
-                        "!isStringSubtype(inliningTarget, substr, getClassNode, isSubtypeNode)",
-                        "!isStringSubtype(inliningTarget, replstr, getClassNode, isSubtypeNode)"})
-        static Object replace(Object s, Object substr, Object replstr, long count,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return NATIVE_NULL;
+                        @Cached ReplaceNode replaceNode) {
+            return replaceNode.execute(null, s, substr, replstr, castLong(count));
         }
     }
 
@@ -1055,9 +1024,19 @@ public final class PythonCextUnicodeBuiltins {
                     NativeToPythonNode.class, long.class})
     abstract static class PyUnicode_Split extends CApiTernaryBuiltinNode {
         @Specialization
-        static Object split(Object string, Object sep, Object maxsplit,
+        static Object split(Object string, Object sep, long maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode) {
-            return splitNode.execute(null, string, sep, maxsplit);
+            return splitNode.execute(null, string, sep, castLong(maxsplit));
+        }
+    }
+
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject, Py_ssize_t}, call = Direct, retConversion = PythonToNativeNewRefNode.class, argConversions = {NativeToPythonNode.class,
+                    NativeToPythonNode.class, long.class})
+    abstract static class PyUnicode_RSplit extends CApiTernaryBuiltinNode {
+        @Specialization
+        static Object split(Object string, Object sep, long maxsplit,
+                        @Cached StringBuiltins.RSplitNode splitNode) {
+            return splitNode.execute(null, string, sep, castLong(maxsplit));
         }
     }
 
@@ -1175,9 +1154,16 @@ public final class PythonCextUnicodeBuiltins {
         Object doInt(long arr, long size,
                         @Bind Node inliningTarget,
                         @Cached ReadUnicodeArrayNode readArray,
-                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
+                        @Cached TruffleString.FromIntArrayUTF32Node fromArray,
+                        @Cached PRaiseNode raiseNode) {
+            if ((arr == NULLPTR && size != 0) || size < -1) {
+                throw raiseNode.raiseBadInternalCall(inliningTarget);
+            }
+            if (size > Integer.MAX_VALUE / Integer.BYTES) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            return PFactory.createString(PythonLanguage.get(inliningTarget), fromArray.execute(readArray.execute(inliningTarget, arr, castToInt(size), CStructs.wchar_t.size())));
+            return PFactory.createString(PythonLanguage.get(inliningTarget), fromArray.execute(readArray.execute(inliningTarget, arr, (int) size, CStructs.wchar_t.size())));
         }
     }
 

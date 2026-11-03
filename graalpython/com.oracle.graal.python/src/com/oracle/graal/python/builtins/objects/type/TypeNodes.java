@@ -164,6 +164,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSi
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetIndexedSlotsCountNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetQualNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTpNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
@@ -608,6 +609,15 @@ public abstract class TypeNodes {
     public abstract static class GetQualNameNode extends Node {
         public abstract TruffleString execute(Node inliningTarget, Object type);
 
+        public static TruffleString executeUncached(Object type) {
+            return GetQualNameNodeGen.getUncached().execute(null, type);
+        }
+
+        @Specialization
+        static TruffleString getQualName(PythonBuiltinClassType clazz) {
+            return clazz.getName();
+        }
+
         @Specialization
         static TruffleString getQualName(PythonManagedClass clazz) {
             return clazz.getQualName();
@@ -617,7 +627,7 @@ public abstract class TypeNodes {
         static TruffleString getQualName(Node inliningTarget, PythonAbstractNativeObject clazz,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Cached(inline = false) CStructAccess.ReadObjectNode readObjectNode,
-                        @Cached(inline = false) CStructAccess.ReadCharPtrNode readCharPtrNode,
+                        @Cached GetNameNode getNameNode,
                         @Cached CastToTruffleStringNode cast) {
             assert IsTypeNode.executeUncached(clazz);
             long flags = getTypeFlagsNode.execute(clazz);
@@ -629,7 +639,7 @@ public abstract class TypeNodes {
                     throw CompilerDirectives.shouldNotReachHere("Cannot cast ht_qualname to string");
                 }
             } else {
-                return readCharPtrNode.readFromObj(clazz, PyTypeObject__tp_name);
+                return getNameNode.execute(inliningTarget, clazz);
             }
         }
     }

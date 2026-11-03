@@ -94,6 +94,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P = tsLiteral("argument should be bytes, buffer or ASCII string, not '%p'");
     public static final TruffleString ARRAY_ASSIGN_OUT_OF_BOUNDS = tsLiteral("array assignment index out of range");
     public static final TruffleString ARRAY_OUT_OF_BOUNDS = tsLiteral("array index out of range");
+    public static final TruffleString ARRAY_BUFFER_NULL_VIEW = tsLiteral("array_buffer_getbuf: view==NULL argument is obsolete");
     public static final TruffleString ARRAY_INDICES_MUST_BE_INTS = tsLiteral("array indices must be integers");
     public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
     public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
@@ -867,7 +868,7 @@ public abstract class ErrorMessages {
     public static final TruffleString RES_O_O_RANGE = tsLiteral("%s result out of range");
     public static final TruffleString FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = tsLiteral("float too large to pack with %s format");
     public static final TruffleString CANNOT_UNPACK_NON_ITERABLE = tsLiteral("cannot unpack non-iterable %p object");
-    public static final TruffleString NTOH_PYTHON_STRING_TOO_LARGE_TO_CONVERT = tsLiteral("ntohs: Python int too large to convert to 16-bit unsigned integer (The silent truncation is deprecated)");
+    public static final TruffleString NTOHS_PYTHON_INT_TOO_LARGE_TO_CONVERT = tsLiteral("ntohs: Python int too large to convert to C 16-bit unsigned integer");
     public static final TruffleString ARG_1_MUST_BE_UNICODE_NOT_P = tsLiteral("array() argument 1 must be a unicode character, not %p");
     public static final TruffleString LINE_BUFFERING_ISNT_SUPPORTED = tsLiteral("line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used");
     public static final TruffleString UNCLOSED_FILE = tsLiteral("unclosed file %r");

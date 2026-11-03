@@ -79,6 +79,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -125,6 +126,10 @@ public abstract class PyTraceBackPrint {
     }
 
     public static void fileWriteString(VirtualFrame frame, Node inliningTarget, Object file, TruffleString data, PyObjectGetAttr getAttr, CallNode callNode) {
+        if (file == PNone.NO_VALUE) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.getUncached().raiseBadInternalCall(inliningTarget);
+        }
         final Object writeMethod = getAttr.execute(frame, inliningTarget, file, T_WRITE);
         callNode.execute(frame, writeMethod, data);
     }

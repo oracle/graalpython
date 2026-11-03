@@ -46,6 +46,7 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.PY_BUFFER_PTR;
 import static com.oracle.graal.python.annotations.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -70,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -122,6 +124,9 @@ public final class PythonCextArrayBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, PY_BUFFER_PTR, Int}, call = Ignored, retConversion = int.class, argConversions = {long.class, long.class, int.class})
     static int GraalPyPrivate_Array_getbuffer(long arrayPtr, long pyBufferPtr, int flags) {
+        if (pyBufferPtr == NULLPTR) {
+            throw PRaiseNode.raiseStatic(null, BufferError, ErrorMessages.ARRAY_BUFFER_NULL_VIEW);
+        }
         PArray array = expectArray(arrayPtr, "GraalPyPrivate_Array_getbuffer");
         long bufPtr = ArrayNodes.EnsureNativeStorageNode.executeUncached(array).getPtr();
         writePtrField(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);
