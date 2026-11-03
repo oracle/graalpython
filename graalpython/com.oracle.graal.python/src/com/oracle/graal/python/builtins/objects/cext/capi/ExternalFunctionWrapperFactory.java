@@ -65,7 +65,7 @@ final class ExternalFunctionWrapperFactory implements NodeFactory<WrapperBase> {
                     Supplier<? extends WrapperBase> constructor) {
         this.nodeClass = nodeClass;
         this.signature = signature;
-        this.builtin = new NamedBuiltin(name.toJavaStringUncached(), WrapperBase.class.getAnnotation(Builtin.class));
+        this.builtin = new WrapperBuiltin(name.toJavaStringUncached());
         this.constructor = constructor;
     }
 
@@ -97,12 +97,8 @@ final class ExternalFunctionWrapperFactory implements NodeFactory<WrapperBase> {
         return List.of();
     }
 
-    /** Give the common wrapper metadata the enclosing root's runtime name. */
-    private record NamedBuiltin(String name, Builtin annotation) implements Builtin {
-        NamedBuiltin {
-            assert annotation != null;
-        }
-
+    /** Builtin metadata for native wrappers, whose argument layout is defined by the signature. */
+    private record WrapperBuiltin(String name) implements Builtin {
         @Override
         public Class<? extends Annotation> annotationType() {
             return Builtin.class;
@@ -110,102 +106,102 @@ final class ExternalFunctionWrapperFactory implements NodeFactory<WrapperBase> {
 
         @Override
         public String doc() {
-            return annotation.doc();
+            return "";
         }
 
         @Override
         public PythonOS os() {
-            return annotation.os();
+            return PythonOS.PLATFORM_ANY;
         }
 
         @Override
         public int minNumOfPositionalArgs() {
-            return annotation.minNumOfPositionalArgs();
+            return 0;
         }
 
         @Override
         public int maxNumOfPositionalArgs() {
-            return annotation.maxNumOfPositionalArgs();
+            return -1;
         }
 
         @Override
         public int numOfPositionalOnlyArgs() {
-            return annotation.numOfPositionalOnlyArgs();
+            return -1;
         }
 
         @Override
         public boolean isGetter() {
-            return annotation.isGetter();
+            return false;
         }
 
         @Override
         public boolean isSetter() {
-            return annotation.isSetter();
+            return false;
         }
 
         @Override
         public boolean allowsDelete() {
-            return annotation.allowsDelete();
+            return false;
         }
 
         @Override
         public boolean takesVarArgs() {
-            return annotation.takesVarArgs();
+            return false;
         }
 
         @Override
         public boolean takesVarKeywordArgs() {
-            return annotation.takesVarKeywordArgs();
+            return false;
         }
 
         @Override
         public String[] parameterNames() {
-            return annotation.parameterNames();
+            return new String[0];
         }
 
         @Override
         public String[] keywordOnlyNames() {
-            return annotation.keywordOnlyNames();
+            return new String[0];
         }
 
         @Override
         public boolean isClassmethod() {
-            return annotation.isClassmethod();
+            return false;
         }
 
         @Override
         public boolean isStaticmethod() {
-            return annotation.isStaticmethod();
+            return false;
         }
 
         @Override
         public boolean needsFrame() {
-            return annotation.needsFrame();
+            return true;
         }
 
         @Override
         public int callerFlags() {
-            return annotation.callerFlags();
+            return 0;
         }
 
         @Override
         public boolean declaresExplicitSelf() {
-            return annotation.declaresExplicitSelf();
+            return true;
         }
 
         @Override
         public String raiseErrorName() {
-            return annotation.raiseErrorName();
+            return "";
         }
 
         @Override
         public boolean forceSplitDirectCalls() {
-            return annotation.forceSplitDirectCalls();
+            return false;
         }
 
         @Override
         public boolean autoRegister() {
-            return annotation.autoRegister();
+            return false;
         }
     }
 }
