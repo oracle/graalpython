@@ -64,6 +64,7 @@ CARGO_PATCHES_SUBDIR = 'crates'
 VERSION_PARAMETER = '<version>'
 DEFAULT_PATCHES_URL = f'https://raw.githubusercontent.com/oracle/graalpython/refs/heads/github/patches/{VERSION_PARAMETER}/graalpython/lib-graalpython/patches/'
 
+OVERRIDES_PATCHES_URL = 'PIP_GRAALPY_PATCHES_URL' in os.environ
 PATCHES_URL = os.environ.get('PIP_GRAALPY_PATCHES_URL', DEFAULT_PATCHES_URL)
 DISABLED_PATCHES_URL = 'disabled'
 DISABLE_PATCHING = os.environ.get('PIP_GRAALPY_DISABLE_PATCHING', '').lower() in ('true', '1')
@@ -216,6 +217,8 @@ class RemotePatchRepository(AbstractPatchRepository):
             if not response.encoding:
                 response.encoding = 'utf-8'
             metadata_content = response.text
+        except RepositoryNotFound:
+            raise
         except Exception as e:
             raise RepositoryException(f"'{METADATA_FILENAME}' cannot be retrieved': {e}")
         return cls(patches_url, cls.metadata_from_string(metadata_content))
@@ -272,7 +275,7 @@ def create_patch_repository(patches_url, default_patches_path=DEFAULT_PATCHES_PA
         try:
             return repository_from_url_or_path(patches_url)
         except RepositoryException as e:
-            if patches_url == DEFAULT_PATCHES_URL and isinstance(e, RepositoryNotFound):
+            if not OVERRIDES_PATCHES_URL and isinstance(e, RepositoryNotFound):
                 logger.info("No post-release patch repository published yet")
             else:
                 logger.warning("Failed to load GraalPy patch repository: %s", e)
