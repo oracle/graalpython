@@ -71,7 +71,7 @@ JOB_EXCLUSION_TERMS = (
 )
 
 DOWNLOADS_LINKS = {
-    "GRADLE_JAVA_HOME": "https://download.oracle.com/java/{major_version}/latest/jdk-{major_version}_{os}-{arch_short}_bin{ext}",
+    "GRADLE_JAVA_HOME": "https://download.oracle.com/java/{major_version}/archive/jdk-{version}_{os}-{arch_short}_bin{ext}",
     "ECLIPSE": "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.26-202211231800/eclipse-SDK-4.26-linux-gtk-x86_64.tar.gz"
 }
 
@@ -220,6 +220,7 @@ class Job:
 
         vars = {
             "major_version": major_version,
+            "version": version,
             "os": os,
             "arch": arch,
             "arch_short": arch_short,

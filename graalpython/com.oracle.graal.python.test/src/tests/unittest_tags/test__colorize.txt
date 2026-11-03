@@ -1,3 +1,4 @@
-test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_environment_variables @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_std_streams @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_environment_variables @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_for_std_streams @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test__colorize.TestColorizeFunction.test_colorized_detection_checks_on_windows @ win32-AMD64

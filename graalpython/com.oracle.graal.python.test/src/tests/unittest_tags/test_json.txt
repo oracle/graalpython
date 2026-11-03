@@ -107,15 +107,17 @@ test.test_json.test_pass3.TestCPass3.test_parse @ darwin-arm64,linux-aarch64,lin
 test.test_json.test_pass3.TestPyPass3.test_parse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_recursion.TestCRecursion.test_defaultrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_recursion.TestCRecursion.test_dictrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_json.test_recursion.TestCRecursion.test_endless_recursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_decoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+# Relies on recusrion limit
+!test.test_json.test_recursion.TestCRecursion.test_endless_recursion
+!test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_decoding
+!test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_encoding
 test.test_json.test_recursion.TestCRecursion.test_listrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_recursion.TestPyRecursion.test_defaultrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_recursion.TestPyRecursion.test_dictrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_json.test_recursion.TestPyRecursion.test_endless_recursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_decoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+# Relies on recusrion limit
+!test.test_json.test_recursion.TestPyRecursion.test_endless_recursion
+!test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_decoding
+!test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_encoding
 test.test_json.test_recursion.TestPyRecursion.test_listrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_scanstring.TestCScanstring.test_bad_escapes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_scanstring.TestCScanstring.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

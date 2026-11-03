@@ -15,7 +15,6 @@ repos:
         - githubissue
         - no-backport
 users:
-  timfel: tim.felgentreff@oracle.com
   msimacek: michael.simacek@oracle.com
   fangerer: florian.angerer@oracle.com
   steve-s: stepan.sindelar@oracle.com

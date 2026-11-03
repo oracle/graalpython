@@ -2487,6 +2487,11 @@ public class PPickler extends PythonBuiltinObject {
                 profileSeen(SEEN_BOOLEAN);
                 saveBool(pickler, proto, value);
                 return;
+            } else if (obj instanceof PInt value && value.getPythonClass() == PythonBuiltinClassType.Boolean) {
+                // Native containers can contain boxed boolean singletons.
+                profileSeen(SEEN_BOOLEAN);
+                saveBool(pickler, proto, !value.isZero());
+                return;
             } else if (obj instanceof Integer value) {
                 profileSeen(SEEN_INTEGER);
                 saveLong(pickler, proto, value);

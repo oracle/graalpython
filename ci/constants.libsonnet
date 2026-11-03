@@ -33,7 +33,7 @@
         gate: common.frequencies.gate.targets,
     },
 
-    NOTIFY_GROUPS:: ["tim.felgentreff@oracle.com"],
+    NOTIFY_GROUPS:: ["michael.simacek@oracle.com"],
 
     local ENV = {
         graalpy_svm_ee: ["--env", "native-ee"],

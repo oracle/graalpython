@@ -302,6 +302,11 @@ class ParseTest(unittest.TestCase):
         'koi8-r', 'koi8-t', 'koi8-u', 'kz1048', 'ptcp154',
     ])
     def test_supported_encodings(self, encoding):
+        if (_is_graalpy_java_pyexpat_backend() and encoding in (
+                'iso8859-10', 'iso8859-14', 'iso8859-16', 'cp720', 'cp1125',
+                'mac-cyrillic', 'mac-greek', 'mac-iceland', 'mac-latin2',
+                'mac-roman', 'mac-turkish', 'koi8-t', 'kz1048', 'ptcp154')):
+            self.skipTest("Java pyexpat backend does not yet use Python's unknown-encoding handler")
         out = self.Outputter()
         parser = expat.ParserCreate()
         self._hookup_callbacks(parser, out)
