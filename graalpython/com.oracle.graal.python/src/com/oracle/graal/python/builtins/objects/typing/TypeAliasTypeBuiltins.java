@@ -47,7 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes.UnionTypeOrNode;
 import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltinsClinicProviders.TypeAliasTypeNodeClinicProviderGen;
-import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -195,7 +195,6 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode) {
             assert self.computeValue != null;
             self.value = callNode.execute(frame, self.computeValue);
-            self.computeValue = null;
             return self.value;
         }
     }
@@ -211,9 +210,9 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.module == null", "self.computeValue != null"})
         static Object doComputed(VirtualFrame frame, PTypeAliasType self,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectGetItem getItemNode) {
-            if (self.computeValue instanceof PFunction fun && fun.getGlobals() != null) {
-                return getItemNode.execute(frame, inliningTarget, fun.getGlobals(), T___NAME__);
+                        @Cached PyObjectGetAttr getAttrNode) {
+            if (self.computeValue instanceof PFunction fun) {
+                return getAttrNode.execute(frame, inliningTarget, fun, T___MODULE__);
             }
             return PNone.NONE;
         }

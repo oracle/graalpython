@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+from textwrap import dedent
 from unittest import skipIf
 
 
@@ -577,3 +578,41 @@ def test_class_static_attributes_nested_classes():
 
     assert Outer.__static_attributes__ == ("outer",)
     assert Outer.Inner.__static_attributes__ == ("inner",)
+
+
+def test_type_alias_module_without_name():
+    namespace = {}
+    exec("type Alias = int", namespace)
+    assert namespace["Alias"].__module__ is None
+
+
+def test_type_alias_module_with_name():
+    namespace = {"__name__": "alias_module"}
+    exec("type Alias = int", namespace)
+    assert namespace["Alias"].__module__ == "alias_module"
+
+
+def test_type_alias_module_after_value_evaluation():
+    for module_name in (None, "alias_module"):
+        for read_module_first in (False, True):
+            namespace = {} if module_name is None else {"__name__": module_name}
+            exec("type Alias = int", namespace)
+            alias = namespace["Alias"]
+            if read_module_first:
+                assert alias.__module__ == module_name
+            assert alias.__value__ is int
+            assert alias.__module__ == module_name
+
+
+def test_type_alias_dataclass_without_module_name():
+    namespace = {}
+    exec(dedent("""
+        from dataclasses import dataclass
+        type Alias = int
+        @dataclass
+        class Example:
+            value: Alias
+    """), namespace)
+    cls = namespace["Example"]
+    assert cls(42).value == 42
+    assert cls.__doc__ == "Example(value: Alias)"
