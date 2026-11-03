@@ -1689,15 +1689,16 @@ def graalpytest(args):
     python_binary = args.python
     if not python_binary:
         is_graalpy = True
-        python_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins", *python_args]
         if args.svm:
             python_binary = graalpy_standalone_native()
     elif 'graalpy' in os.path.basename(python_binary) or 'mxbuild' in python_binary:
         is_graalpy = True
+    if is_graalpy:
         gp_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         if env.get("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != "true":
             gp_args += ["--vm.ea", "--vm.esa", "--vm.Dpython.DetailedAsserts=true"]
-        mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
+        if args.python:
+            mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args = [*gp_args, *python_args]
     runner_args.append(f'--subprocess-args={shlex.join(arg for arg in python_args if arg != "-repeated-run")}')
     if is_graalpy:

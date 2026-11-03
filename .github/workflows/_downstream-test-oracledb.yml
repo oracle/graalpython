@@ -101,7 +101,7 @@ jobs:
     needs: build-numpy-wheels
     runs-on: ubuntu-latest
     env:
-      PACKAGES_TO_BUILD: pyarrow==20.0.0
+      PACKAGES_TO_BUILD: pyarrow==24.0.0
       PIP_FIND_LINKS: ${{ github.workspace }}/dependency-wheels
       PIP_PREFER_BINARY: "1"
     steps:
