@@ -252,7 +252,7 @@ Add the plugin configuration to your _build.gradle_ file:
 
 ```groovy
 plugins {
-    id 'org.graalvm.python' version '25.3.4.1'
+    id 'org.graalvm.python' version '25.5.5.0.3'
 }
 
 graalPy {

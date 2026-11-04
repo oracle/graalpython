@@ -63,20 +63,20 @@ Refer to our [embedding documentation](https://www.graalvm.org/latest/reference-
   <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>polyglot</artifactId>
-      <version>25.3.4.1</version>
+      <version>25.5.5.0.3</version>
   </dependency>
   <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>python</artifactId>
-      <version>25.3.4.1</version>
+      <version>25.5.5.0.3</version>
       <type>pom</type>
   </dependency>
   ```
 
 * Gradle
   ```kotlin
-  implementation("org.graalvm.polyglot:polyglot:25.3.4.1")
-  implementation("org.graalvm.python:python-embedding:25.3.4.1")
+  implementation("org.graalvm.polyglot:polyglot:25.5.5.0.3")
+  implementation("org.graalvm.python:python-embedding:25.5.5.0.3")
   ```
 
 </details>
@@ -93,8 +93,8 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 
 **Quick Installation:**
 
-- **Linux/macOS**: `pyenv install graalpy3.13-25.3.4.1 && pyenv shell graalpy3.13-25.3.4.1`
-- **Windows**: `pyenv install graalpy3.13-25.3.4.1-windows-amd64`
+- **Linux/macOS**: `pyenv install graalpy3.13-25.5.5 && pyenv shell graalpy3.13-25.5.5`
+- **Windows**: `pyenv install graalpy3.13-25.5.5-windows-amd64`
 - **Manual**: Download from [GitHub releases](https://github.com/oracle/graalpython/releases)
 
 **See the [complete installation guide](docs/user/Standalone-Getting-Started.md) for detailed instructions.**

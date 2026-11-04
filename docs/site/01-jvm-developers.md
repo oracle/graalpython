@@ -80,12 +80,12 @@ audience_identifier: jvm
   <dependency>
     <groupId>org.graalvm.polyglot</groupId>
     <artifactId>polyglot</artifactId>
-    <version>{{ site.language_version }}</version>
+    <version>{{ site.maven_version }}</version>
   </dependency>
   <dependency>
     <groupId>org.graalvm.polyglot</groupId>
     <artifactId>python</artifactId>
-    <version>{{ site.language_version }}</version>
+    <version>{{ site.maven_version }}</version>
     <type>pom</type>
   </dependency>
 </dependencies>
@@ -115,8 +115,8 @@ try (Context context = Context.newBuilder().build()) {
                 <div class="languages__snippet">
 {%- highlight groovy -%}
 dependencies {
-    implementation("org.graalvm.polyglot:polyglot:{{ site.language_version }}")
-    implementation("org.graalvm.polyglot:python:{{ site.language_version }}")
+    implementation("org.graalvm.polyglot:polyglot:{{ site.maven_version }}")
+    implementation("org.graalvm.polyglot:python:{{ site.maven_version }}")
 }
 {%- endhighlight -%}
                   <div class="snippet-badge" role="img" aria-label="Gradle snippet">
@@ -162,7 +162,7 @@ try (Context context = Context.newBuilder().build()) {
   <dependency>
     <groupId>org.graalvm.python</groupId>
     <artifactId>python-embedding</artifactId>
-    <version>{{ site.language_version }}</version>
+    <version>{{ site.maven_version }}</version>
   </dependency>
 </dependencies>
 <build>
@@ -170,7 +170,7 @@ try (Context context = Context.newBuilder().build()) {
     <plugin>
       <groupId>org.graalvm.python</groupId>
       <artifactId>graalpy-maven-plugin</artifactId>
-      <version>{{ site.language_version }}</version>
+      <version>{{ site.maven_version }}</version>
       <executions>
         <execution>
           <configuration>
@@ -217,11 +217,11 @@ try (Context context = GraalPyResources.contextBuilder().build()) {
                 <div class="languages__snippet">
 {%- highlight groovy -%}
 plugins {
-    id "org.graalvm.python" version "{{ site.language_version}}"
+    id "org.graalvm.python" version "{{ site.maven_version}}"
 }
 
 dependencies {
-    implementation("org.graalvm.python:python-embedding:{{ site.language_version }}")
+    implementation("org.graalvm.python:python-embedding:{{ site.maven_version }}")
 }
 
 graalPy {
