@@ -48,20 +48,20 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethodRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcall;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywords;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywords;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethod;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargs;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethO;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargs;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -116,39 +116,28 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(MethodDescriptorWrapper.class);
 
     @TruffleBoundary
-    static PRootNode getOrCreateRootNode(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
-        Class<? extends PRootNode> nodeKlass;
-        Function<PythonLanguage, PRootNode> rootNodeFunction = switch (sig) {
-            case KEYWORDS -> {
-                nodeKlass = MethKeywordsRoot.class;
-                yield l -> new MethKeywordsRoot(l, name, isStatic, sig);
-            }
-            case VARARGS -> {
-                nodeKlass = MethVarargsRoot.class;
-                yield (l -> new MethVarargsRoot(l, name, isStatic, sig));
-            }
-            case NOARGS -> {
-                nodeKlass = MethNoargsRoot.class;
-                yield (l -> new MethNoargsRoot(l, name, isStatic, sig));
-            }
-            case O -> {
-                nodeKlass = MethORoot.class;
-                yield (l -> new MethORoot(l, name, isStatic, sig));
-            }
-            case FASTCALL -> {
-                nodeKlass = MethFastcallRoot.class;
-                yield (l -> new MethFastcallRoot(l, name, isStatic, sig));
-            }
-            case FASTCALL_WITH_KEYWORDS -> {
-                nodeKlass = MethFastcallWithKeywordsRoot.class;
-                yield (l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig));
-            }
-            case METHOD -> {
-                nodeKlass = MethMethodRoot.class;
-                yield (l -> new MethMethodRoot(l, name, isStatic, sig));
-            }
+    static BuiltinFunctionRootNode getOrCreateRootNode(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
+        ExternalFunctionWrapperFactory factory = createFactory(sig, name, isStatic);
+        return language.createCachedExternalFunWrapperRootNode(factory::createRoot, factory.getNodeClass(), sig, name, true, isStatic);
+    }
+
+    static ExternalFunctionWrapperFactory createFactory(MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
+        return switch (sig) {
+            case KEYWORDS -> new ExternalFunctionWrapperFactory(MethKeywords.class, MethKeywords.SIGNATURE, name,
+                            () -> new MethKeywords(name, isStatic, sig));
+            case VARARGS -> new ExternalFunctionWrapperFactory(MethVarargs.class, MethVarargs.SIGNATURE, name,
+                            () -> new MethVarargs(name, isStatic, sig));
+            case NOARGS -> new ExternalFunctionWrapperFactory(MethNoargs.class, MethNoargs.SIGNATURE, name,
+                            () -> new MethNoargs(name, isStatic, sig));
+            case O -> new ExternalFunctionWrapperFactory(MethO.class, MethO.SIGNATURE, name,
+                            () -> new MethO(name, isStatic, sig));
+            case FASTCALL -> new ExternalFunctionWrapperFactory(MethFastcall.class, MethFastcall.SIGNATURE, name,
+                            () -> new MethFastcall(name, isStatic, sig));
+            case FASTCALL_WITH_KEYWORDS -> new ExternalFunctionWrapperFactory(MethFastcallWithKeywords.class, MethFastcallWithKeywords.SIGNATURE, name,
+                            () -> new MethFastcallWithKeywords(name, isStatic, sig));
+            case METHOD -> new ExternalFunctionWrapperFactory(MethMethod.class, MethMethod.SIGNATURE, name,
+                            () -> new MethMethod(name, isStatic, sig));
         };
-        return language.createCachedExternalFunWrapperRootNode(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
     }
 
     /**
@@ -171,7 +160,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
             return null;
         }
 
-        PRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, PyMethodFlags.isMethStatic(flags));
+        BuiltinFunctionRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, PyMethodFlags.isMethStatic(flags));
 
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.bindFunctionPointer(callable, methodDescriptorWrapper));
 

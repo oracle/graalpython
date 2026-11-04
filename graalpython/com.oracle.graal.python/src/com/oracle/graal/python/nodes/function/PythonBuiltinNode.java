@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,6 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild(value = "arguments", type = ReadArgumentNode[].class)
-public abstract class PythonBuiltinNode extends PythonBuiltinBaseNode {
+public abstract class PythonBuiltinNode extends PythonBuiltinFrameArgsNode {
     public abstract Object execute(VirtualFrame frame);
 }

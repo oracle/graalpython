@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionDirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.ForceQuickening;
@@ -67,7 +68,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
@@ -97,7 +97,7 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
     @Specialization(guards = {"func.getFunctionRootNode() == rootNode", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     public static Object doBuiltinFunctionCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached(value = "func.getFunctionRootNode()", adopt = false) RootNode rootNode,
+                    @SuppressWarnings("unused") @Cached(value = "func.getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                     @Cached("getBuiltin(frame, func, 3, $node)") PythonBuiltinBaseNode builtinNode) {
         return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
@@ -112,7 +112,7 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getFunctionRootNode() == rootNode", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     public static Object doBuiltinMethodCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached(value = "func.getBuiltinFunction().getFunctionRootNode()", adopt = false) RootNode rootNode,
+                    @SuppressWarnings("unused") @Cached(value = "func.getBuiltinFunction().getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 3, $node)") PythonBuiltinBaseNode builtinNode) {
         return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
@@ -128,7 +128,7 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getFunctionRootNode() == rootNode", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     public static Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached(value = "func.getBuiltinFunction().getFunctionRootNode()", adopt = false) RootNode rootNode,
+                    @SuppressWarnings("unused") @Cached(value = "func.getBuiltinFunction().getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 4, $node)") PythonBuiltinBaseNode builtinNode) {
         return callQuaternaryBuiltin(frame, builtinNode, func.getSelf(), arg1, arg2, arg3);

@@ -1220,7 +1220,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public <T extends RootNode> T createCachedExternalFunWrapperRootNode(Function<PythonLanguage, T> rootNodeFunction,
-                    Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
+                    Class<? extends Node> klass, Enum<?> signature, TruffleString name,
                     boolean doArgumentAndResultConversion, boolean isStatic) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }

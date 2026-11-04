@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
@@ -67,7 +66,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodeNodes {
@@ -135,7 +133,7 @@ public abstract class CodeNodes {
             TruffleString name = PythonUtils.internString(uninternedName);
             qualname = PythonUtils.internString(qualname);
 
-            PRootNode rootNode;
+            PBytecodeDSLRootNode rootNode;
             Signature signature;
             if (codedata.length == 0) {
                 rootNode = language.createCachedRootNode(l -> PBytecodeDSLRootNode.createBadOpcode(l, name), CreateCodeNode.class, name.toJavaStringUncached());
@@ -168,15 +166,12 @@ public abstract class CodeNodes {
             return PFactory.createCode(language, rootNode, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
-        private static PRootNode deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
-            RootNode rootNode;
-
+        private static PBytecodeDSLRootNode deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
             BytecodeDSLCodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, language, data);
             if (code.flags != flags) {
                 code = code.withFlags(flags);
             }
-            rootNode = code.createRootNode(language, false);
-            return (PRootNode) rootNode;
+            return code.createRootNode(language, false);
         }
 
         @NeverDefault

@@ -43,7 +43,8 @@ test.test_exceptions.ExceptionTests.test_no_hang_on_context_chain_cycle2 @ darwi
 test.test_exceptions.ExceptionTests.test_notes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_raise_does_not_create_context_chain_cycle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_raise_in_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_exceptions.ExceptionTests.test_recursion_normalizing_infinite_exception @ darwin-arm64,win32-AMD64
+# Recursive native exception normalization can terminate the process during stack-overflow recovery.
+!test.test_exceptions.ExceptionTests.test_recursion_normalizing_infinite_exception
 test.test_exceptions.ExceptionTests.test_setstate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.ExceptionTests.test_unhandled @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -1670,6 +1670,29 @@ def test_tp_call_calls():
         assert obj.__call__({'b': 2}, a=1) == {'a': 1, 'b': 2}
 
 
+def test_tp_call_result_identity():
+    NativeSlotProxy = CPyExtType(
+        name='TpCallIdentityProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpCallIdentityProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
+            static PyObject* proxy_tp_call(PyObject* self, PyObject* args, PyObject* kwargs) {
+                return PyObject_Call(get_delegate(self), args, kwargs);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_call='proxy_tp_call',
+    )
+    result = object()
+    obj = NativeSlotProxy(lambda *args, **kwargs: result)
+    for _ in range(4):
+        assert obj() is result
+        assert obj.__call__() is result
+        assert obj(None, user=None) is result
+        assert obj.__call__(None, user=None) is result
+
+
 def test_native_vectorcall():
     NativeVectorcall = CPyExtType(
         name='NativeVectorcall',

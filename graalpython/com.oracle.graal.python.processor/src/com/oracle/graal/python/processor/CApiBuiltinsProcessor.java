@@ -1397,9 +1397,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return Boolean.parseBoolean(initArgs[0].strip());
     }
 
-    private boolean isWrapperRootInvoke(InvokeExternalFunctionDesc wrapper) {
-        TypeMirror wrapperBaseRoot = processingEnv.getElementUtils().getTypeElement(EXFUNC_INVOKER_PACKAGE + ".ExternalFunctionNodes.WrapperBaseRoot").asType();
-        return processingEnv.getTypeUtils().isSubtype(wrapper.origin.getEnclosingElement().asType(), wrapperBaseRoot);
+    private boolean isWrapperInvoke(InvokeExternalFunctionDesc wrapper) {
+        TypeMirror wrapperBase = processingEnv.getElementUtils().getTypeElement(EXFUNC_INVOKER_PACKAGE + ".ExternalFunctionNodes.WrapperBase").asType();
+        return processingEnv.getTypeUtils().isSubtype(wrapper.origin.getEnclosingElement().asType(), wrapperBase);
     }
 
     private static String getGeneratedExternalInvokeHelperClassName(Element clazz) {
@@ -1874,7 +1874,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return null;
     }
 
-    private static final String WRAPPER_DESCRIPTOR_GEN_CLASS_NAME = "WrapperDescriptorRootNodesGen";
+    private static final String WRAPPER_DESCRIPTOR_GEN_CLASS_NAME = "WrapperDescriptorNodesGen";
 
     private void generateExternalFunctionHelperNodes(List<InvokeExternalFunctionDesc> externalFunctionDescs) throws IOException {
         final Types typeUtils = processingEnv.getTypeUtils();
@@ -1883,7 +1883,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         Map<TypeElement, List<InvokeExternalFunctionDesc>> helperInvokeDescsByClass = new LinkedHashMap<>();
 
         for (InvokeExternalFunctionDesc desc : externalFunctionDescs) {
-            if (!isWrapperRootInvoke(desc)) {
+            if (!isWrapperInvoke(desc)) {
                 TypeElement clazz = (TypeElement) desc.origin.getEnclosingElement();
                 helperInvokeDescsByClass.computeIfAbsent(clazz, k -> new ArrayList<>()).add(desc);
             }
@@ -1992,10 +1992,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private void generateExternalFunctionRootNodes(List<InvokeExternalFunctionDesc> externalFunctionDescs, List<CApiExternalFunctionWrapperDesc> wrappers,
+    private void generateExternalFunctionWrapperNodes(List<InvokeExternalFunctionDesc> externalFunctionDescs, List<CApiExternalFunctionWrapperDesc> wrappers,
                     @SuppressWarnings("unused") Map<String, CApiExternalFunctionSignatureDesc> externalFunctionSignatures) throws IOException {
         final Types typeUtils = processingEnv.getTypeUtils();
-        List<InvokeExternalFunctionDesc> wrapperInvokeDescs = externalFunctionDescs.stream().filter(this::isWrapperRootInvoke).toList();
+        List<InvokeExternalFunctionDesc> wrapperInvokeDescs = externalFunctionDescs.stream().filter(this::isWrapperInvoke).toList();
         ArrayList<String> lines = new ArrayList<>();
 
         lines.add("// @formatter:off");
@@ -2004,17 +2004,16 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("package " + EXFUNC_INVOKER_PACKAGE + ";");
         lines.add("");
 
-        lines.add("import com.oracle.graal.python.PythonLanguage;");
+        lines.add("import com.oracle.graal.python.builtins.objects.function.Signature;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;");
         for (InvokeExternalFunctionDesc wrapper : wrapperInvokeDescs) {
             Element clazz = wrapper.origin.getEnclosingElement();
             lines.add("import " + EXFUNC_INVOKER_PACKAGE + "." + clazz.getEnclosingElement().getSimpleName() + "." + clazz.getSimpleName() + ";");
         }
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;");
-        lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperDescriptorRoot;");
+        lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperDescriptor;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
         lines.add("import " + NATIVE_FUNCTION_POINTER + ";");
-        lines.add("import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;");
         lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;");
@@ -2097,7 +2096,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("");
             lines.add("    public static final class " + genClassName + " extends " + clazz.getSimpleName() + " {");
             lines.add("");
-            lines.add("        @Child private CalleeContext calleeContext = CalleeContext.create();");
             lines.add("        @Child private BoundaryCallData boundaryCallData;");
             lines.add("        @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNode.create();");
             for (int j = 0; j < wrapper.argumentTypes.size(); j++) {
@@ -2150,8 +2148,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("");
             lines.add("        private final CApiTiming timing;");
             lines.add("");
-            lines.add("        public " + genClassName + "(PythonLanguage language, TruffleString name, PExternalFunctionWrapper wrapper) {");
-            lines.add("            super(language, name, wrapper);");
+            lines.add("        public " + genClassName + "(TruffleString name, PExternalFunctionWrapper wrapper) {");
+            lines.add("            super(name, wrapper);");
             lines.add("            this.timing = CApiTiming.create(true, name);");
             lines.add("            this.boundaryCallData = BoundaryCallData.createFor(this);");
             lines.add("        }");
@@ -2184,15 +2182,30 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         // generate factory method
         lines.add("    @TruffleBoundary");
-        lines.add("    public static WrapperDescriptorRoot create(PythonLanguage language, TruffleString name, PExternalFunctionWrapper wrapper) {");
+        lines.add("    public static WrapperDescriptor create(TruffleString name, PExternalFunctionWrapper wrapper) {");
         lines.add("        return switch (wrapper) {");
         for (CApiExternalFunctionWrapperDesc wrapper : wrappers) {
             String wrapperList = wrapper.wrapperNames.stream().map(CApiBuiltinsProcessor::name).collect(Collectors.joining(", "));
-            lines.add("        case " + wrapperList + " -> new " + name(wrapper.origin) + "Gen(language, name, wrapper);");
+            lines.add("        case " + wrapperList + " -> new " + name(wrapper.origin) + "Gen(name, wrapper);");
         }
-        lines.add("        default -> throw CompilerDirectives.shouldNotReachHere(\"no root node for wrapper \" + wrapper);");
+        lines.add("        default -> throw CompilerDirectives.shouldNotReachHere(\"no node for wrapper \" + wrapper);");
         lines.add("        };");
         lines.add("    }");
+
+        // Use the same annotation mapping for the actual body class and its Python signature.
+        for (boolean signature : new boolean[]{false, true}) {
+            lines.add("    @TruffleBoundary");
+            lines.add(signature ? "    public static Signature getSignature(PExternalFunctionWrapper wrapper) {"
+                            : "    public static Class<? extends WrapperDescriptor> getNodeClass(PExternalFunctionWrapper wrapper) {");
+            lines.add("        return switch (wrapper) {");
+            for (CApiExternalFunctionWrapperDesc wrapper : wrappers) {
+                String wrapperList = wrapper.wrapperNames.stream().map(CApiBuiltinsProcessor::name).collect(Collectors.joining(", "));
+                lines.add("        case " + wrapperList + " -> " + name(wrapper.origin) + (signature ? ".SIGNATURE;" : ".class;"));
+            }
+            lines.add("        default -> throw CompilerDirectives.shouldNotReachHere(\"no body for wrapper \" + wrapper);");
+            lines.add("        };");
+            lines.add("    }");
+        }
 
         // closing brace for WRAPPER_DESCRIPTOR_GEN_CLASS_NAME
         lines.add("}");
@@ -2327,7 +2340,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 generateCApiHeader(javaBuiltins, javaConstants, capiSymbols);
                 generateExternalFunctionInvoker(new ArrayList<>(sigs.values()));
                 generateExternalFunctionHelperNodes(externalFunctionDescs);
-                generateExternalFunctionRootNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);
+                generateExternalFunctionWrapperNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);
             }
             generateBuiltinRegistry(javaBuiltins);
             generateUpcallConfig(javaBuiltins, explicitUpcallTargets);

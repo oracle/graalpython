@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -36,6 +36,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperBase;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -46,13 +47,11 @@ import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinAnyCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinBinaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinQuaternaryCallNode;
-import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinSenaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinTernaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinUnaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinVarArgsCallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -90,6 +90,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Child private BuiltinCallNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
     private final PythonBuiltinClassType wrapsSlotForClass;
+    private final boolean isCaptureForTraces;
 
     public BuiltinFunctionRootNode(PythonLanguage language, Signature signature, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
                     PythonBuiltinClassType wrapsSlotForClass) {
@@ -101,6 +102,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
         this.wrapsSlotForClass = wrapsSlotForClass;
+        this.isCaptureForTraces = WrapperBase.class.isAssignableFrom(factory.getNodeClass());
         if (builtin.callerFlags() != 0) {
             updateCallerFlags(builtin.callerFlags());
         }
@@ -275,7 +277,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     @Override
     public boolean isCaptureFramesForTrace(boolean compiledFrame) {
-        return false;
+        return isCaptureForTraces;
     }
 
     @Override
@@ -292,45 +294,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     public Object execute(VirtualFrame frame) {
         if (body == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            BuiltinCallNode newBody;
-            ReadArgumentNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
-            if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
-                newBody = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList));
-            } else {
-                PythonBuiltinBaseNode node = factory.createNode();
-                if (node instanceof PythonUnaryBuiltinNode) {
-                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 1, got " + argumentsList.length;
-                    newBody = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
-                } else if (node instanceof PythonBinaryBuiltinNode) {
-                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 2, got " + argumentsList.length;
-                    newBody = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
-                } else if (node instanceof PythonTernaryBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
-                    newBody = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
-                } else if (node instanceof PythonQuaternaryBuiltinNode) {
-                    assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 4, got " + argumentsList.length;
-                    newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
-                } else if (node instanceof PythonSenaryBuiltinNode) {
-                    assert argumentsList.length == 6 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 6, got " + argumentsList.length;
-                    newBody = new BuiltinSenaryCallNode((PythonSenaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3], argumentsList[4], argumentsList[5]);
-                } else if (node instanceof PythonVarargsBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
-                    assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
-                    newBody = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
-                } else {
-                    throw new RuntimeException("unexpected builtin node type: " + node.getClass());
-                }
-            }
-
-            if (wrapsSlotForClass != null) {
-                if (declaresExplicitSelf) {
-                    body = insert(new WrapperDescrCall(newBody, name, wrapsSlotForClass));
-                } else {
-                    body = insert(new WrapTpNew(newBody, wrapsSlotForClass));
-                }
-            } else {
-                body = insert(newBody);
-            }
+            body = insert(initializeBody());
         }
         calleeContext.enter(frame, this);
         try {
@@ -338,6 +302,48 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         } finally {
             calleeContext.exit(frame, this);
         }
+    }
+
+    @InliningCutoff
+    private BuiltinCallNode initializeBody() {
+        BuiltinCallNode newBody;
+        if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
+            ReadArgumentNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
+            newBody = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList));
+        } else if (PythonBuiltinFrameArgsNode.class.isAssignableFrom(factory.getNodeClass())) {
+            newBody = new BuiltinAnyCallNode((PythonBuiltinFrameArgsNode) factory.createNode());
+        } else {
+            ReadArgumentNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
+            PythonBuiltinBaseNode node = factory.createNode();
+            if (node instanceof PythonUnaryBuiltinNode) {
+                assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 1, got " + argumentsList.length;
+                newBody = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
+            } else if (node instanceof PythonBinaryBuiltinNode) {
+                assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 2, got " + argumentsList.length;
+                newBody = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
+            } else if (node instanceof PythonTernaryBuiltinNode) {
+                assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
+                newBody = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
+            } else if (node instanceof PythonQuaternaryBuiltinNode) {
+                assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 4, got " + argumentsList.length;
+                newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
+            } else if (node instanceof PythonVarargsBuiltinNode) {
+                assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
+                assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
+                newBody = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
+            } else {
+                throw new RuntimeException("unexpected builtin node type: " + node.getClass());
+            }
+        }
+
+        if (wrapsSlotForClass != null) {
+            if (declaresExplicitSelf) {
+                return new WrapperDescrCall(newBody, name, wrapsSlotForClass);
+            } else {
+                return new WrapTpNew(newBody, wrapsSlotForClass);
+            }
+        }
+        return newBody;
     }
 
     public String getFunctionName() {

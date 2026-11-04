@@ -76,7 +76,7 @@ public abstract class AbstractCallMethodNode extends Node {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
         if (builtinNodeFactory == null) {
-            return null; // see for example MethodDescriptorRoot and subclasses
+            return null; // see for example MethodDescriptor and subclasses
         }
         if (TpSlotBuiltin.isSlotFactory(builtinNodeFactory)) {
             // slot wrapper must perform validation implemented in WrapperDescrCall inside the

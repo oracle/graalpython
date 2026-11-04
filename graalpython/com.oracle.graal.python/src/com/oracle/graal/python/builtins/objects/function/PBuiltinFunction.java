@@ -57,7 +57,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -75,7 +74,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final PString name;
     private final TruffleString qualname;
     private final Object enclosingType;
-    private final RootNode functionRootNode;
+    private final BuiltinFunctionRootNode functionRootNode;
     private final Signature signature;
     private final int flags;
     private final TpSlot slot;
@@ -85,7 +84,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     @CompilationFinal private RootCallTarget callTarget;
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootNode functionRootNode,
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
+                    BuiltinFunctionRootNode functionRootNode,
                     Signature signature,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
@@ -127,7 +127,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return defaults;
     }
 
-    public RootNode getFunctionRootNode() {
+    public BuiltinFunctionRootNode getFunctionRootNode() {
         return functionRootNode;
     }
 
@@ -148,7 +148,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
-        return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot ? builtinRoot.getFactory() : null;
+        return functionRootNode.getFactory();
     }
 
     public int getFlags() {
@@ -192,7 +192,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public Class<? extends PythonBuiltinBaseNode> getNodeClass() {
-        return getBuiltinNodeFactory() != null ? getBuiltinNodeFactory().getNodeClass() : null;
+        return getBuiltinNodeFactory().getNodeClass();
     }
 
     public Signature getSignature() {
@@ -221,11 +221,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public boolean declaresExplicitSelf() {
-        return !(functionRootNode instanceof BuiltinFunctionRootNode builtinRoot) || builtinRoot.declaresExplicitSelf();
+        return functionRootNode.declaresExplicitSelf();
     }
 
     public boolean forceSplitDirectCalls() {
-        return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot && builtinRoot.getBuiltin().forceSplitDirectCalls();
+        return functionRootNode.getBuiltin().forceSplitDirectCalls();
     }
 
     public TruffleString getName() {

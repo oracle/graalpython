@@ -1854,7 +1854,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @NeverDefault
         static Assumption getCodeStableAssumption(PCode code) {
-            PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) code.getRootNode();
+            PBytecodeDSLRootNode rootNode = code.getRootNode();
             return rootNode.getFunctionCodeFinalAssumption();
         }
 

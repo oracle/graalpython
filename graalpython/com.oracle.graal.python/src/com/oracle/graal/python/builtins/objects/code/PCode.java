@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
-import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 
 import java.math.BigInteger;
@@ -50,10 +48,8 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -75,7 +71,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -95,7 +90,7 @@ public final class PCode extends PythonBuiltinObject {
     /* GraalPy-specific */
     public static final int CO_GRAALPYHON_MODULE = 0x1000;
 
-    private final RootNode rootNode;
+    private final PBytecodeDSLRootNode rootNode;
     @CompilationFinal private RootCallTarget callTarget;
     private final Signature signature;
 
@@ -131,7 +126,7 @@ public final class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private TruffleString[] cellvars;
 
-    public PCode(Object cls, Shape instanceShape, RootNode rootNode, Signature signature, int nlocals,
+    public PCode(Object cls, Shape instanceShape, PBytecodeDSLRootNode rootNode, Signature signature, int nlocals,
                     int stacksize, int flags, Object[] constants, TruffleString[] names,
                     TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                     TruffleString filename, TruffleString name, TruffleString qualname,
@@ -155,37 +150,28 @@ public final class PCode extends PythonBuiltinObject {
         assert signature != null;
     }
 
-    private static TruffleString[] extractFreeVars(RootNode rootNode) {
-        BytecodeDSLCodeUnit code = getCodeUnit(rootNode);
-        if (code != null) {
-            return Arrays.copyOf(code.freevars, code.freevars.length);
-        } else {
-            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-        }
+    private static TruffleString[] extractFreeVars(PBytecodeDSLRootNode rootNode) {
+        BytecodeDSLCodeUnit code = rootNode.getCodeUnit();
+        return Arrays.copyOf(code.freevars, code.freevars.length);
     }
 
-    private static TruffleString[] extractCellVars(RootNode rootNode) {
-        BytecodeDSLCodeUnit code = getCodeUnit(rootNode);
-        if (code != null) {
-            return Arrays.copyOf(code.cellvars, code.cellvars.length);
-        } else {
-            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-        }
+    private static TruffleString[] extractCellVars(PBytecodeDSLRootNode rootNode) {
+        BytecodeDSLCodeUnit code = rootNode.getCodeUnit();
+        return Arrays.copyOf(code.cellvars, code.cellvars.length);
     }
 
     @TruffleBoundary
-    public static TruffleString extractFileName(RootNode rootNode) {
-        RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        SourceSection sourceSection = funcRootNode.getSourceSection();
-        if (sourceSection == null && funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-            bytecodeDSLRootNode.getRootNodes().ensureSourceInformation();
-            sourceSection = funcRootNode.getSourceSection();
+    public static TruffleString extractFileName(PBytecodeDSLRootNode rootNode) {
+        SourceSection sourceSection = rootNode.getSourceSection();
+        if (sourceSection == null) {
+            rootNode.getRootNodes().ensureSourceInformation();
+            sourceSection = rootNode.getSourceSection();
         }
         String fileName = getSourceSectionFileName(sourceSection);
         if (fileName != null) {
             return toInternedTruffleStringUncached(fileName);
         }
-        return toInternedTruffleStringUncached(funcRootNode.getName());
+        return toInternedTruffleStringUncached(rootNode.getName());
     }
 
     @TruffleBoundary
@@ -201,51 +187,33 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static int extractFirstLineno(RootNode rootNode) {
-        RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        BytecodeDSLCodeUnit co = getCodeUnit(funcRootNode);
-        if (co != null) {
-            if ((co.flags & CO_GRAALPYHON_MODULE) != 0) {
-                return 1;
-            }
-            return co.startLine;
+    private static int extractFirstLineno(PBytecodeDSLRootNode rootNode) {
+        BytecodeDSLCodeUnit co = rootNode.getCodeUnit();
+        if ((co.flags & CO_GRAALPYHON_MODULE) != 0) {
+            return 1;
         }
-
-        SourceSection sourceSection = funcRootNode.getSourceSection();
-        if (sourceSection != null) {
-            return sourceSection.getStartLine();
-        }
-        return 1;
+        return co.startLine;
     }
 
     @TruffleBoundary
-    private static TruffleString extractName(RootNode rootNode) {
-        BytecodeDSLCodeUnit code = getCodeUnit(rootNode);
-        if (code != null) {
-            return code.name;
-        }
-        return toInternedTruffleStringUncached(rootNode.getName());
+    private static TruffleString extractName(PBytecodeDSLRootNode rootNode) {
+        return rootNode.getCodeUnit().name;
     }
 
     @TruffleBoundary
-    private static int extractStackSize(RootNode rootNode) {
-        RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        return funcRootNode.getFrameDescriptor().getNumberOfSlots();
+    private static int extractStackSize(PBytecodeDSLRootNode rootNode) {
+        return rootNode.getFrameDescriptor().getNumberOfSlots();
     }
 
     @TruffleBoundary
-    private static TruffleString[] extractVarnames(RootNode node) {
-        BytecodeDSLCodeUnit code = getCodeUnit(node);
-        if (code != null) {
-            return Arrays.copyOf(code.varnames, code.varnames.length);
-        }
-        return EMPTY_TRUFFLESTRING_ARRAY;
+    private static TruffleString[] extractVarnames(PBytecodeDSLRootNode node) {
+        BytecodeDSLCodeUnit code = node.getCodeUnit();
+        return Arrays.copyOf(code.varnames, code.varnames.length);
     }
 
     private Object[] ensureConstants() {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, constants == null)) {
-            BytecodeDSLCodeUnit codeUnit = getCodeUnit(getRootNode());
-            constants = codeUnit != null ? new Object[codeUnit.constants.length] : PythonUtils.EMPTY_OBJECT_ARRAY;
+            constants = new Object[getCodeUnit().constants.length];
         }
         return constants;
     }
@@ -262,43 +230,18 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static TruffleString[] extractNames(RootNode node) {
-        BytecodeDSLCodeUnit code = getCodeUnit(node);
-        if (code != null) {
-            return Arrays.copyOf(code.names, code.names.length);
-        }
-        return EMPTY_TRUFFLESTRING_ARRAY;
-    }
-
-    private static RootNode rootNodeForExtraction(RootNode rootNodeArg) {
-        RootNode rootNode = PythonLanguage.unwrapRootNode(rootNodeArg);
-        return PGenerator.unwrapContinuationRoot(rootNode);
+    private static TruffleString[] extractNames(PBytecodeDSLRootNode node) {
+        BytecodeDSLCodeUnit code = node.getCodeUnit();
+        return Arrays.copyOf(code.names, code.names.length);
     }
 
     @TruffleBoundary
-    private static int extractFlags(RootNode node) {
-        int flags = 0;
-        BytecodeDSLCodeUnit code = getCodeUnit(node);
-        if (code != null) {
-            flags = code.flags;
-        }
-        return flags;
+    private static int extractFlags(PBytecodeDSLRootNode node) {
+        return node.getCodeUnit().flags;
     }
 
-    private static BytecodeDSLCodeUnit getCodeUnit(RootNode node) {
-        RootNode rootNode = rootNodeForExtraction(node);
-        if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-            return bytecodeDSLRootNode.getCodeUnit();
-        }
-        return null;
-    }
-
-    public RootNode getRootNode() {
+    public PBytecodeDSLRootNode getRootNode() {
         return rootNode;
-    }
-
-    RootNode getRootNodeForExtraction() {
-        return rootNodeForExtraction(getRootNode());
     }
 
     public TruffleString[] getFreeVars() {
@@ -349,12 +292,8 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     public int lastiToLine(int lasti) {
-        RootNode funcRootNode = rootNodeForExtraction(getRootNode());
-        if (funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-            BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
-            return bytecodeDSLRootNode.bciToLine(PBytecodeDSLRootNode.lastiToBci(lasti, bytecodeNode), bytecodeNode);
-        }
-        return -1;
+        BytecodeNode bytecodeNode = rootNode.getBytecodeNode();
+        return rootNode.bciToLine(PBytecodeDSLRootNode.lastiToBci(lasti, bytecodeNode), bytecodeNode);
     }
 
     public TruffleString getName() {
@@ -413,16 +352,11 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public byte[] getCodestring(Node node) {
-        RootNode rN = getRootNode();
-        if (rN instanceof PRootNode) {
-            return ((PRootNode) rN).getCode(node);
-        } else {
-            return PythonUtils.EMPTY_BYTE_ARRAY;
-        }
+        return rootNode.getCode(node);
     }
 
     public BytecodeDSLCodeUnit getCodeUnit() {
-        return getCodeUnit(getRootNode());
+        return rootNode.getCodeUnit();
     }
 
     public Object[] getConstants() {
@@ -445,7 +379,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
-        PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
+        PBytecodeDSLRootNode outerRootNode = getRootNode();
         PythonLanguage language = outerRootNode.getLanguage();
         PBytecodeDSLRootNode rN = outerRootNode.getOrCreateChildRootNode(codeUnit);
         return PFactory.createCode(language, rN, rN.getSignature(), codeUnit, getFilename());
@@ -581,7 +515,7 @@ public final class PCode extends PythonBuiltinObject {
          * This might be called without an active context (i.e. when dumping graphs), we cannot use
          * getFilename
          */
-        String codeFilename = getSourceSectionFileName(rootNodeForExtraction(getRootNode()).getSourceSection());
+        String codeFilename = getSourceSectionFileName(rootNode.getSourceSection());
         if (codeFilename == null) {
             codeFilename = "None";
         }
@@ -591,11 +525,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String toDisassembledString(boolean quickened) {
-        RootNode rN = getRootNode();
-        if (rN instanceof PBytecodeDSLRootNode dslRoot) {
-            return dslRoot.getCodeUnit().toString(quickened, dslRoot);
-        }
-        return J_EMPTY_STRING;
+        return rootNode.getCodeUnit().toString(quickened, rootNode);
     }
 
     private static PTuple createTuple(PythonLanguage language, Object[] array) {
