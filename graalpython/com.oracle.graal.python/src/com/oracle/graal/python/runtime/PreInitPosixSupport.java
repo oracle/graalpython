@@ -445,9 +445,9 @@ public final class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
+    public final void symlinkat(Object target, int linkpathDirFd, Object linkpath, boolean targetIsDirectory) throws PosixException {
         checkNotInPreInitialization();
-        nativePosixSupport.symlinkat(target, linkpathDirFd, linkpath);
+        nativePosixSupport.symlinkat(target, linkpathDirFd, linkpath, targetIsDirectory);
     }
 
     @Override

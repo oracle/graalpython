@@ -552,10 +552,10 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public final void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
-        logEnter("symlinkAt", "%s, %d, %s", target, linkpathDirFd, linkpath);
+    public final void symlinkat(Object target, int linkpathDirFd, Object linkpath, boolean targetIsDirectory) throws PosixException {
+        logEnter("symlinkAt", "%s, %d, %s, %s", target, linkpathDirFd, linkpath, targetIsDirectory);
         try {
-            delegate.symlinkat(target, linkpathDirFd, linkpath);
+            delegate.symlinkat(target, linkpathDirFd, linkpath, targetIsDirectory);
         } catch (PosixException e) {
             throw logException("symlinkAt", e);
         }

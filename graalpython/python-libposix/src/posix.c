@@ -52,6 +52,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <winver.h>
+#include <winioctl.h>
 #include <direct.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -65,6 +66,9 @@
 #include <sys/types.h>
 
 #include "errno_capture.h"
+
+/* CPython's file type for Windows symbolic links (absent from the CRT). */
+#define GP_S_IFLNK 0xA000
 
 #ifndef SO_UPDATE_ACCEPT_CONTEXT
 #define SO_UPDATE_ACCEPT_CONTEXT 0x700B
@@ -988,16 +992,80 @@ static void stat_handle_to_longs(HANDLE handle, int64_t *out) {
     }
 }
 
-static void stat_path_handle_to_longs(const wchar_t *path, int32_t followSymlinks, int64_t *out) {
+static void stat_attributes_to_longs(DWORD attributes, DWORD sizeHigh, DWORD sizeLow, FILETIME accessTime, FILETIME writeTime, FILETIME creationTime, int64_t *out);
+
+static int stat_path_handle_to_longs(const wchar_t *path, int32_t followSymlinks, int64_t *out) {
     DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
+    BOOL isUnhandledTag = FALSE;
     if (!followSymlinks) {
         flags |= FILE_FLAG_OPEN_REPARSE_POINT;
     }
     HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, flags, NULL);
-    if (handle != INVALID_HANDLE_VALUE) {
-        stat_handle_to_longs(handle, out);
-        CloseHandle(handle);
+    if (handle == INVALID_HANDLE_VALUE && followSymlinks && GetLastError() == ERROR_CANT_ACCESS_FILE) {
+        /* Like CPython, retry unhandled reparse points (e.g. app execution
+         * aliases) without traversing, then check their tag below. */
+        followSymlinks = FALSE;
+        isUnhandledTag = TRUE;
+        handle = CreateFileW(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                             NULL, OPEN_EXISTING, flags | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+        if (handle == INVALID_HANDLE_VALUE) {
+            set_win_errno(ERROR_CANT_ACCESS_FILE);
+            return -1;
+        }
     }
+    if (handle == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        if (!followSymlinks && (error == ERROR_ACCESS_DENIED || error == ERROR_SHARING_VIOLATION)) {
+            WIN32_FIND_DATAW info;
+            HANDLE findHandle = FindFirstFileW(path, &info);
+            if (findHandle != INVALID_HANDLE_VALUE) {
+                FindClose(findHandle);
+                /* Like CPython, lstat can use directory metadata for a name-surrogate
+                 * reparse point even when its handle cannot be opened. */
+                if ((info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+                    IsReparseTagNameSurrogate(info.dwReserved0)) {
+                    stat_attributes_to_longs(info.dwFileAttributes, info.nFileSizeHigh, info.nFileSizeLow,
+                                            info.ftLastAccessTime, info.ftLastWriteTime, info.ftCreationTime, out);
+                    if (info.dwReserved0 == IO_REPARSE_TAG_SYMLINK) {
+                        out[0] = (out[0] & ~_S_IFMT) | GP_S_IFLNK;
+                    }
+                    return 0;
+                }
+            }
+        }
+        DWORD attributes = GetFileAttributesW(path);
+        if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+            set_win_errno(error);
+            return -1;
+        }
+        return 0;
+    }
+    if (!followSymlinks) {
+        FILE_ATTRIBUTE_TAG_INFO tag;
+        BOOL hasTag = GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &tag, sizeof(tag));
+        if (isUnhandledTag && (!hasTag || IsReparseTagNameSurrogate(tag.ReparseTag))) {
+            /* Traversing failed for this link or its target; do not report the link
+             * itself as a successful stat of the target. */
+            CloseHandle(handle);
+            set_win_errno(ERROR_CANT_ACCESS_FILE);
+            return -1;
+        }
+        if (hasTag && tag.ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+            BY_HANDLE_FILE_INFORMATION info;
+            if (!GetFileInformationByHandle(handle, &info)) {
+                DWORD error = GetLastError();
+                CloseHandle(handle);
+                set_win_errno(error);
+                return -1;
+            }
+            stat_attributes_to_longs(info.dwFileAttributes, info.nFileSizeHigh, info.nFileSizeLow,
+                                    info.ftLastAccessTime, info.ftLastWriteTime, info.ftCreationTime, out);
+            out[0] = (out[0] & ~_S_IFMT) | GP_S_IFLNK;
+        }
+    }
+    stat_handle_to_longs(handle, out);
+    CloseHandle(handle);
+    return 0;
 }
 
 static void stat_attributes_to_longs(DWORD attributes, DWORD sizeHigh, DWORD sizeLow, FILETIME accessTime, FILETIME writeTime, FILETIME creationTime, int64_t *out) {
@@ -1541,9 +1609,19 @@ GP_EXPORT int32_t call_fstatat(int32_t dirFd, const wchar_t *path, int32_t follo
     int result = _wstat64(prepared.value, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
-        stat_path_handle_to_longs(prepared.value, followSymlinks, out);
     } else {
         result = stat_path_attributes_to_longs(prepared.value, out);
+    }
+    if (result == 0) {
+        result = stat_path_handle_to_longs(prepared.value, followSymlinks, out);
+    }
+    if (result == 0 && (out[0] & _S_IFMT) != _S_IFDIR) {
+        /* Match CPython's update_st_mode_from_path, including for symlinks. */
+        const wchar_t *extension = wcsrchr(prepared.value, L'.');
+        if (extension && (_wcsicmp(extension, L".exe") == 0 || _wcsicmp(extension, L".bat") == 0 ||
+                          _wcsicmp(extension, L".cmd") == 0 || _wcsicmp(extension, L".com") == 0)) {
+            out[0] |= 0111;
+        }
     }
     win_path_clear(&prepared);
     return result;
@@ -1660,7 +1738,25 @@ GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t 
             }
         }
     } else {
-        result = _wunlink(path.value);
+        WIN32_FIND_DATAW info;
+        HANDLE findHandle = FindFirstFileW(path.value, &info);
+        int directoryLink = 0;
+        if (findHandle != INVALID_HANDLE_VALUE) {
+            directoryLink = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
+                            (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+                            (info.dwReserved0 == IO_REPARSE_TAG_SYMLINK || info.dwReserved0 == IO_REPARSE_TAG_MOUNT_POINT);
+            FindClose(findHandle);
+        }
+        if (directoryLink) {
+            result = RemoveDirectoryW(path.value) ? 0 : -1;
+            if (result != 0) {
+                set_win_errno(GetLastError());
+                win_path_clear(&path);
+                return -1;
+            }
+        } else {
+            result = _wunlink(path.value);
+        }
     }
     if (result != 0) {
         capture_errno();
@@ -1670,7 +1766,67 @@ GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t 
 }
 
 GP_EXPORT int32_t call_linkat(int32_t oldDirFd, const wchar_t *oldPath, int32_t newDirFd, const wchar_t *newPath, int32_t flags) { return unsupported(); }
-GP_EXPORT int32_t call_symlinkat(const wchar_t *target, int32_t dirFd, const wchar_t *linkpath) { return unsupported(); }
+
+/* Like CPython's _check_dirW, resolve a relative target against the link's parent. */
+static int symlink_target_is_directory(const wchar_t *target, const wchar_t *linkpath) {
+    const wchar_t *resolved = target;
+    wchar_t *allocated = NULL;
+    if (target[0] != L'\\' && target[0] != L'/' && !(target[0] && target[1] == L':')) {
+        const wchar_t *backslash = wcsrchr(linkpath, L'\\');
+        const wchar_t *slash = wcsrchr(linkpath, L'/');
+        const wchar_t *separator = backslash;
+        if (slash && (!separator || slash > separator)) {
+            separator = slash;
+        }
+        if (separator) {
+            size_t parent_len = separator - linkpath + 1;
+            size_t target_len = wcslen(target);
+            allocated = malloc((parent_len + target_len + 1) * sizeof(wchar_t));
+            if (!allocated) {
+                return 0;
+            }
+            memcpy(allocated, linkpath, parent_len * sizeof(wchar_t));
+            memcpy(allocated + parent_len, target, (target_len + 1) * sizeof(wchar_t));
+            resolved = allocated;
+        }
+    }
+    /* Normalize the joined target before adding an extended path prefix: Win32
+     * does not resolve dot components or forward slashes in extended paths. */
+    win_path_t prepared;
+    DWORD attributes = INVALID_FILE_ATTRIBUTES;
+    if (win_path_init(&prepared, resolved) == 0) {
+        attributes = GetFileAttributesW(prepared.value);
+        win_path_clear(&prepared);
+    }
+    free(allocated);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+GP_EXPORT int32_t call_symlinkat(const wchar_t *target, int32_t dirFd, const wchar_t *linkpath, int32_t target_is_directory) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    win_path_t path;
+    if (win_path_init(&path, linkpath) != 0) {
+        return -1;
+    }
+    DWORD flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    if (target_is_directory || symlink_target_is_directory(target, linkpath)) {
+        flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+    }
+    BOOLEAN result = CreateSymbolicLinkW(path.value, target, flags);
+    if (!result && GetLastError() == ERROR_INVALID_PARAMETER) {
+        flags &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+        result = CreateSymbolicLinkW(path.value, target, flags);
+    }
+    if (!result) {
+        set_win_errno(GetLastError());
+        win_path_clear(&path);
+        return -1;
+    }
+    win_path_clear(&path);
+    return 0;
+}
 
 GP_EXPORT int32_t call_mkdirat(int32_t dirFd, const wchar_t *pathname, int32_t mode) {
     if (!is_default_dir_fd(dirFd)) {
@@ -1928,6 +2084,45 @@ GP_EXPORT int32_t call_faccessat(int32_t dirFd, const wchar_t *path, int32_t mod
     return result;
 }
 
+static int win32_lchmod(const wchar_t *path, int32_t mode) {
+    DWORD attributes = GetFileAttributesW(path);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if (mode & _S_IWRITE) {
+        attributes &= ~FILE_ATTRIBUTE_READONLY;
+    } else {
+        attributes |= FILE_ATTRIBUTE_READONLY;
+    }
+    if (!SetFileAttributesW(path, attributes)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+static int win32_hchmod(HANDLE handle, int32_t mode) {
+    FILE_BASIC_INFO info;
+    if (!GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info))) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if (mode & _S_IWRITE) {
+        /* Match CPython's win32_hchmod (Modules/posixmodule.c), including its bug:
+         * if READONLY is the only attribute, clearing it produces zero, which
+         * SetFileInformationByHandle treats as leaving attributes unchanged. */
+        info.FileAttributes &= ~FILE_ATTRIBUTE_READONLY;
+    } else {
+        info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
+    }
+    if (!SetFileInformationByHandle(handle, FileBasicInfo, &info, sizeof(info))) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
 GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const wchar_t *path, int32_t mode, int32_t followSymlinks) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
@@ -1936,21 +2131,55 @@ GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const wchar_t *path, int32_t mode
     if (win_path_init(&prepared, path) != 0) {
         return -1;
     }
-    int result = _wchmod(prepared.value, mode);
-    if (result != 0) {
-        capture_errno();
+    int result;
+    if (followSymlinks) {
+        HANDLE handle = CreateFileW(prepared.value, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES,
+                                   0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        if (handle == INVALID_HANDLE_VALUE) {
+            set_win_errno(GetLastError());
+            result = -1;
+        } else {
+            result = win32_hchmod(handle, mode);
+            CloseHandle(handle);
+        }
+    } else {
+        result = win32_lchmod(prepared.value, mode);
     }
     win_path_clear(&prepared);
     return result;
 }
 
 GP_EXPORT int32_t call_fchmod(int32_t fd, int32_t mode) {
-    (void) mode;
-    if (get_osfhandle_noraise(fd) == -1) {
+    intptr_t handle = get_osfhandle_noraise(fd);
+    if (handle == -1) {
         return -1;
     }
-    return unsupported();
+    return win32_hchmod((HANDLE) handle, mode);
 }
+/* Same reparse-point layout used by CPython's Modules/winreparse.h. */
+typedef struct {
+    ULONG tag;
+    USHORT data_length;
+    USHORT reserved;
+    union {
+        struct {
+            USHORT name_offset;
+            USHORT name_length;
+            USHORT print_offset;
+            USHORT print_length;
+            ULONG flags;
+            WCHAR path[1];
+        } symlink;
+        struct {
+            USHORT name_offset;
+            USHORT name_length;
+            USHORT print_offset;
+            USHORT print_length;
+            WCHAR path[1];
+        } mount;
+    } data;
+} win_reparse_data;
+
 GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *buf, uint64_t size) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
@@ -1959,14 +2188,52 @@ GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *b
     if (win_path_init(&prepared, path) != 0) {
         return -1;
     }
-    DWORD attributes = GetFileAttributesW(prepared.value);
-    DWORD error = attributes == INVALID_FILE_ATTRIBUTES ? GetLastError() : ERROR_SUCCESS;
+    HANDLE handle = CreateFileW(prepared.value, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    DWORD error = GetLastError();
     win_path_clear(&prepared);
-    if (attributes == INVALID_FILE_ATTRIBUTES) {
+    if (handle == INVALID_HANDLE_VALUE) {
         set_win_errno(error);
         return -1;
     }
-    return unsupported();
+    union {
+        win_reparse_data reparse;
+        char buffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+    } data;
+    DWORD returned;
+    BOOL success = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, &data, sizeof(data), &returned, NULL);
+    error = GetLastError();
+    CloseHandle(handle);
+    if (!success) {
+        set_win_errno(error);
+        return -1;
+    }
+    size_t offset;
+    size_t length;
+    if (data.reparse.tag == IO_REPARSE_TAG_SYMLINK) {
+        offset = offsetof(win_reparse_data, data.symlink.path) + data.reparse.data.symlink.name_offset;
+        length = data.reparse.data.symlink.name_length;
+    } else if (data.reparse.tag == IO_REPARSE_TAG_MOUNT_POINT) {
+        offset = offsetof(win_reparse_data, data.mount.path) + data.reparse.data.mount.name_offset;
+        length = data.reparse.data.mount.name_length;
+    } else {
+        /* Distinguish a non-link reparse point from a Win32 failure. */
+        return -2;
+    }
+    if (offset + length > returned || length % sizeof(wchar_t) != 0) {
+        set_posix_errno(EINVAL);
+        return -1;
+    }
+    const wchar_t *name = (const wchar_t *)((char *)&data + offset);
+    uint64_t characters = length / sizeof(wchar_t);
+    if (characters > size) {
+        characters = size;
+    }
+    memcpy(buf, name, characters * sizeof(wchar_t));
+    if (characters > 4 && wcsncmp(buf, L"\\??\\", 4) == 0) {
+        buf[1] = L'\\';
+    }
+    return characters;
 }
 GP_EXPORT int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) { return unsupported(); }
 GP_EXPORT int32_t call_wcoredump(int32_t status) { return 0; }
@@ -2896,7 +3163,8 @@ int32_t call_linkat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, con
     CAPTURE_ERRNO_AND_RETURN(-1, linkat(oldDirFd, oldPath, newDirFd, newPath, flags));
 }
 
-int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
+int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath, int32_t target_is_directory) {
+    (void)target_is_directory;  /* Only used by Windows. */
     CAPTURE_ERRNO_AND_RETURN(-1, symlinkat(target, dirFd, linkpath));
 }
 

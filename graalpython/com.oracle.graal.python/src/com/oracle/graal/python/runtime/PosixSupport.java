@@ -503,6 +503,12 @@ public abstract class PosixSupport {
         }
     }
 
+    /** Raised by Windows readlink for a reparse point that is not a symbolic link or junction. */
+    public static final class NotASymbolicLinkException extends PosixException {
+
+        private static final long serialVersionUID = 1L;
+    }
+
     /**
      * Exception that may be thrown by all the messages. It indicates that given functionality is
      * not available in given implementation. In the future, there will be methods to query if
@@ -1091,7 +1097,7 @@ public abstract class PosixSupport {
     public abstract void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;
 
     @TruffleBoundary
-    public abstract void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException;
+    public abstract void symlinkat(Object target, int linkpathDirFd, Object linkpath, boolean targetIsDirectory) throws PosixException;
 
     @TruffleBoundary
     public abstract void mkdirat(int dirFd, Object pathname, int mode) throws PosixException;

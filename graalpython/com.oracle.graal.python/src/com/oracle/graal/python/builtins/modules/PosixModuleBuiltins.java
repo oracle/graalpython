@@ -127,6 +127,7 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupport.Buffer;
+import com.oracle.graal.python.runtime.PosixSupport.NotASymbolicLinkException;
 import com.oracle.graal.python.runtime.PosixSupport.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupport.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupport.PosixException;
@@ -371,10 +372,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 val = toEnv(language, value);
             }
             environ.setItem(key, val);
-        }
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            // XXX: Until we fix pip
-            environ.setItem(toEnv(language, "PIP_NO_CACHE_DIR"), toEnv(language, "0"));
         }
         // XXX: Until a pyo3 version that doesn't have a different maximum version for GraalPy than
         // CPython gets widespread
@@ -1719,12 +1716,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, @SuppressWarnings("unused") boolean targetIsDir, int dirFd,
+        static PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, boolean targetIsDir, int dirFd,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                context.getPosixSupport().symlinkat(src.value, dirFd, dst.value);
+                context.getPosixSupport().symlinkat(src.value, dirFd, dst.value, targetIsDir);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
             }
@@ -2387,9 +2384,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
-    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "DEFAULT_FOLLOW_SYMLINKS", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
     abstract static class ChmodNode extends PythonClinicBuiltinNode {
+
+        static final boolean DEFAULT_FOLLOW_SYMLINKS = PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -2592,6 +2591,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile wasBufferLikeProfile,
                         @Cached OpaquePathToBytesNode opaquePathToBytesNode,
                         @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 Object link = context.getPosixSupport().readlinkat(dirFd, path.value);
@@ -2600,6 +2600,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 } else {
                     return getPathAsStringNode.execute(inliningTarget, context.getPosixSupport(), link);
                 }
+            } catch (NotASymbolicLinkException e) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_A_SYMBOLIC_LINK);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }

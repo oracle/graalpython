@@ -290,8 +290,8 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER, SINT32})
         abstract int call_linkat(int oldDirFd, long oldPath, int newDirFd, long newPath, int flags);
 
-        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER})
-        abstract int call_symlinkat(long target, int dirFd, long linkpath);
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER, SINT32})
+        abstract int call_symlinkat(long target, int dirFd, long linkpath, int targetIsDirectory);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
         abstract int call_mkdirat(int dirFd, long pathname, int mode);
@@ -1296,13 +1296,13 @@ public final class NativePosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
-    public void symlinkat(Object target, int linkpathDirFd, Object linkpath) throws PosixException {
+    public void symlinkat(Object target, int linkpathDirFd, Object linkpath, boolean targetIsDirectory) throws PosixException {
         long targetPtr = NULLPTR;
         long linkpathPtr = NULLPTR;
         try {
             targetPtr = pathToNativeCString(target);
             linkpathPtr = pathToNativeCString(linkpath);
-            int result = posixNativeFunctionInvoker.call_symlinkat(targetPtr, linkpathDirFd, linkpathPtr);
+            int result = posixNativeFunctionInvoker.call_symlinkat(targetPtr, linkpathDirFd, linkpathPtr, targetIsDirectory ? 1 : 0);
             if (result != 0) {
                 throw getErrnoAndThrowPosixException();
             }
@@ -1688,19 +1688,24 @@ public final class NativePosixSupport extends PosixSupport {
     @Override
     @TruffleBoundary
     public Object readlinkat(int dirFd, Object path) throws PosixException {
-        int bufferBytes = WINDOWS ? PATH_MAX.value * 2 : PATH_MAX.value;
-        byte[] buffer = new byte[bufferBytes];
+        // Windows reparse data can contain up to 16 KiB, including the UTF-16 target.
+        // Symlink targets can be longer than Windows PATH_MAX (260 characters).
+        int bufferBytes = WINDOWS ? 16 * 1024 : PATH_MAX.value;
+        int bufferSize = WINDOWS ? bufferBytes / 2 : bufferBytes;
         long pathPtr = pathToNativeCString(path);
         try {
             long nativeBuffer = NativeMemory.mallocByteArrayOrNull(bufferBytes);
             try {
-                long n = posixNativeFunctionInvoker.call_readlinkat(dirFd, pathPtr, nativeBuffer, PATH_MAX.value);
+                long n = posixNativeFunctionInvoker.call_readlinkat(dirFd, pathPtr, nativeBuffer, bufferSize);
+                if (WINDOWS && n == -2) {
+                    throw new NotASymbolicLinkException();
+                }
                 if (n < 0) {
                     throw getErrnoAndThrowPosixException();
                 }
                 int byteLength = WINDOWS ? Math.toIntExact(n * 2) : Math.toIntExact(n);
-                NativeMemory.readByteArrayElements(nativeBuffer, 0, buffer, 0, byteLength);
-                byte[] result = PythonUtils.arrayCopyOfRange(buffer, 0, byteLength);
+                byte[] result = new byte[byteLength];
+                NativeMemory.readByteArrayElements(nativeBuffer, 0, result, 0, byteLength);
                 return WINDOWS ? new WidePath(result) : new NarrowPath(result);
             } finally {
                 NativeMemory.free(nativeBuffer);
@@ -3700,7 +3705,7 @@ public final class NativePosixSupport extends PosixSupport {
     // CPython performs this mapping in PC/errmap.h:winerror_to_errno().
     private static int winapiErrorToErrno(int error) {
         WinAPIError winAPIError = WinAPIError.fromNumber(error);
-        return winAPIError == null ? error : winAPIError.getDefaultErrnoNumber();
+        return winAPIError == null ? OSErrorEnum.EINVAL.getNumber() : winAPIError.getDefaultErrnoNumber();
     }
 
     // CPython handles Winsock errors in PC/errmap.h:winerror_to_errno().
@@ -3712,12 +3717,37 @@ public final class NativePosixSupport extends PosixSupport {
     private enum WinAPIError {
         ERROR_FILE_NOT_FOUND(2, OSErrorEnum.ENOENT),
         ERROR_PATH_NOT_FOUND(3, OSErrorEnum.ENOENT),
+        ERROR_TOO_MANY_OPEN_FILES(4, OSErrorEnum.EMFILE),
         ERROR_ACCESS_DENIED(5, OSErrorEnum.EACCES),
+        ERROR_INVALID_HANDLE(6, OSErrorEnum.EBADF),
+        ERROR_INVALID_DRIVE(15, OSErrorEnum.ENOENT),
+        ERROR_CURRENT_DIRECTORY(16, OSErrorEnum.EACCES),
+        ERROR_NOT_SAME_DEVICE(17, OSErrorEnum.EXDEV),
+        ERROR_NO_MORE_FILES(18, OSErrorEnum.ENOENT),
+        ERROR_WRITE_PROTECT(19, OSErrorEnum.EACCES),
+        ERROR_NOT_READY(21, OSErrorEnum.EACCES),
+        ERROR_SHARING_VIOLATION(32, OSErrorEnum.EACCES),
+        ERROR_LOCK_VIOLATION(33, OSErrorEnum.EACCES),
+        ERROR_BAD_NETPATH(53, OSErrorEnum.ENOENT),
+        ERROR_NETWORK_ACCESS_DENIED(65, OSErrorEnum.EACCES),
+        ERROR_BAD_NET_NAME(67, OSErrorEnum.ENOENT),
+        ERROR_FILE_EXISTS(80, OSErrorEnum.EEXIST),
+        ERROR_CANNOT_MAKE(82, OSErrorEnum.EACCES),
         ERROR_INVALID_PARAMETER(87, OSErrorEnum.EINVAL),
+        ERROR_BROKEN_PIPE(109, OSErrorEnum.EPIPE),
+        ERROR_DISK_FULL(112, OSErrorEnum.ENOSPC),
         ERROR_INVALID_NAME(123, OSErrorEnum.EINVAL),
+        ERROR_DIR_NOT_EMPTY(145, OSErrorEnum.ENOTEMPTY),
+        ERROR_BAD_PATHNAME(161, OSErrorEnum.ENOENT),
+        ERROR_ALREADY_EXISTS(183, OSErrorEnum.EEXIST),
+        ERROR_FILENAME_EXCED_RANGE(206, OSErrorEnum.ENOENT),
+        ERROR_NO_DATA(232, OSErrorEnum.EPIPE),
+        WAIT_TIMEOUT(258, OSErrorEnum.ETIMEDOUT),
         ERROR_DIRECTORY(267, OSErrorEnum.ENOTDIR),
         ERROR_TOO_MANY_POSTS(298),
-        ERROR_NO_UNICODE_TRANSLATION(1113, OSErrorEnum.ENOENT);
+        ERROR_NO_UNICODE_TRANSLATION(1113, OSErrorEnum.ENOENT),
+        ERROR_PRIVILEGE_NOT_HELD(1314, OSErrorEnum.EINVAL),
+        ERROR_NOT_A_REPARSE_POINT(4390, OSErrorEnum.EINVAL);
 
         private final int number;
         private final OSErrorEnum defaultErrno;
