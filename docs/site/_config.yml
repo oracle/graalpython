@@ -1,8 +1,9 @@
 baseurl: ""
 url: "https://graalpy.org"
 github: "oracle/graalpython"
-language_version: 25.3.4.1
-release_tag: graal-25.3.4
+language_version: 25.5.5
+maven_version: 25.5.5.0.3
+release_tag: graal-25.5.5
 python_version: 3.13
 name: GraalPy
 permalink: pretty
