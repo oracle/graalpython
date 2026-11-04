@@ -69,18 +69,17 @@ class NtTests(unittest.TestCase):
                 self.assertTrue(alias.is_file())
 
     def _create_symlink(self, target, link):
+        try:
+            os.symlink(target, link)
+        except OSError as exc:
+            if getattr(exc, 'winerror', None) == 1314:  # ERROR_PRIVILEGE_NOT_HELD
+                self.skipTest('symbolic link creation requires a Windows privilege')
+            raise
+
         import ctypes
         from ctypes import wintypes
 
         kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-        create_link = kernel32.CreateSymbolicLinkW
-        create_link.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD)
-        create_link.restype = ctypes.c_ubyte
-        if not create_link(link, target, 2):  # SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
-            error = ctypes.get_last_error()
-            if error == 1314:  # ERROR_PRIVILEGE_NOT_HELD
-                self.skipTest('symbolic link creation requires a Windows privilege')
-            raise ctypes.WinError(error)
         get_attributes = kernel32.GetFileAttributesW
         get_attributes.argtypes = (wintypes.LPCWSTR,)
         get_attributes.restype = wintypes.DWORD
