@@ -567,7 +567,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             int bufsize = SMALLCHUNK;
-            boolean mayBeQuick = false;
             try {
                 PosixSupport posixSupport = PosixSupport.get(inliningTarget);
                 long pos = posixSupport.lseek(self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
@@ -581,7 +580,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      */
                     bufsize = (int) (end - pos + 1); // cast guaranteed since we check against
                                                      // (MAX_SIZE: MAX_INT)
-                    mayBeQuick = true;
                 }
             } catch (PosixException e) {
                 // ignore
@@ -592,7 +590,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             try {
                 b = PosixModuleBuiltins.ReadNode.read(self.getFD(), bufsize, inliningTarget, context.getPosixSupport(), readErrorProfile, gil);
                 bytesRead = b.getSequenceStorage().length();
-                if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
+                if (bytesRead == 0) {
                     return b;
                 }
             } catch (PosixException e) {
