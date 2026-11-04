@@ -475,7 +475,7 @@ visit_collect_managed_referents(PyObject *op, GraalPyGC_Cycle *cycle)
 
     /* Even if replication cannot allocate, finish native reachability marking.
      * No weak candidates will be committed after a replication failure. */
-    if (cycle->failed) {
+    if (cycle->state != GraalPyGC_Cycle_Valid) {
         return visit_reachable(op, cycle->reachable);
     }
     /* Reuse one contiguous buffer for every owner in this collection. Growing
@@ -484,12 +484,12 @@ visit_collect_managed_referents(PyObject *op, GraalPyGC_Cycle *cycle)
         int32_t capacity = cycle->capacity > INT32_MAX / 2 ? INT32_MAX :
                            (cycle->capacity ? cycle->capacity * 2 : 16);
         if (capacity == cycle->n || (size_t)capacity > SIZE_MAX / sizeof(PyObject *)) {
-            cycle->failed = 1;
+            cycle->state = GraalPyGC_Cycle_NoMemory;
             return visit_reachable(op, cycle->reachable);
         }
         PyObject **items = realloc(cycle->items, (size_t)capacity * sizeof(PyObject *));
         if (items == NULL) {
-            cycle->failed = 1;
+            cycle->state = GraalPyGC_Cycle_NoMemory;
             return visit_reachable(op, cycle->reachable);
         }
         cycle->items = items;
@@ -509,7 +509,7 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
 {
     /* An empty traversal must replace an earlier snapshot too. Managed
      * objects are not traversed here; their Java references need no refresh. */
-    if (!cycle->failed && (cycle->n > 0 || !is_managed(op))) {
+    if (cycle->state == GraalPyGC_Cycle_Valid && (cycle->n > 0 || !is_managed(op))) {
         int dead = 0;
         // Some managed handles can be already collected if the GC is already cleaning the cycle
         for (int32_t i = 0; i < cycle->n; i++) {
@@ -523,7 +523,7 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
         }
         if (!dead) {
             if (GraalPyPrivate_Object_ReplicateNativeReferences(op, cycle->items, cycle->n) < 0) {
-                cycle->failed = 1;
+                cycle->state = GraalPyGC_Cycle_ReplicationFailed;
             }
         }
     }
@@ -848,7 +848,7 @@ gc_list_move_with_mask_unreachable(PyGC_Head *prev, PyGC_Head *gc, PyGC_Head *ta
  * But _gc_next in unreachable list has NEXT_MASK_UNREACHABLE flag.
  * So we can not gc_list_* functions for unreachable until we remove the flag.
  */
-static int
+static GraalPyGC_Cycle_State
 move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
         PyGC_Head *weak_candidates /* GraalPy change */)
 {
@@ -856,7 +856,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
     PyGC_Head *prev = young;
     PyGC_Head *gc = GC_NEXT(young);
     Py_ssize_t gc_refcnt;
-    GraalPyGC_Cycle cycle = {.reachable = young};
+    GraalPyGC_Cycle cycle = {.reachable = young, .state = GraalPyGC_Cycle_Valid};
 
     assert (young != weak_candidates);
 
@@ -896,8 +896,12 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                  */
                 assert(cycle.reachable == young);
                 /* visit_collect_managed_referents is visit_reachable + capture the references into "cycle" */
-                if (call_traverse(traverse, op, (visitproc)visit_collect_managed_referents, &cycle) != 0) {
-                    cycle.failed = 1;
+                if (call_traverse(traverse, op, (visitproc)visit_collect_managed_referents, &cycle) != 0 &&
+                    cycle.state == GraalPyGC_Cycle_Valid) {
+                    /* Our visitor records allocation failures without returning
+                     * an error. An unexpected tp_traverse failure is distinct;
+                     * never overwrite the cause of an earlier failure. */
+                    cycle.state = GraalPyGC_Cycle_TraversalFailed;
                 }
 
                 /* replicate any native reference to managed objects to Java */
@@ -957,7 +961,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
     // the pollution of the weak_candidates list head's next pointer is fixed in
     // 'move_weak_reachable'
     free(cycle.items);
-    return cycle.failed ? -1 : 0;
+    return cycle.state;
 }
 
 /* GraalPy change: added 'move_weak_reachable' */
@@ -1540,8 +1544,8 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
      */
     gc_list_init(unreachable);
     gc_list_init(&weak_candidates);
-    int failed = move_unreachable(base, unreachable, &weak_candidates);  // gc_prev is pointer again
-    if (failed) {
+    GraalPyGC_Cycle_State state = move_unreachable(base, unreachable, &weak_candidates);  // gc_prev is pointer again
+    if (state != GraalPyGC_Cycle_Valid) {
         /* Both lists have valid prev links, but tagged next links. Restore
          * every object to base before returning: an incomplete traversal must
          * neither weaken a handle nor allow tp_clear on a supposed isolate. */
@@ -1555,11 +1559,25 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
             }
             gc_list_merge(head, base);
         }
-        /* A failed replication upcall may have set a Python exception. All
-         * lists are normal again, so reporting it may safely re-enter Python. */
-        if (PyErr_Occurred()) {
-            PyErr_WriteUnraisable(NULL);
+        /* All lists are normal again, so creating and reporting an exception
+         * may safely re-enter Python. Preserve an existing exception, but do
+         * not silently abandon collection if the failure did not set one. */
+        if (!PyErr_Occurred()) {
+            switch (state) {
+                case GraalPyGC_Cycle_NoMemory:
+                    PyErr_NoMemory();
+                    break;
+                case GraalPyGC_Cycle_TraversalFailed:
+                    PyErr_SetString(PyExc_SystemError, "tp_traverse failed without setting an exception during garbage collection");
+                    break;
+                case GraalPyGC_Cycle_ReplicationFailed:
+                    /* A failing replication upcall must set an exception. */
+                    Py_FatalError("GraalPyPrivate_Object_ReplicateNativeReferences failed without setting an exception");
+                default:
+                    Py_FatalError("invalid native cycle collection failure state");
+            }
         }
+        PyErr_WriteUnraisable(NULL);
         return;
     }
     validate_list(base, collecting_clear_unreachable_clear);
