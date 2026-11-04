@@ -95,6 +95,36 @@ def compare_unicode_bytes_with_kind(x, y):
 
 class TestPyMemoryView(CPyExtTestCase):
 
+    def test_native_subclass_without_getbuffer(self):
+        for name, buffer_procs in (
+            ('NativeWithoutBuffer', 'NULL'),
+            ('NativeWithEmptyBuffer', '&empty_buffer'),
+        ):
+            with self.subTest(buffer_procs=buffer_procs):
+                NativeType = CPyExtType(
+                    name,
+                    '''
+                    static PyBufferProcs empty_buffer = {NULL, NULL};
+                    ''',
+                    cmembers='int value;',
+                    tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE',
+                    tp_as_buffer=buffer_procs,
+                )
+
+                class Iterable(NativeType):
+                    def __iter__(self):
+                        return iter((97, 98, 99))
+
+                for obj in (NativeType(), Iterable()):
+                    assert (bytearray() == obj) is False
+                    assert (bytearray() != obj) is True
+                    with self.assertRaises(TypeError):
+                        memoryview(obj)
+
+                data = bytearray(b'x')
+                data.extend(Iterable())
+                assert data == b'xabc'
+
     test_heap_type_buffer_procs = CPyExtFunction(
         lambda args: b'abc',
         lambda: ((type('HeapBuffer', (), {}),),),

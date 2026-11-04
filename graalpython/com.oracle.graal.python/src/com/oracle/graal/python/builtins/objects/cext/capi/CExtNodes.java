@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyBufferProcs__bf_getbuffer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_clear;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_doc;
@@ -1366,8 +1367,8 @@ public abstract class CExtNodes {
         @Specialization
         static boolean readTpAsBuffer(PythonAbstractNativeObject object) {
             long type = readPtrField(object.getPtr(), PyObject__ob_type);
-            long result = readPtrField(type, PyTypeObject__tp_as_buffer);
-            return result != NULLPTR;
+            long bufferProcs = readPtrField(type, PyTypeObject__tp_as_buffer);
+            return bufferProcs != NULLPTR && readPtrField(bufferProcs, PyBufferProcs__bf_getbuffer) != NULLPTR;
         }
     }
 
