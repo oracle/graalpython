@@ -101,7 +101,6 @@ public enum CStructs {
     Py_ssize_t,
     GCState,
     PyGC_Head,
-    GraalPyGC_CycleNode,
     GCGeneration,
     GraalPy_Test_CAPI;
 

@@ -1032,3 +1032,109 @@ class TestGCRefCycles(unittest.TestCase):
 @skipIf(not GRAALPY, "Internal GraalPy RSS function")
 def test_current_rss_monitor():
     assert __graalpython__.get_current_rss() > 0
+
+
+GCGraphNode = CPyExtType("GCGraphNode", r'''
+    static PyObject *saved = NULL;
+
+    static PyObject *graph_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
+        PyObject *left = NULL;
+        if (!PyArg_ParseTuple(args, "|O", &left)) {
+            return NULL;
+        }
+        GCGraphNodeObject *self = PyObject_GC_New(GCGraphNodeObject, type);
+        if (self == NULL) {
+            return NULL;
+        }
+        self->left = Py_XNewRef(left);
+        self->right = NULL;
+        PyObject_GC_Track(self);
+        return (PyObject *)self;
+    }
+
+    static int graph_traverse(GCGraphNodeObject *self, visitproc visit, void *arg) {
+        Py_VISIT(self->left);
+        Py_VISIT(self->right);
+        return 0;
+    }
+
+    static int graph_clear(GCGraphNodeObject *self) {
+        Py_CLEAR(self->left);
+        Py_CLEAR(self->right);
+        return 0;
+    }
+
+    static void graph_dealloc(GCGraphNodeObject *self) {
+        PyObject_GC_UnTrack(self);
+        graph_clear(self);
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static PyObject *graph_set(GCGraphNodeObject *self, PyObject *args) {
+        PyObject *left, *right;
+        if (!PyArg_ParseTuple(args, "OO", &left, &right)) {
+            return NULL;
+        }
+        Py_XSETREF(self->left, left == Py_None ? NULL : Py_NewRef(left));
+        Py_XSETREF(self->right, right == Py_None ? NULL : Py_NewRef(right));
+        Py_RETURN_NONE;
+    }
+
+    static PyObject *graph_hold(GCGraphNodeObject *self, PyObject *which) {
+        long child = PyLong_AsLong(which);
+        if (child == -1 && PyErr_Occurred()) {
+            return NULL;
+        }
+        PyObject *op = child ? self->left : (PyObject *)self;
+        Py_XSETREF(saved, Py_XNewRef(op));
+        Py_RETURN_NONE;
+    }
+
+    static PyObject *graph_release(PyObject *cls, PyObject *unused) {
+        Py_CLEAR(saved);
+        Py_RETURN_NONE;
+    }
+''',
+    cmembers='PyObject *left; PyObject *right;',
+    tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC',
+    tp_new='graph_new',
+    tp_traverse='(traverseproc)graph_traverse',
+    tp_clear='(inquiry)graph_clear',
+    tp_dealloc='(destructor)graph_dealloc',
+    tp_methods='''
+    {"set", (PyCFunction)graph_set, METH_VARARGS, ""},
+    {"hold", (PyCFunction)graph_hold, METH_O, ""},
+    {"release", (PyCFunction)graph_release, METH_NOARGS | METH_CLASS, ""}
+    ''',
+)
+
+
+class TestGCNativeReachability(unittest.TestCase):
+    @staticmethod
+    def collect_graph():
+        # Release argument tuples and their native storage before classifying the graph.
+        for _ in range(3):
+            gc.collect()
+            time.sleep(0.05)
+
+    def tearDown(self):
+        GCGraphNode.release()
+
+    def test_transitive_native_root(self):
+        # Exercise both allocation orders; the intermediate may precede its root.
+        for reverse in (False, True):
+            managed = []
+            # Materialize the managed handle before allocating the native graph.
+            holder = GCGraphNode(managed)
+            a, b = GCGraphNode(), GCGraphNode()
+            if reverse:
+                a, b = b, a
+            a.set(b, None)
+            b.set(managed, a)
+            holder.set(None, None)
+            a.hold(0)
+            self.collect_graph()
+            assert_is_strong(get_handle_table_id(managed))
+            GCGraphNode.release()
+            a.set(None, None)
+            b.set(None, None)

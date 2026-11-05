@@ -112,15 +112,19 @@ typedef struct {
 
 /* GraalPy GC support */
 
-typedef struct _cycle_node {
-    PyObject *item;
-    struct _cycle_node *next;
-} GraalPyGC_CycleNode;
+typedef enum {
+    GraalPyGC_Cycle_Valid = 0,
+    GraalPyGC_Cycle_NoMemory,
+    GraalPyGC_Cycle_ReplicationFailed,
+    GraalPyGC_Cycle_TraversalFailed
+} GraalPyGC_Cycle_State;
 
 typedef struct {
-    GraalPyGC_CycleNode *head;
+    PyObject **items;
     int32_t n;
+    int32_t capacity;
     PyGC_Head *reachable;
+    GraalPyGC_Cycle_State state;
 } GraalPyGC_Cycle;
 
 Py_LOCAL_SYMBOL void GraalPyPrivate_DebugTrace(void);
