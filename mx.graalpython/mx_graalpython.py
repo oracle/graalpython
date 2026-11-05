@@ -743,8 +743,9 @@ def graalpy_native_pgo_build_and_test(args=None):
             shutil.copyfileobj(f_in, f_out)
         host_inlining_log.unlink()
         mx.log(mx.colorize(f"[PGO] Gzipped host inlining log at: {host_inlining_log_gz}", color="yellow"))
+        check_call_host_inlining([str(host_inlining_log_gz)])
     else:
-        mx.warn(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
+        mx.abort(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
 
     iprof_gz_path = str(iprof_path) + '.gz'
     with open(iprof_path, 'rb') as f_in, gzip.open(iprof_gz_path, 'wb') as f_out:
@@ -3892,6 +3893,50 @@ def host_inlining_log_extract_method(args_in):
     return 1
 
 
+def check_call_host_inlining(args_in):
+    parser = ArgumentParser(description="Check host inlining of specialized Python call bytecode handlers.")
+    parser.add_argument("filename", help="host inlining log from native-ce-host-inlining, native-ee-host-inlining or python-native-pgo (.txt or .gz)")
+    args = parser.parse_args(args_in)
+
+    root_node = "com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen"
+    handlers = {
+        f"Root[{root_node}$CachedBytecodeNodeTailCall.__stub_handle{operation}$CallPFunction_]": operation
+        for operation in ("CallBinaryMethod", "CallTernaryMethod", "CallQuaternaryMethod", "CallNilaryMethod")
+    }
+    dispatch = root_node + "$AbstractBytecodeNode.continueAt"
+    permitted_methods = {dispatch, "com.oracle.truffle.runtime.BaseOSRRootNode.getFrame"}
+    # Deliberate inlining boundaries, interpreter slow paths, and exception unwinding.
+    expected_reasons = {
+        "method annotated with @InliningCutoff",
+        "truffle boundary",
+        "dominated by transferToInterpreter()",
+        "protected by inInterpreter()",
+        "propagates transferToInterpreter",
+        "leads to unwind",
+        "propagates unwind",
+        "the invoke is marked to be not used for inlining",
+    }
+    operation = None
+    checked = set()
+    with (gzip.open(args.filename, "rt", encoding="utf-8") if args.filename.endswith(".gz") else open(args.filename, encoding="utf-8")) as log:
+        for line in log:
+            if line.lstrip().startswith("Root["):
+                operation = handlers.get(line.strip())
+            if operation is None or not line.lstrip().startswith("CUTOFF "):
+                continue
+            method = line.split()[1].split("(", 1)[0]
+            reason = line.rsplit("reason ", 1)[-1].strip().removesuffix("]")
+            if method not in permitted_methods and reason not in expected_reasons:
+                mx.abort(f"Unexpected host inlining cutoff in {operation}.callPFunction:\n{line.strip()}")
+            if method == dispatch:
+                checked.add(operation)
+    missing = [operation for operation in handlers.values() if operation not in checked]
+    if missing:
+        mx.abort(f"Missing AbstractBytecodeNode.continueAt cutoff for {', '.join(missing)} in {args.filename}; "
+                 "build with --env native-ce-host-inlining or --env native-ee-host-inlining.")
+    mx.log(f"Call handler host inlining verified: {', '.join(handlers.values())} (only permitted cutoffs).")
+
+
 class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
     # We use global state, which influences what this unit-test config is going to do
     # The global state can be adjusted before a test run to achieve a different tests configuration
@@ -4044,6 +4089,7 @@ mx.update_commands(SUITE, {
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'verify-patches': [verify_patches, '[--git-mode]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
+    'python-check-call-host-inlining': [check_call_host_inlining, 'filename'],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
     'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, '[--with-extensions]'],
