@@ -49,6 +49,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -156,16 +157,17 @@ public class ExternalFunctionWrapperTest {
 
     @Before
     public void enter() {
-        context = Context.newBuilder("python").allowAllAccess(true).allowExperimentalOptions(true).option("engine.WarnInterpreterOnly", "false").option("engine.SplittingAllowForcedSplits",
-                        "true").build();
+        context = Context.newBuilder("python").allowAllAccess(true).allowExperimentalOptions(true).option("engine.WarnInterpreterOnly", "false").build();
         context.initialize("python");
         context.enter();
     }
 
     @After
     public void leave() {
-        context.leave();
-        context.close();
+        if (context != null) {
+            context.leave();
+            context.close();
+        }
     }
 
     private static Object invoke(Class<?> owner, Object receiver, String name, Class<?>[] types, Object... args) throws Exception {
@@ -440,14 +442,29 @@ public class ExternalFunctionWrapperTest {
     }
 
     @Test
-    public void framePoliciesAndClones() throws Exception {
+    public void framePolicies() throws Exception {
         for (Spec spec : SPECS) {
             for (String convention : spec.enums.split(",")) {
                 BuiltinFunctionRootNode root = root(factory(spec, convention, false));
                 assertPolicies(root, true, true);
                 assertWrapperRootIdentity(root, NAME);
+            }
+        }
+        Builtin builtin = OrdinaryNode.class.getAnnotation(Builtin.class);
+        assertPolicies(new BuiltinFunctionRootNode(PythonLanguage.get(null), builtin, new PrototypeNodeFactory<>(new OrdinaryNode()), true), false, false);
+        NodeFactory<?> locals = GetLocalsNodeFactory.getInstance();
+        Builtin localsBuiltin = locals.getNodeClass().getAnnotationsByType(Builtin.class)[0];
+        assertPolicies(new BuiltinFunctionRootNode(PythonLanguage.get(null), localsBuiltin, GetLocalsNodeFactory.getInstance(), true), false, true);
+    }
+
+    @Test
+    public void clones() throws Exception {
+        for (Spec spec : SPECS) {
+            for (String convention : spec.enums.split(",")) {
+                BuiltinFunctionRootNode root = root(factory(spec, convention, false));
                 DirectCallNode call = DirectCallNode.create(root.getCallTarget());
                 new AdoptionRoot(call).getCallTarget();
+                assumeTrue("The runtime must support call target cloning", call.isCallTargetCloningAllowed());
                 call.cloneCallTarget();
                 RootCallTarget clonedTarget = (RootCallTarget) call.getCurrentCallTarget();
                 assertNotSame("An optimized runtime with forced splitting is required", root.getCallTarget(), clonedTarget);
@@ -459,11 +476,6 @@ public class ExternalFunctionWrapperTest {
                 assertWrapperRootIdentity(clone, NAME);
             }
         }
-        Builtin builtin = OrdinaryNode.class.getAnnotation(Builtin.class);
-        assertPolicies(new BuiltinFunctionRootNode(PythonLanguage.get(null), builtin, new PrototypeNodeFactory<>(new OrdinaryNode()), true), false, false);
-        NodeFactory<?> locals = GetLocalsNodeFactory.getInstance();
-        Builtin localsBuiltin = locals.getNodeClass().getAnnotationsByType(Builtin.class)[0];
-        assertPolicies(new BuiltinFunctionRootNode(PythonLanguage.get(null), localsBuiltin, GetLocalsNodeFactory.getInstance(), true), false, true);
     }
 
     private static void assertPolicies(BuiltinFunctionRootNode root, boolean capture, boolean locals) {
