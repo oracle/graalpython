@@ -140,13 +140,17 @@ public abstract class AbstractCallMethodNode extends Node {
         return true;
     }
 
-    // The cached function's identity implies its type; only check the type when caching it.
-    public static PFunction asFunction(Object func) {
-        return func instanceof PFunction function ? function : null;
+    // A cached function's identity implies its type; only check the type when caching it.
+    public static PFunction asPFunctionOrNull(Object value) {
+        return value instanceof PFunction function ? function : null;
     }
 
-    public static boolean isSameFunction(Object func, PFunction cachedFunc) {
-        return func == cachedFunc;
+    public static PBuiltinFunction asPBuiltinFunctionOrNull(Object value) {
+        return value instanceof PBuiltinFunction function ? function : null;
+    }
+
+    public static PBuiltinMethod asPBuiltinMethodOrNull(Object value) {
+        return value instanceof PBuiltinMethod method ? method : null;
     }
 
     @Idempotent

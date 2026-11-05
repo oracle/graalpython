@@ -87,10 +87,10 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3);
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getBuiltin(frame, func, 3, $node)") PythonBuiltinBaseNode builtinNode) {
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    public static Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("asPBuiltinFunctionOrNull(func)") PBuiltinFunction cachedFunc,
+                    @Cached("getBuiltin(frame, cachedFunc, 3, $node)") PythonBuiltinBaseNode builtinNode) {
         return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
@@ -102,11 +102,11 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
         return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object doBuiltinMethodCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 3, $node)") PythonBuiltinBaseNode builtinNode) {
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    public static Object doBuiltinMethodCached(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("asPBuiltinMethodOrNull(func)") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(cachedFunc)") boolean takesSelfArg,
+                    @Cached("getBuiltin(frame, cachedFunc.getBuiltinFunction(), 3, $node)") PythonBuiltinBaseNode builtinNode) {
         return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
@@ -118,12 +118,12 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
         return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 4, $node)") PythonBuiltinBaseNode builtinNode) {
-        return callQuaternaryBuiltin(frame, builtinNode, func.getSelf(), arg1, arg2, arg3);
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    public static Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached(value = "asPBuiltinMethodOrNull(func)", weak = true) PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(cachedFunc)") boolean takesSelfArg,
+                    @Cached("getBuiltin(frame, cachedFunc.getBuiltinFunction(), 4, $node)") PythonBuiltinBaseNode builtinNode) {
+        return callQuaternaryBuiltin(frame, builtinNode, cachedFunc.getSelf(), arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getFunctionRootNode() == rootNode", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -135,11 +135,11 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
     }
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 3)", "isSameFunction(func, cachedFunc)"}, excludeForUncached = true, //
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 3)", "isSameObject(func, cachedFunc)"}, excludeForUncached = true, //
                     assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
     public static Object callPFunction(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3,
                     @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached(value = "asFunction(func)", weak = true) PFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached(value = "asPFunctionOrNull(func)", weak = true) PFunction cachedFunc,
                     @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
                     @Exclusive @Cached FunctionDirectInvokeNode invokeNode) {
         Object[] args = PArguments.create(3);

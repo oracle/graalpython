@@ -86,11 +86,11 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3, Object arg4);
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, //
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getBuiltin(frame, func, 4, $node)") PythonBuiltinBaseNode builtinNode) {
+    public static Object callSingle(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3, Object arg4,
+                    @SuppressWarnings("unused") @Cached("asPBuiltinFunctionOrNull(func)") PBuiltinFunction cachedFunc,
+                    @Cached("getBuiltin(frame, cachedFunc, 4, $node)") PythonBuiltinBaseNode builtinNode) {
         return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
@@ -102,11 +102,11 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
         return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callMethodSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 4, $node)") PythonBuiltinBaseNode builtinNode) {
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    public static Object callMethodSingle(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3, Object arg4,
+                    @SuppressWarnings("unused") @Cached("asPBuiltinMethodOrNull(func)") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(cachedFunc)") boolean takesSelfArg,
+                    @Cached("getBuiltin(frame, cachedFunc.getBuiltinFunction(), 4, $node)") PythonBuiltinBaseNode builtinNode) {
         return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
@@ -119,11 +119,11 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     }
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 4)", "isSameFunction(func, cachedFunc)"}, excludeForUncached = true, //
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 4)", "isSameObject(func, cachedFunc)"}, excludeForUncached = true, //
                     assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
     public static Object callPFunction(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached(value = "asFunction(func)", weak = true) PFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached(value = "asPFunctionOrNull(func)", weak = true) PFunction cachedFunc,
                     @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
                     @Exclusive @Cached FunctionDirectInvokeNode invokeNode) {
         Object[] args = PArguments.create(4);

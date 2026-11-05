@@ -93,11 +93,11 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     }
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, //
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callObjectSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getBuiltin(frame, func, 1, $node)") PythonBuiltinBaseNode builtinNode) {
+    public static Object callObjectSingle(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object receiver,
+                    @SuppressWarnings("unused") @Cached("asPBuiltinFunctionOrNull(func)") PBuiltinFunction cachedFunc,
+                    @Cached("getBuiltin(frame, cachedFunc, 1, $node)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
@@ -109,11 +109,11 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 1, $node)") PythonBuiltinBaseNode builtinNode) {
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    public static Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object receiver,
+                    @SuppressWarnings("unused") @Cached("asPBuiltinMethodOrNull(func)") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(cachedFunc)") boolean takesSelfArg,
+                    @Cached("getBuiltin(frame, cachedFunc.getBuiltinFunction(), 1, $node)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
@@ -125,12 +125,12 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    public static Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
-                    @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 2, $node)") PythonBuiltinBaseNode builtinNode) {
-        return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "isSameObject(func, cachedFunc)", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    public static Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg,
+                    @SuppressWarnings("unused") @Cached(value = "asPBuiltinMethodOrNull(func)", weak = true) PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(cachedFunc)") boolean takesSelfArg,
+                    @Cached("getBuiltin(frame, cachedFunc.getBuiltinFunction(), 2, $node)") PythonBuiltinBaseNode builtinNode) {
+        return callBinaryBuiltin(frame, builtinNode, cachedFunc.getSelf(), arg);
     }
 
     @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getFunctionRootNode() == rootNode", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -142,11 +142,11 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     }
 
     @ForceQuickening
-    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 1)", "isSameFunction(func, cachedFunc)"}, excludeForUncached = true, //
+    @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 1)", "isSameObject(func, cachedFunc)"}, excludeForUncached = true, //
                     assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
     public static Object callPFunction(VirtualFrame frame, @SuppressWarnings("unused") Object func, Object arg,
                     @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached(value = "asFunction(func)", weak = true) PFunction cachedFunc,
+                    @SuppressWarnings("unused") @Cached(value = "asPFunctionOrNull(func)", weak = true) PFunction cachedFunc,
                     @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
                     @Exclusive @Cached FunctionDirectInvokeNode invokeNode) {
         Object[] args = PArguments.create(1);
