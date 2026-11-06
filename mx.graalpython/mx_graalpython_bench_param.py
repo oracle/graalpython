@@ -144,6 +144,8 @@ MICRO_BENCHMARKS = {
 
 # For benchmarking the interpreter with --engine.Compilation=false
 MICRO_BENCHMARKS_SMALL = {
+    'call-binary': ITER_10 + WARMUP_2,
+    'empty-loop': ITER_10 + WARMUP_2,
     'posix-operations': ITER_6 + WARMUP_2 + ['2000'],
     'posix-read': ITER_6 + WARMUP_2 + ['16384'],
     'posix-write': ITER_6 + WARMUP_2 + ['16384'],
