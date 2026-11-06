@@ -356,7 +356,7 @@ def graalpy_resource_variant_tests(args):
     for expected, prop, error in cases:
         with tempfile.TemporaryDirectory(prefix='graalpy-resource-variant-') as directory:
             output = mx.OutputCapture()
-            options = ['-ea', '-esa', '-Dpython.DetailedAsserts=true',
+            options = ['-ea', '-esa', '-Dtruffle.DetailedAssertions=true',
                        '-Dpolyglot.engine.WarnInterpreterOnly=false', '-Dpolyglot.engine.userResourceCache=' + directory]
             if prop is not None:
                 options.append('-Dorg.graalvm.python.resources.variant=' + prop)

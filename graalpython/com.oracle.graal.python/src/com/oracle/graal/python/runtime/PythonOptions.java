@@ -61,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -74,14 +75,12 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
-    private static final boolean DETAILED_ASSERTIONS = Boolean.getBoolean("python.DetailedAsserts");
-
     /**
      * Enables expensive internal checks only when assertions are enabled for PythonOptions and
-     * {@code -Dpython.DetailedAsserts=true} was set at class initialization.
+     * {@link TruffleOptions#DetailedAssertions} is enabled.
      */
     public static boolean detailedAssertionsEnabled() {
-        return assertionsEnabled() && DETAILED_ASSERTIONS;
+        return assertionsEnabled() && TruffleOptions.DetailedAssertions;
     }
 
     @SuppressWarnings("all")

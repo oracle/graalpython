@@ -91,7 +91,7 @@ def run_in_graalpy_subprocess(test):
             [
                 sys.executable,
                 "--vm.ea",
-                "--vm.Dpython.DetailedAsserts=true",
+                "--vm.Dtruffle.DetailedAssertions=true",
                 "--experimental-options=true",
                 "--python.EnableDebuggingBuiltins",
                 runner,

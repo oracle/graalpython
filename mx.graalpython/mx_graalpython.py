@@ -1268,7 +1268,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
         mx_args.append("--extra-image-builder-argument=-J-ea")
-        mx_args.append("--extra-image-builder-argument=-Dpython.DetailedAsserts=true")
+        mx_args.append("--extra-image-builder-argument=-Dtruffle.DetailedAssertions=true")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         # This build is purposefully done without the LATEST_JAVA_HOME in the
@@ -1696,7 +1696,7 @@ def graalpytest(args):
     if is_graalpy:
         gp_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         if env.get("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != "true":
-            gp_args += ["--vm.ea", "--vm.esa", "--vm.Dpython.DetailedAsserts=true"]
+            gp_args += ["--vm.ea", "--vm.esa", "--vm.Dtruffle.DetailedAssertions=true"]
         if args.python:
             mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args = [*gp_args, *python_args]
@@ -1740,7 +1740,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if extra_args:
         mx.log("Adding GraalPy unittest args from GRAALPY_UNITTEST_ARGS: " + shlex.join(extra_args))
     args = [
-        "--vm.Dpython.DetailedAsserts=true",
+        "--vm.Dtruffle.DetailedAssertions=true",
         "--vm.ea",
         "--experimental-options=true",
         "--python.EnableDebuggingBuiltins",
@@ -1952,7 +1952,7 @@ def graalpython_gate_runner(_, tasks):
                 mvn_cmd_base = ['--settings', maven_settings,
                                 '-f', pom_path,
                                 f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
-                                '-Dpython.DetailedAsserts=true',
+                                '-Dtruffle.DetailedAssertions=true',
                                 '--batch-mode']
 
                 default_runtime_arg = []
@@ -1988,7 +1988,7 @@ def graalpython_gate_runner(_, tasks):
                 mvn_cmd_base = ['--settings', maven_settings,
                                 '-f', pom_path,
                                 f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
-                                '-Dpython.DetailedAsserts=true',
+                                '-Dtruffle.DetailedAssertions=true',
                                 '--batch-mode']
 
                 mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
@@ -3762,7 +3762,7 @@ def run_leak_launcher(input_args):
     vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
     vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins.objects.cext.capi.transitions=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
-    vm_args += ['-ea', '-esa', '-Dpython.DetailedAsserts=true']
+    vm_args += ['-ea', '-esa', '-Dtruffle.DetailedAssertions=true']
     jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
@@ -3899,7 +3899,7 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
 
     def apply(self, config):
         (vmArgs, mainClass, mainClassArgs) = config
-        vmArgs.append('-Dpython.DetailedAsserts=true')
+        vmArgs.append('-Dtruffle.DetailedAssertions=true')
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.api.impl=ALL-UNNAMED'])  # for TruffleRunner/TCK
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.polyglot=ALL-UNNAMED'])  # for TruffleRunner/TCK
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
