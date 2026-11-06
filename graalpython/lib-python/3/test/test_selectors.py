@@ -1,6 +1,7 @@
 import errno
 import os
 import random
+import select
 import selectors
 import signal
 import socket
@@ -292,6 +293,10 @@ class BaseSelectorTestCase:
 
         sock1, sock2 = self.make_socketpair()
         sock2.send(b"foo")
+        # A TCP socketpair may be writable before the sent data arrives.
+        # Wait for read readiness without consuming the data.
+        readable, _, _ = select.select([sock1], [], [], support.SHORT_TIMEOUT)
+        self.assertEqual(readable, [sock1])
         my_key = s.register(sock1, selectors.EVENT_READ | selectors.EVENT_WRITE)
 
         seen_read, seen_write = False, False

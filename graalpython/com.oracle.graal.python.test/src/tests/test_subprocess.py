@@ -245,10 +245,21 @@ class TestSubprocess(unittest.TestCase):
         import sys
         if sys.implementation.name == "graalpy":
             import subprocess, __graalpython__
-            if __graalpython__.java_assert():
-                result = subprocess.run([sys.executable, "-c", "import __graalpython__; __graalpython__.java_assert()"])
-            else:
-                result = subprocess.run([sys.executable, "-c", "import __graalpython__; not __graalpython__.java_assert()"])
+            expected = (__graalpython__.java_assert(), __graalpython__.java_assert(detailed=True))
+            args = [sys.executable]
+            if sys.platform == 'win32':
+                # Windows subprocesses do not use the POSIX executable replacement
+                # that forwards the parent's VM options.
+                if expected[0]:
+                    args.append("--vm.ea")
+                if expected[1]:
+                    args.append("--vm.Dtruffle.DetailedAssertions=true")
+            code = (
+                "import __graalpython__; "
+                "actual = (__graalpython__.java_assert(), __graalpython__.java_assert(detailed=True)); "
+                f"assert actual == {expected!r}, actual"
+            )
+            result = subprocess.run([*args, "-c", code])
             assert result.returncode == 0
 
     def test_subprocess_inherits_environ(self):

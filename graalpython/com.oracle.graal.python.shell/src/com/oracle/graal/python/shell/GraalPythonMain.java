@@ -508,8 +508,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 }
             }
         }
-        if (Boolean.getBoolean("python.DetailedAsserts")) {
-            addRelaunchArg("--vm.Dpython.DetailedAsserts=true");
+        if (Boolean.getBoolean("truffle.DetailedAssertions")) {
+            addRelaunchArg("--vm.Dtruffle.DetailedAssertions=true");
         }
 
         // According to CPython if no arguments are given, they contain an empty string.
