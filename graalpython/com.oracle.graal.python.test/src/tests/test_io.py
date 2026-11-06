@@ -353,6 +353,12 @@ sys.stdout = StdoutAtShutdown()
         s.write('ab')
         self.assertEqual('heabo', s.getvalue())
 
+    def test_stringio_validates_newline_before_initial_value(self):
+        self.assertRaises(ValueError, _io.StringIO, b'', 'x')
+        self.assertRaises(ValueError, _io.StringIO, 1, 'x')
+        self.assertRaises(TypeError, _io.StringIO, b'')
+        self.assertEqual('', _io.StringIO(None).getvalue())
+
     def test_cr_not_ignored(self):
         d = _io.IncrementalNewlineDecoder(None, translate=False)
         d.decode("h\rello")
