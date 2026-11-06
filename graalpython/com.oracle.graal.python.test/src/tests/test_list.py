@@ -486,6 +486,25 @@ class ListTest(list_tests.CommonTest):
         a[1:5] = [1.1, 2.2, 3.3]
         self.assertEqual([1, 1.1, 2.2, 3.3], a)
 
+    def test_set_slice_large_integer(self):
+        # Construct at runtime to reliably exercise LongSequenceStorage.
+        value = int("2147483648")
+        a = []
+        a[:] = [value]
+        self.assertEqual([value], a)
+
+        a = [1, 2, 3]
+        a[1:2] = [value]
+        self.assertEqual([1, value, 3], a)
+
+        a = [1, 2, 3]
+        a[::2] = [value, value + 1]
+        self.assertEqual([value, 2, value + 1], a)
+
+        a = []
+        a[:] = iter([value])
+        self.assertEqual([value], a)
+
     def test_extend_spec(self):
         a = [1, 2]
         a.extend(a)
