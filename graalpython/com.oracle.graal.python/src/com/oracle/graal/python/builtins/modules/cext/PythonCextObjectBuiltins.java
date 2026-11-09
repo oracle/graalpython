@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
@@ -148,6 +149,7 @@ import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.object.DescriptorCheckNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -307,14 +309,23 @@ public abstract class PythonCextObjectBuiltins {
         try {
             Object callable = PyObjectGetMethodNodeGen.getUncached().execute(null, null, receiver, methodName);
             boolean isBound = callable instanceof BoundDescriptor;
+            if (isBound) {
+                callable = ((BoundDescriptor) callable).descriptor;
+            } else if (callable instanceof PBuiltinFunction builtinFunction) {
+                /*
+                 * Builtin implementations may rely on descriptor binding to validate the receiver.
+                 * Perform that check without binding or repeating the attribute lookup.
+                 */
+                Object enclosingType = builtinFunction.getEnclosingType();
+                if (enclosingType != null) {
+                    DescriptorCheckNodeGen.getUncached().execute(null, enclosingType, builtinFunction.getName(), receiver);
+                }
+            }
             if (!isBound && callable instanceof PythonAbstractNativeObject) {
                 resultPointerValue = PythonToNativeInternalNode.executeNewRefUncached(callable);
                 return 1;
             }
             Object[] args = readArguments(argsArray, (int) nargs, receiver, isBound);
-            if (isBound) {
-                callable = ((BoundDescriptor) callable).descriptor;
-            }
 
             PKeyword[] keywords;
             if (kwnamesPtr == NULLPTR) {
@@ -341,8 +352,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    private static Object[] readArguments(long argsArray, int nargs,
-                    Object receiver, boolean isBound) {
+    private static Object[] readArguments(long argsArray, int nargs, Object receiver, boolean isBound) {
         if (isBound) {
             return CStructAccess.ReadObjectNode.getUncached().readPyObjectArray(argsArray, nargs);
         }
