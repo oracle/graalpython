@@ -33,7 +33,7 @@ test.test_fileio.COtherFileTests.testBooleanFd @ darwin-arm64,linux-aarch64,linu
 test.test_fileio.COtherFileTests.testBytesOpen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fileio.COtherFileTests.testConstructorHandlesNULChars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fileio.COtherFileTests.testInvalidFd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_fileio.COtherFileTests.testInvalidFd_overflow @ linux-x86_64
+test.test_fileio.COtherFileTests.testInvalidFd_overflow @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fileio.COtherFileTests.testInvalidInit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fileio.COtherFileTests.testInvalidModeStrings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fileio.COtherFileTests.testModeStrings @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
