@@ -116,6 +116,11 @@ import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class PGuards {
 
+    // Allows identity guards between Object and typed cached values in DSL expressions.
+    public static boolean isSameObject(Object value, Object cachedValue) {
+        return value == cachedValue;
+    }
+
     public static boolean stringEquals(TruffleString key, TruffleString cachedKey, TruffleString.EqualNode equalNode) {
         return equalNode.execute(cachedKey, key, TS_ENCODING);
     }
