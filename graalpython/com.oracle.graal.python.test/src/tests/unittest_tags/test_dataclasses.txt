@@ -219,7 +219,7 @@ test.test_dataclasses.TestSlots.test_dataclass_derived_generic @ darwin-arm64,li
 test.test_dataclasses.TestSlots.test_dataclass_derived_generic_from_slotted_base @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_dataclass_derived_generic_from_slotted_base_with_weakref @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_dataclass_slot_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_dataclasses.TestSlots.test_dataclass_slot_dict_ctype @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_dataclasses.TestSlots.test_dataclass_slot_dict_ctype @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_dataclasses.TestSlots.test_derived_added_field @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_empty_class_cell @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dataclasses.TestSlots.test_frozen_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -25,7 +25,7 @@ test.test_import.ImportTests.test_from_import_message_for_existing_module @ darw
 test.test_import.ImportTests.test_from_import_message_for_nonexistent_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.ImportTests.test_from_import_missing_attr_has_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.ImportTests.test_from_import_missing_attr_has_name_and_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_import.ImportTests.test_from_import_missing_attr_has_name_and_so_path @ linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_import.ImportTests.test_from_import_missing_attr_has_name_and_so_path @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_import.ImportTests.test_from_import_missing_attr_path_is_canonical @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.ImportTests.test_from_import_missing_attr_raises_ImportError @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.ImportTests.test_from_import_missing_module_raises_ModuleNotFoundError @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
