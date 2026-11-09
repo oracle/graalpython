@@ -1,4 +1,4 @@
-test.test_genericclass.CAPITest.test_c_class @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericclass.CAPITest.test_c_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericclass.TestClassGetitem.test_class_getitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericclass.TestClassGetitem.test_class_getitem_classmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericclass.TestClassGetitem.test_class_getitem_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
