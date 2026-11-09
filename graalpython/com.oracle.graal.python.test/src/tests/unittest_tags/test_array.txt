@@ -38,7 +38,7 @@ test.test_array.ByteTest.test_iterationcontains @ darwin-arm64,linux-aarch64,lin
 test.test_array.ByteTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ByteTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ByteTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.ByteTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.ByteTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.ByteTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ByteTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ByteTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -96,7 +96,7 @@ test.test_array.DoubleTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,lin
 test.test_array.DoubleTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_nan @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.DoubleTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.DoubleTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.DoubleTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_pop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -151,7 +151,7 @@ test.test_array.FloatTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linu
 test.test_array.FloatTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_nan @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.FloatTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.FloatTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.FloatTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_pop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -205,7 +205,7 @@ test.test_array.IntTest.test_iterationcontains @ darwin-arm64,linux-aarch64,linu
 test.test_array.IntTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.IntTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.IntTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.IntTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -276,7 +276,7 @@ test.test_array.LongLongTest.test_iterationcontains @ darwin-arm64,linux-aarch64
 test.test_array.LongLongTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongLongTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongLongTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.LongLongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.LongLongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.LongLongTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongLongTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongLongTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -332,7 +332,7 @@ test.test_array.LongTest.test_iterationcontains @ darwin-arm64,linux-aarch64,lin
 test.test_array.LongTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.LongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.LongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.LongTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -391,7 +391,7 @@ test.test_array.ShortTest.test_iterationcontains @ darwin-arm64,linux-aarch64,li
 test.test_array.ShortTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ShortTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ShortTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.ShortTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.ShortTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.ShortTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ShortTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ShortTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -444,7 +444,7 @@ test.test_array.UCS4Test.test_issue17223 @ darwin-arm64,linux-aarch64,linux-aarc
 test.test_array.UCS4Test.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UCS4Test.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UCS4Test.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UCS4Test.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_pop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -496,7 +496,7 @@ test.test_array.UnicodeTest.test_issue17223 @ darwin-arm64,linux-aarch64,linux-a
 test.test_array.UnicodeTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UnicodeTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UnicodeTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UnicodeTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_pop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -552,7 +552,7 @@ test.test_array.UnsignedByteTest.test_iterationcontains @ darwin-arm64,linux-aar
 test.test_array.UnsignedByteTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UnsignedByteTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UnsignedByteTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -609,7 +609,7 @@ test.test_array.UnsignedIntTest.test_iterationcontains @ darwin-arm64,linux-aarc
 test.test_array.UnsignedIntTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UnsignedIntTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UnsignedIntTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -666,7 +666,7 @@ test.test_array.UnsignedLongLongTest.test_iterationcontains @ darwin-arm64,linux
 test.test_array.UnsignedLongLongTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UnsignedLongLongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UnsignedLongLongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -723,7 +723,7 @@ test.test_array.UnsignedLongTest.test_iterationcontains @ darwin-arm64,linux-aar
 test.test_array.UnsignedLongTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UnsignedLongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UnsignedLongTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -780,7 +780,7 @@ test.test_array.UnsignedShortTest.test_iterationcontains @ darwin-arm64,linux-aa
 test.test_array.UnsignedShortTest.test_iterator_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_len @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_mul @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_array.UnsignedShortTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_array.UnsignedShortTest.test_obsolete_write_lock @ linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_pickle_for_empty_array @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

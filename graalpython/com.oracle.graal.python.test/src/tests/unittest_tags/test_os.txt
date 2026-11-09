@@ -18,7 +18,7 @@ test.test_os.BytesWalkTests.test_walk_bad_dir2 @ darwin-arm64,linux-aarch64,linu
 test.test_os.BytesWalkTests.test_walk_bottom_up @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.BytesWalkTests.test_walk_many_open_files @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.BytesWalkTests.test_walk_prune @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_os.BytesWalkTests.test_walk_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_os.BytesWalkTests.test_walk_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_os.BytesWalkTests.test_walk_topdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.CPUCountTests.test_cpu_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.CPUCountTests.test_process_cpu_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -104,7 +104,7 @@ test.test_os.MakedirTests.test_mode @ darwin-arm64,linux-aarch64,linux-aarch64-g
 test.test_os.MiscTests.test_getcwd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.MiscTests.test_getcwd_long_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.MiscTests.test_getcwdb @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_os.OSErrorTests.test_oserror_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.PathTConverterTests.test_path_t_converter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -114,11 +114,11 @@ test.test_os.Pep383Tests.test_stat @ darwin-arm64,linux-aarch64,linux-aarch64-gi
 test.test_os.Pep383Tests.test_statvfs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.PidTests.test_getppid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.PseudoterminalTests.test_openpty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_os.ReadlinkTests.test_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_os.ReadlinkTests.test_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_os.ReadlinkTests.test_missing_link @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.ReadlinkTests.test_not_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_os.ReadlinkTests.test_pathlike @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_os.ReadlinkTests.test_pathlike_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_os.ReadlinkTests.test_pathlike @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_os.ReadlinkTests.test_pathlike_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_os.RemoveDirsTests.test_remove_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.RemoveDirsTests.test_remove_nothing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.RemoveDirsTests.test_remove_partial @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -228,3 +228,8 @@ test.test_os.Win32ListdirTests.test_listdir_no_extended_path @ win32-AMD64,win32
 # Transiently gets different count of file handles
 !test.test_os.Win32NtTests.test_getfinalpathname_handles @ win32-AMD64,win32-AMD64-github
 test.test_os.Win32NtTests.test_stat_unlink_race @ win32-AMD64,win32-AMD64-github
+test.test_os.Win32SymlinkTests.test_29248 @ win32-AMD64-github
+test.test_os.Win32SymlinkTests.test_buffer_overflow @ win32-AMD64-github
+test.test_os.Win32SymlinkTests.test_isdir_on_directory_link_to_missing_target @ win32-AMD64-github
+test.test_os.Win32SymlinkTests.test_remove_directory_link_to_missing_target @ win32-AMD64-github
+test.test_os.Win32SymlinkTests.test_rmdir_on_directory_link_to_missing_target @ win32-AMD64-github
