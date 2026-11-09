@@ -27,7 +27,7 @@ test.test_support.TestSupport.test_make_bad_fd @ darwin-arm64,linux-aarch64,linu
 test.test_support.TestSupport.test_parse_memlimit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_print_warning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_python_is_optimized @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_support.TestSupport.test_requires_testcapi @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_support.TestSupport.test_requires_testcapi @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_support.TestSupport.test_rmtree @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_set_memlimit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_support.TestSupport.test_sortdict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

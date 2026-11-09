@@ -53,7 +53,7 @@ test.test_pydoc.test_pydoc.PydocWithMetaClasses.test_virtualClassAttributeWithTw
 test.test_pydoc.test_pydoc.TestDescriptions.test_async_annotation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_async_generator_annotation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_bound_builtin_classmethod_noargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_pydoc.test_pydoc.TestDescriptions.test_bound_builtin_classmethod_unrepresentable_default @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pydoc.test_pydoc.TestDescriptions.test_bound_builtin_classmethod_unrepresentable_default @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_pydoc.test_pydoc.TestDescriptions.test_bound_builtin_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_bound_builtin_method_noargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_bound_python_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -69,7 +69,7 @@ test.test_pydoc.test_pydoc.TestDescriptions.test_html_for_https_links @ darwin-a
 test.test_pydoc.test_pydoc.TestDescriptions.test_member_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_module_level_callable_noargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_pydoc.test_pydoc.TestDescriptions.test_module_level_callable_unrepresentable_default @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pydoc.test_pydoc.TestDescriptions.test_module_level_callable_unrepresentable_default @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_pydoc.test_pydoc.TestDescriptions.test_module_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_namedtuple_field_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_overridden_text_signature @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -79,7 +79,7 @@ test.test_pydoc.test_pydoc.TestDescriptions.test_special_form @ darwin-arm64,lin
 test.test_pydoc.test_pydoc.TestDescriptions.test_staticmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_structseq_member_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_typing_pydoc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_pydoc.test_pydoc.TestDescriptions.test_unbound_builtin_classmethod_unrepresentable_default @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pydoc.test_pydoc.TestDescriptions.test_unbound_builtin_classmethod_unrepresentable_default @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_pydoc.test_pydoc.TestDescriptions.test_unbound_builtin_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_unbound_builtin_method_noargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_unbound_python_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

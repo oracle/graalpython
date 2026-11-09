@@ -39,7 +39,7 @@ test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides @ darwin-ar
 test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_buffer.TestBufferProtocol.test_ndarray_zero_strides @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_buffer.TestBufferProtocol.test_py_buffer_to_contiguous @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_buffer.TestBufferProtocol.test_pybuffer_size_from_format @ linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_pybuffer_size_from_format @ linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_buffer.TestPythonBufferProtocol.test_bad_buffer_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_buffer.TestPythonBufferProtocol.test_c_fill_buffer_invalid_flags @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_buffer.TestPythonBufferProtocol.test_c_fill_buffer_readonly_and_writable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

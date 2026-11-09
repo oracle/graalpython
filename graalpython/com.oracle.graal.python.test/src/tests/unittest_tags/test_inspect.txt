@@ -47,7 +47,7 @@ test.test_inspect.test_inspect.TestClassesAndFunctions.test_classify_overrides_b
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_get_annotations_with_stock_annotations @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_get_annotations_with_stringized_annotations @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_builtin_func @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_builtin_func @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_definition_order_preserved_on_kwonly @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_signature_annos @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_signature_attr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -276,7 +276,7 @@ test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class_witho
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_classmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_complex_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_decorated @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_decorated_builtins @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_decorated_builtins @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_derived_classes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_fake_partialmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_generic_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
