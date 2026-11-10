@@ -25,27 +25,28 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ALL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -83,6 +84,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached PyObjectSetItem setItemNode,
                     @Cached PyObjectLookupAttr lookupAttrNode,
                     @Cached PyObjectCallMethodObjArgs callMethodNode,
+                    @Cached FastConstructListNode materializeKeysNode,
                     @Cached PyObjectGetAttr getAttrNode,
                     @Cached PyObjectGetIter getIterNode,
                     @Cached PyIterNextNode nextNode,
@@ -134,6 +136,8 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     throw PRaiseNode.raiseStatic(this, ImportError, ErrorMessages.IMPORT_STAR_NO_DICT_OR_ALL);
                 }
                 Object keys = callMethodNode.execute(frame, inliningTarget, dict, T_KEYS);
+                // Like PyMapping_Keys, consume the keys before reading any exported attributes.
+                keys = materializeKeysNode.execute(frame, inliningTarget, keys);
                 Object keysIterator = getIterNode.execute(frame, inliningTarget, keys);
                 while (true) {
                     Object key;
