@@ -54,10 +54,12 @@ import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.OpaquePathToBytesNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -65,6 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.PosixSupportNodes;
+import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -112,6 +115,55 @@ public final class NtModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private TruffleString getTruffleStringPath(String fspath) {
             return PythonUtils.toTruffleStringUncached(getContext().getEnv().getPublicTruffleFile(fspath).getAbsoluteFile().toString());
+        }
+    }
+
+    @Builtin(name = "_getfinalpathname", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @GenerateNodeFactory
+    abstract static class GetFinalPathNameNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        Object getFinalPathName(VirtualFrame frame, PosixPath path,
+                        @Bind Node inliningTarget,
+                        @Cached OpaquePathToBytesNode opaquePathToBytesNode,
+                        @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                Object result = getPosixSupport().getFinalPathName(path.value);
+                if (path.wasBufferLike) {
+                    return opaquePathToBytesNode.execute(inliningTarget, getPosixSupport(), result, getLanguage());
+                }
+                return getPathAsStringNode.execute(inliningTarget, getPosixSupport(), result);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NtModuleBuiltinsClinicProviders.GetFinalPathNameNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "_findfirstfile", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @GenerateNodeFactory
+    abstract static class FindFirstFileNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        Object findFirstFile(VirtualFrame frame, PosixPath path,
+                        @Bind Node inliningTarget,
+                        @Cached PosixSupportNodes.GetPathAsStringNode getPathAsStringNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                return getPathAsStringNode.execute(inliningTarget, getPosixSupport(), getPosixSupport().findFirstFile(path.value));
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NtModuleBuiltinsClinicProviders.FindFirstFileNodeClinicProviderGen.INSTANCE;
         }
     }
 

@@ -2235,6 +2235,51 @@ GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *b
     }
     return characters;
 }
+/* Return the required capacity (including NUL) when the output buffer is too small. */
+GP_EXPORT int64_t call_getfinalpathname(const wchar_t *path, wchar_t *buf, uint64_t size) {
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    HANDLE handle = CreateFileW(prepared.value, 0, 0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    DWORD error = GetLastError();
+    win_path_clear(&prepared);
+    if (handle == INVALID_HANDLE_VALUE) {
+        set_win_errno(error);
+        return -1;
+    }
+    DWORD length = GetFinalPathNameByHandleW(handle, buf, (DWORD) size, VOLUME_NAME_DOS);
+    error = GetLastError();
+    CloseHandle(handle);
+    if (length == 0) {
+        set_win_errno(error);
+        return -1;
+    }
+    return length;
+}
+
+GP_EXPORT int64_t call_findfirstfile(const wchar_t *path, wchar_t *buf, uint64_t size) {
+    win_path_t prepared;
+    if (win_path_init(&prepared, path) != 0) {
+        return -1;
+    }
+    WIN32_FIND_DATAW data;
+    HANDLE handle = FindFirstFileW(prepared.value, &data);
+    DWORD error = GetLastError();
+    win_path_clear(&prepared);
+    if (handle == INVALID_HANDLE_VALUE) {
+        set_win_errno(error);
+        return -1;
+    }
+    FindClose(handle);
+    size_t length = wcslen(data.cFileName);
+    if (length >= size) {
+        return length + 1;
+    }
+    memcpy(buf, data.cFileName, length * sizeof(wchar_t));
+    return length;
+}
+
 GP_EXPORT int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) { return unsupported(); }
 GP_EXPORT int32_t call_wcoredump(int32_t status) { return 0; }
 GP_EXPORT int32_t call_wifcontinued(int32_t status) { return 0; }
@@ -3324,6 +3369,18 @@ int32_t call_fchmod(int32_t fd, int32_t mode) {
 
 int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
     CAPTURE_ERRNO_AND_RETURN(-1, readlinkat(dirFd, path, buf, size));
+}
+
+int64_t call_getfinalpathname(const char *path, char *buf, uint64_t size) {
+    errno = ENOSYS;
+    capture_errno();
+    return -1;
+}
+
+int64_t call_findfirstfile(const char *path, char *buf, uint64_t size) {
+    errno = ENOSYS;
+    capture_errno();
+    return -1;
 }
 
 int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {

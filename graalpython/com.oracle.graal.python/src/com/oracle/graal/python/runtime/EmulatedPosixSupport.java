@@ -1958,6 +1958,73 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
+    public Object getFinalPathName(Object path) throws PosixException {
+        try {
+            String pathname = pathToJavaString(path);
+            if (pathname.isEmpty()) {
+                throw new PosixErrnoException(OSErrorEnum.ENOENT.getNumber(), OSErrorEnum.ENOENT.getMessage(), 3);
+            }
+            String result = getTruffleFile(pathname).getCanonicalFile().getPath();
+            if (result.startsWith("\\\\?\\")) {
+                return result;
+            }
+            return result.startsWith("\\\\") ? "\\\\?\\UNC\\" + result.substring(2) : "\\\\?\\" + result;
+        } catch (Exception e) {
+            throw windowsPathException(e);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public Object findFirstFile(Object path) throws PosixException {
+        try {
+            String pathname = pathToJavaString(path);
+            if (pathname.isEmpty()) {
+                throw new PosixErrnoException(OSErrorEnum.ENOENT.getNumber(), OSErrorEnum.ENOENT.getMessage(), 3);
+            }
+            // Let the filesystem resolve casing and short names, preserving the link's own name
+            // even for dangling symlinks. Only literal paths are needed by ntpath.realpath.
+            TruffleFile file = getTruffleFile(pathname).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            if (file.getParent() != null) {
+                return file.getName();
+            }
+            throw new PosixErrnoException(OSErrorEnum.ENOENT.getNumber(), OSErrorEnum.ENOENT.getMessage(), 2);
+        } catch (Exception e) {
+            throw windowsPathException(e);
+        }
+    }
+
+    // Unlike other emulated APIs, these Windows path helpers must synthesize winerror because
+    // ntpath.realpath inspects it to choose its fallback behavior.
+    private static PosixException windowsPathException(Exception e) {
+        int errno;
+        TruffleString message;
+        if (e instanceof PosixErrnoException error) {
+            if (error.getWinerror() != null) {
+                return error;
+            }
+            errno = error.getErrorCode();
+            message = error.getMessageAsTruffleString();
+        } else {
+            ErrorAndMessagePair error = OSErrorEnum.fromException(e);
+            errno = error.oserror.getNumber();
+            message = error.message;
+        }
+        int winerror;
+        if (errno == OSErrorEnum.ENOENT.getNumber()) {
+            winerror = 2;
+        } else if (errno == OSErrorEnum.EACCES.getNumber()) {
+            winerror = 5;
+        } else if (errno == OSErrorEnum.EINVAL.getNumber()) {
+            winerror = 123;
+        } else {
+            winerror = 1;
+        }
+        return new PosixErrnoException(errno, message, winerror);
+    }
+
+    @Override
+    @TruffleBoundary
     public void kill(long pid, int signal) throws PosixException {
         PythonContext context = this.context;
         try {
