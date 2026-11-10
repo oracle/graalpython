@@ -62,6 +62,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.truffle.api.dsl.Idempotent;
 import org.graalvm.nativeimage.VMRuntime;
 import org.graalvm.polyglot.io.ByteSequence;
 
@@ -1092,6 +1093,11 @@ public final class PythonUtils {
         public List<Class<? extends Node>> getExecutionSignature() {
             throw new IllegalAccessError();
         }
+    }
+
+    @Idempotent
+    public static Shape getShape(PropertyGetter getter) {
+        return getter.getShape();
     }
 
     public static PropertyGetter getPropertyGetterWithFinalAssumption(Shape shape, Object key) {

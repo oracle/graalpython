@@ -41,6 +41,60 @@ class TupleTest(seq_tests.CommonTest):
         self.assertEqual(len((0,)), 1)
         self.assertEqual(len((0, 1, 2)), 3)
 
+    def test_tuplegetter_ignores_overridden_len(self):
+        from _collections import _tuplegetter
+
+        class K(tuple):
+            attr = _tuplegetter(1, "doc")
+
+        descriptor = K.attr
+        for length in (0, 100, -1, None):
+            with self.subTest(length=length):
+                K.__len__ = lambda self: length
+                obj = K((1, 2))
+                self.assertEqual(descriptor.__get__(obj, K), 2)
+                self.assertEqual(obj.attr, 2)
+                with self.assertRaises(IndexError):
+                    descriptor.__get__(K((1,)), K)
+                with self.assertRaises(IndexError):
+                    K((1,)).attr
+
+    def test_tuplegetter_does_not_call_len_or_getitem(self):
+        from collections import namedtuple
+        Pair = namedtuple("Pair", "first second")
+
+        class K(Pair):
+            def __len__(self):
+                raise AssertionError("tuple getter must bypass __len__")
+
+            def __getitem__(self, index):
+                raise AssertionError("tuple getter must bypass __getitem__")
+
+        obj = K("first", "second")
+        self.assertEqual(K.second.__get__(obj, K), "second")
+        self.assertEqual(obj.second, "second")
+
+    def test_tuplegetter_index_bounds(self):
+        from _collections import _tuplegetter
+
+        for index in (-3, -1, 0, 1, 2):
+            descriptor = _tuplegetter(index, "doc")
+
+            class K(tuple):
+                attr = descriptor
+
+            for values in ((), (1,), (1, 2)):
+                with self.subTest(index=index, values=values):
+                    obj = K(values)
+                    if 0 <= index < len(values):
+                        self.assertEqual(descriptor.__get__(obj, K), values[index])
+                        self.assertEqual(obj.attr, values[index])
+                    else:
+                        with self.assertRaisesRegex(IndexError, "tuple index out of range"):
+                            descriptor.__get__(obj, K)
+                        with self.assertRaisesRegex(IndexError, "tuple index out of range"):
+                            obj.attr
+
     def test_iadd(self):
         super().test_iadd()
         u = (0, 1)
