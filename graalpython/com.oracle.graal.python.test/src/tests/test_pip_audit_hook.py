@@ -296,7 +296,7 @@ class PipAuditHookTests(unittest.TestCase):
                         "import pip; "
                         "options = SimpleNamespace(extra_index_urls=[], cache_dir=sys.argv[2]); "
                         "sys.audit('pip.cli.parse_args', options, [], 0); "
-                        "assert options.extra_index_urls == ['https://www.graalvm.org/python/wheels/']; "
+                        "assert options.extra_index_urls == ['https://gds.oracle.com/repositories/pypi/public-release/']; "
                         "assert options.cache_dir == sys.argv[2] + '-graalpy'"
                     ),
                     str(fake_pip_root),
@@ -329,7 +329,7 @@ class PipAuditHookTests(unittest.TestCase):
                         "__import__('pip'); "
                         "options = SimpleNamespace(extra_index_urls=[], cache_dir=sys.argv[2]); "
                         "sys.audit('pip.cli.parse_args', options, [], 0); "
-                        "assert options.extra_index_urls == ['https://www.graalvm.org/python/wheels/']; "
+                        "assert options.extra_index_urls == ['https://gds.oracle.com/repositories/pypi/public-release/']; "
                         "assert options.cache_dir == sys.argv[2] + '-graalpy'"
                     ),
                     str(fake_pip_root),
