@@ -459,7 +459,17 @@ license = 'Apache-2.0 OR MIT'
 [[orjson.rules]]
 version = '== 3.11.9'
 patch = 'orjson-3.11.9.patch'
-license = 'Apache-2.0 OR MIT'
+license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
+
+[[orjson.rules]]
+version = '== 3.12.0'
+patch = 'orjson-3.12.0.patch'
+license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
+
+[[orjson.rules]]
+version = '== 3.13.0'
+patch = 'orjson-3.13.0.patch'
+license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
 
 [[ormsgpack.rules]]
 version = '>= 1.8.0, <= 1.9.1'
