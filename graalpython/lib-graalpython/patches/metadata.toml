@@ -408,6 +408,40 @@ url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.25.0.tar.gz
 version = '1.25.1'
 url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.25.1.tar.gz'
 
+[[onnxruntime.rules]]
+version = '>= 1.26, < 1.32'
+patch = 'onnxruntime-1.31.1.patch'
+license = 'MIT'
+dist-type = 'sdist'
+
+[[onnxruntime.add-sources]]
+version = '1.26.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.26.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.27.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.27.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.28.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.28.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.29.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.29.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.30.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.30.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.31.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.31.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.31.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.31.1.tar.gz'
+
 [[optree.rules]]
 patch = 'optree.patch'
 license = 'Apache-2.0'
