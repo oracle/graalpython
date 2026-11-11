@@ -339,8 +339,14 @@ patch = 'numba-0.65.1.patch'
 license = 'BSD-2-Clause'
 
 [[numpy.rules]]
-version = '>= 2.4, < 2.4.5'
+version = '>= 2.4, < 2.5'
 patch = 'numpy-2.4.4.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[numpy.rules]]
+version = '>= 2.5, < 2.5.5'
+patch = 'numpy-2.5.4.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
