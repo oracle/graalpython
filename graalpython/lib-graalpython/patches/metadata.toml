@@ -607,20 +607,29 @@ note = "Building PyMuPDF needs a CPython installation besides GraalPy on the PAT
 license = 'UPL'
 
 [[pyperf.rules]]
-version = '== 2.3.0'
+version = '>= 1.6.1, < 2.3.1'
 install-priority = 0
 patch = 'pyperf-2.3.0.patch'
 license = 'MIT'
 
 [[pyperf.rules]]
-version = '== 2.3.1'
+version = '>= 2.3.1, < 2.5'
 install-priority = 0
 patch = 'pyperf-2.3.1.patch'
 license = 'MIT'
 
 [[pyperf.rules]]
-version = '== 2.10.0'
+version = '>= 2.5, < 2.8'
+note = 'GraalPy JIT detection is supported upstream and warmups default to automatic calibration.'
+
+[[pyperf.rules]]
+version = '>= 2.8, < 2.11'
 patch = 'pyperf-2.10.0.patch'
+license = 'MIT'
+
+[[pyperf.rules]]
+version = '== 2.11.*'
+patch = 'pyperf-2.11.0.patch'
 license = 'MIT'
 
 [[pyperformance.rules]]
