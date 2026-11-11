@@ -473,6 +473,7 @@ license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
 
 [[ormsgpack.rules]]
 version = '>= 1.8.0, <= 1.9.1'
+install-priority = 0  # Upstream supports GraalPy in newer release
 patch = 'ormsgpack-1.8.0-1.9.1.patch'
 license = 'Apache-2.0 OR MIT'
 
