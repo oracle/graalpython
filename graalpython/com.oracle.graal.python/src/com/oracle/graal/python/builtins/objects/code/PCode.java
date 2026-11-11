@@ -462,13 +462,17 @@ public final class PCode extends PythonBuiltinObject {
             if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
-            ct = initializeCallTarget();
+            ct = initializeCallTargetImpl();
         }
         return ct;
     }
 
+    public void initializeCallTarget() {
+        getRootCallTarget();
+    }
+
     @TruffleBoundary
-    private RootCallTarget initializeCallTarget() {
+    private RootCallTarget initializeCallTargetImpl() {
         RootCallTarget ct = callTarget;
         if (ct == null) {
             ct = rootNode.getCallTarget();

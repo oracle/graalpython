@@ -42,9 +42,10 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -76,6 +77,7 @@ public final class PFunction extends PythonObject {
     @CompilationFinal private PCode finalCode;
     private PCode code;
     private RootCallTarget callTarget;
+    private PBytecodeDSLRootNode rootNode;
     @CompilationFinal(dimensions = 1) private Object[] finalDefaultValues;
     private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] finalKwDefaultValues;
@@ -99,6 +101,7 @@ public final class PFunction extends PythonObject {
         this.qualname = qualname;
         assert code != null;
         this.code = this.finalCode = code;
+        this.rootNode = code.getRootNode();
         this.globals = globals;
         this.defaultValues = this.finalDefaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = this.finalKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
@@ -187,12 +190,21 @@ public final class PFunction extends PythonObject {
         return ct;
     }
 
+    public void initCallTarget() {
+        getCallTarget();
+    }
+
+    public PBytecodeDSLRootNode getRootNode() {
+        return rootNode;
+    }
+
     @TruffleBoundary
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";
         this.finalCode = null;
         this.code = code;
+        this.rootNode = code.getRootNode();
         this.callTarget = null;
     }
 

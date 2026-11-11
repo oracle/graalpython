@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscriptF
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -76,7 +77,6 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -273,8 +273,8 @@ public final class TpSlotMpAssSubscript {
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, key);
             PArguments.setArgument(arguments, 2, value);
-            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
-            invoke.execute(frame, inliningTarget, callTarget, arguments);
+            BuiltinFunctionRootNode rootNode = PythonLanguage.get(inliningTarget).getBuiltinSlotRootNode(slot.callTargetIndex);
+            invoke.executeBuiltin(frame, inliningTarget, rootNode, arguments);
         }
     }
 }

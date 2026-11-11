@@ -121,7 +121,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -276,8 +275,8 @@ public final class TpSlotVarargs {
                         @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
                             false);
-            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
-            return invoke.execute(frame, inliningTarget, callTarget, arguments);
+            BuiltinFunctionRootNode rootNode = PythonLanguage.get(inliningTarget).getBuiltinSlotRootNode(slot.callTargetIndex);
+            return invoke.executeBuiltin(frame, inliningTarget, rootNode, arguments);
         }
     }
 
@@ -294,7 +293,7 @@ public final class TpSlotVarargs {
                         @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
             CompilerAsserts.partialEvaluationConstant(slot);
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
-            return invoke.execute(frame, inliningTarget, callNode, arguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, arguments);
         }
 
         @NeverDefault
