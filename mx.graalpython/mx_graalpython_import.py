@@ -96,7 +96,7 @@ class CopyFrom(AbstractRule):
             source_prefix = f"{self.source_path}/"
             for source_file in tracked_files:
                 if source_file.startswith(source_prefix):
-                    relative_path = source_file.removeprefix(source_prefix)
+                    relative_path = source_file[len(source_prefix):]
                     destination_file = os.path.join(dst, relative_path)
                     os.makedirs(os.path.dirname(destination_file), exist_ok=True)
                     shutil.copy(os.path.join(source_dir, source_file), destination_file)
@@ -119,7 +119,7 @@ class CopyFromWithOverrides(AbstractRule):
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 src = os.path.join(source_dir, self.source_path)
                 if f.startswith(graalpy_prefix):
-                    src = os.path.join(src, f.removeprefix(graalpy_prefix))
+                    src = os.path.join(src, f[len(graalpy_prefix):])
                 if not os.path.exists(src):
                     sys.exit(f"File {f} from license overrides not found in {self.source_path}")
                 source_file = os.path.relpath(src, source_dir).replace(os.sep, '/')

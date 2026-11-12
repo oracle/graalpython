@@ -3925,7 +3925,9 @@ def check_call_host_inlining(args_in):
             if operation is None or not line.lstrip().startswith("CUTOFF "):
                 continue
             method = line.split()[1].split("(", 1)[0]
-            reason = line.rsplit("reason ", 1)[-1].strip().removesuffix("]")
+            reason = line.rsplit("reason ", 1)[-1].strip()
+            if reason.endswith("]"):
+                reason = reason[:-1]
             if method not in permitted_methods and reason not in expected_reasons:
                 mx.abort(f"Unexpected host inlining cutoff in {operation}.callPFunction:\n{line.strip()}")
             if method == dispatch:

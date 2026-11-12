@@ -13,6 +13,7 @@
 | Bisect tooling | `mx_graalpython_bisect.py` | Benchmark/test bisect support. |
 
 ## CONVENTIONS
+- Keep mx scripts compatible with Python 3.8
 - Pylint is enforced (via pre-commit) only for `mx.graalpython/*.py`.
 - Treat `suite.py` as the authoritative dependency/version map; CI workflows typically call into these mx gates.
 
