@@ -233,7 +233,14 @@
             "windows:amd64:jdk-latest"   : tier3,
         }),
         "python-svm-build": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE) + task_spec({
+                environment+: {
+                    GRAALPY_HOST_INLINING_LOG: "host-inlining.txt",
+                },
+                run+: [
+                    ["mx", "python-check-call-host-inlining", "host-inlining.txt"],
+                ],
+            }),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
