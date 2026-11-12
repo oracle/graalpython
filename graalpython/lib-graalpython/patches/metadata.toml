@@ -29,10 +29,49 @@ patch = 'cloudpickle-2.2.1.patch'
 license = 'BSD-3-Clause'
 
 [[coverage.rules]]
-version = '== 7.10.0'
+version = '>= 7.10.0, < 7.10.2'
 patch = 'coverage-7.10.0.patch'
 license = 'Apache-2.0'
-dist-type = 'wheel'
+
+[[coverage.rules]]
+version = '>= 7.10.2, < 7.10.3'
+patch = 'coverage-7.10.2.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.10.3, < 7.10.5'
+patch = 'coverage-7.10.3.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.10.5, < 7.11.1'
+patch = 'coverage-7.10.5.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.11.1, < 7.13.1'
+patch = 'coverage-7.11.1.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.13.1, < 7.15.1'
+patch = 'coverage-7.13.1.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.15.1, < 7.16.2'
+patch = 'coverage-7.15.1.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.16.2, < 7.17.0'
+patch = 'coverage-7.16.2.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.17.0, < 7.17.3'
+patch = 'coverage-7.17.0.patch'
+license = 'Apache-2.0'
 
 [[cramjam.rules]]
 version = '== 2.7.0'
