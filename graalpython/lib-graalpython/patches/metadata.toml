@@ -856,6 +856,11 @@ version = '>= 2, < 2.0.3'
 install-priority = 0
 
 [[uvloop.rules]]
+version = '>= 0.23.0, < 0.24'
+patch = 'uvloop-0.23.0.patch'
+license = 'MIT'
+
+[[uvloop.rules]]
 version = '== 0.22.1'
 patch = 'uvloop-0.22.1.patch'
 license = 'MIT'
