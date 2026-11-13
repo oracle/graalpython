@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,8 +100,8 @@ public final class CountBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "count", minNumOfPositionalArgs = 1, parameterNames = {"cls", "start", "step"})
-    @ArgumentClinic(name = "start", defaultValue = "0", useDefaultForNone = true)
-    @ArgumentClinic(name = "step", defaultValue = "1", useDefaultForNone = true)
+    @ArgumentClinic(name = "start", defaultValue = "0")
+    @ArgumentClinic(name = "step", defaultValue = "1")
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonTernaryClinicBuiltinNode {
 
