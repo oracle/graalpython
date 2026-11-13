@@ -360,6 +360,9 @@ public final class PythonContext extends Python3Core {
     public static final class PythonThreadState {
         private volatile boolean shuttingDown = false;
 
+        /* A temporary native detach leaves this object cached in Truffle's ContextThreadLocal. */
+        private boolean unused;
+
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
          * this is EMPTY representing the top frame.
@@ -448,6 +451,10 @@ public final class PythonContext extends Python3Core {
 
         public boolean isShuttingDown() {
             return shuttingDown;
+        }
+
+        public boolean isUnused() {
+            return unused;
         }
 
         @TruffleBoundary
@@ -568,6 +575,9 @@ public final class PythonContext extends Python3Core {
                 NativeMemory.writePtr(nativeThreadLocalVarPointer, NULLPTR);
             }
             nativeThreadLocalVarPointer = NULLPTR;
+            if (!markShuttingDown) {
+                unused = true;
+            }
         }
 
         public Object getTraceFun() {
@@ -2459,6 +2469,7 @@ public final class PythonContext extends Python3Core {
                 // initialize this thread's native TLS slot eagerly instead of on first use
                 initializeNativeThreadState(pythonThreadState);
             }
+            pythonThreadState.unused = false;
         } catch (PException e) {
             synchronized (this) {
                 if (previousThreadState == null) {
@@ -2505,7 +2516,8 @@ public final class PythonContext extends Python3Core {
      * for a still-alive thread, so a native thread that calls {@code PyGILState_Ensure} again after
      * {@code PyGILState_Release} may receive the same Java {@link PythonThreadState} object. Such a
      * detach must remove the thread from {@link #threadStateMapping} and free the native
-     * {@code PyThreadState}, but it must not mark the Java thread state as shutting down.
+     * {@code PyThreadState}, but it must not mark the Java thread state as shutting down. Instead,
+     * it marks the Java state as unused so that the next native attach can initialize it again.
      */
     public void disposeThread(Thread thread, boolean canRunGuestCode, boolean markShuttingDown) {
         CompilerAsserts.neverPartOfCompilation();

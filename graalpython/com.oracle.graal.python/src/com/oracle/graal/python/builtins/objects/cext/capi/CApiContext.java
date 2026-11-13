@@ -929,14 +929,25 @@ public final class CApiContext {
      */
     private int attachNativeThread() {
         CompilerAsserts.neverPartOfCompilation();
-        TruffleContext truffleContext = getContext().getEnv().getContext();
+        PythonContext context = getContext();
+        TruffleContext truffleContext = context.getEnv().getContext();
         if (truffleContext.isActive()) {
             return GRAALPY_ATTACH_NATIVE_FOREIGN;
         }
         try {
             Object previousContext = truffleContext.enter(null);
-            attachedThreadPreviousContext.set(previousContext);
-            return GRAALPY_ATTACH_NATIVE_OWNED;
+            try {
+                // Re-entering a still-alive thread reuses its ContextThreadLocal without calling
+                // PythonLanguage.initializeThread again. Restore state disposed by the last detach.
+                if (context.getThreadState(context.getLanguage()).isUnused()) {
+                    context.attachThread(Thread.currentThread(), context.getLanguage().getThreadStateLocal());
+                }
+                attachedThreadPreviousContext.set(previousContext);
+                return GRAALPY_ATTACH_NATIVE_OWNED;
+            } catch (Throwable t) {
+                truffleContext.leave(null, previousContext);
+                throw t;
+            }
         } catch (Throwable t) {
             LOGGER.severe("could not attach native thread to polyglot context: " + t.getMessage());
             return GRAALPY_ATTACH_NATIVE_FAILED;
