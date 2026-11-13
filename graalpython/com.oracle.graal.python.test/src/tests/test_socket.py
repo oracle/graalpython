@@ -43,6 +43,24 @@ import unittest
 from tests.util import storage_to_native
 
 
+def test_shutdown_write_sends_eof():
+    for how in (socket.SHUT_WR, socket.SHUT_RDWR):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            with socket.create_connection(listener.getsockname()) as client:
+                peer, _ = listener.accept()
+                with peer:
+                    peer.settimeout(5)
+                    client.settimeout(5)
+                    client.shutdown(how)
+                    assert peer.recv(1) == b""
+                    if how == socket.SHUT_WR:
+                        # Shutting down writes must leave the receive direction usable.
+                        peer.sendall(b"r")
+                        assert client.recv(1) == b"r"
+
+
 def test_inet_aton():
     assert socket.inet_aton('127.255.1.2') == bytes([127, 255, 1, 2])
     assert socket.inet_aton('127.0Xff.1.2') == bytes([127, 255, 1, 2])

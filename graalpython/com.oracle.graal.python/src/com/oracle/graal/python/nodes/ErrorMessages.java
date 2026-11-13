@@ -762,6 +762,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TIMED_OUT = tsLiteral("timed out");
     public static final TruffleString TIMEOUT_VALUE_MUST_BE_POSITIVE = tsLiteral("timeout value must be positive");
     public static final TruffleString TIMEOUT_VALUE_OUT_OF_RANGE = tsLiteral("Timeout value out of range");
+    public static final TruffleString TIMEOUT_DOESNT_FIT_INTO_C_TIMEVAL = tsLiteral("timeout doesn't fit into C timeval");
     public static final TruffleString TIMEOUT_VALUE_TOO_LARGE = tsLiteral("timeout value is too large");
     public static final TruffleString TIMESTAMP_OUT_OF_RANGE = tsLiteral("timestamp out of range for platform time_t");
     public static final TruffleString TOLERANCE_MUST_NON_NEGATIVE = tsLiteral("tolerances must be non-negative");
@@ -1710,4 +1711,5 @@ public abstract class ErrorMessages {
     public static final TruffleString S_MUST_BE_CALLABLE = tsLiteral("%s must be callable");
     public static final TruffleString METHOD_CANNOT_BE_BOTH_CLASS_AND_STATIC = tsLiteral("method cannot be both class and static");
     public static final TruffleString CANNOT_BE_USED_IN_MAIN_INTERP = tsLiteral("_imp._override_multi_interp_extensions_check() cannot be used in the main interpreter");
+    public static final TruffleString IMPORT_STAR_NO_DICT_OR_ALL = tsLiteral("from-import-* object has no __dict__ and no __all__");
 }

@@ -1820,3 +1820,77 @@ def test_richcmp():
     assert create_mock(ne=1) == create_mock(eq=1)
     assert create_mock(ne=1, eq=0) != create_mock(ne=0, eq=1)
     assert not create_mock(ne=1, eq=0) == create_mock(ne=0, eq=1)
+
+
+def test_heap_type_slot_groups():
+    checker = CPyExtType("HeapSlotGroupChecker", """
+        static PyObject *check_groups(PyObject *self, PyObject *type) {
+            PyTypeObject *tp = (PyTypeObject *)type;
+            PyHeapTypeObject *heap = (PyHeapTypeObject *)type;
+            if (!PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE) ||
+                tp->tp_as_async != &heap->as_async ||
+                tp->tp_as_number != &heap->as_number ||
+                tp->tp_as_sequence != &heap->as_sequence ||
+                tp->tp_as_mapping != &heap->as_mapping ||
+                tp->tp_as_buffer != &heap->as_buffer) {
+                PyErr_SetString(PyExc_AssertionError, "heap type must own all slot groups");
+                return NULL;
+            }
+            Py_RETURN_NONE;
+        }
+        static PyObject *call_slots(PyObject *self, PyObject *obj) {
+            PyTypeObject *tp = Py_TYPE(obj);
+            PyObject *sum = NULL, *item = NULL, *awaitable = NULL, *result = NULL;
+            if (tp->tp_as_number->nb_add == NULL ||
+                tp->tp_as_sequence->sq_length == NULL ||
+                tp->tp_as_mapping->mp_subscript == NULL ||
+                tp->tp_as_async->am_await == NULL) {
+                PyErr_SetString(PyExc_AssertionError, "populated slots must be preserved");
+                return NULL;
+            }
+            sum = tp->tp_as_number->nb_add(obj, obj);
+            if (sum == NULL) goto done;
+            Py_ssize_t length = tp->tp_as_sequence->sq_length(obj);
+            if (length < 0) goto done;
+            item = tp->tp_as_mapping->mp_subscript(obj, Py_None);
+            if (item == NULL) goto done;
+            awaitable = tp->tp_as_async->am_await(obj);
+            if (awaitable == NULL) goto done;
+            result = Py_BuildValue("(OnOO)", sum, length, item, awaitable);
+        done:
+            Py_XDECREF(sum);
+            Py_XDECREF(item);
+            Py_XDECREF(awaitable);
+            return result;
+        }
+    """, tp_methods='''
+        {"check", (PyCFunction)check_groups, METH_O, NULL},
+        {"call_slots", (PyCFunction)call_slots, METH_O, NULL}
+    ''')()
+
+    class Empty:
+        pass
+
+    class Populated:
+        def __add__(self, other):
+            return 42
+
+        def __len__(self):
+            return 3
+
+        def __getitem__(self, key):
+            return 17
+
+        def __await__(self):
+            return iter(())
+
+    class Inherited(Populated):
+        pass
+
+    for cls in (Empty, Populated, Inherited, *(type('HeapSubclass', (base,), {})
+                                             for base in (int, list, dict, bytearray))):
+        checker.check(cls)
+    for cls in (Populated, Inherited):
+        total, length, item, awaitable = checker.call_slots(cls())
+        assert (total, length, item) == (42, 3, 17)
+        assert list(awaitable) == []
