@@ -67,3 +67,25 @@ class OperatorTest(unittest.TestCase):
         self.assertRaises(TypeError, operator.getitem)
         self.assertRaises(TypeError, operator.getitem, a, None)
         self.assertEqual(operator.getitem(a, 2), 2)
+
+    def test_setitem_delitem_convert_index_before_type_error(self):
+        class RaisingIndex:
+            def __index__(self):
+                raise ZeroDivisionError
+
+        class Plain:
+            pass
+
+        self.assertRaises(ZeroDivisionError, operator.setitem, (), RaisingIndex(), 0)
+        self.assertRaises(ZeroDivisionError, operator.setitem, frozenset(), RaisingIndex(), 0)
+        self.assertRaises(ZeroDivisionError, operator.setitem, Plain(), RaisingIndex(), 0)
+        self.assertRaises(IndexError, operator.setitem, '', 2**100, 0)
+        self.assertRaises(ZeroDivisionError, operator.delitem, '', RaisingIndex())
+        self.assertRaises(ZeroDivisionError, operator.delitem, Plain(), RaisingIndex())
+        self.assertRaises(IndexError, operator.delitem, (), 2**100)
+        self.assertRaises(TypeError, operator.setitem, (), 2**40, 0)
+        self.assertRaises(TypeError, operator.delitem, '', 2**40)
+        self.assertRaises(TypeError, operator.setitem, (), 0, 0)
+        self.assertRaises(TypeError, operator.delitem, (), 'a')
+        self.assertRaises(TypeError, operator.setitem, 1, RaisingIndex(), 0)
+        self.assertRaises(TypeError, operator.delitem, list[int], RaisingIndex())
