@@ -29,10 +29,49 @@ patch = 'cloudpickle-2.2.1.patch'
 license = 'BSD-3-Clause'
 
 [[coverage.rules]]
-version = '== 7.10.0'
+version = '>= 7.10.0, < 7.10.2'
 patch = 'coverage-7.10.0.patch'
 license = 'Apache-2.0'
-dist-type = 'wheel'
+
+[[coverage.rules]]
+version = '>= 7.10.2, < 7.10.3'
+patch = 'coverage-7.10.2.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.10.3, < 7.10.5'
+patch = 'coverage-7.10.3.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.10.5, < 7.11.1'
+patch = 'coverage-7.10.5.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.11.1, < 7.13.1'
+patch = 'coverage-7.11.1.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.13.1, < 7.15.1'
+patch = 'coverage-7.13.1.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.15.1, < 7.16.2'
+patch = 'coverage-7.15.1.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.16.2, < 7.17.0'
+patch = 'coverage-7.16.2.patch'
+license = 'Apache-2.0'
+
+[[coverage.rules]]
+version = '>= 7.17.0, < 7.17.3'
+patch = 'coverage-7.17.0.patch'
+license = 'Apache-2.0'
 
 [[cramjam.rules]]
 version = '== 2.7.0'
@@ -238,6 +277,16 @@ version = '0.4.13'
 url = 'https://github.com/google/jax/archive/refs/tags/jaxlib-v0.4.13.tar.gz'
 
 [[joblib.rules]]
+version = '== 1.6.*'
+patch = 'joblib-1.6.0.patch'
+license = 'BSD-3-Clause'
+
+[[joblib.rules]]
+version = '== 1.5.*'
+patch = 'joblib-1.5.0.patch'
+license = 'BSD-3-Clause'
+
+[[joblib.rules]]
 version = '==1.4.*'
 patch = 'joblib-1.4.0.patch'
 license = 'BSD-3-Clause'
@@ -339,8 +388,14 @@ patch = 'numba-0.65.1.patch'
 license = 'BSD-2-Clause'
 
 [[numpy.rules]]
-version = '>= 2.4, < 2.4.5'
+version = '>= 2.4, < 2.5'
 patch = 'numpy-2.4.4.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[numpy.rules]]
+version = '>= 2.5, < 2.5.5'
+patch = 'numpy-2.5.4.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
@@ -402,6 +457,40 @@ url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.25.0.tar.gz
 version = '1.25.1'
 url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.25.1.tar.gz'
 
+[[onnxruntime.rules]]
+version = '>= 1.26, < 1.32'
+patch = 'onnxruntime-1.31.1.patch'
+license = 'MIT'
+dist-type = 'sdist'
+
+[[onnxruntime.add-sources]]
+version = '1.26.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.26.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.27.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.27.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.28.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.28.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.29.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.29.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.30.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.30.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.31.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.31.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.31.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.31.1.tar.gz'
+
 [[optree.rules]]
 patch = 'optree.patch'
 license = 'Apache-2.0'
@@ -419,10 +508,21 @@ license = 'Apache-2.0 OR MIT'
 [[orjson.rules]]
 version = '== 3.11.9'
 patch = 'orjson-3.11.9.patch'
-license = 'Apache-2.0 OR MIT'
+license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
+
+[[orjson.rules]]
+version = '== 3.12.0'
+patch = 'orjson-3.12.0.patch'
+license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
+
+[[orjson.rules]]
+version = '== 3.13.0'
+patch = 'orjson-3.13.0.patch'
+license = 'MPL-2.0 AND (Apache-2.0 OR MIT)'
 
 [[ormsgpack.rules]]
 version = '>= 1.8.0, <= 1.9.1'
+install-priority = 0  # Upstream supports GraalPy in newer release
 patch = 'ormsgpack-1.8.0-1.9.1.patch'
 license = 'Apache-2.0 OR MIT'
 
@@ -443,7 +543,7 @@ patch = 'packaging.patch'
 license = 'Apache-2.0 OR BSD-2-Clause'
 
 [[pandas.rules]]
-version = '>= 3.0, < 3.0.6'
+version = '>= 3.0, < 3.2'
 patch = 'pandas-3.0.2.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
@@ -496,7 +596,12 @@ license = 'BSD-3-Clause'
 subdir = 'src'
 
 [[pyarrow.rules]]
-version = '== 24.0.0'
+version = '>= 26.0.0, <= 26.0.1'
+patch = 'pyarrow-26.0.0.patch'
+license = 'Apache-2.0'
+
+[[pyarrow.rules]]
+version = '>= 24.0.0, < 26.0.0'
 patch = 'pyarrow-24.0.0.patch'
 license = 'Apache-2.0'
 
@@ -596,20 +701,29 @@ note = "Building PyMuPDF needs a CPython installation besides GraalPy on the PAT
 license = 'UPL'
 
 [[pyperf.rules]]
-version = '== 2.3.0'
+version = '>= 1.6.1, < 2.3.1'
 install-priority = 0
 patch = 'pyperf-2.3.0.patch'
 license = 'MIT'
 
 [[pyperf.rules]]
-version = '== 2.3.1'
+version = '>= 2.3.1, < 2.5'
 install-priority = 0
 patch = 'pyperf-2.3.1.patch'
 license = 'MIT'
 
 [[pyperf.rules]]
-version = '== 2.10.0'
+version = '>= 2.5, < 2.8'
+note = 'GraalPy JIT detection is supported upstream and warmups default to automatic calibration.'
+
+[[pyperf.rules]]
+version = '>= 2.8, < 2.11'
 patch = 'pyperf-2.10.0.patch'
+license = 'MIT'
+
+[[pyperf.rules]]
+version = '== 2.11.*'
+patch = 'pyperf-2.11.0.patch'
 license = 'MIT'
 
 [[pyperformance.rules]]
@@ -644,7 +758,7 @@ patch = 'pythran-0.16.patch'
 license = 'BSD-3-Clause'
 
 [[pythran.rules]]
-version = '== 0.18.1'
+version = '>= 0.18.1, <= 0.19.0'
 patch = 'pythran-0.18.1.patch'
 license = 'BSD-3-Clause'
 
@@ -654,8 +768,13 @@ patch = 'rapidfuzz.patch'
 license = 'MIT'
 
 [[rapidfuzz.rules]]
-version = '>= 3.10.0, <= 3.12.2'
+version = '>= 3.10.0, < 3.14.1'
 patch = 'rapidfuzz-3.10.patch'
+license = 'MIT'
+
+[[rapidfuzz.rules]]
+version = '>= 3.14.1, <= 3.14.6'
+patch = 'rapidfuzz-3.14.1.patch'
 license = 'MIT'
 
 [[levenshtein.add-sources]]
@@ -774,6 +893,11 @@ license = 'MIT'
 subdir = 'src'
 version = '>= 2, < 2.0.3'
 install-priority = 0
+
+[[uvloop.rules]]
+version = '>= 0.23.0, < 0.24'
+patch = 'uvloop-0.23.0.patch'
+license = 'MIT'
 
 [[uvloop.rules]]
 version = '== 0.22.1'
