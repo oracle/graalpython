@@ -46,6 +46,15 @@ class TestUnicodeCharacters(unittest.TestCase):
     def test_builtin_type_as_dialect(self):
         self.assertIsInstance(csv.reader(re.ASCII, int), type(csv.reader([])))
 
+    def test_reader_writer_type_names(self):
+        import _csv
+        self.assertIs(type(csv.reader([])), _csv.Reader)
+        self.assertEqual(_csv.Reader.__name__, 'reader')
+        self.assertEqual(_csv.Reader.__module__, '_csv')
+        with TemporaryFile("w") as fileobj:
+            self.assertIs(type(csv.writer(fileobj)), _csv.Writer)
+        self.assertEqual(_csv.Writer.__name__, 'writer')
+
     def test_read_utf_32_delimiter(self):
         test_data = ['a\U0001F642b']
         reader = csv.reader(test_data, delimiter="\U0001F642")

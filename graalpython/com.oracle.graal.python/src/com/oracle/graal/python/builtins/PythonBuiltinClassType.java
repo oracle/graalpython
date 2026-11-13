@@ -1314,8 +1314,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // csv
     CSVDialect("Dialect", PythonObject, newBuilder().publishInModule("_csv").basetype().slots(CSVDialectBuiltins.SLOTS)),
-    CSVReader("Reader", PythonObject, newBuilder().publishInModule("_csv").basetype().disallowInstantiation().slots(CSVReaderBuiltins.SLOTS)),
-    CSVWriter("Writer", PythonObject, newBuilder().publishInModule("_csv").basetype().disallowInstantiation()),
+    CSVReader("reader", PythonObject, newBuilder().moduleName("_csv").basetype().disallowInstantiation().slots(CSVReaderBuiltins.SLOTS)),
+    CSVWriter("writer", PythonObject, newBuilder().moduleName("_csv").basetype().disallowInstantiation()),
 
     // codecs
     PEncodingMap("EncodingMap", PythonObject, newBuilder().disallowInstantiation()),
