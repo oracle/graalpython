@@ -38,6 +38,16 @@
 # SOFTWARE.
 import weakref
 
+
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 MAX_WAIT_COUNT = 500
 
 import sys
@@ -322,3 +332,58 @@ def test_proxy_call():
     proxy = weakref.proxy(a)
     assert callable(proxy) is True
     assert proxy() == 42
+
+
+def test_weakref_with_callback_object_type_support():
+    def callback(ref):
+        pass
+
+    assert_raises(TypeError, weakref.ref, {}, callback)
+    assert_raises(TypeError, weakref.proxy, {}, callback)
+    assert_raises(TypeError, weakref.ref, [1, 2], callback)
+    assert_raises(TypeError, weakref.proxy, [1, 2], callback)
+    assert_raises(TypeError, weakref.ref, 42, callback)
+    assert_raises(TypeError, weakref.proxy, 42, callback)
+    assert_raises(TypeError, weakref.ref, None, callback)
+    assert_raises(TypeError, weakref.proxy, None, callback)
+
+
+def test_weakref_builtin_types_with_weaklist():
+    import _queue, _struct, array, collections, contextvars, mmap, typing
+
+    def callback(ref):
+        pass
+
+    d = collections.deque()
+    assert weakref.ref(d)() is d
+    assert weakref.ref(d, callback)() is d
+    a = array.array('b')
+    assert weakref.ref(a)() is a
+    assert weakref.ref(a, callback)() is a
+    with mmap.mmap(-1, 1) as m:
+        assert weakref.ref(m)() is m
+        assert weakref.ref(m, callback)() is m
+    c = contextvars.copy_context()
+    assert weakref.ref(c)() is c
+    assert weakref.ref(c, callback)() is c
+    q = _queue.SimpleQueue()
+    assert weakref.ref(q)() is q
+    assert weakref.ref(q, callback)() is q
+    s = _struct.Struct('b')
+    assert weakref.ref(s)() is s
+    assert weakref.ref(s, callback)() is s
+    t = typing.TypeVar('T')
+    assert weakref.ref(t)() is t
+    assert weakref.ref(t, callback)() is t
+    ts = typing.TypeVarTuple('Ts')
+    assert weakref.ref(ts)() is ts
+    assert weakref.ref(ts, callback)() is ts
+    p = typing.ParamSpec('P')
+    assert weakref.ref(p)() is p
+    assert weakref.ref(p, callback)() is p
+    pa = p.args
+    assert weakref.ref(pa)() is pa
+    assert weakref.ref(pa, callback)() is pa
+    pk = p.kwargs
+    assert weakref.ref(pk)() is pk
+    assert weakref.ref(pk, callback)() is pk
