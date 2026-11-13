@@ -743,7 +743,6 @@ def graalpy_native_pgo_build_and_test(args=None):
             shutil.copyfileobj(f_in, f_out)
         host_inlining_log.unlink()
         mx.log(mx.colorize(f"[PGO] Gzipped host inlining log at: {host_inlining_log_gz}", color="yellow"))
-        check_call_host_inlining([str(host_inlining_log_gz)])
     else:
         mx.abort(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
 
@@ -1254,14 +1253,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
             mx_args.append(f"--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
-            if host_inlining_log := os.environ.get("GRAALPY_HOST_INLINING_LOG"):
-                mx_args.extend([
-                    f"--extra-image-builder-argument=-H:Log=HostInliningPhase,~CanonicalizerPhase,~GraphBuilderPhase",
-                    f"--extra-image-builder-argument=-H:+TruffleHostInliningPrintExplored",
-                    f"--extra-image-builder-argument=-H:MethodFilter=com.oracle.graal.python.*.*",
-                    f"--extra-image-builder-argument=-H:-UnlockExperimentalVMOptions",
-                    f"--extra-image-builder-argument=-Dgraal.LogFile={host_inlining_log}",
-                ])
         else:
             mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
@@ -1270,6 +1261,17 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_args.append("--extra-image-builder-argument=-ea")
         mx_args.append("--extra-image-builder-argument=-J-ea")
         mx_args.append("--extra-image-builder-argument=-Dtruffle.DetailedAssertions=true")
+
+    if standalone_type == 'native' and (host_inlining_log := os.environ.get("GRAALPY_HOST_INLINING_LOG")):
+        host_inlining_log = os.path.abspath(host_inlining_log)
+        mx_args.extend([
+            "--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions",
+            "--extra-image-builder-argument=-H:Log=HostInliningPhase,~CanonicalizerPhase,~GraphBuilderPhase",
+            "--extra-image-builder-argument=-H:+TruffleHostInliningPrintExplored",
+            "--extra-image-builder-argument=-H:MethodFilter=com.oracle.graal.python.*.*",
+            "--extra-image-builder-argument=-H:-UnlockExperimentalVMOptions",
+            f"--extra-image-builder-argument=-Dgraal.LogFile={host_inlining_log}",
+        ])
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         # This build is purposefully done without the LATEST_JAVA_HOME in the
@@ -3895,7 +3897,7 @@ def host_inlining_log_extract_method(args_in):
 
 def check_call_host_inlining(args_in):
     parser = ArgumentParser(description="Check host inlining of specialized Python call bytecode handlers.")
-    parser.add_argument("filename", help="host inlining log from native-ce-host-inlining, native-ee-host-inlining or python-native-pgo (.txt or .gz)")
+    parser.add_argument("filename", help="host inlining log (hint: use --env native-ee-host-inlining)")
     args = parser.parse_args(args_in)
 
     root_node = "com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen"
@@ -3907,6 +3909,7 @@ def check_call_host_inlining(args_in):
     permitted_methods = {dispatch, "com.oracle.truffle.runtime.BaseOSRRootNode.getFrame"}
     # Deliberate inlining boundaries, interpreter slow paths, and exception unwinding.
     expected_reasons = {
+        "SVM block listed",
         "method annotated with @InliningCutoff",
         "truffle boundary",
         "dominated by transferToInterpreter()",
@@ -3916,26 +3919,36 @@ def check_call_host_inlining(args_in):
         "propagates unwind",
         "the invoke is marked to be not used for inlining",
     }
+    handler_logs = {operation: [] for operation in handlers.values()}
     operation = None
     checked = set()
-    with (gzip.open(args.filename, "rt", encoding="utf-8") if args.filename.endswith(".gz") else open(args.filename, encoding="utf-8")) as log:
+    with open(args.filename, encoding="utf-8") as log:
         for line in log:
             if line.lstrip().startswith("Root["):
                 operation = handlers.get(line.strip())
-            if operation is None or not line.lstrip().startswith("CUTOFF "):
+            if operation is not None:
+                handler_logs[operation].append(line)
+
+    def abort_with_log(message, operations):
+        excerpts = ''.join(line for name in operations for line in handler_logs[name])
+        mx.abort(f"{message}\nHost inlining log from {args.filename}:\n{excerpts}")
+
+    for operation, lines in handler_logs.items():
+        for line in lines:
+            if not line.lstrip().startswith("CUTOFF "):
                 continue
             method = line.split()[1].split("(", 1)[0]
             reason = line.rsplit("reason ", 1)[-1].strip()
             if reason.endswith("]"):
                 reason = reason[:-1]
             if method not in permitted_methods and reason not in expected_reasons:
-                mx.abort(f"Unexpected host inlining cutoff in {operation}.callPFunction:\n{line.strip()}")
+                abort_with_log(f"Unexpected host inlining cutoff in {operation}.callPFunction:\n{line.strip()}", [operation])
             if method == dispatch:
                 checked.add(operation)
     missing = [operation for operation in handlers.values() if operation not in checked]
     if missing:
-        mx.abort(f"Missing AbstractBytecodeNode.continueAt cutoff for {', '.join(missing)} in {args.filename}; "
-                 "build with --env native-ce-host-inlining or --env native-ee-host-inlining.")
+        abort_with_log(f"Missing AbstractBytecodeNode.continueAt cutoff for {', '.join(missing)} in {args.filename}; "
+                       "build with --env native-ce-host-inlining or --env native-ee-host-inlining.", missing)
     mx.log(f"Call handler host inlining verified: {', '.join(handlers.values())} (only permitted cutoffs).")
 
 
