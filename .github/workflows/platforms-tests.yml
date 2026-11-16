@@ -14,6 +14,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Build maven artifacts
+        id: maven-artifacts
         run: |
           sudo apt-get update
           sudo apt-get install -y git cmake build-essential python3 maven
@@ -23,7 +24,8 @@ jobs:
           mx sforceimport
           mx -p ../graal/vm fetch-jdk -A --jdk-id labsjdk-ce-latest
           export JAVA_HOME="$HOME/.mx/jdks/labsjdk-ce-latest/"
-          mx deploy-local-maven-repo
+          mx deploy-local-maven-repo --version-file=maven-version
+          echo "version=$(cat maven-version)" >> "$GITHUB_OUTPUT"
           mv mxbuild/jdk*/mx.graalpython/public-maven-repo m2repo
 
       - name: Install OpenJ9 17
@@ -36,7 +38,7 @@ jobs:
           echo "Using $JAVA_HOME"
           $JAVA_HOME/bin/java -version
           mkdir $(pwd)/user_resource_cache
-          mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=25.5.5.0.3 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+          mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=${{ steps.maven-artifacts.outputs.version }} -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
           rm -rf $(pwd)/user_resource_cache
 
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
@@ -56,6 +58,6 @@ jobs:
             echo 'Using \$JAVA_HOME'
             \$JAVA_HOME/bin/java -version
             mkdir \$(pwd)/user_resource_cache
-            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=25.5.5.0.3 -Dcom.oracle.graal.python.test.polyglot_repo=file:///\$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/\$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=${{ steps.maven-artifacts.outputs.version }} -Dcom.oracle.graal.python.test.polyglot_repo=file:///\$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/\$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
             rm -rf \$(pwd)/user_resource_cache
           "
