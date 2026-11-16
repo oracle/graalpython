@@ -214,6 +214,7 @@ test.test_asyncio.test_events.ProactorEventLoopTests.test_connect_accepted_socke
 test.test_asyncio.test_events.ProactorEventLoopTests.test_connect_accepted_socket_ssl_timeout_for_plain_socket @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_connection @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_connection_local_addr_in_use @ win32-AMD64,win32-AMD64-github
+test.test_asyncio.test_events.ProactorEventLoopTests.test_create_connection_local_addr_nomatch_family @ win32-AMD64
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_datagram_endpoint @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_datagram_endpoint_ipv6 @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_datagram_endpoint_sock @ win32-AMD64,win32-AMD64-github
