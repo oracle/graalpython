@@ -28,12 +28,12 @@ jobs:
           echo "version=$(cat maven-version)" >> "$GITHUB_OUTPUT"
           mv mxbuild/jdk*/mx.graalpython/public-maven-repo m2repo
 
-      - name: Install OpenJ9 17
+      - name: Install OpenJ9 21
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           distribution: 'semeru'
-          java-version: '17'
-      - name: Test on OpenJ9 17
+          java-version: '21'
+      - name: Test on OpenJ9 21
         run: |
           echo "Using $JAVA_HOME"
           $JAVA_HOME/bin/java -version
@@ -51,8 +51,8 @@ jobs:
         run: |
           docker run --rm --platform=linux/ppc64le -v "${GITHUB_WORKSPACE}:/workspace" -w /workspace ubuntu:24.04 bash -c "
             apt-get update
-            apt-get install -y python3 git wget tar gzip cmake build-essential maven openjdk-17-jdk
-            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-ppc64el
+            apt-get install -y python3 git wget tar gzip cmake build-essential maven openjdk-21-jdk
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-ppc64el
             export PATH=\$JAVA_HOME/bin:\$PATH
 
             echo 'Using \$JAVA_HOME'
