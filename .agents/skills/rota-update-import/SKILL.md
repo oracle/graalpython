@@ -8,6 +8,10 @@ description: Run the GraalPy ROTA import update workflow. Use when asked to refr
 ## Overview
 Execute the GraalPy ROTA import update workflow using the repo's automated command, then use the shared GraalPython Bitbucket PR workflow for post-creation tasks and gates.
 
+## Standard ticket and authorization
+- A request such as "Do the weekly import update" invokes the complete standard workflow, including pushing the branch, creating the PR, and following its gates.
+- `GR-21590` is the established Jira ticket for weekly import updates. The automation supplies it in the branch name and PR title; use it without asking the user to confirm it again. For this workflow, the repository's general instruction to ask for a Jira ticket is satisfied by this established ticket.
+
 ## Companion Skills
 - Use the `graalpython-bitbucket-pr` skill after `mx python-update-import --rota` creates the PR, to handle Graal Bot tasks, start or verify gates, watch gates, and fix or report failures.
 
