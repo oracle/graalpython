@@ -387,3 +387,12 @@ def test_weakref_builtin_types_with_weaklist():
     pk = p.kwargs
     assert weakref.ref(pk)() is pk
     assert weakref.ref(pk, callback)() is pk
+
+
+def test_weakref_object_with_builtin_class_object():
+    def callback(ref):
+        pass
+
+    assert_raises(TypeError, weakref.ref, object.__new__(object))
+    assert_raises(TypeError, weakref.ref, object.__new__(object), callback)
+    assert_raises(TypeError, weakref.proxy, object.__new__(object), callback)

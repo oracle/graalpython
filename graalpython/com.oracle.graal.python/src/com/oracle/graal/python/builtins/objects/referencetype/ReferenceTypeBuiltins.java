@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltinsFactory.ReferenceTypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -138,12 +139,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                 obj = PythonContext.get(inliningTarget).getCore().lookupType(tobj);
             }
 
-            Object clazz = getClassNode.execute(inliningTarget, obj);
-            boolean allowed = true;
-            if (clazz instanceof PythonBuiltinClassType type) {
-                allowed = type.getWeaklistoffset() != 0;
-            }
-            if (!allowed) {
+            if (!supportsWeakref(getClassNode.execute(inliningTarget, obj))) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
             }
             assert obj instanceof PythonAbstractObject;
@@ -164,10 +160,17 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                         @Cached.Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            if (getClassNode.execute(inliningTarget, object) instanceof PythonBuiltinClassType type && type.getWeaklistoffset() == 0) {
+            if (!supportsWeakref(getClassNode.execute(inliningTarget, object))) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
             }
             return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), object, callback, getWeakReferenceQueue(inliningTarget, readQueueNode));
+        }
+
+        private static boolean supportsWeakref(Object clazz) {
+            if (clazz instanceof PythonBuiltinClass builtinClass) {
+                return builtinClass.getType().getWeaklistoffset() != 0;
+            }
+            return !(clazz instanceof PythonBuiltinClassType type) || type.getWeaklistoffset() != 0;
         }
 
         @Specialization
