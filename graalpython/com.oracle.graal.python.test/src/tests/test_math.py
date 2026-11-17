@@ -1833,3 +1833,11 @@ class MathLogTests(unittest.TestCase):
         self.assertRaises(ValueError, math.log, IntSubclass(0), 2.0)
         self.assertRaises(ValueError, math.log, IntSubclass(0), 2)
         self.assertRaises(ValueError, math.log, IntSubclass(0), IntSubclass(2))
+
+
+class GcdLcmSingleArgumentTests(unittest.TestCase):
+    def test_gcd_index_only_argument(self):
+        self.assertEqual(math.gcd(MyIndexable(-6)), 6)
+
+    def test_lcm_index_only_argument(self):
+        self.assertEqual(math.lcm(MyIndexable(-6)), 6)
