@@ -3765,7 +3765,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class GetCurrentException {
         @Specialization
         public static AbstractTruffleException doPException(VirtualFrame frame) {
-            return PArguments.getException(frame);
+            return PArguments.getExceptionState(frame.getArguments());
         }
     }
 
@@ -4543,15 +4543,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 //
                 // If we are passed savedException local, it means we are in an except block and the
                 // saved exception was fetched from the caller, so what we do is that we override it
-                // to the new caller passed exception state (possibly null meaning we need to fetch
-                // it via stack-walking if needed).
-                AbstractTruffleException callerExceptionState = PArguments.getException(frame.getArguments());
+                // to the new caller passed exception state (possibly UNKNOWN_EXCEPTION_STATE,
+                // meaning we need to fetch it via stack-walking if needed).
+                AbstractTruffleException callerExceptionState = PArguments.getExceptionState(frame.getArguments());
                 savedException.setObject(bytecode, frame, callerExceptionState);
             }
 
             // The generator's exception overrides the exception state passed from the caller
-            // GraalPy AST nodes assume that current frame's arguments contain the current exception
-            // (or null meaning that stack-walk is required to get it).
+            // GraalPy AST nodes access the frame's exception state through PArguments.getException,
+            // which returns null for UNKNOWN_EXCEPTION_STATE when stack-walking should resolve it.
             // see also RootNodeCompiler#generatorExceptionStateLocal
             if (!currentGeneratorException.isCleared(bytecode, frame)) {
                 Object currentGenEx = currentGeneratorException.getObject(bytecode, frame);

@@ -171,6 +171,7 @@ public final class PArguments {
         arguments[INDEX_CURRENT_FRAME_INFO] = info;
     }
 
+    /** Returns the current exception, or {@code null} when the state is unknown. */
     public static AbstractTruffleException getException(Object[] arguments) {
         return (AbstractTruffleException) getExceptionUnchecked(arguments);
     }
@@ -183,9 +184,13 @@ public final class PArguments {
         return arguments[INDEX_CURRENT_EXCEPTION];
     }
 
-    public static boolean hasException(Object[] arguments) {
-        Object exception = getExceptionUnchecked(arguments);
-        return exception != null && exception != PException.NO_EXCEPTION;
+    /**
+     * Returns the exception state, mapping a {@code null} slot to
+     * {@link PException#UNKNOWN_EXCEPTION_STATE}.
+     */
+    public static AbstractTruffleException getExceptionState(Object[] arguments) {
+        Object exceptionState = getExceptionUnchecked(arguments);
+        return (AbstractTruffleException) (exceptionState == null ? PException.UNKNOWN_EXCEPTION_STATE : exceptionState);
     }
 
     public static void setException(Frame frame, AbstractTruffleException exc) {
@@ -197,7 +202,7 @@ public final class PArguments {
     }
 
     public static void setExceptionUnchecked(Object[] arguments, Object exc) {
-        arguments[INDEX_CURRENT_EXCEPTION] = exc;
+        arguments[INDEX_CURRENT_EXCEPTION] = exc == PException.UNKNOWN_EXCEPTION_STATE ? null : exc;
     }
 
     public static Object getFunctionOrCodeObject(Object[] arguments) {
