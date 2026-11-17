@@ -335,6 +335,26 @@ def test_functools_lru_cache():
     assert isinstance(cached_func, type_entity), "lru_cache should not be using the python-based version"
 
 
+def test_functools_lru_cache_typed_truthiness():
+    from functools import lru_cache
+
+    @lru_cache(maxsize=2, typed="x")
+    def typed_func(a, b):
+        return a
+
+    typed_func(1, 2)
+    typed_func(1.0, 2)
+    assert typed_func.cache_info().misses == 2
+
+    @lru_cache(maxsize=2, typed="")
+    def untyped_func(a, b):
+        return a
+
+    untyped_func(1, 2)
+    untyped_func(1.0, 2)
+    assert untyped_func.cache_info().misses == 1
+
+
 def test_no_docstring():
     def no_doc():
         pass
