@@ -1778,3 +1778,48 @@ if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
             self.assertIsClose(MyFloat(), MyFloat(), rel_tol=MyFloat())
 
             self.assertIsNotClose(MyFloat(), 10)
+
+
+class MathLogTests(unittest.TestCase):
+
+    def test_log_base_none(self):
+        class PositiveFloat:
+            def __float__(self):
+                return 10.0
+
+        self.assertRaises(TypeError, math.log, 10, None)
+        self.assertRaises(TypeError, math.log, 10.0, None)
+        self.assertRaises(TypeError, math.log, 2**70, None)
+        self.assertRaises(TypeError, math.log, PositiveFloat(), None)
+        self.assertRaises(ValueError, math.log, -1, None)
+        self.assertEqual(math.log(1), 0.0)
+        self.assertEqual(math.log(1.0), 0.0)
+        self.assertTrue(48.52 < math.log(2**70) < 48.53)
+
+    def test_log_value_checked_before_base(self):
+        class NegativeFloat:
+            def __float__(self):
+                return -1.0
+
+        self.assertRaises(ValueError, math.log, -1, object())
+        self.assertRaises(ValueError, math.log, 0, object())
+        self.assertRaises(ValueError, math.log, -1.0, object())
+        self.assertRaises(ValueError, math.log, -2**70, object())
+        self.assertRaises(ValueError, math.log, NegativeFloat(), object())
+        self.assertRaises(TypeError, math.log, float('nan'), object())
+
+    def test_log_zero_with_base(self):
+        class IntSubclass(int):
+            pass
+
+        self.assertRaises(ValueError, math.log, 0, 2)
+        self.assertRaises(ValueError, math.log, 0.0, 2.0)
+        self.assertRaises(ValueError, math.log, -0.0, 2)
+        self.assertRaises(ValueError, math.log, False, 2)
+        self.assertRaises(ValueError, math.log, 0, 1)
+        self.assertRaises(ValueError, math.log, 0, IntSubclass(2))
+        self.assertRaises(ValueError, math.log, 0.0, IntSubclass(2))
+        self.assertRaises(ValueError, math.log, IntSubclass(0))
+        self.assertRaises(ValueError, math.log, IntSubclass(0), 2.0)
+        self.assertRaises(ValueError, math.log, IntSubclass(0), 2)
+        self.assertRaises(ValueError, math.log, IntSubclass(0), IntSubclass(2))
