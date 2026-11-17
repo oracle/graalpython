@@ -92,7 +92,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ClearListStorageNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.GetClassForNewListNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -483,11 +482,9 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copy,
-                        @Cached GetClassForNewListNode getClassForNewListNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Bind PythonLanguage language) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);
-            Object newClass = getClassForNewListNode.execute(inliningTarget, list);
-            return PFactory.createList(newClass, getInstanceShape.execute(newClass), copy.execute(inliningTarget, sequenceStorage));
+            return PFactory.createList(language, copy.execute(inliningTarget, sequenceStorage));
         }
 
     }
@@ -781,9 +778,8 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyListCheckNode isListNode,
                         @Cached GetListStorageNode getStorageNode,
-                        @Cached GetClassForNewListNode getClassForNewListNode,
                         @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             if (!isListNode.execute(inliningTarget, right)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
@@ -792,8 +788,7 @@ public final class ListBuiltins extends PythonBuiltins {
             var leftStorage = getStorageNode.execute(inliningTarget, left);
             var rightStorage = getStorageNode.execute(inliningTarget, right);
             SequenceStorage newStore = concatNode.execute(inliningTarget, leftStorage, rightStorage);
-            Object newClass = getClassForNewListNode.execute(inliningTarget, left);
-            return PFactory.createList(newClass, getInstanceShape.execute(newClass), newStore);
+            return PFactory.createList(language, newStore);
         }
     }
 

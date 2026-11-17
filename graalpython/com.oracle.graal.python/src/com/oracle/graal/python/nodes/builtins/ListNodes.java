@@ -191,26 +191,6 @@ public abstract class ListNodes {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class GetClassForNewListNode extends PNodeWithContext {
-
-        public abstract Object execute(Node inliningTarget, Object list);
-
-        @Specialization
-        static Object doPList(Node inliningTarget, PList list,
-                        @Cached GetClassNode.GetPythonObjectClassNode getClassNode) {
-            return getClassNode.execute(inliningTarget, list);
-        }
-
-        @Fallback
-        static Object doForeign(Object list) {
-            assert InteropLibrary.getUncached().hasArrayElements(list);
-            // Avoid creating a PList object with type ForeignList
-            return PythonBuiltinClassType.PList;
-        }
-    }
-
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 40 -> 21
     public abstract static class ConstructListNode extends PNodeWithContext {

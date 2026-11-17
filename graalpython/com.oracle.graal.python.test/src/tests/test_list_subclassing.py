@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -95,3 +95,15 @@ def test_list_custom_getitem():
     l = MyList([1, 2, 3, 4], {"a": 1, "b": 2})
     assert l[1] == 2
     assert l["a"] == 2
+
+
+def test_concat_and_copy_return_exact_list():
+    class MyList(list):
+        pass
+
+    result = MyList([1]) + [2]
+    assert result == [1, 2]
+    assert type(result) is list
+    result = MyList([1]).copy()
+    assert result == [1]
+    assert type(result) is list
