@@ -131,11 +131,13 @@ public final class CountBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, NUMBER_IS_REQUIRED);
             }
             Object cnt = start;
+            Object countStep = step;
             if (typeCheckNode.execute(inliningTarget, start, PythonBuiltinClassType.PInt) && typeCheckNode.execute(inliningTarget, step, PythonBuiltinClassType.PInt)) {
                 try {
                     if (asLongNode.execute(frame, inliningTarget, step) == 1) {
                         // counting from an int by 1 yields exact ints, also for an int subclass
                         cnt = asLongNode.execute(frame, inliningTarget, start);
+                        countStep = 1;
                     }
                 } catch (OverflowException e) {
                     // does not fit: keep the object
@@ -143,7 +145,7 @@ public final class CountBuiltins extends PythonBuiltins {
             }
             PCount self = PFactory.createCount(cls, getInstanceShape.execute(cls));
             self.setCnt(cnt);
-            self.setStep(step);
+            self.setStep(countStep);
             return self;
         }
     }
