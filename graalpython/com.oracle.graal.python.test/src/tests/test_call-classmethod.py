@@ -52,6 +52,14 @@ def test_strength():
     assert not s1.weaker(s1, s2)
 
 
+def test_classmethod_object_is_not_callable():
+    cm = classmethod(len)
+    assert not callable(cm)
+    assert not hasattr(cm, "__call__")
+    assert callable(dict.__dict__["fromkeys"])
+    assert dict.__dict__["fromkeys"](dict, "a") == {"a": None}
+
+
 def test_classmethod_does_not_chain_descriptor():
     class Descriptor:
         def __get__(self, obj, typ=None):

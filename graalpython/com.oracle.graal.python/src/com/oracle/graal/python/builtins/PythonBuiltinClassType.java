@@ -682,7 +682,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                     Static methods in Python are similar to those found in Java or C++.
                     For a more advanced concept, see the classmethod builtin.""")),
-    PClassmethod("classmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS).doc("""
+    PClassmethod("classmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(ClassmethodBuiltins.SLOTS).doc("""
                     classmethod(function, /)
                     --
 
