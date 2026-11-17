@@ -239,3 +239,15 @@ class TeeDataObjectTests(unittest.TestCase):
     def test_teedataobject_list_values(self):
         t = itertools._tee_dataobject(iter([]), [1, 2], None)
         self.assertIs(type(t), itertools._tee_dataobject)
+
+
+class CountIntSubclassStartTests(unittest.TestCase):
+    def test_bool_start_with_default_step(self):
+        c = count(True)
+        self.assertEqual(repr(c), 'count(1)')
+        self.assertIs(type(next(c)), int)
+
+    def test_bool_start_with_other_step(self):
+        c = count(True, 2)
+        self.assertEqual(repr(c), 'count(True, 2)')
+        self.assertIs(next(c), True)
