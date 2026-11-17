@@ -407,9 +407,6 @@ public final class TypeBuiltins extends PythonBuiltins {
                 if (!isTypeNode.execute(inliningTarget, base) && lookupMroEntries.execute(frame, inliningTarget, base, T___MRO_ENTRIES__) != NO_VALUE) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION);
                 }
-                if (!ensureIsAcceptableBaseNode().execute(base)) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
-                }
                 Object typ = getClassNode.execute(inliningTarget, base);
                 if (isSubType(winner, typ)) {
                     continue;
@@ -418,6 +415,15 @@ public final class TypeBuiltins extends PythonBuiltins {
                     continue;
                 }
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.METACLASS_CONFLICT);
+            }
+            for (int i = 0; i < basesArray.length; i++) {
+                Object base = basesArray[i];
+                if (!isTypeNode.execute(inliningTarget, base)) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BASES_MUST_BE_TYPES);
+                }
+                if (!ensureIsAcceptableBaseNode().execute(base)) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
+                }
             }
             LoopNode.reportLoopCount(inliningTarget, basesArray.length);
             return winner;

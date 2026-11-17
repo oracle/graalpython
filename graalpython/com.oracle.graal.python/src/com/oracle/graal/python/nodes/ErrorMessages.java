@@ -154,6 +154,7 @@ public abstract class ErrorMessages {
     public static final TruffleString THREAD_FUNCTION_MUST_BE_CALLABLE = tsLiteral("thread function must be callable");
     public static final TruffleString THREAD_NOT_STARTED = tsLiteral("thread not started");
     public static final TruffleString INT_BASE_MUST_BE_2_AND_36_OR_0 = tsLiteral("int() base must be >= 2 and <= 36, or 0");
+    public static final TruffleString BASES_MUST_BE_TYPES = tsLiteral("bases must be types");
     public static final TruffleString BASES_ITEM_CAUSES_INHERITANCE_CYCLE = tsLiteral("a __bases__ item causes an inheritance cycle");
     public static final TruffleString BASE_MUST_BE = tsLiteral("PyNumber_ToBase: base must be 2, 8, 10 or 16");
     public static final TruffleString BIVARIANT_TYPES_ARE_NOT_SUPPORTED = tsLiteral("Bivariant types are not supported.");
