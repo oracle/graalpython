@@ -1803,8 +1803,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object perform(VirtualFrame frame, LocalAccessor attributes, Object subject, Object type, int nargs, TruffleString[] kwArgs, @Bind BytecodeNode bytecodeNode,
                         @Cached MatchClassNode node) {
             Object attrs = node.execute(frame, subject, type, nargs, kwArgs);
-            attributes.setObject(bytecodeNode, frame, attrs);
-            return attrs != null;
+            if (attrs != null) {
+                attributes.setObject(bytecodeNode, frame, attrs);
+                return true;
+            }
+            return false;
         }
     }
 
