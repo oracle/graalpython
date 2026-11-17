@@ -293,6 +293,17 @@ def test_class_attr():
     CCC().bar()
 
 
+def test_notimplemented_bool_warns():
+    import warnings
+    assert '__bool__' in dir(NotImplemented)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        assert bool(NotImplemented) is True
+    assert len(caught) == 1
+    assert caught[0].category is DeprecationWarning
+    assert str(caught[0].message) == "NotImplemented should not be used in a boolean context"
+
+
 def test_reduce_ex_with_none():
     assert_raises(TypeError, object(), None)
 
