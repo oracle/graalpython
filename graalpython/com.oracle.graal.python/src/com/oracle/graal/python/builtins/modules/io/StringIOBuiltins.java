@@ -137,6 +137,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -300,6 +301,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached IONodes.ToTruffleStringNode toTruffleStringNode,
+                        @Cached InlinedConditionProfile noInitialValueProfile,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
@@ -317,7 +319,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                 validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
             }
             TruffleString initialValue;
-            if (PGuards.isPNone(initialValueArg)) {
+            if (noInitialValueProfile.profile(inliningTarget, PGuards.isPNone(initialValueArg))) {
                 initialValue = T_EMPTY_STRING;
             } else {
                 try {
