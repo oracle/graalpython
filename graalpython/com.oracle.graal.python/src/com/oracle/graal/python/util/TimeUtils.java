@@ -41,6 +41,7 @@
 package com.oracle.graal.python.util;
 
 import com.oracle.graal.python.runtime.PosixSupport.Timeval;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class TimeUtils {
     public static final long SEC_TO_MS = 1000L;
@@ -49,6 +50,16 @@ public abstract class TimeUtils {
     public static final long US_TO_NS = 1000L;
     public static final long MS_TO_NS = MS_TO_US * US_TO_NS;
     public static final long SEC_TO_NS = SEC_TO_MS * MS_TO_NS;
+
+    @TruffleBoundary
+    public static long currentTimeMillis() {
+        return System.currentTimeMillis();
+    }
+
+    @TruffleBoundary
+    public static long nanoTime() {
+        return System.nanoTime();
+    }
 
     /**
      * Equivalent of CPython's {@code _PyTime_AsTimeval}

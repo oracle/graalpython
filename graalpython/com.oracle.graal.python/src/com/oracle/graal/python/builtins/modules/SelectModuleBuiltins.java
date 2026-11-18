@@ -159,7 +159,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
             }
 
             SelectResult result;
-            long startNano = timeoutval != null ? System.nanoTime() : 0;
+            long startNano = timeoutval != null ? TimeUtils.nanoTime() : 0;
             while (true) {
                 try {
                     gil.release(true);
@@ -180,7 +180,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                     }
                     PythonContext.triggerAsyncActions(inliningTarget);
                     if (timeoutval != null) {
-                        long remainingNs = timeoutNs - (System.nanoTime() - startNano);
+                        long remainingNs = timeoutNs - (TimeUtils.nanoTime() - startNano);
                         if (remainingNs <= 0) {
                             return PFactory.createTuple(language, new PList[]{
                                             PFactory.createList(language),
