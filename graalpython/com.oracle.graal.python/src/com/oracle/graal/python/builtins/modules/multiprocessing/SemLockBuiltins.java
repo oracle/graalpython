@@ -81,6 +81,7 @@ import com.oracle.graal.python.runtime.PosixSupport.PosixException;
 import com.oracle.graal.python.runtime.PosixSupport.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.nodes.util.PosixSupportNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -215,7 +216,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                     timeout = 0;
                 }
                 long timeoutNs = (long) (timeout * 1e9);
-                long nowNs = System.currentTimeMillis() * 1000_000;
+                long nowNs = TimeUtils.currentTimeMillis() * 1000_000;
                 deadlineNs = nowNs + timeoutNs;
             }
             /* Check whether we can acquire without releasing the GIL and blocking */

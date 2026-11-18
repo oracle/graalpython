@@ -184,7 +184,7 @@ public final class PollBuiltins extends PythonBuiltins {
             int[] pollEvents = self.getPollEvents();
             int[] pollRevents = self.getPollRevents();
             boolean timedOut = false;
-            long startNano = timeoutMs >= 0 ? System.nanoTime() : 0;
+            long startNano = timeoutMs >= 0 ? TimeUtils.nanoTime() : 0;
             try {
                 while (true) {
                     try {
@@ -201,7 +201,7 @@ public final class PollBuiltins extends PythonBuiltins {
                         }
                         PythonContext.triggerAsyncActions(inliningTarget);
                         if (timeoutMs >= 0) {
-                            long remainingNs = timeoutNs - (System.nanoTime() - startNano);
+                            long remainingNs = timeoutNs - (TimeUtils.nanoTime() - startNano);
                             if (remainingNs <= 0) {
                                 timedOut = true;
                                 break;

@@ -179,10 +179,10 @@ public class SocketUtils {
 
         public long checkAndGetRemainingTimeoutNs(Frame frame, Node inliningTaget, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (startNano == 0) {
-                startNano = System.nanoTime();
+                startNano = TimeUtils.nanoTime();
                 return initialTimeoutNs;
             } else {
-                long remainingNs = initialTimeoutNs - (System.nanoTime() - startNano);
+                long remainingNs = initialTimeoutNs - (TimeUtils.nanoTime() - startNano);
                 if (remainingNs <= 0) {
                     throw constructAndRaiseNode.get(inliningTaget).raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                 }
