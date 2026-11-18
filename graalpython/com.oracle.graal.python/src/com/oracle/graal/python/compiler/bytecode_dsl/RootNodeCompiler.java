@@ -3545,9 +3545,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // Step 4: the returnValue local is assigned when branching to "end" label
             b.emitLabel(end);
             endTemporaryLocal(yieldValue);
-            b.beginStoreLocal(yieldFromGenerator);
-                b.emitLoadNull();
-            b.endStoreLocal();
+            // Clear the local to mark the yield-from delegation as complete.
+            // readYieldFromGenerator reads it using BytecodeNode#getLocalValue,
+            // which returns null for a cleared local.
+            b.emitClearLocal(yieldFromGenerator);
 
             // @formatter:on
             b.endBlock();
