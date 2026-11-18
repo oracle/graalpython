@@ -3877,6 +3877,8 @@ sem_t* call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t 
     sem_t* result = sem_open(name, openFlags, mode, value);
     if (result == SEM_FAILED) {
         capture_errno();
+        // SEM_FAILED is not NULL on all platforms (for example, macOS).
+        return NULL;
     }
     return result;
 }
