@@ -47,6 +47,7 @@ import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER_BYTES;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -176,6 +178,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -339,6 +342,45 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     TruffleString getStdIOError() {
         return (TruffleString) getBuiltinConstant(T_STDIO_ERROR);
+    }
+
+    @Builtin(name = "run_interactive_hook")
+    @GenerateNodeFactory
+    abstract static class RunInteractiveHookNode extends PythonBuiltinNode {
+        private static final TruffleString T_INTERACTIVEHOOK = tsLiteral("__interactivehook__");
+        private static final TruffleString T_CPYTHON_RUN_INTERACTIVEHOOK = tsLiteral("cpython.run_interactivehook");
+
+        @Specialization
+        PNone run(VirtualFrame frame,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return runBoundary();
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private PNone runBoundary() {
+            PythonContext context = getContext();
+            Object hook = context.getSysModule().getAttribute(T_INTERACTIVEHOOK);
+            if (hook != PNone.NO_VALUE) {
+                try {
+                    SysModuleBuiltins.AuditNode.auditUncached(T_CPYTHON_RUN_INTERACTIVEHOOK, hook);
+                    CallNode.executeUncached(hook);
+                } catch (PException e) {
+                    PyObjectCallMethodObjArgs.executeUncached(context.getStderr(), T_WRITE, ErrorMessages.FAILED_CALLING_INTERACTIVE_HOOK);
+                    Object exception = e.getEscapedException();
+                    if (exception instanceof PBaseException managedException &&
+                                    IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(exception), PythonBuiltinClassType.SystemExit)) {
+                        ExceptionUtils.handleSystemExit(this, context, managedException);
+                    }
+                    ExceptionUtils.printExceptionForLauncher(context, e);
+                }
+            }
+            return PNone.NONE;
+        }
     }
 
     /**

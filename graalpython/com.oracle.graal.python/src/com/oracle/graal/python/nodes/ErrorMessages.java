@@ -50,6 +50,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 // Custom formatters are described in {@link com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter}
 public abstract class ErrorMessages {
+    public static final TruffleString FAILED_CALLING_INTERACTIVE_HOOK = tsLiteral("Failed calling sys.__interactivehook__\n");
     public static final TruffleString A_SINGLE_CONSTRAINT_IS_NOT_ALLOWED = tsLiteral("A single constraint is not allowed");
     public static final TruffleString ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING = tsLiteral("\"__abc_tpflags__ cannot be both Py_TPFLAGS_SEQUENCE and Py_TPFLAGS_MAPPING\"");
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");

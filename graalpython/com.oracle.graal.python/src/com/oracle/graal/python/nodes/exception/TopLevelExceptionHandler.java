@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.exception;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -52,22 +51,16 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -191,18 +184,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             handleSystemExit(managedException);
         }
         if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
-            Object type = GetClassNode.executeUncached(pythonException);
-            Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
-
-            PythonModule sys = getContext().getSysModule();
-            sys.setAttribute(BuiltinNames.T_LAST_TYPE, type);
-            sys.setAttribute(BuiltinNames.T_LAST_VALUE, pythonException);
-            sys.setAttribute(BuiltinNames.T_LAST_TRACEBACK, tb);
-
-            ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
-            if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage()) && e instanceof PException pe) {
-                ExceptionUtils.printJavaStackTrace(pe);
-            }
+            ExceptionUtils.printExceptionForLauncher(getContext(), e);
             exit(1);
         }
         // Before we leave Python, format the message since outside the context
@@ -268,40 +250,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }
-        try {
-            int exitcode = getExitCode(pythonException);
-            throw new PythonExitException(this, exitcode);
-        } catch (CannotCastException e) {
-            if (handleAlwaysRunExceptHook(theContext, pythonException)) {
-                throw new PythonExitException(this, 1);
-            } else {
-                throw pythonException.getExceptionForReraise(pythonException.getTraceback());
-            }
-        }
-    }
-
-    private static int getExitCode(PBaseException pythonException) throws CannotCastException {
-        final Object[] exceptionAttributes = pythonException.getExceptionAttributes();
-        int exitcode = 0;
-        if (exceptionAttributes != null) {
-            final Object code = exceptionAttributes[0];
-            if (code != PNone.NONE) {
-                exitcode = (int) CastToJavaLongLossyNode.executeUncached(code);
-            }
-        }
-        return exitcode;
-    }
-
-    @TruffleBoundary
-    private static boolean handleAlwaysRunExceptHook(PythonContext theContext, PBaseException pythonException) {
-        if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
-            // If we failed to dig out the exit code we just print and leave
-            Object stderr = theContext.getStderr();
-            Object message = PyObjectStrAsObjectNode.getUncached().execute(null, pythonException);
-            PyObjectCallMethodObjArgs.executeUncached(stderr, T_WRITE, message);
-            return true;
-        }
-        return false;
+        ExceptionUtils.handleSystemExit(this, theContext, pythonException);
     }
 
     private Object run(VirtualFrame frame) {

@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -56,8 +57,11 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -66,7 +70,10 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -239,6 +246,44 @@ public final class ExceptionUtils {
         ListIterator<String> listIterator = stack.listIterator(stack.size());
         while (listIterator.hasPrevious()) {
             p.println(listIterator.previous());
+        }
+    }
+
+    /** Report an uncaught launcher exception without deciding whether execution should continue. */
+    @TruffleBoundary
+    public static void printExceptionForLauncher(PythonContext context, AbstractTruffleException exception) {
+        Object pythonException = exception instanceof PException pe ? pe.getEscapedException() : exception;
+        Object type = GetClassNode.executeUncached(pythonException);
+        Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
+
+        PythonModule sys = context.getSysModule();
+        sys.setAttribute(BuiltinNames.T_LAST_TYPE, type);
+        sys.setAttribute(BuiltinNames.T_LAST_VALUE, pythonException);
+        sys.setAttribute(BuiltinNames.T_LAST_TRACEBACK, tb);
+
+        printExceptionTraceback(context, pythonException);
+        if (PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()) && exception instanceof PException pe) {
+            printJavaStackTrace(pe);
+        }
+    }
+
+    /** Convert an unhandled SystemExit to a process exit, independently of source parsing mode. */
+    @TruffleBoundary
+    public static void handleSystemExit(Node location, PythonContext context, PBaseException exception) {
+        try {
+            Object[] attributes = exception.getExceptionAttributes();
+            int exitCode = 0;
+            if (attributes != null && attributes[0] != PNone.NONE) {
+                exitCode = (int) CastToJavaLongLossyNode.executeUncached(attributes[0]);
+            }
+            throw new PythonExitException(location, exitCode);
+        } catch (CannotCastException e) {
+            if (context.getOption(PythonOptions.AlwaysRunExcepthook)) {
+                Object message = PyObjectStrAsObjectNode.getUncached().execute(null, exception);
+                PyObjectCallMethodObjArgs.executeUncached(context.getStderr(), T_WRITE, message);
+                throw new PythonExitException(location, 1);
+            }
+            throw exception.getExceptionForReraise(exception.getTraceback());
         }
     }
 
