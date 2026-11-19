@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrG
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -130,7 +131,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
                         @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
                         @Cached("isNoValue(type)") boolean typeIsNoValue,
                         @Exclusive @Cached GetClassNode getClass,
-                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
+                        @Exclusive @Cached MethodNodes.MakeMethodNode makeMethod) {
             Object actualType = typeIsNoValue ? getClass.execute(inliningTarget, obj) : type;
             return makeMethod.execute(inliningTarget, actualType, cachedCallable);
         }
@@ -140,10 +141,14 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
         static Object get(PDecoratedMethod self, Object obj, Object type,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
-                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
+                        @Exclusive @Cached MethodNodes.MakeMethodNode makeMethod,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object actualType = PGuards.isNoValue(type) ? getClass.execute(inliningTarget, obj) : type;
-            return makeMethod.execute(inliningTarget, actualType, ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode));
+            Object callable = self.getCallable();
+            if (callable == null) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT, "classmethod");
+            }
+            return makeMethod.execute(inliningTarget, actualType, callable);
         }
     }
 

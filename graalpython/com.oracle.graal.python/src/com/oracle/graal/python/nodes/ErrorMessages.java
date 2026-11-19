@@ -792,7 +792,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNEXPECTED_S_IN_FIELD_NAME = tsLiteral("unexpected %s in field name");
     public static final TruffleString UNDEFINED_CHARACTER_NAME = tsLiteral("undefined character name '%s'");
     public static final TruffleString UNHASHABLE_TYPE_P = tsLiteral("unhashable type: '%p'");
-    public static final TruffleString UNINITIALIZED_S_OBJECT = tsLiteral("uninitialized classmethod object");
+    public static final TruffleString UNINITIALIZED_S_OBJECT = tsLiteral("uninitialized %s object");
     public static final TruffleString UNKNOWN_ADDR_FAMILY = tsLiteral("unknown address family %d");
     public static final TruffleString UNKNOWN_ATTR = tsLiteral("Unknown attribute: '%s'");
     public static final TruffleString UNKNOWN_ENCODING = tsLiteral("unknown encoding %s");

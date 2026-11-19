@@ -238,7 +238,6 @@ import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
-import com.oracle.graal.python.builtins.objects.method.ClassmethodCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodWrapperBuiltins;
@@ -343,7 +342,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     MethodWrapper("method-wrapper", PythonObject, newBuilder().haveGC().slots(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
     PBuiltinMethod("builtin_method", PBuiltinFunctionOrMethod, newBuilder().haveGC()),
-    PBuiltinClassMethod("classmethod_descriptor", PythonObject, newBuilder().slots(ClassmethodCommonBuiltins.SLOTS, BuiltinClassmethodBuiltins.SLOTS)),
+    PBuiltinClassMethod("classmethod_descriptor", PythonObject, newBuilder().slots(BuiltinClassmethodBuiltins.SLOTS)),
     GetSetDescriptor("getset_descriptor", PythonObject, newBuilder().haveGC().disallowInstantiation().slots(GetSetDescriptorTypeBuiltins.SLOTS)),
     MemberDescriptor(J_MEMBER_DESCRIPTOR, PythonObject, newBuilder().haveGC().disallowInstantiation().slots(MemberDescriptorBuiltins.SLOTS)),
     PByteArray(

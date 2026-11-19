@@ -57,11 +57,13 @@ import java.util.List;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -107,8 +110,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class GetNode extends DescrGetBuiltinNode {
-        // If self.getCallable() is null, let the next @Specialization handle that
-        @Specialization(guards = {"isSingleContext()", "isNoValue(type) == typeIsNoValue", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
+        @Specialization(guards = {"isSingleContext()", "isNoValue(type) == typeIsNoValue", "cachedSelf == self"}, limit = "3")
         static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, Object type,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
@@ -117,7 +119,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClass,
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached InlinedBranchProfile errorProfile,
-                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
+                        @Exclusive @Cached MethodNodes.MakeMethodNode makeMethod) {
             Object actualType = getType(inliningTarget, errorProfile, getClass, cachedCallable, typeIsNoValue, obj, type);
             return doGet(inliningTarget, isSubtypeNode, errorProfile, makeMethod, actualType, cachedCallable);
         }
@@ -129,9 +131,8 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClass,
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached InlinedBranchProfile errorProfile,
-                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object callable = ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode);
+                        @Exclusive @Cached MethodNodes.MakeMethodNode makeMethod) {
+            Object callable = self.getCallable();
             Object actualType = getType(inliningTarget, errorProfile, getClass, callable, PGuards.isNoValue(type), obj, type);
             return doGet(inliningTarget, isSubtypeNode, errorProfile, makeMethod, actualType, callable);
         }
@@ -160,7 +161,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
         }
 
         private static Object doGet(Node inliningTarget, IsSubtypeNode isSubtypeNode, InlinedBranchProfile errorProfile,
-                        ClassmethodCommonBuiltins.MakeMethodNode makeMethod, Object type, Object callable) {
+                        MethodNodes.MakeMethodNode makeMethod, Object type, Object callable) {
             if (!PGuards.isPythonClass(type)) {
                 errorProfile.enter(inliningTarget);
                 throw raiseNeedsType(inliningTarget, callable, type);
@@ -190,6 +191,18 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
         private static RuntimeException raiseRequiresSubtype(Node inliningTarget, PBuiltinFunction builtinFunction, Object descriptorType, Object type) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_SUBTYPE_OF_S_BUT_RECEIVED_S,
                             builtinFunction.getName(), TypeNodes.GetNameNode.executeUncached(descriptorType), TypeNodes.GetNameNode.executeUncached(type));
+        }
+    }
+
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class CallNode extends PythonVarargsBuiltinNode {
+
+        @Specialization
+        static Object doIt(VirtualFrame frame, PDecoratedMethod self, Object[] arguments, PKeyword[] keywords,
+                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode) {
+            return callNode.execute(frame, self.getCallable(), arguments, keywords);
         }
     }
 
