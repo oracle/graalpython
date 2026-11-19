@@ -221,7 +221,9 @@ For Gradle, use `implementation("org.graalvm.python:python-bouncycastle-support:
 
 ### Configuring Individual Sources
 
-Embeddings can set options on an individual `Source` without changing the entire context. Set `python.Optimize` to `0`, `1`, or `2` to select the optimization level for a source. Set `python.NewGlobals=true` to execute a source with a fresh globals dictionary instead of the main module globals.
+Set the context option `python.OptimizationLevel` to `0` (default), `1`, or `2` to select the default optimization level. Level `1` removes assertions and sets `__debug__` to `False`; level `2` also removes docstrings. The existing boolean option `python.PythonOptimizeFlag=true` remains an alias for level `1`.
+
+Embeddings can set options on an individual `Source` without changing the entire context. Set `python.Optimize` to `0`, `1`, or `2` to select the optimization level for a source, overriding the context default. The default value `-1` inherits the context optimization level. Set `python.NewGlobals=true` to execute a source with a fresh globals dictionary instead of the main module globals.
 
 ## Other Build Systems (Ant, CMake, Makefile)
 

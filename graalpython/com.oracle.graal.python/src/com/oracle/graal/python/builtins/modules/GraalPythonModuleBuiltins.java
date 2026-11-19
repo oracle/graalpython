@@ -402,7 +402,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     TruffleFile file = context.getPublicTruffleFileRelaxed(inputFilePath);
                     builder = Source.newBuilder(PythonLanguage.ID, file);
                 }
-                builder = PythonLanguage.setPythonOptions(builder, InputType.FILE, 0, 0);
+                builder = PythonLanguage.setPythonOptions(builder, InputType.FILE, -1, 0);
                 source = builder.build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {

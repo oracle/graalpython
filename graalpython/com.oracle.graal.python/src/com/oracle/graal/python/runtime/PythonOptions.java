@@ -153,6 +153,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
 
+    @EngineOption @Option(category = OptionCategory.USER, help = "Optimization level: 0 keeps assertions and docstrings, 1 removes assertions, and 2 or higher also removes docstrings.", usageSyntax = "<int>", stability = OptionStability.STABLE) //
+    public static final OptionKey<Integer> OptimizationLevel = new OptionKey<>(0);
+
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -v flag. Turn on verbose mode.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
 

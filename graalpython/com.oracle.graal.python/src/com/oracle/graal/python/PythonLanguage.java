@@ -501,6 +501,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    @Idempotent
+    public int getOptimizationLevel() {
+        // Preserve the existing boolean option as an alias for level 1.
+        return Math.max(getEngineOption(PythonOptions.OptimizationLevel), getEngineOption(PythonOptions.PythonOptimizeFlag) ? 1 : 0);
+    }
+
     public boolean useNativePrimitiveStorage() {
         return useNativePrimitiveStorage;
     }
@@ -560,14 +566,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             throw new IllegalStateException("parse with arguments not allowed for interactive sources");
         }
         InputType inputType;
-        int optimize;
+        int optimize = source.getOptions(this).get(PythonSourceOptions.Optimize);
         EnumSet<FutureFeature> futureFeatures;
         boolean topLevel;
         List<String> argumentNames;
         EnumSet<AbstractParser.Flags> parserFlags = EnumSet.noneOf(AbstractParser.Flags.class);
         if (source.isInteractive()) {
             inputType = InputType.SINGLE;
-            optimize = 0;
             futureFeatures = EnumSet.noneOf(FutureFeature.class);
             topLevel = true;
             argumentNames = request.getArgumentNames();
@@ -582,7 +587,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 case "single" -> InputType.SINGLE;
                 default -> throw CompilerDirectives.shouldNotReachHere("unknown compilation kind: " + kind);
             };
-            optimize = sourceOptions.get(PythonSourceOptions.Optimize);
             int flags = sourceOptions.get(PythonSourceOptions.Flags);
             futureFeatures = FutureFeature.fromFlags(flags);
             argumentNames = request.getArgumentNames().isEmpty() ? null : request.getArgumentNames();
@@ -645,7 +649,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 mod = modIn;
             }
 
-            int resolvedOptimize = optimize >= 0 ? optimize : getEngineOption(PythonOptions.PythonOptimizeFlag) ? 1 : 0;
+            int resolvedOptimize = optimize >= 0 ? optimize : getOptimizationLevel();
             RootNode rootNode = compileForBytecodeDSLInterpreter(mod, source, resolvedOptimize, errorCb, futureFeatures);
 
             if (topLevel) {
@@ -743,7 +747,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     public ExecutableNode parse(InlineParsingRequest request) {
         PythonContext context = PythonContext.get(null);
-        RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, null, EnumSet.noneOf(FutureFeature.class));
+        RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, request.getSource().getOptions(this).get(PythonSourceOptions.Optimize), null,
+                        EnumSet.noneOf(FutureFeature.class));
         return new ExecutableNode(this) {
             @Child private GilNode gilNode = GilNode.create();
             @Child private CallDispatchers.SimpleGenericIndirectInvokeNode invokeNode = CallDispatchers.SimpleGenericIndirectInvokeNode.create();
