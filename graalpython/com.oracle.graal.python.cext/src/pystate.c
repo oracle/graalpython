@@ -2840,6 +2840,12 @@ PyGILState_Check(void)
     }
     int ret = GraalPyPrivate_GILState_Check();
     if (attached == GRAALPY_ATTACH_NATIVE_OWNED && graalpy_detach_native_thread) {
+        /*
+         * Clean up the state created by this temporary attachment. Leaving the context alone
+         * retains the cached address of 'tstate_current', which becomes invalid when this native
+         * thread exits.
+         */
+        GraalPyPrivate_BeforeThreadDetach();
         graalpy_detach_native_thread();
     }
     return ret;
