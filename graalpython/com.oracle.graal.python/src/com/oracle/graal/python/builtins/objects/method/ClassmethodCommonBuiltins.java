@@ -72,7 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PBuiltinClassMethod})
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinClassMethod)
 public final class ClassmethodCommonBuiltins extends PythonBuiltins {
 
     public static final TpSlots SLOTS = ClassmethodCommonBuiltinsSlotsGen.SLOTS;

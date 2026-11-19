@@ -232,6 +232,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.call.CallDispatchers.PFunctionCallTargetCachedInvokeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -883,8 +884,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static Object eval(VirtualFrame frame, Node inliningTarget, Object source, Object globals, Object locals, TruffleString mode, @SuppressWarnings("unused") boolean shouldStripLeadingWhitespace,
                         @Cached("create(false, shouldStripLeadingWhitespace)") CompileNode compileNode,
                         @Cached CreateEvalExecArgumentsNode createArguments,
-                        @Cached CodeNodes.GetCodeCallTargetNode getCallTarget,
-                        @Cached CallDispatchers.CallTargetCachedInvokeNode invoke,
+                        @Cached CodeNodes.GetCodeRootAndInitCallTargetNode getRootNode,
+                        @Cached PFunctionCallTargetCachedInvokeNode invoke,
                         @Cached PRaiseNode raiseNode) {
             PCode code = compileNode.compile(frame, source, T_STRING_SOURCE, mode, -1, -1);
             if (code.getFreeVars().length > 0) {
@@ -892,8 +893,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object[] args = createArguments.execute(frame, inliningTarget, globals, locals, mode);
             PArguments.setCodeObject(args, code);
-            RootCallTarget callTarget = getCallTarget.execute(inliningTarget, code);
-            return invoke.execute(frame, inliningTarget, callTarget, args);
+            PBytecodeDSLRootNode rootNode = getRootNode.execute(inliningTarget, code);
+            return invoke.execute(frame, inliningTarget, rootNode, args);
         }
     }
 

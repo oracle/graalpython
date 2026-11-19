@@ -98,6 +98,48 @@ class TestPyThread(CPyExtTestCase):
 
 @unittest.skipIf(sys.platform == 'win32', "Needs pthread")
 class TestNativeThread(unittest.TestCase):
+    def test_save_thread_in_native_thread(self):
+        NativeThread = CPyExtType(
+            name="SaveThreadInNativeThread",
+            includes="#include <pthread.h>",
+            code=r'''
+            static void* worker(void* arg) {
+                for (int i = 0; i < 3; i++) {
+                    PyGILState_STATE state = PyGILState_Ensure();
+                    /* Do not call PyThreadState_Get first: it can initialize
+                       the native thread state and hide the failure. */
+                    PyThreadState *saved = PyEval_SaveThread();
+                    PyEval_RestoreThread(saved);
+                    PyGILState_STATE nested = PyGILState_Ensure();
+                    PyGILState_Release(nested);
+                    if (PyThreadState_Get() != saved) {
+                        Py_FatalError("Nested GIL state acquisition changed the thread state");
+                    }
+                    PyGILState_Release(state);
+                }
+                return NULL;
+            }
+
+            static PyObject* run(PyObject* self, PyObject* ignored) {
+                pthread_t thread;
+                int error;
+                Py_BEGIN_ALLOW_THREADS
+                error = pthread_create(&thread, NULL, worker, NULL);
+                if (!error) {
+                    error = pthread_join(thread, NULL);
+                }
+                Py_END_ALLOW_THREADS
+                if (error) {
+                    PyErr_SetString(PyExc_RuntimeError, "pthread_create/join failed");
+                    return NULL;
+                }
+                Py_RETURN_NONE;
+            }
+            ''',
+            tp_methods='{"run", (PyCFunction)run, METH_NOARGS | METH_STATIC, ""}'
+        )
+        NativeThread.run()
+
     def test_register_new_thread(self):
         TestThread = CPyExtType(
             name="TestThread",

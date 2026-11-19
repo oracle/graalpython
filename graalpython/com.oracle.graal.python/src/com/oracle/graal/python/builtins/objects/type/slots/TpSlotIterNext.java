@@ -69,6 +69,7 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -77,7 +78,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -229,8 +229,8 @@ public final class TpSlotIterNext {
                         @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
-            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
-            return invoke.execute(frame, inliningTarget, callTarget, arguments);
+            BuiltinFunctionRootNode rootNode = PythonLanguage.get(inliningTarget).getBuiltinSlotRootNode(slot.callTargetIndex);
+            return invoke.executeBuiltin(frame, inliningTarget, rootNode, arguments);
         }
     }
 }

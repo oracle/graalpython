@@ -744,7 +744,7 @@ def graalpy_native_pgo_build_and_test(args=None):
         host_inlining_log.unlink()
         mx.log(mx.colorize(f"[PGO] Gzipped host inlining log at: {host_inlining_log_gz}", color="yellow"))
     else:
-        mx.warn(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
+        mx.abort(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
 
     iprof_gz_path = str(iprof_path) + '.gz'
     with open(iprof_path, 'rb') as f_in, gzip.open(iprof_gz_path, 'wb') as f_out:
@@ -1253,14 +1253,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
             mx_args.append(f"--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
-            if host_inlining_log := os.environ.get("GRAALPY_HOST_INLINING_LOG"):
-                mx_args.extend([
-                    f"--extra-image-builder-argument=-H:Log=HostInliningPhase,~CanonicalizerPhase,~GraphBuilderPhase",
-                    f"--extra-image-builder-argument=-H:+TruffleHostInliningPrintExplored",
-                    f"--extra-image-builder-argument=-H:MethodFilter=com.oracle.graal.python.*.*",
-                    f"--extra-image-builder-argument=-H:-UnlockExperimentalVMOptions",
-                    f"--extra-image-builder-argument=-Dgraal.LogFile={host_inlining_log}",
-                ])
         else:
             mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
@@ -1269,6 +1261,17 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_args.append("--extra-image-builder-argument=-ea")
         mx_args.append("--extra-image-builder-argument=-J-ea")
         mx_args.append("--extra-image-builder-argument=-Dtruffle.DetailedAssertions=true")
+
+    if standalone_type == 'native' and (host_inlining_log := os.environ.get("GRAALPY_HOST_INLINING_LOG")):
+        host_inlining_log = os.path.abspath(host_inlining_log)
+        mx_args.extend([
+            "--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions",
+            "--extra-image-builder-argument=-H:Log=HostInliningPhase,~CanonicalizerPhase,~GraphBuilderPhase",
+            "--extra-image-builder-argument=-H:+TruffleHostInliningPrintExplored",
+            "--extra-image-builder-argument=-H:MethodFilter=com.oracle.graal.python.*.*",
+            "--extra-image-builder-argument=-H:-UnlockExperimentalVMOptions",
+            f"--extra-image-builder-argument=-Dgraal.LogFile={host_inlining_log}",
+        ])
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         # This build is purposefully done without the LATEST_JAVA_HOME in the
@@ -3892,6 +3895,63 @@ def host_inlining_log_extract_method(args_in):
     return 1
 
 
+def check_call_host_inlining(args_in):
+    parser = ArgumentParser(description="Check host inlining of specialized Python call bytecode handlers.")
+    parser.add_argument("filename", help="host inlining log (hint: use --env native-ee-host-inlining)")
+    args = parser.parse_args(args_in)
+
+    root_node = "com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen"
+    handlers = {
+        f"Root[{root_node}$CachedBytecodeNodeTailCall.__stub_handle{operation}$CallPFunction_]": operation
+        for operation in ("CallBinaryMethod", "CallTernaryMethod", "CallQuaternaryMethod", "CallNilaryMethod")
+    }
+    dispatch = root_node + "$AbstractBytecodeNode.continueAt"
+    permitted_methods = {dispatch, "com.oracle.truffle.runtime.BaseOSRRootNode.getFrame"}
+    # Deliberate inlining boundaries, interpreter slow paths, and exception unwinding.
+    expected_reasons = {
+        "SVM block listed",
+        "method annotated with @InliningCutoff",
+        "truffle boundary",
+        "dominated by transferToInterpreter()",
+        "protected by inInterpreter()",
+        "propagates transferToInterpreter",
+        "leads to unwind",
+        "propagates unwind",
+        "the invoke is marked to be not used for inlining",
+    }
+    handler_logs = {operation: [] for operation in handlers.values()}
+    operation = None
+    checked = set()
+    with open(args.filename, encoding="utf-8") as log:
+        for line in log:
+            if line.lstrip().startswith("Root["):
+                operation = handlers.get(line.strip())
+            if operation is not None:
+                handler_logs[operation].append(line)
+
+    def abort_with_log(message, operations):
+        excerpts = ''.join(line for name in operations for line in handler_logs[name])
+        mx.abort(f"{message}\nHost inlining log from {args.filename}:\n{excerpts}")
+
+    for operation, lines in handler_logs.items():
+        for line in lines:
+            if not line.lstrip().startswith("CUTOFF "):
+                continue
+            method = line.split()[1].split("(", 1)[0]
+            reason = line.rsplit("reason ", 1)[-1].strip()
+            if reason.endswith("]"):
+                reason = reason[:-1]
+            if method not in permitted_methods and reason not in expected_reasons:
+                abort_with_log(f"Unexpected host inlining cutoff in {operation}.callPFunction:\n{line.strip()}", [operation])
+            if method == dispatch:
+                checked.add(operation)
+    missing = [operation for operation in handlers.values() if operation not in checked]
+    if missing:
+        abort_with_log(f"Missing AbstractBytecodeNode.continueAt cutoff for {', '.join(missing)} in {args.filename}; "
+                       "build with --env native-ce-host-inlining or --env native-ee-host-inlining.", missing)
+    mx.log(f"Call handler host inlining verified: {', '.join(handlers.values())} (only permitted cutoffs).")
+
+
 class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
     # We use global state, which influences what this unit-test config is going to do
     # The global state can be adjusted before a test run to achieve a different tests configuration
@@ -4044,6 +4104,7 @@ mx.update_commands(SUITE, {
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'verify-patches': [verify_patches, '[--git-mode]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
+    'python-check-call-host-inlining': [check_call_host_inlining, 'filename'],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
     'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, '[--with-extensions]'],

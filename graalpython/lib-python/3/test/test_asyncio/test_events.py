@@ -711,9 +711,10 @@ class EventLoopTestsMixin:
 
         self.loop.getaddrinfo = getaddrinfo
 
+        # GraalPy change: ensure the remote family differs from the IPv6 local address.
         f = self.loop.create_connection(
             lambda: MyProto(loop=self.loop),
-            'localhost', port1, local_addr=('localhost', port2))
+            socket_helper.HOSTv4, port1, local_addr=('localhost', port2))
 
         with self.assertRaises(OSError):
             self.loop.run_until_complete(f)

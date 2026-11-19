@@ -120,6 +120,90 @@ def test_import_star_all():
     assert 'unlistedProperty' not in g
 
 
+def test_import_star_non_module():
+    class Imported:
+        __all__ = ('public', '_private')
+        public = 42
+        _private = 43
+
+    name = '_test_import_star_non_module'
+    sys.modules[name] = Imported()
+    try:
+        namespace = {}
+        exec('from _test_import_star_non_module import *', namespace)
+        assert namespace['public'] == 42
+        assert namespace['_private'] == 43
+        del Imported.__all__
+        sys.modules[name].public = 44
+        sys.modules[name]._private = 45
+        namespace = {}
+        exec('from _test_import_star_non_module import *', namespace)
+        assert namespace['public'] == 44
+        assert '_private' not in namespace
+    finally:
+        del sys.modules[name]
+
+
+def test_import_star_materializes_mapping_keys():
+    for fail in (False, True):
+        events = []
+
+        class Namespace:
+            def keys(self):
+                events.append('keys started')
+                yield 'public'
+                if fail:
+                    raise RuntimeError('keys failed')
+                events.append('keys ended')
+
+        class Imported:
+            @property
+            def __dict__(self):
+                return Namespace()
+
+            def __getattr__(self, name):
+                if name == 'public':
+                    events.append('attribute read')
+                    return tuple(events)
+                raise AttributeError(name)
+
+        name = '_test_import_star_mapping_keys'
+        sys.modules[name] = Imported()
+        try:
+            namespace = {}
+            if fail:
+                try:
+                    exec('from _test_import_star_mapping_keys import *', namespace)
+                except RuntimeError as exc:
+                    assert str(exc) == 'keys failed'
+                else:
+                    assert False, 'key iteration errors must propagate'
+                assert events == ['keys started']
+                assert 'public' not in namespace
+            else:
+                exec('from _test_import_star_mapping_keys import *', namespace)
+                assert namespace['public'] == ('keys started', 'keys ended', 'attribute read')
+        finally:
+            del sys.modules[name]
+
+
+def test_import_star_missing_export():
+    class Imported:
+        __all__ = ('missing',)
+
+    name = '_test_import_star_missing_export'
+    sys.modules[name] = Imported()
+    try:
+        try:
+            exec('from _test_import_star_missing_export import *', {})
+        except AttributeError:
+            pass
+        else:
+            assert False, 'missing exports must raise AttributeError'
+    finally:
+        del sys.modules[name]
+
+
 def test_import_as_local():
     from sys import path
     from sys import path as mypath

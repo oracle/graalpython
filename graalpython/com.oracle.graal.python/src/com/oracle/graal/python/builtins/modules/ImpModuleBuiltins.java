@@ -631,7 +631,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             WriteAttributeToObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
-        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(code.getRootCallTarget(), PArguments.withGlobals(code, module));
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncachedPCode(code, PArguments.withGlobals(code, module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
         WriteAttributeToObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);

@@ -848,6 +848,28 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final Object getFinalPathName(Object path) throws PosixException {
+        logEnter("getFinalPathName", "%s", path);
+        try {
+            return logExit("getFinalPathName", "%s", delegate.getFinalPathName(path));
+        } catch (PosixException e) {
+            throw logException("getFinalPathName", e);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public final Object findFirstFile(Object path) throws PosixException {
+        logEnter("findFirstFile", "%s", path);
+        try {
+            return logExit("findFirstFile", "%s", delegate.findFirstFile(path));
+        } catch (PosixException e) {
+            throw logException("findFirstFile", e);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
     public final void kill(long pid, int signal) throws PosixException {
         logEnter("kill", "%d, %d", pid, signal);
         try {

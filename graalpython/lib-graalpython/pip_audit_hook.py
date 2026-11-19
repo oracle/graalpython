@@ -53,7 +53,7 @@ PIP_FIND_ALL_CANDIDATES = "pip.package_finder.find_all_candidates"
 PIP_REQUIREMENT_SOURCE_READY = "pip.requirement.source_ready"
 PIP_WHEEL_INSTALL = "pip.wheel.install"
 
-GRAALPY_WHEELS_URL = "https://www.graalvm.org/python/wheels/"
+GRAALPY_WHEELS_URL = "https://gds.oracle.com/repositories/pypi/public-release/"
 PIP_INDEX_URL_ENV_VAR = "PIP_INDEX_URL"
 PIP_CACHE_DIR_ENV_VAR = "PIP_CACHE_DIR"
 CACHE_DIR_SUFFIX = "-graalpy"

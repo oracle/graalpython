@@ -140,6 +140,19 @@ public abstract class AbstractCallMethodNode extends Node {
         return true;
     }
 
+    // A cached function's identity implies its type; only check the type when caching it.
+    public static PFunction asPFunctionOrNull(Object value) {
+        return value instanceof PFunction function ? function : null;
+    }
+
+    public static PBuiltinFunction asPBuiltinFunctionOrNull(Object value) {
+        return value instanceof PBuiltinFunction function ? function : null;
+    }
+
+    public static PBuiltinMethod asPBuiltinMethodOrNull(Object value) {
+        return value instanceof PBuiltinMethod method ? method : null;
+    }
+
     @Idempotent
     public static boolean hasSimpleSignature(PFunction fun, int positionalArgCount) {
         // TODO: GR-78023 make LoadVariableArguments and LoadKeywordArguments check argument array bounds,

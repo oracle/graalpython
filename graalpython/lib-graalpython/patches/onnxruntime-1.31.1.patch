@@ -1,0 +1,77 @@
+diff --git a/onnxruntime_build_backend.py b/onnxruntime_build_backend.py
+new file mode 100644
+index 0000000..289fa45
+--- /dev/null
++++ b/onnxruntime_build_backend.py
+@@ -0,0 +1,57 @@
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import shutil
++from pathlib import Path
++
++VERSION = Path("VERSION_NUMBER").read_text().strip()
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = f'onnxruntime-{VERSION}'
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|venv|[^-/]+-venv|dist)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    wheel_directory = Path(wheel_directory).absolute()
++    build_type = 'Release'
++    build_dir = Path(f'build/{build_type}')
++    parallel = os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', os.cpu_count())
++    build_cmd = [
++        sys.executable,
++        'tools/ci_build/build.py',
++        '--build_dir', 'build',
++        '--skip_submodule_sync',
++        '--skip_tests',
++        '--compile_no_warning_as_error',
++        '--allow_running_as_root',
++        '--cmake_extra_defines', 'onnxruntime_BUILD_UNIT_TESTS=OFF',
++        '--config', build_type,
++        '--enable_pybind',
++        '--parallel', str(parallel),
++    ]
++    if sys.implementation.name == 'graalpy':
++        # The cmake build downloads a bunch of sources that need to be patched
++        subprocess.check_call([*build_cmd, '--update'])
++        marker = build_dir / 'graalpy-patched-marker'
++        if not marker.exists():
++            subprocess.check_call([sys.executable, '-m', 'autopatch_capi', '.'])
++            with open(marker, 'w') as f:
++                pass
++    subprocess.check_call([*build_cmd, '--build_wheel'])
++    wheels = list((build_dir / 'dist').glob('*.whl'))
++    assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++    wheel = wheels[0]
++    shutil.copyfile(wheel, wheel_directory / wheel.name)
++    return str(wheel.name)
+diff --git a/pyproject.toml b/pyproject.toml
+index 532e4bf..73152fc 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,6 +1,7 @@
+ [build-system]
+-requires = ["setuptools>=61.0.0", "wheel", "packaging"]
+-build-backend = "setuptools.build_meta"
++requires = ["setuptools>=61.0.0", "wheel", "packaging", "numpy>=1.24.2"]
++build-backend = "onnxruntime_build_backend"
++backend-path = ["."]
+ 
+ [tool.pydocstyle]
+ convention = "google"

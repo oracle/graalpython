@@ -1,3 +1,16 @@
+diff --git a/setup.py b/setup.py
+index f9cabaa..e2711bb 100644
+--- a/setup.py
++++ b/setup.py
+@@ -135,7 +135,7 @@ if sys.platform == "win32" and uses_msvc():
+         _filenames = [filename.lower() for filename in os.listdir(COMPILE_LIBFFI)]
+         _filenames = [filename for filename in _filenames
+                             if filename.endswith('.c')]
+-        if sys.maxsize > 2**32:
++        if True:  # GraalPy only supports 64-bit platforms.
+             # 64-bit: unlist win32.c, and add instead win64.obj.  If the obj
+             # happens to get outdated at some point in the future, you need to
+             # rebuild it manually from win64.asm.
 diff --git a/src/c/_cffi_backend.c b/src/c/_cffi_backend.c
 index c5ea2cb..b797540 100644
 --- a/src/c/_cffi_backend.c

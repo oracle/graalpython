@@ -4191,14 +4191,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation(storeBytecodeIndex = true)
-    @ImportStatic({AbstractCallMethodNode.class, CallDispatchers.class, PythonOptions.class})
+    @ImportStatic({AbstractCallMethodNode.class, CallDispatchers.class, PythonOptions.class, PGuards.class})
     public static final class CallNilaryMethod {
         @ForceQuickening
-        @Specialization(guards = {"isSingleContext()", "hasSimpleSignature(cachedFunc, 0)", "func == cachedFunc"}, excludeForUncached = true, //
+        @Specialization(guards = {"isSingleContext()", "cachedFunc != null", "hasSimpleSignature(cachedFunc, 0)", "isSameObject(func, cachedFunc)"}, excludeForUncached = true, //
                         assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
-        public static Object callPFunction(VirtualFrame frame, PFunction func,
+        public static Object callPFunction(VirtualFrame frame, Object func,
                         @Bind Node inliningTarget,
-                        @Cached(value = "func", weak = true) PFunction cachedFunc,
+                        @Cached(value = "asPFunctionOrNull(func)", weak = true) PFunction cachedFunc,
                         @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
                         @Cached FunctionDirectInvokeNode invokeNode) {
             return invokeNode.execute(frame, inliningTarget, callNode, cachedFunc, PArguments.create(0));

@@ -55,7 +55,7 @@ public class SafepointALotCurrentFramesTest {
         try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).//
                         option("engine.SafepointALot", "true").build();
                         Context context = Context.newBuilder("python").engine(engine).allowExperimentalOptions(true).allowAllAccess(true).err(errorOutput).build()) {
-            context.eval("python", """
+            evalWithDiagnostics(context, """
                             import sys
                             import threading
                             import time
@@ -130,7 +130,7 @@ public class SafepointALotCurrentFramesTest {
         try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).//
                         option("engine.SafepointALot", "true").build();
                         Context context = Context.newBuilder("python").engine(engine).allowExperimentalOptions(true).allowAllAccess(true).err(errorOutput).build()) {
-            context.eval("python", """
+            evalWithDiagnostics(context, """
                             import sys
                             import gc
                             import time
@@ -221,6 +221,24 @@ public class SafepointALotCurrentFramesTest {
                             """);
         }
         assertNoUnexpectedErrors(errorOutput);
+    }
+
+    private static void evalWithDiagnostics(Context context, String source) {
+        try {
+            context.eval("python", source);
+        } catch (Throwable failure) {
+            // An internal error can skip Python finally blocks and leave the stress-test threads
+            // running. Report it before normal context cleanup can block waiting for those threads.
+            failure.printStackTrace();
+            try {
+                context.close(true);
+            } catch (Throwable cleanupFailure) {
+                if (cleanupFailure != failure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            throw failure;
+        }
     }
 
     private static void assertNoUnexpectedErrors(ByteArrayOutputStream errorOutput) {

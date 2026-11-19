@@ -205,13 +205,17 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
             if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
-            ct = initializeCallTarget();
+            ct = initializeCallTargetImpl();
         }
         return ct;
     }
 
+    public void initCallTarget() {
+        getCallTarget();
+    }
+
     @TruffleBoundary
-    private RootCallTarget initializeCallTarget() {
+    private RootCallTarget initializeCallTargetImpl() {
         RootCallTarget ct = callTarget;
         if (ct == null) {
             ct = functionRootNode.getCallTarget();

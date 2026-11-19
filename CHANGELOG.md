@@ -6,6 +6,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ## Version 25.6
 * Add support for PyREPL and make it the default. It can be turned off by setting `PYTHON_BASIC_REPL=1` environment variable
 * New Java-based `decimal` module with significantly better performance
+* Use https://gds.oracle.com/repositories/pypi/public-release/ as the default value for the `--extra-index-url` pip option. The index at https://www.graalvm.org/python/wheels/ is deprecated and will be removed in the future.
 
 ## Version 25.5
 * Added `select.poll()` on Linux and Mac OS

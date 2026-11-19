@@ -91,6 +91,9 @@ includes = '''
 # include <windows.h>
 # include <sys/locking.h>
 # include <sys/stat.h>
+# define SHUT_RD SD_RECEIVE
+# define SHUT_WR SD_SEND
+# define SHUT_RDWR SD_BOTH
 # ifndef S_IFLNK
 #  define S_IFLNK 0xA000
 # endif
@@ -391,9 +394,9 @@ u x S_IFCHR
   i IPPROTO_RAW
 
 [shutdownHow]
-0 i SHUT_RD
-0 i SHUT_WR
-0 i SHUT_RDWR
+  i SHUT_RD
+  i SHUT_WR
+  i SHUT_RDWR
 
 [socketOptions]
   i SO_DEBUG

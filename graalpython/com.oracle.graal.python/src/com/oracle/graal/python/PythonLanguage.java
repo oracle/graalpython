@@ -362,7 +362,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final ConcurrentHashMap<Object, RootNode> runtimeCachedRootNodes = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private RootCallTarget[] capiCallTargets;
-    @CompilationFinal(dimensions = 1) private final RootNode[] builtinSlotsRootNodes;
+    @CompilationFinal(dimensions = 1) private final BuiltinFunctionRootNode[] builtinSlotsRootNodes;
 
     /**
      * We cannot initialize call targets in language ctor and the next suitable hook is context
@@ -411,7 +411,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (PythonBuiltinClassType.PythonClass.getSlots() == null) {
             throw new IllegalStateException("Slots must be initialized in PythonBuiltinClassType static initializer");
         }
-        builtinSlotsRootNodes = new RootNode[TpSlot.getBuiltinsCallTargetsCount()];
+        builtinSlotsRootNodes = new BuiltinFunctionRootNode[TpSlot.getBuiltinsCallTargetsCount()];
     }
 
     /**
@@ -746,7 +746,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, null, EnumSet.noneOf(FutureFeature.class));
         return new ExecutableNode(this) {
             @Child private GilNode gilNode = GilNode.create();
-            @Child private CallDispatchers.SimpleIndirectInvokeNode invokeNode = CallDispatchers.SimpleIndirectInvokeNode.create();
+            @Child private CallDispatchers.SimpleGenericIndirectInvokeNode invokeNode = CallDispatchers.SimpleGenericIndirectInvokeNode.create();
             @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
             @Child private GetFrameLocalsNode getFrameLocalsNode = GetFrameLocalsNode.create();
 
@@ -760,7 +760,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {
-                    return invokeNode.executeCached(frame, callTarget, arguments);
+                    return invokeNode.execute(frame, callTarget, arguments);
                 } finally {
                     gilNode.release(wasAcquired);
                 }
@@ -1155,12 +1155,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget getBuiltinSlotCallTarget(int index) {
-        RootNode rootNode = builtinSlotsRootNodes[index];
+        BuiltinFunctionRootNode rootNode = builtinSlotsRootNodes[index];
         assert rootNode != null : index;
         return rootNode.getCallTarget();
     }
 
-    public void setBuiltinSlotRootNode(int index, RootNode rootNode) {
+    public BuiltinFunctionRootNode getBuiltinSlotRootNode(int index) {
+        BuiltinFunctionRootNode rootNode = builtinSlotsRootNodes[index];
+        assert rootNode != null : index;
+        // Make sure the call target is initialized. There is bounded number of builtin slots root nodes,
+        // so we do not take any special care of the conditional deopt in getCallTarget()
+        rootNode.getCallTarget();
+        return rootNode;
+    }
+
+    public void setBuiltinSlotRootNode(int index, BuiltinFunctionRootNode rootNode) {
         VarHandle.storeStoreFence();
         builtinSlotsRootNodes[index] = rootNode;
     }

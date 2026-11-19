@@ -258,6 +258,7 @@ def _pickling_benchmarks(module='pickle'):
 MICRO_NATIVE_BENCHMARKS = {
     'c-member-access': ITER_5 + ['10000'],
     'c-list-iterating-obj': ITER_5 + ['50000000'],
+    'c-many-shortlived-objs': ITER_3 + ['100000000'],
     'c-dict-iterating': ITER_5 + ['50000000'],
     'c-magic-bool': ITER_5 + ['100000000'],
     'c-magic-iter': ITER_5 + ['50000000'],

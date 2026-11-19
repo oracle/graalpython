@@ -172,6 +172,7 @@ def downstream_test_cython(graalpy, testdir):
     env = os.environ.copy()
     env["PYTHON_VERSION"] = "graalpy"
     env["BACKEND"] = "c"
+    env["GCC_VERSION"] = "13"
     run([graalpy, '-m', 'venv', str(venv)])
     if not CI:
         replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo', flags=re.MULTILINE)

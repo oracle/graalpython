@@ -362,6 +362,12 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, POINTER, POINTER, SINT64})
         abstract long call_readlinkat(int dirFd, long path, long buf, long size);
 
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER, POINTER, SINT64})
+        abstract long call_getfinalpathname(long path, long buf, long size);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER, POINTER, SINT64})
+        abstract long call_findfirstfile(long path, long buf, long size);
+
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
         abstract int get_inheritable(int fd);
 
@@ -1709,6 +1715,46 @@ public final class NativePosixSupport extends PosixSupport {
                 return WINDOWS ? new WidePath(result) : new NarrowPath(result);
             } finally {
                 NativeMemory.free(nativeBuffer);
+            }
+        } finally {
+            NativeMemory.free(pathPtr);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public Object getFinalPathName(Object path) throws PosixException {
+        return windowsPathName(path, false);
+    }
+
+    @Override
+    @TruffleBoundary
+    public Object findFirstFile(Object path) throws PosixException {
+        return windowsPathName(path, true);
+    }
+
+    private Object windowsPathName(Object path, boolean findFirst) throws PosixException {
+        long pathPtr = pathToNativeCString(path);
+        try {
+            int capacity = 260;
+            while (true) {
+                long buffer = NativeMemory.mallocByteArrayOrNull((long) capacity * 2);
+                try {
+                    long length = findFirst ? posixNativeFunctionInvoker.call_findfirstfile(pathPtr, buffer, capacity)
+                                    : posixNativeFunctionInvoker.call_getfinalpathname(pathPtr, buffer, capacity);
+                    if (length < 0) {
+                        throw getErrnoAndThrowPosixException();
+                    }
+                    if (length >= capacity) {
+                        capacity = Math.toIntExact(length);
+                        continue;
+                    }
+                    byte[] result = new byte[Math.toIntExact(length * 2)];
+                    NativeMemory.readByteArrayElements(buffer, 0, result, 0, result.length);
+                    return new WidePath(result);
+                } finally {
+                    NativeMemory.free(buffer);
+                }
             }
         } finally {
             NativeMemory.free(pathPtr);

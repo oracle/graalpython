@@ -9,7 +9,7 @@ test.test_py_compile.PyCompileTestsWithSourceEpoch.test_bad_coding @ darwin-arm6
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_cache_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_cwd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_do_not_overwrite_nonregular_files @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_py_compile.PyCompileTestsWithSourceEpoch.test_do_not_overwrite_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_py_compile.PyCompileTestsWithSourceEpoch.test_do_not_overwrite_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_double_dot_no_clobber @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_exceptions_propagate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_py_compile.PyCompileTestsWithSourceEpoch.test_invalidation_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -23,7 +23,7 @@ test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_bad_coding @ darwin-a
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_cache_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_cwd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_do_not_overwrite_nonregular_files @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_do_not_overwrite_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_do_not_overwrite_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_double_dot_no_clobber @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_exceptions_propagate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_py_compile.PyCompileTestsWithoutSourceEpoch.test_invalidation_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

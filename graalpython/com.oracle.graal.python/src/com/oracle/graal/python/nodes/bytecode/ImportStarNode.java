@@ -25,30 +25,32 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ALL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
@@ -80,7 +82,9 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @CachedLibrary(limit = "1") InteropLibrary interopLib,
                     @Cached ImportName importNameNode,
                     @Cached PyObjectSetItem setItemNode,
-                    @Cached GetOrCreateDictNode getDictNode,
+                    @Cached PyObjectLookupAttr lookupAttrNode,
+                    @Cached PyObjectCallMethodObjArgs callMethodNode,
+                    @Cached FastConstructListNode materializeKeysNode,
                     @Cached PyObjectGetAttr getAttrNode,
                     @Cached PyObjectGetIter getIterNode,
                     @Cached PyIterNextNode nextNode,
@@ -89,8 +93,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached InlinedConditionProfile javaImport,
                     @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
-                    @Cached IsBuiltinObjectProfile isAttributeErrorProfile) {
+                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level, importNameNode);
         Object locals = PArguments.getSpecialArgument(frame);
         if (locals == null) {
@@ -115,37 +118,42 @@ public abstract class ImportStarNode extends AbstractImportNode {
                 throw new IllegalStateException(e);
             }
         } else {
-            try {
-                Object attrAll = getAttrNode.execute(frame, inliningTarget, importedModule, T___ALL__);
+            Object attrAll = lookupAttrNode.execute(frame, inliningTarget, importedModule, T___ALL__);
+            if (attrAll != PNone.NO_VALUE) {
                 int n = sizeNode.execute(frame, inliningTarget, attrAll);
                 try {
                     for (int i = 0; i < n; i++) {
                         Object attrName = getItemNode.execute(frame, inliningTarget, attrAll, i);
-                        writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
+                        writeAttributeToLocals(frame, inliningTarget, moduleName, importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
                                         codePointAtIndexNode, getAttrNode, setItemNode);
                     }
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, n);
                 }
-            } catch (PException e) {
-                e.expectAttributeError(inliningTarget, isAttributeErrorProfile);
-                assert importedModule instanceof PythonModule;
-                Object keysIterator = getIterNode.execute(frame, inliningTarget, getDictNode.execute(inliningTarget, importedModule));
+            } else {
+                Object dict = lookupAttrNode.execute(frame, inliningTarget, importedModule, T___DICT__);
+                if (dict == PNone.NO_VALUE) {
+                    throw PRaiseNode.raiseStatic(this, ImportError, ErrorMessages.IMPORT_STAR_NO_DICT_OR_ALL);
+                }
+                Object keys = callMethodNode.execute(frame, inliningTarget, dict, T_KEYS);
+                // Like PyMapping_Keys, consume the keys before reading any exported attributes.
+                keys = materializeKeysNode.execute(frame, inliningTarget, keys);
+                Object keysIterator = getIterNode.execute(frame, inliningTarget, keys);
                 while (true) {
                     Object key;
                     try {
                         key = nextNode.execute(frame, inliningTarget, keysIterator);
-                    } catch (IteratorExhausted e1) {
+                    } catch (IteratorExhausted e) {
                         break;
                     }
-                    writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
+                    writeAttributeToLocals(frame, inliningTarget, moduleName, importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
                                     codePointAtIndexNode, getAttrNode, setItemNode);
                 }
             }
         }
     }
 
-    private void writeAttributeToLocals(VirtualFrame frame, Node inliningTarget, TruffleString moduleName, PythonModule importedModule, Object locals, Object attrName, boolean fromAll,
+    private void writeAttributeToLocals(VirtualFrame frame, Node inliningTarget, TruffleString moduleName, Object importedModule, Object locals, Object attrName, boolean fromAll,
                     CastToTruffleStringNode castToTruffleStringNode, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexUTF32Node cpAtIndexNode, PyObjectGetAttr getAttr,
                     PyObjectSetItem dictWriteNode) {
         try {

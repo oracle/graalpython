@@ -1,0 +1,35 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index a743c42..21e83b5 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,6 @@
+ [build-system]
+ requires = [
++    "Cython>=3.0.10",
+     "scikit-build-core>=0.11"
+ ]
+ build-backend = "scikit_build_core.build"
+diff --git a/src/rapidfuzz/CMakeLists.txt b/src/rapidfuzz/CMakeLists.txt
+index 574a198..ac6a42a 100644
+--- a/src/rapidfuzz/CMakeLists.txt
++++ b/src/rapidfuzz/CMakeLists.txt
+@@ -1,5 +1,6 @@
+ function(create_cython_target _name)
+-  if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${_name}.cxx)
++  # Regenerate Cython sources for GraalPy instead of using CPython-generated code.
++  if(FALSE)
+     set(${_name}
+         ${CMAKE_CURRENT_LIST_DIR}/${_name}.cxx
+         PARENT_SCOPE)
+diff --git a/src/rapidfuzz/distance/CMakeLists.txt b/src/rapidfuzz/distance/CMakeLists.txt
+index b136833..7300081 100644
+--- a/src/rapidfuzz/distance/CMakeLists.txt
++++ b/src/rapidfuzz/distance/CMakeLists.txt
+@@ -1,5 +1,6 @@
+ function(create_cython_target _name)
+-  if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${_name}.cxx)
++  # Regenerate Cython sources for GraalPy instead of using CPython-generated code.
++  if(FALSE)
+     set(${_name}
+         ${CMAKE_CURRENT_LIST_DIR}/${_name}.cxx
+         PARENT_SCOPE)

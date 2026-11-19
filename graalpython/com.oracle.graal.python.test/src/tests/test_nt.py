@@ -51,6 +51,71 @@ JAVA_BACKEND = sys.implementation.name == 'graalpy' and __graalpython__.posix_mo
 @unittest.skipUnless(sys.platform == 'win32', 'requires Windows')
 class NtTests(unittest.TestCase):
 
+    def test_windows_path_helpers(self):
+        import nt
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'MiXeD_\u03be_\U0001f40d'
+            path.touch()
+            expected = '\\\\?\\' + str(path)
+            for value in (str(path), path, os.fsencode(path)):
+                with self.subTest(value=value):
+                    result = nt._getfinalpathname(value)
+                    self.assertEqual(result, os.fsencode(expected) if isinstance(value, bytes) else expected)
+                    self.assertEqual(nt._findfirstfile(value), path.name)
+            self.assertEqual(nt._findfirstfile(str(path).lower()), path.name)
+            for helper in (nt._getfinalpathname, nt._findfirstfile):
+                with self.assertRaises(TypeError):
+                    helper(path=path)
+                missing = str(Path(directory) / 'missing')
+                with self.assertRaises(FileNotFoundError) as caught:
+                    helper(missing)
+                self.assertEqual(caught.exception.winerror, 2)
+                self.assertEqual(caught.exception.filename, missing)
+                with self.assertRaises(ValueError):
+                    helper('bad\0path')
+
+    def test_findfirstfile_dot_components(self):
+        import nt
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            child = parent / 'MiXeD_directory'
+            child.mkdir()
+            for path, expected in (
+                (str(child) + '\\.', child.name),
+                (str(child) + '\\..', parent.name),
+                (str(child).lower() + '\\.', child.name),
+                (str(child) + '\\..\\' + child.name + '\\.', child.name),
+            ):
+                with self.subTest(path=path):
+                    self.assertEqual(nt._findfirstfile(path), expected)
+
+    def test_windows_path_helpers_invalid_path(self):
+        import nt
+        with tempfile.TemporaryDirectory() as directory:
+            invalid = str(Path(directory) / 'bad|name')
+            for helper in (nt._getfinalpathname, nt._findfirstfile):
+                with self.subTest(helper=helper):
+                    with self.assertRaises(OSError) as caught:
+                        helper(invalid)
+                    self.assertEqual(caught.exception.errno, errno.EINVAL)
+                    self.assertEqual(caught.exception.winerror, 123)
+                    self.assertEqual(caught.exception.filename, invalid)
+            self.assertEqual(os.path.realpath(invalid), invalid)
+            with self.assertRaises(OSError):
+                os.path.realpath(invalid, strict=True)
+
+    @unittest.skipIf(JAVA_BACKEND, 'requires the Windows native POSIX backend')
+    def test_getfinalpathname_long_path(self):
+        import nt
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for _ in range(6):
+                path /= 'segment_' + 'x' * 45
+                path.mkdir()
+            self.assertGreater(len(str(path)), 260)
+            self.assertEqual(nt._getfinalpathname(path), '\\\\?\\' + str(path))
+            self.assertEqual(nt._findfirstfile(path), path.name)
+
     @unittest.skipIf(JAVA_BACKEND, 'requires the Windows native POSIX backend')
     def test_app_execution_alias_stat(self):
         local_app_data = os.environ.get('LOCALAPPDATA')
@@ -215,6 +280,24 @@ class NtTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == 'win32', 'requires Windows')
 class NtSymlinkTests(unittest.TestCase):
+    @unittest.skipIf(JAVA_BACKEND, 'requires the Windows native POSIX backend')
+    def test_realpath_symlink_missing_leaf(self):
+        import nt
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / 'target'
+            target.mkdir()
+            link = root / 'link'
+            self.create_link('target', link, target_is_directory=True)
+            self.assertEqual(nt._getfinalpathname(link), '\\\\?\\' + str(target))
+            self.assertEqual(nt._findfirstfile(link), 'link')
+            self.assertEqual(os.path.realpath(link / 'missing', strict=os.path.ALLOW_MISSING), str(target / 'missing'))
+            self.assertEqual(os.path.realpath(os.fsencode(link / 'missing'), strict=os.path.ALLOW_MISSING),
+                             os.fsencode(target / 'missing'))
+            with self.assertRaises(FileNotFoundError):
+                os.path.realpath(link / 'missing', strict=True)
+            os.rmdir(link)
+
     def create_link(self, source, destination, **kwargs):
         try:
             os.symlink(source, destination, **kwargs)

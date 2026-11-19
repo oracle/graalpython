@@ -145,9 +145,12 @@ TypeWithAttrInDict.__dict__
 
 NativeTypeWithAttr = CPyExtHeapType("NativeTypeWithAttr")
 NativeTypeWithAttr.attr = "str"
+NativeTypeWithAttr.values = type(object.__dict__).values
 
 
 class VectorcallMethodReceiver:
+    values = type(object.__dict__).values
+
     def combine(self, positional, *, keyword="default"):
         return type(self).__name__, positional, keyword
 
@@ -471,6 +474,7 @@ class TestPyObject(CPyExtTestCase):
             (NativeVectorcallMethodReceiver(), "combine", "native-method-positional", "native-method-keyword"),
             (NativeVectorcallMethodReceiver(), "combine", "native-method-positional", None),
             (native_vectorcall_method_shadowed, "combine", "shadowed-positional", "shadowed-keyword"),
+            ({"key": 42}, "get", "key", None),
         ),
         code='''
         static PyObject* wrap_PyObject_VectorcallMethod(PyObject* receiver, PyObject* name,
@@ -496,6 +500,22 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* receiver", "PyObject* name", "PyObject* positional", "PyObject* keyword_value"],
         argspec="OOOO",
         callfunction="wrap_PyObject_VectorcallMethod",
+    )
+    test_PyObject_VectorcallMethod_wrong_receiver = CPyExtFunction(
+        lambda args: getattr(args[0], args[1])(),
+        lambda: (
+            (NativeTypeWithAttr(), "values"),
+            (VectorcallMethodReceiver(), "values"),
+        ),
+        code='''
+        static PyObject* wrap_PyObject_VectorcallMethod_wrong_receiver(PyObject* receiver, PyObject* name) {
+            PyObject* args[1] = {receiver};
+            return PyObject_VectorcallMethod(name, args, 1, NULL);
+        }
+        ''',
+        arguments=["PyObject* receiver", "PyObject* name"],
+        argspec="OO",
+        callfunction="wrap_PyObject_VectorcallMethod_wrong_receiver",
     )
     test_PyObject_Type = CPyExtFunction(
         type,

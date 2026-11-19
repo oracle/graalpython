@@ -556,6 +556,11 @@ public abstract class SocketNodes {
             if (timeout < 0) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }
+            // CPython's socket_parse_timeout requires milliseconds to fit into an int on
+            // platforms without poll(), including Windows. Round up as for _PyTime_ROUND_TIMEOUT.
+            if (PosixConstants.IS_WIN32 && timeout > Integer.MAX_VALUE * 1_000_000L) {
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.TIMEOUT_DOESNT_FIT_INTO_C_TIMEVAL);
+            }
             return timeout;
         }
     }

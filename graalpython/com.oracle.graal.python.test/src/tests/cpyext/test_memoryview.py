@@ -95,6 +95,72 @@ def compare_unicode_bytes_with_kind(x, y):
 
 class TestPyMemoryView(CPyExtTestCase):
 
+    def test_native_subclass_without_getbuffer(self):
+        for name, buffer_procs in (
+            ('NativeWithoutBuffer', 'NULL'),
+            ('NativeWithEmptyBuffer', '&empty_buffer'),
+        ):
+            with self.subTest(buffer_procs=buffer_procs):
+                NativeType = CPyExtType(
+                    name,
+                    '''
+                    static PyBufferProcs empty_buffer = {NULL, NULL};
+                    ''',
+                    cmembers='int value;',
+                    tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE',
+                    tp_as_buffer=buffer_procs,
+                )
+
+                class Iterable(NativeType):
+                    def __iter__(self):
+                        return iter((97, 98, 99))
+
+                for obj in (NativeType(), Iterable()):
+                    assert (bytearray() == obj) is False
+                    assert (bytearray() != obj) is True
+                    with self.assertRaises(TypeError):
+                        memoryview(obj)
+
+                data = bytearray(b'x')
+                data.extend(Iterable())
+                assert data == b'xabc'
+
+    test_heap_type_buffer_procs = CPyExtFunction(
+        lambda args: b'abc',
+        lambda: ((type('HeapBuffer', (), {}),),),
+        code='''
+            static int heap_getbuffer(PyObject *obj, Py_buffer *view, int flags) {
+                static char data[] = "abc";
+                return PyBuffer_FillInfo(view, obj, data, 3, 0, flags);
+            }
+            static PyObject *heap_type_buffer_procs(PyObject *type) {
+                PyTypeObject *tp = (PyTypeObject *)type;
+                if (tp->tp_as_buffer == NULL ||
+                    tp->tp_as_buffer != &((PyHeapTypeObject *)tp)->as_buffer) {
+                    PyErr_SetString(PyExc_AssertionError, "heap type must own its buffer procs");
+                    return NULL;
+                }
+                getbufferproc previous = tp->tp_as_buffer->bf_getbuffer;
+                tp->tp_as_buffer->bf_getbuffer = heap_getbuffer;
+                PyObject *obj = PyObject_CallNoArgs(type);
+                PyObject *result = NULL;
+                if (obj != NULL) {
+                    Py_buffer view;
+                    if (PyObject_GetBuffer(obj, &view, PyBUF_SIMPLE) == 0) {
+                        result = PyBytes_FromStringAndSize(view.buf, view.len);
+                        PyBuffer_Release(&view);
+                    }
+                    Py_DECREF(obj);
+                }
+                tp->tp_as_buffer->bf_getbuffer = previous;
+                return result;
+            }
+        ''',
+        argspec='O',
+        arguments=['PyObject* type'],
+        callfunction='heap_type_buffer_procs',
+    )
+
     test_memoryview_read = CPyExtFunction(
         lambda args: args[1],
         lambda: (

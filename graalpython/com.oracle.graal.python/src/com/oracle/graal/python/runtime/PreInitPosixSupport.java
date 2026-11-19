@@ -653,6 +653,20 @@ public final class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final Object getFinalPathName(Object path) throws PosixException {
+        checkNotInPreInitialization();
+        return nativePosixSupport.getFinalPathName(path);
+    }
+
+    @Override
+    @TruffleBoundary
+    public final Object findFirstFile(Object path) throws PosixException {
+        checkNotInPreInitialization();
+        return nativePosixSupport.findFirstFile(path);
+    }
+
+    @Override
+    @TruffleBoundary
     public final void raise(int signal) throws PosixException {
         checkNotInPreInitialization();
         nativePosixSupport.raise(signal);

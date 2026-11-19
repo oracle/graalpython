@@ -216,7 +216,7 @@ public class AsyncHandler {
                         threadState.setTopFrameInfo(injectedCallerInfo);
                     }
                     try {
-                        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(asyncHandler.getCallTarget(), args);
+                        CallDispatchers.SimpleGenericIndirectInvokeNode.executeUncached(asyncHandler.getCallTarget(), args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {

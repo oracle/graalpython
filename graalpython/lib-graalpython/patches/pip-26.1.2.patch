@@ -20,7 +20,7 @@ index 8d0d8cf..8c40294 100644
 -        default=[],
 +        # GraalPy change: add default extra index with our prebuilt binaries. If PIP_INDEX_URL is set,
 +        # assume the user configured a custom index and does not want to use any default index.
-+        default=[] if "PIP_INDEX_URL" in os.environ else ["https://www.graalvm.org/python/wheels/"],
++        default=[] if "PIP_INDEX_URL" in os.environ else ["https://gds.oracle.com/repositories/pypi/public-release/"],
          help="Extra URLs of package indexes to use in addition to "
          "--index-url. Should follow the same rules as "
          "--index-url.",

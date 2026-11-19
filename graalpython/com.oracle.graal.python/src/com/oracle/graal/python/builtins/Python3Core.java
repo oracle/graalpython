@@ -1384,7 +1384,7 @@ public abstract class Python3Core {
         Supplier<CallTarget> createTarget = () -> getLanguage().parse(getContext(), source, InputType.FILE, false, 0, null, EnumSet.noneOf(FutureFeature.class));
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheSourceTarget(sourceName, sourceText, InputType.FILE, 0, 0, createTarget);
         PCode code = PFactory.createCode(language, callTarget);
-        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, mod));
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncachedPCode(code, PArguments.withGlobals(code, mod));
     }
 
     public final PInt getTrue() {

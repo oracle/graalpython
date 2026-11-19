@@ -163,29 +163,35 @@ public abstract class ExecutionContext {
      * transfers the state from the frame to the thread state and back. If such code then needs to
      * call a Python callable, it should use {@link IndirectCalleeContext}.
      */
-    @GenerateInline(false) // 28 -> 10
+    @GenerateInline
     @GenerateUncached
+    @GenerateCached(false)
     public abstract static class CallContext extends Node {
 
         /**
          * Prepare a call from a Python frame to a Python function.
          */
-        public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
+        public final void prepareCall(VirtualFrame frame, Node inliningTarget, Object[] callArguments, RootCallTarget callTarget) {
             // n.b.: The class cast should always be correct, since this context
             // must only be used when calling from Python to Python
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            executePrepareCall(frame, callArguments, calleeRootNode.getCallerFlags());
+            prepareCall(frame, inliningTarget, callArguments, (PRootNode) callTarget.getRootNode());
         }
 
-        public abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, int callerFlags);
+        /**
+         * Prepare a call from a Python frame to a Python function.
+         */
+        public final void prepareCall(VirtualFrame frame, Node inliningTarget, Object[] callArguments, PRootNode calleeRootNode) {
+            executePrepareCall(frame, inliningTarget, callArguments, calleeRootNode.getCallerFlags());
+        }
+
+        public abstract void executePrepareCall(VirtualFrame frame, Node inliningTarget, Object[] callArguments, int callerFlags);
 
         @Specialization
-        protected static void prepareCall(VirtualFrame frame, Object[] callArguments, int callerFlags,
-                        @Bind Node inliningTarget,
+        protected static void prepareCall(VirtualFrame frame, Node inliningTarget, Object[] callArguments, int callerFlags,
                         @Cached PassCallerFrameNode passCallerFrame,
                         @Cached PassExceptionStateNode passExceptionState) {
-            assert !PythonOptions.detailedAssertionsEnabled() || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler || PArguments.assertIsPythonFrame(
-                            frame) : "calling from non-Python or non-top-level frame";
+            assert !PythonOptions.detailedAssertionsEnabled() || (inliningTarget == null ? PArguments.assertIsPythonFrame(frame)
+                            : inliningTarget.getRootNode() instanceof TopLevelExceptionHandler || PArguments.assertIsPythonFrame(frame)) : "calling from non-Python or non-top-level frame";
             passCallerFrame.execute(frame, inliningTarget, callArguments, callerFlags);
             passExceptionState.execute(frame, inliningTarget, callArguments, CallerFlags.needsExceptionState(callerFlags));
         }
@@ -207,6 +213,7 @@ public abstract class ExecutionContext {
             }
 
             @Specialization(guards = {"needsFrameReference(callerFlags)", "isPythonFrame(frame)"})
+            @InliningCutoff
             protected static void passCallerFrame(VirtualFrame frame, Object[] callArguments, int callerFlags,
                             @Cached(inline = false) MaterializeFrameNode materialize) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
@@ -297,41 +304,63 @@ public abstract class ExecutionContext {
                 }
             }
 
-            @Specialization(guards = {"needsExceptionState", "isPythonFrame(frame)", "getException(frame) == null"})
-            protected static void passExceptionStateFromStackWalk(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState) {
-                AbstractTruffleException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                if (fromStackWalk == null) {
-                    fromStackWalk = PException.NO_EXCEPTION;
+            @Specialization(guards = {"needsExceptionState"})
+            protected static void passExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState,
+                            @Cached PassExceptionStateInternalNode internalNode) {
+                internalNode.executeCutoff(frame, inliningTarget, callArguments);
+            }
+
+            @GenerateUncached
+            @GenerateInline
+            @GenerateCached(false)
+            @ImportStatic(PArguments.class)
+            protected abstract static class PassExceptionStateInternalNode extends Node {
+                @InliningCutoff
+                final void executeCutoff(VirtualFrame frame, Node inliningTarget, Object[] callArguments) {
+                    execute(frame, inliningTarget, callArguments);
                 }
-                // set it also in our args, such that we won't stack walk again in later calls that
-                // start with this frame
-                PArguments.setException(frame, fromStackWalk);
-                PArguments.setException(callArguments, fromStackWalk);
-            }
 
-            @Specialization(guards = {"needsExceptionState", "isPythonFrame(frame)", "curExc != null"}, replaces = "passExceptionStateFromStackWalk")
-            protected static void passGivenExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState,
-                            @Bind("getException(frame)") AbstractTruffleException curExc) {
-                PArguments.setException(callArguments, curExc);
-            }
+                protected abstract void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments);
 
-            @ReportPolymorphism.Megamorphic
-            @Specialization(guards = {"needsExceptionState", "isPythonFrame(frame)"}, replaces = "passGivenExceptionState")
-            protected static void passExceptionStateFromFrameOrStack(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState,
-                            @Cached InlinedCountingConditionProfile needsStackWalk) {
-                AbstractTruffleException curExc = PArguments.getException(frame);
-                if (needsStackWalk.profile(inliningTarget, curExc == null)) {
-                    passExceptionStateFromStackWalk(frame, inliningTarget, callArguments, needsExceptionState);
-                } else {
-                    passGivenExceptionState(frame, inliningTarget, callArguments, needsExceptionState, curExc);
+                @Specialization(guards = {"isPythonFrame(frame)", "getException(frame) == null"})
+                @InliningCutoff
+                protected static void passExceptionStateFromStackWalk(VirtualFrame frame, Node inliningTarget, Object[] callArguments) {
+                    AbstractTruffleException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                    if (fromStackWalk == null) {
+                        fromStackWalk = PException.NO_EXCEPTION;
+                    }
+                    // set it also in our args, such that we won't stack walk again in later calls that
+                    // start with this frame
+                    PArguments.setException(frame, fromStackWalk);
+                    PArguments.setException(callArguments, fromStackWalk);
                 }
-            }
 
-            @Specialization(guards = {"needsExceptionState", "!isPythonFrame(frame)"})
-            protected static void passNoExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState) {
-                // If we're here, it can only be because some top-level call
-                // inside Python led us here
-                PArguments.setException(callArguments, PException.NO_EXCEPTION);
+                @Specialization(guards = {"isPythonFrame(frame)", "curExc != null"}, replaces = "passExceptionStateFromStackWalk")
+                @InliningCutoff
+                protected static void passGivenExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments,
+                                @Bind("getException(frame)") AbstractTruffleException curExc) {
+                    PArguments.setException(callArguments, curExc);
+                }
+
+                @ReportPolymorphism.Megamorphic
+                @Specialization(guards = "isPythonFrame(frame)", replaces = "passGivenExceptionState")
+                @InliningCutoff
+                protected static void passExceptionStateFromFrameOrStack(VirtualFrame frame, Node inliningTarget, Object[] callArguments,
+                                @Cached InlinedCountingConditionProfile needsStackWalk) {
+                    AbstractTruffleException curExc = PArguments.getException(frame);
+                    if (needsStackWalk.profile(inliningTarget, curExc == null)) {
+                        passExceptionStateFromStackWalk(frame, inliningTarget, callArguments);
+                    } else {
+                        passGivenExceptionState(frame, inliningTarget, callArguments, curExc);
+                    }
+                }
+
+                @Specialization(guards = "!isPythonFrame(frame)")
+                protected static void passNoExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments) {
+                    // If we're here, it can only be because some top-level call
+                    // inside Python led us here
+                    PArguments.setException(callArguments, PException.NO_EXCEPTION);
+                }
             }
 
             @DenyReplace
@@ -347,7 +376,7 @@ public abstract class ExecutionContext {
                         if (exception != null) {
                             PArguments.setException(callArguments, exception);
                         } else if (needsExceptionState) {
-                            passExceptionStateFromStackWalk(frame, null, callArguments, true);
+                            PassExceptionStateInternalNode.passExceptionStateFromStackWalk(frame, null, callArguments);
                         }
                     }
                 }

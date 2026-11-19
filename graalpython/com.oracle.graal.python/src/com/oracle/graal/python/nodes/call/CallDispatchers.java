@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -49,8 +50,10 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.call.CallDispatchersFactory.FunctionIndirectInvokeNodeGen;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -58,6 +61,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -77,6 +81,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public class CallDispatchers {
@@ -95,10 +100,6 @@ public class CallDispatchers {
         return Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
     }
 
-    public static boolean sameCallTarget(RootCallTarget callTarget, DirectCallNode callNode) {
-        return callTarget == callNode.getCallTarget();
-    }
-
     /**
      * Node for invoking call targets of builtin functions, modules or generators when the call
      * target is a PE constant. Use {@link #createDirectCallNodeFor(PBuiltinFunction)} to create the
@@ -108,25 +109,38 @@ public class CallDispatchers {
     @GenerateCached(false)
     public abstract static class SimpleDirectInvokeNode extends Node {
 
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, DirectCallNode callNode, Object[] arguments);
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Class<? extends RootNode> rootType, DirectCallNode callNode, Object[] arguments);
+
+        public final Object executeBuiltin(VirtualFrame frame, Node inliningTarget, DirectCallNode callNode, Object[] arguments) {
+            return executeImpl(frame, inliningTarget, BuiltinFunctionRootNode.class, callNode, arguments);
+        }
+
+        public final Object executePFunction(VirtualFrame frame, Node inliningTarget, DirectCallNode callNode, Object[] arguments) {
+            return executeImpl(frame, inliningTarget, PBytecodeDSLRootNodeGen.class, callNode, arguments);
+        }
 
         @Specialization
-        static Object doDirect(VirtualFrame frame, Node inliningTarget, DirectCallNode callNode, Object[] arguments,
+        static Object doDirect(VirtualFrame frame, Node inliningTarget, Class<? extends RootNode> rootType, DirectCallNode callNode, Object[] arguments,
                         @Cached InlinedConditionProfile profileIsNullFrame,
                         @Cached ExecutionContext.CallContext callContext) {
             RootCallTarget callTarget = (RootCallTarget) callNode.getCurrentCallTarget();
             if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
-                PythonContext context = PythonContext.get(inliningTarget);
-                PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                Object state = IndirectCalleeContext.enter(threadState, arguments);
-                try {
-                    return callNode.call(arguments);
-                } finally {
-                    IndirectCalleeContext.exit(threadState, state);
-                }
+                return framelessCall(inliningTarget, callNode, arguments);
             } else {
-                callContext.prepareCall(frame, arguments, callTarget);
+                callContext.prepareCall(frame, inliningTarget, arguments, callTarget);
+                return callNode.call(rootType, -1, arguments);
+            }
+        }
+
+        @InliningCutoff
+        private static Object framelessCall(Node inliningTarget, DirectCallNode callNode, Object[] arguments) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+            Object state = IndirectCalleeContext.enter(threadState, arguments);
+            try {
                 return callNode.call(arguments);
+            } finally {
+                IndirectCalleeContext.exit(threadState, state);
             }
         }
     }
@@ -135,43 +149,97 @@ public class CallDispatchers {
      * Node for invoking call targets of builtin functions, modules or generators when the call
      * target is dynamic. Takes PArguments
      */
-    @GenerateInline(inlineByDefault = true)
+    @GenerateInline
     @GenerateUncached
+    @GenerateCached(false)
     public abstract static class SimpleIndirectInvokeNode extends Node {
 
-        public abstract Object execute(Frame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments);
+        public abstract Object executeBuiltin(Frame frame, Node inliningTarget, BuiltinFunctionRootNode rootNode, Object[] arguments);
 
-        public final Object executeCached(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
-            return execute(frame, this, callTarget, arguments);
+        public abstract Object executePFunction(Frame frame, Node inliningTarget, PBytecodeDSLRootNode rootNode, Object[] arguments);
+
+        public static Object executeUncachedBuiltin(BuiltinFunctionRootNode rootNode, Object[] arguments) {
+            return CallDispatchersFactory.SimpleIndirectInvokeNodeGen.getUncached().executeBuiltin(null, null, rootNode, arguments);
         }
 
-        public static Object executeUncached(RootCallTarget callTarget, Object[] arguments) {
-            return CallDispatchersFactory.SimpleIndirectInvokeNodeGen.getUncached().execute(null, null, callTarget, arguments);
+        public static Object executeUncachedPFunction(PBytecodeDSLRootNode rootNode, Object[] arguments) {
+            return CallDispatchersFactory.SimpleIndirectInvokeNodeGen.getUncached().executePFunction(null, null, rootNode, arguments);
+        }
+
+        public static void executeUncachedPCode(PCode code, Object[] arguments) {
+            code.initializeCallTarget();
+            executeUncachedPFunction(code.getRootNode(), arguments);
         }
 
         @Specialization
-        static Object doIndirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments,
+        static Object doIndirect(VirtualFrame frame, Node inliningTarget, PRootNode rootNode, Object[] arguments,
                         @Cached InlinedConditionProfile profileIsNullFrame,
                         @Cached ExecutionContext.CallContext callContext,
                         @Cached IndirectCallNode callNode) {
             if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
-                PythonContext context = PythonContext.get(inliningTarget);
-                PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                Object state = IndirectCalleeContext.enter(threadState, arguments);
-                try {
-                    return callNode.call(callTarget, arguments);
-                } finally {
-                    IndirectCalleeContext.exit(threadState, state);
-                }
+                return framelessCall(inliningTarget, rootNode, arguments, callNode);
             } else {
-                callContext.prepareCall(frame, arguments, callTarget);
+                callContext.prepareCall(frame, inliningTarget, arguments, rootNode);
+                return callNode.call(rootNode, -1, arguments);
+            }
+        }
+
+        @InliningCutoff
+        private static Object framelessCall(Node inliningTarget, PRootNode rootNode, Object[] arguments, IndirectCallNode callNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+            Object state = IndirectCalleeContext.enter(threadState, arguments);
+            try {
+                return callNode.call(rootNode, -1, arguments);
+            } finally {
+                IndirectCalleeContext.exit(threadState, state);
+            }
+        }
+    }
+
+    /**
+     * Node for invoking arbitrary type of call target using the same calling conventions as builtins or Python functions
+     * invoked via {@link SimpleIndirectInvokeNode}.
+     */
+    @GenerateInline(false) // used only as cached
+    @GenerateUncached
+    public abstract static class SimpleGenericIndirectInvokeNode extends Node {
+
+        public abstract Object execute(Frame frame, RootCallTarget callTarget, Object[] arguments);
+
+        public static Object executeUncached(RootCallTarget callTarget, Object[] arguments) {
+            return CallDispatchersFactory.SimpleGenericIndirectInvokeNodeGen.getUncached().execute(null, callTarget, arguments);
+        }
+
+        @Specialization
+        static Object doIndirect(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile profileIsNullFrame,
+                        @Cached ExecutionContext.CallContext callContext,
+                        @Cached IndirectCallNode callNode) {
+            if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
+                return framelessCall(inliningTarget, callTarget, arguments, callNode);
+            } else {
+                callContext.prepareCall(frame, inliningTarget, arguments, callTarget);
                 return callNode.call(callTarget, arguments);
             }
         }
 
+        @InliningCutoff
+        private static Object framelessCall(Node inliningTarget, RootCallTarget callTarget, Object[] arguments, IndirectCallNode callNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+            Object state = IndirectCalleeContext.enter(threadState, arguments);
+            try {
+                return callNode.call(callTarget, arguments);
+            } finally {
+                IndirectCalleeContext.exit(threadState, state);
+            }
+        }
+
         @NeverDefault
-        public static SimpleIndirectInvokeNode create() {
-            return CallDispatchersFactory.SimpleIndirectInvokeNodeGen.create();
+        public static SimpleGenericIndirectInvokeNode create() {
+            return CallDispatchersFactory.SimpleGenericIndirectInvokeNodeGen.create();
         }
     }
 
@@ -191,7 +259,7 @@ public class CallDispatchers {
                         @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, callNode, arguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, arguments);
         }
 
         @Specialization(guards = "callee.getFunctionRootNode() == rootNode", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
@@ -199,7 +267,7 @@ public class CallDispatchers {
                         @SuppressWarnings("unused") @Cached(value = "callee.getFunctionRootNode()", adopt = false) BuiltinFunctionRootNode rootNode,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, callNode, arguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, arguments);
         }
 
         @Specialization(replaces = {"callBuiltinFunctionCached", "callBuiltinFunctionCachedCt"})
@@ -207,7 +275,8 @@ public class CallDispatchers {
         @InliningCutoff
         static Object callBuiltinFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments,
                         @Exclusive @Cached SimpleIndirectInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, callee.getCallTarget(), arguments);
+            callee.initCallTarget();
+            return invoke.executeBuiltin(frame, inliningTarget, callee.getFunctionRootNode(), arguments);
         }
     }
 
@@ -231,7 +300,7 @@ public class CallDispatchers {
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, cachedCallee.getSignature(), null, null,
                             cachedCallee.getDefaults(), cachedCallee.getKwDefaults(), false);
-            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, pArguments);
         }
 
         @Specialization(guards = "callee.getFunctionRootNode() == rootNode", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
@@ -252,7 +321,7 @@ public class CallDispatchers {
             }
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, signature, null, null,
                             callee.getDefaults(), callee.getKwDefaults(), false);
-            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, pArguments);
         }
 
         @Specialization(replaces = {"callBuiltinFunctionCached", "callBuiltinFunctionCachedCt"})
@@ -263,7 +332,8 @@ public class CallDispatchers {
                         @Exclusive @Cached SimpleIndirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, callee.getSignature(), null, null,
                             callee.getDefaults(), callee.getKwDefaults(), false);
-            return invoke.execute(frame, inliningTarget, callee.getCallTarget(), pArguments);
+            callee.initCallTarget();
+            return invoke.executeBuiltin(frame, inliningTarget, callee.getFunctionRootNode(), pArguments);
         }
     }
 
@@ -288,7 +358,7 @@ public class CallDispatchers {
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, function.getSignature(), callee.getSelf(), callee.getClassObject(),
                             function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
-            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, pArguments);
         }
 
         @Specialization(guards = "function.getFunctionRootNode() == rootNode", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinMethodCached")
@@ -310,7 +380,7 @@ public class CallDispatchers {
             }
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, signature, callee.getSelf(), callee.getClassObject(),
                             function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
-            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+            return invoke.executeBuiltin(frame, inliningTarget, callNode, pArguments);
         }
 
         @Specialization(replaces = {"callBuiltinMethodCached", "callBuiltinMethodCachedCt"})
@@ -322,7 +392,8 @@ public class CallDispatchers {
             PBuiltinFunction function = callee.getBuiltinFunction();
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, function.getSignature(), callee.getSelf(), callee.getClassObject(),
                             function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
-            return invoke.execute(frame, inliningTarget, function.getCallTarget(), pArguments);
+            function.initCallTarget();
+            return invoke.executeBuiltin(frame, inliningTarget, function.getFunctionRootNode(), pArguments);
         }
 
         private static boolean isMethodcall(PBuiltinMethod callee) {
@@ -347,7 +418,7 @@ public class CallDispatchers {
             assert callee.getCallTarget() == callNode.getCallTarget() : String.format("%s != %s", callee.getCallTarget(), callNode.getCallTarget());
             PArguments.setGlobals(arguments, callee.getGlobals());
             PArguments.setFunctionObject(arguments, callee);
-            return invoke.execute(frame, inliningTarget, callNode, arguments);
+            return invoke.executePFunction(frame, inliningTarget, callNode, arguments);
         }
     }
 
@@ -370,7 +441,8 @@ public class CallDispatchers {
                         @Cached SimpleIndirectInvokeNode invoke) {
             PArguments.setGlobals(arguments, callee.getGlobals());
             PArguments.setFunctionObject(arguments, callee);
-            return invoke.execute(frame, inliningTarget, callee.getCallTarget(), arguments);
+            callee.initCallTarget();
+            return invoke.executePFunction(frame, inliningTarget, callee.getRootNode(), arguments);
         }
     }
 
@@ -476,21 +548,30 @@ public class CallDispatchers {
     @GenerateCached(false)
     @GenerateUncached
     @ImportStatic({CallDispatchers.class, PythonOptions.class})
-    public abstract static class CallTargetCachedInvokeNode extends Node {
+    public abstract static class PFunctionCallTargetCachedInvokeNode extends Node {
 
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] pythonArguments);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, PBytecodeDSLRootNode rootNode, Object[] pythonArguments);
 
-        @Specialization(guards = "sameCallTarget(callTarget, callNode)", limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object doCallTargetDirect(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") RootCallTarget callTarget, Object[] args,
-                        @Cached(parameters = "callTarget") DirectCallNode callNode,
-                        @Cached SimpleDirectInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, callNode, args);
+        static RootCallTarget getCallTarget(PBytecodeDSLRootNode rootNode) {
+            CompilerAsserts.neverPartOfCompilation();
+            return rootNode.getCallTarget();
         }
 
-        @Specialization(replaces = "doCallTargetDirect")
-        static Object doCallTargetIndirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] args,
+        static boolean sameRootNode(PBytecodeDSLRootNode rootNode, DirectCallNode callNode) {
+            return rootNode == ((RootCallTarget) callNode.getCallTarget()).getRootNode();
+        }
+
+        @Specialization(guards = "sameRootNode(rootNode, callNode)", limit = "getCallSiteInlineCacheMaxDepth()", excludeForUncached = true)
+        static Object doCallTargetDirectPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBytecodeDSLRootNode rootNode, Object[] args,
+                        @Exclusive @Cached(parameters = "getCallTarget(rootNode)") DirectCallNode callNode,
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
+            return invoke.executePFunction(frame, inliningTarget, callNode, args);
+        }
+
+        @Specialization(replaces = "doCallTargetDirectPFunction")
+        static Object doCallTargetIndirect(VirtualFrame frame, Node inliningTarget, PBytecodeDSLRootNode rootNode, Object[] args,
                         @Cached SimpleIndirectInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, callTarget, args);
+            return invoke.executePFunction(frame, inliningTarget, rootNode, args);
         }
     }
 }

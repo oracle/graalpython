@@ -47,10 +47,17 @@
 PY_EXCEPTIONS
 #undef EXCEPTION
 
+#ifdef MS_WINDOWS
+PyObject* PyExc_WindowsError = NULL;
+#endif
+
 Py_LOCAL_SYMBOL void initialize_exceptions() {
 #define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyPrivate_Type(#NAME);
 	PY_EXCEPTIONS
 #undef EXCEPTION
+#ifdef MS_WINDOWS
+    PyExc_WindowsError = PyExc_OSError;
+#endif
 }
 
 GraalPy_CAPI_HELPER_SYMBOL PyObject *

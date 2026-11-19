@@ -174,7 +174,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         ref.setCallerInfo(PFrame.Reference.EMPTY);
                     }
                 } else {
-                    callContext.executePrepareCall(frame, generatorArguments, rootNode.getCallerFlags());
+                    callContext.executePrepareCall(frame, inliningTarget, generatorArguments, rootNode.getCallerFlags());
                     PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
                     ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
                     try {
@@ -227,7 +227,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         ref.setCallerInfo(PFrame.Reference.EMPTY);
                     }
                 } else {
-                    callContext.executePrepareCall(frame, generatorArguments, rootNode.getCallerFlags());
+                    callContext.executePrepareCall(frame, inliningTarget, generatorArguments, rootNode.getCallerFlags());
                     PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
                     ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
                     try {

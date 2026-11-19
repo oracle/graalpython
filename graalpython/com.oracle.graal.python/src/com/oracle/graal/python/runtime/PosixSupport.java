@@ -1186,4 +1186,12 @@ public abstract class PosixSupport {
 
     @TruffleBoundary
     public abstract Object readlinkat(int dirFd, Object path) throws PosixException;
+
+    /** Windows GetFinalPathNameByHandleW, returning an extended absolute path. */
+    @TruffleBoundary
+    public abstract Object getFinalPathName(Object path) throws PosixException;
+
+    /** Windows FindFirstFileW, returning the name of the matching directory entry. */
+    @TruffleBoundary
+    public abstract Object findFirstFile(Object path) throws PosixException;
 }
