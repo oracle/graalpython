@@ -3,7 +3,7 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
-import unittest, sys
+import itertools, unittest, sys
 from itertools import *
 
 
@@ -201,3 +201,19 @@ class CountTests(unittest.TestCase):
         c = count(5)
         self.assertEqual(next(c), 5)
         self.assertEqual(next(c), 6)
+
+
+class TeeDataObjectTests(unittest.TestCase):
+
+    def test_teedataobject_rejects_none_values(self):
+        self.assertRaises(TypeError, itertools._tee_dataobject, iter([]), None, None)
+        self.assertRaises(TypeError, itertools._tee_dataobject, iter([]), None, 5)
+
+    def test_teedataobject_requires_three_arguments(self):
+        self.assertRaises(TypeError, itertools._tee_dataobject)
+        self.assertRaises(TypeError, itertools._tee_dataobject, 1)
+        self.assertRaises(TypeError, itertools._tee_dataobject, iter([]), [])
+
+    def test_teedataobject_list_values(self):
+        t = itertools._tee_dataobject(iter([]), [1, 2], None)
+        self.assertIs(type(t), itertools._tee_dataobject)
