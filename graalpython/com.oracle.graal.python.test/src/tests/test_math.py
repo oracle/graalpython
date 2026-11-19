@@ -359,6 +359,16 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.log10, 'ahoj')
         self.ftest('log10(BIG_INT)', math.log10(BIG_INT), 30.999999671364986)
 
+    def testPerm(self):
+        self.assertEqual(math.perm(10, 0), 1)
+        self.assertEqual(math.perm(10, 1), 10)
+        self.assertEqual(math.perm(10, 2), 90)
+        self.assertEqual(math.perm(10, 3), 720)
+        self.assertEqual(math.perm(10, 7), 604800)
+        self.assertEqual(math.perm(10, 10), 3628800)
+        self.assertEqual(math.perm(10, 11), 0)
+        self.assertEqual(math.perm(10**20, 3), 999999999999999999970000000000000000000200000000000000000000)
+
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))
         self.assertTrue(math.isfinite(-0.0))
