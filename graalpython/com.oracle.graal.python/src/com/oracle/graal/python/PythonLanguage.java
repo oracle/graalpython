@@ -566,7 +566,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             throw new IllegalStateException("parse with arguments not allowed for interactive sources");
         }
         InputType inputType;
-        int optimize = source.getOptions(this).get(PythonSourceOptions.Optimize);
+        var sourceOptions = source.getOptions(this);
+        int optimize = sourceOptions.get(PythonSourceOptions.Optimize);
         EnumSet<FutureFeature> futureFeatures;
         boolean topLevel;
         List<String> argumentNames;
@@ -578,7 +579,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             argumentNames = request.getArgumentNames();
             parserFlags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
         } else {
-            var sourceOptions = source.getOptions(this);
             String kind = sourceOptions.get(PythonSourceOptions.Kind);
             topLevel = kind.isEmpty();
             inputType = switch (kind) {
