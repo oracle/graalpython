@@ -49,15 +49,14 @@ import static com.oracle.graal.python.annotations.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.annotations.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.annotations.ArgDescriptor;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
@@ -153,17 +152,17 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {}, call = Ignored, retConversion = void.class, argConversions = {})
-    static Object GraalPyPrivate_BeforeThreadDetach() {
+    static void GraalPyPrivate_BeforeThreadDetach() {
         /*
-         * This is the PyGILState_Release path for native-created threads. CPython clears its own
-         * auto-TSS key and deletes the PyThreadState here. Our Java thread state is stored in a
-         * Truffle ContextThreadLocal, which has no per-thread clear operation for a still-alive
-         * thread. If the same native thread later enters the context again, Truffle may return the
-         * same PythonThreadState object. Therefore this is a detach, not final thread shutdown: free
-         * the native PyThreadState, but leave the Java state usable for the next attach.
+         * Used by PyGILState_Release and by PyGILState_Check when it temporarily attaches a native
+         * thread. CPython clears its own auto-TSS key and deletes the PyThreadState on release.
+         * Our Java thread state is stored in a Truffle ContextThreadLocal, which has no per-thread
+         * clear operation for a still-alive thread. If the same native thread later enters the
+         * context again, Truffle may return the same PythonThreadState object. Therefore, this is
+         * a detach, not final thread shutdown: free the native PyThreadState, but leave the Java
+         * state usable for the next attach.
          */
         PythonContext.get(null).disposeThread(Thread.currentThread(), true, false);
-        return PNone.NO_VALUE;
     }
 
     @CApiBuiltin(ret = PyObject, args = {}, call = Direct, retConversion = ToNativeBorrowedNode.class, argConversions = {})
