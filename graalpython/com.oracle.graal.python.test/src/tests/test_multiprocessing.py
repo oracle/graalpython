@@ -59,6 +59,46 @@ class MultiprocessingTest(unittest.TestCase):
         arr = multiprocessing.Array('i', range(10))
         self.assertEqual(arr[1], 1)
 
+    @unittest.skipIf(sys.platform == 'win32', "POSIX named semaphores")
+    def test_semlock_name_after_unlink(self):
+        from _multiprocessing import SemLock, sem_unlink
+        from uuid import uuid4
+
+        for kind in (0, 1):  # RECURSIVE_MUTEX, SEMAPHORE
+            for unlink in (False, True):
+                with self.subTest(kind=kind, unlink=unlink):
+                    name = '/mp-' + uuid4().hex[:8]
+                    lock = SemLock(kind, 1, 1, name, unlink)
+                    try:
+                        self.assertEqual(lock.name, None if unlink else name)
+                        rebuilt = SemLock._rebuild(lock.handle, kind, 1, lock.name)
+                        self.assertEqual(rebuilt.name, lock.name)
+                        self.assertTrue(rebuilt.acquire(False))
+                        rebuilt.release()
+                        self.assertTrue(lock.acquire(False))
+                        lock.release()
+                        if unlink:
+                            with self.assertRaises(FileNotFoundError):
+                                sem_unlink(name)
+                        else:
+                            with self.assertRaises(FileExistsError):
+                                SemLock(kind, 1, 1, name, False)
+                    finally:
+                        if not unlink:
+                            sem_unlink(name)
+                    self.assertEqual(lock.name, None if unlink else name)
+                    self.assertEqual(rebuilt.name, lock.name)
+
+    @unittest.skipIf(sys.platform == 'win32', "POSIX fork context")
+    def test_fork_context_lock_name(self):
+        ctx = multiprocessing.get_context('fork')
+        for factory in (ctx.Lock, ctx.RLock, ctx.Semaphore, ctx.BoundedSemaphore):
+            with self.subTest(factory=factory):
+                lock = factory()
+                self.assertIsNone(lock._semlock.name)
+                with lock:
+                    pass
+
 
 @unittest.skipIf(POSIX_BACKEND_IS_JAVA, "shared memory doesn't work on emulated backend")
 @unittest.skipUnless(sys.platform != 'win32', "POSIX shared memory")

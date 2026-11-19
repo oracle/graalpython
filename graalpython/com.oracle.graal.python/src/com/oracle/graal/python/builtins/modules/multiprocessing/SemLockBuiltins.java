@@ -146,7 +146,10 @@ public class SemLockBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
-            TruffleString storedName = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? null : name;
+            TruffleString storedName = name;
+            if (unlink || PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                storedName = null;
+            }
             return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, storedName);
         }
 
@@ -421,7 +424,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Cached PosixSupportNodes.CreateCStringFromStringNode createCStringFromStringNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            if (name == PNone.NONE || PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 return PFactory.createSemLock(cls, getInstanceShape.execute(cls), origHandle, kind, maxValue, null);
             }
             TruffleString posixNameString = (TruffleString) name;
