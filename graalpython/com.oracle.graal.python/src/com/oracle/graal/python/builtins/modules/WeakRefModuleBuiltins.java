@@ -112,7 +112,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     -> 40;
             case PMethod, // method
                     PFileIO, // _io.FileIO
-                    PTee // itertools._tee
+                    PTee, // itertools._tee
+                    ContextVarsContext // _contextvars.Context
                     -> 32;
             case PFunction -> 80; // function
             case PIOBase, // _io._IOBase
@@ -122,9 +123,14 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     PLock // _thread.LockType
                     -> 24;
             case PBytesIO, // _io.BytesIO
-                    PPartial // functools.partial
+                    PPartial, // functools.partial
+                    PArray, // array.array
+                    PStruct // _struct.Struct
                     -> 48;
-            case PPattern -> 64; // _sre.Pattern
+            case PPattern, // _sre.Pattern
+                    PSimpleQueue // _queue.SimpleQueue
+                    -> 64;
+            case PMMap -> 72; // mmap.mmap
             case PStringIO -> 112; // _io.StringIO
             case PBufferedReader, // _io.BufferedReader
                     PBufferedWriter, // _io.BufferedWriter
@@ -134,6 +140,13 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             case PickleBuffer -> 96; // _pickle.PickleBuffer
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
             case POrderedDict -> 104;
+            case PDeque -> 208; // collections.deque
+            case PTypeVar, // typing.TypeVar
+                    PTypeVarTuple, // typing.TypeVarTuple
+                    PParamSpec, // typing.ParamSpec
+                    PParamSpecArgs, // typing.ParamSpecArgs
+                    PParamSpecKwargs // typing.ParamSpecKwargs
+                    -> -32;
             default -> 0;
             // @formatter:on
         };
