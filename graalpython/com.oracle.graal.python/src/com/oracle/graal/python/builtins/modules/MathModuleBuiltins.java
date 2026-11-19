@@ -1709,7 +1709,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return logBase;
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(novalue)")
         static double log(long value, PNone novalue,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
@@ -1717,7 +1717,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return logDN(value, novalue, inliningTarget, doNotFit, raiseNode);
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(novalue)")
         static double logDN(double value, @SuppressWarnings("unused") PNone novalue,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
@@ -1726,14 +1726,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return Math.log(value);
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(novalue)")
         @TruffleBoundary
         static double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached PRaiseNode raiseNode) {
             BigInteger bValue = value.getValue();
-            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0, raiseNode);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) <= 0, raiseNode);
             return logBigInteger(bValue);
         }
 
@@ -1770,7 +1770,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseMathError(inliningTarget, doNotFit, value < 0 || base <= 0, raiseNode);
+            raiseMathError(inliningTarget, doNotFit, value <= 0 || base <= 0, raiseNode);
             double logBase = countBase(base, inliningTarget, divByZero, raiseNode);
             return Math.log(value) / logBase;
         }
@@ -1783,7 +1783,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
             BigInteger bBase = base.getValue();
-            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
+            raiseMathError(inliningTarget, doNotFit, value <= 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
             double logBase = countBase(bBase, inliningTarget, divByZero, raiseNode);
             return Math.log(value) / logBase;
         }
@@ -1805,7 +1805,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
             BigInteger bValue = value.getValue();
-            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0, raiseNode);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) <= 0 || base <= 0, raiseNode);
             double logBase = countBase(base, inliningTarget, divByZero, raiseNode);
             return logBigInteger(bValue) / logBase;
         }
@@ -1818,7 +1818,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
             BigInteger bBase = base.getValue();
-            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
+            raiseMathError(inliningTarget, doNotFit, value <= 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
             double logBase = countBase(bBase, inliningTarget, divByZero, raiseNode);
             return Math.log(value) / logBase;
         }
@@ -1832,12 +1832,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode raiseNode) {
             BigInteger bValue = value.getValue();
             BigInteger bBase = base.getValue();
-            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) <= 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
             double logBase = countBase(bBase, inliningTarget, divByZero, raiseNode);
             return logBigInteger(bValue) / logBase;
         }
 
-        @Specialization(guards = "!isNumber(value)")
+        @Specialization(guards = {"!isNumber(value)", "isNoValue(novalue)"})
         double logO(VirtualFrame frame, Object value, PNone novalue,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
@@ -1847,28 +1847,41 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
         double logOO(VirtualFrame frame, Object value, Object base,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), asDoubleNode.execute(frame, inliningTarget, base));
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            double x = asDoubleNode.execute(frame, inliningTarget, value);
+            raiseMathError(inliningTarget, doNotFit, x <= 0, raiseNode);
+            return executeRecursiveLogNode(frame, x, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
-        @Specialization(guards = {"!isNumber(base)"})
+        @Specialization(guards = {"!isNumber(base)", "!isNoValue(base)"})
         double logLO(VirtualFrame frame, long value, Object base,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseMathError(inliningTarget, doNotFit, value <= 0, raiseNode);
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
-        @Specialization(guards = {"!isNumber(base)"})
+        @Specialization(guards = {"!isNumber(base)", "!isNoValue(base)"})
         double logDO(VirtualFrame frame, double value, Object base,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseMathError(inliningTarget, doNotFit, value <= 0, raiseNode);
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
-        @Specialization(guards = {"!isNumber(base)"})
+        @Specialization(guards = {"!isNumber(base)", "!isNoValue(base)"})
         double logPIO(VirtualFrame frame, PInt value, Object base,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseMathError(inliningTarget, doNotFit, value.isZeroOrNegative(), raiseNode);
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
