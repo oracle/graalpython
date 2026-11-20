@@ -1572,9 +1572,15 @@ def deploy_graalpy_extensions_to_local_maven_repo_wrapper(*_):
     deploy_graalpy_extensions_to_local_maven_repo()
 
 def deploy_local_maven_repo_wrapper(args):
-    p, _, _ = deploy_local_maven_repo()
-    if '--with-extensions' in args:
+    parser = ArgumentParser(prog='mx deploy-local-maven-repo')
+    parser.add_argument('--with-extensions', action='store_true')
+    parser.add_argument('--version-file', help='write the deployed artifact version to this file')
+    parsed_args = parser.parse_args(args)
+    p, version, _ = deploy_local_maven_repo()
+    if parsed_args.with_extensions:
         deploy_graalpy_extensions_to_local_maven_repo()
+    if parsed_args.version_file:
+        pathlib.Path(parsed_args.version_file).write_text(version + "\n", encoding="utf-8")
     print(f"local Maven repo path: {p}")
 
 
@@ -4107,7 +4113,7 @@ mx.update_commands(SUITE, {
     'python-check-call-host-inlining': [check_call_host_inlining, 'filename'],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
-    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, '[--with-extensions]'],
+    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, '[--with-extensions] [--version-file FILE]'],
     'deploy-extensions-to-local-maven-repo': [deploy_graalpy_extensions_to_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
     'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
