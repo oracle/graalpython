@@ -36,8 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import mmap
 import struct
 import sys
+import tempfile
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -297,3 +299,89 @@ def test_pack_varargs():
         struct.Struct("iii").pack()
     except struct.error as e:
         assert "expected 3" in str(e), f"expected 3 not in {str(e)}"
+
+
+def test_unpack_mmap_sizes():
+    # A fixed-size read should work at either end of mappings of different sizes,
+    # both directly and through a memoryview with a nonzero underlying offset.
+    # Named files let the Java POSIX backend reopen them when creating a mapping.
+    s = struct.Struct('>L')
+    for size in (4096, 65536, 1048576):
+        with tempfile.NamedTemporaryFile() as f:
+            # The Java POSIX backend's truncate does not extend an empty file.
+            f.write(b'\0' * size)
+            f.flush()
+            with mmap.mmap(f.fileno(), size) as mapping:
+                for offset in (0, 17, size - s.size):
+                    mapping[offset:offset + s.size] = b'\x89\xab\xcd\xef'
+                    for unpack in (s.unpack_from, lambda b, o: struct.unpack_from('>L', b, o)):
+                        assert unpack(mapping, offset) == (0x89abcdef,)
+                        assert unpack(mapping, offset - size) == (0x89abcdef,)
+                    with memoryview(mapping) as view:
+                        assert s.unpack_from(view, offset) == (0x89abcdef,)
+                        with view[offset:offset + s.size] as field:
+                            assert s.unpack(field) == (0x89abcdef,)
+                            assert list(s.iter_unpack(field)) == [(0x89abcdef,)]
+                for buffer in (mapping, memoryview(mapping)):
+                    try:
+                        for offset in (size - s.size + 1, size, size + 1, -1, -size - 1):
+                            assert_raises(struct.error, s.unpack_from, buffer, offset)
+                    finally:
+                        if isinstance(buffer, memoryview):
+                            buffer.release()
+
+
+def test_unpack_buffer_formats():
+    cases = [('?', (True,)), ('c', (b'z',)), ('0s', (b'',)),
+             ('5s', (b'ab\x00cd',)), ('5p', (b'abc',)), ('1p', (b'',)),
+             ('2xhi3s?0s', (-32768, -1234567, b'abc', True, b''))]
+    for code in 'bBhHiIlLqQ':
+        cases.append((code, (0,)))
+        cases.append((code, (-1 if code.islower() else (1 << (struct.calcsize('=' + code) * 8)) - 1,)))
+        if code.islower():
+            bits = struct.calcsize('=' + code) * 8
+            cases.append((code, (-(1 << (bits - 1)),)))
+            cases.append((code, ((1 << (bits - 1)) - 1,)))
+    for code in 'efd':
+        for value in (0.0, -0.0, 1.5, -2.25, float('inf'), float('-inf')):
+            cases.append((code, (value,)))
+    for prefix in ('<', '>', '!', '=', '@'):
+        for code, values in cases:
+            _check_unpack_buffers(prefix + code, values)
+    for code in 'nNP':
+        bits = struct.calcsize('@' + code) * 8
+        _check_unpack_buffers('@' + code, (-1 if code == 'n' else (1 << bits) - 1,))
+
+
+def _check_unpack_buffers(fmt, values):
+    import math
+
+    s = struct.Struct(fmt)
+    packed = s.pack(*values)
+    expected = values
+    assert s.unpack(packed) == expected
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(b'!' + packed * 2 + b'?')
+        f.flush()
+        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mapping:
+            with memoryview(mapping) as view, view[1:1 + s.size * 2] as records:
+                for buffer, offset in ((mapping, 1), (view, 1), (records, 0),
+                                       (bytearray(packed), 0), (memoryview(b'!' + packed)[1:], 0)):
+                    actual = s.unpack_from(buffer, offset)
+                    assert actual == expected, (fmt, actual, expected)
+                    for got, want in zip(actual, expected):
+                        if isinstance(want, float) and want == 0.0:
+                            assert math.copysign(1.0, got) == math.copysign(1.0, want)
+                with records[:s.size] as first:
+                    assert s.unpack(first) == expected
+                if s.size:
+                    assert list(s.iter_unpack(records)) == [expected, expected]
+
+
+def test_unpack_pascal_buffer_length():
+    # Clamp the Pascal length byte to the field size, not the backing buffer size.
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(b'!\xffabcd?')
+        f.flush()
+        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mapping:
+            assert struct.unpack_from('5p', mapping, 1) == (b'abcd',)
