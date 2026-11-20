@@ -359,6 +359,16 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.log10, 'ahoj')
         self.ftest('log10(BIG_INT)', math.log10(BIG_INT), 30.999999671364986)
 
+    def testPerm(self):
+        self.assertEqual(math.perm(10, 0), 1)
+        self.assertEqual(math.perm(10, 1), 10)
+        self.assertEqual(math.perm(10, 2), 90)
+        self.assertEqual(math.perm(10, 3), 720)
+        self.assertEqual(math.perm(10, 7), 604800)
+        self.assertEqual(math.perm(10, 10), 3628800)
+        self.assertEqual(math.perm(10, 11), 0)
+        self.assertEqual(math.perm(10**20, 3), 999999999999999999970000000000000000000200000000000000000000)
+
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))
         self.assertTrue(math.isfinite(-0.0))
@@ -1778,3 +1788,48 @@ if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
             self.assertIsClose(MyFloat(), MyFloat(), rel_tol=MyFloat())
 
             self.assertIsNotClose(MyFloat(), 10)
+
+
+class MathLogTests(unittest.TestCase):
+
+    def test_log_base_none(self):
+        class PositiveFloat:
+            def __float__(self):
+                return 10.0
+
+        self.assertRaises(TypeError, math.log, 10, None)
+        self.assertRaises(TypeError, math.log, 10.0, None)
+        self.assertRaises(TypeError, math.log, 2**70, None)
+        self.assertRaises(TypeError, math.log, PositiveFloat(), None)
+        self.assertRaises(ValueError, math.log, -1, None)
+        self.assertEqual(math.log(1), 0.0)
+        self.assertEqual(math.log(1.0), 0.0)
+        self.assertTrue(48.52 < math.log(2**70) < 48.53)
+
+    def test_log_value_checked_before_base(self):
+        class NegativeFloat:
+            def __float__(self):
+                return -1.0
+
+        self.assertRaises(ValueError, math.log, -1, object())
+        self.assertRaises(ValueError, math.log, 0, object())
+        self.assertRaises(ValueError, math.log, -1.0, object())
+        self.assertRaises(ValueError, math.log, -2**70, object())
+        self.assertRaises(ValueError, math.log, NegativeFloat(), object())
+        self.assertRaises(TypeError, math.log, float('nan'), object())
+
+    def test_log_zero_with_base(self):
+        class IntSubclass(int):
+            pass
+
+        self.assertRaises(ValueError, math.log, 0, 2)
+        self.assertRaises(ValueError, math.log, 0.0, 2.0)
+        self.assertRaises(ValueError, math.log, -0.0, 2)
+        self.assertRaises(ValueError, math.log, False, 2)
+        self.assertRaises(ValueError, math.log, 0, 1)
+        self.assertRaises(ValueError, math.log, 0, IntSubclass(2))
+        self.assertRaises(ValueError, math.log, 0.0, IntSubclass(2))
+        self.assertRaises(ValueError, math.log, IntSubclass(0))
+        self.assertRaises(ValueError, math.log, IntSubclass(0), 2.0)
+        self.assertRaises(ValueError, math.log, IntSubclass(0), 2)
+        self.assertRaises(ValueError, math.log, IntSubclass(0), IntSubclass(2))

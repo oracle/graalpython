@@ -154,6 +154,7 @@ public abstract class ErrorMessages {
     public static final TruffleString THREAD_FUNCTION_MUST_BE_CALLABLE = tsLiteral("thread function must be callable");
     public static final TruffleString THREAD_NOT_STARTED = tsLiteral("thread not started");
     public static final TruffleString INT_BASE_MUST_BE_2_AND_36_OR_0 = tsLiteral("int() base must be >= 2 and <= 36, or 0");
+    public static final TruffleString BASES_MUST_BE_TYPES = tsLiteral("bases must be types");
     public static final TruffleString BASES_ITEM_CAUSES_INHERITANCE_CYCLE = tsLiteral("a __bases__ item causes an inheritance cycle");
     public static final TruffleString BASE_MUST_BE = tsLiteral("PyNumber_ToBase: base must be 2, 8, 10 or 16");
     public static final TruffleString BIVARIANT_TYPES_ARE_NOT_SUPPORTED = tsLiteral("Bivariant types are not supported.");
@@ -792,7 +793,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNEXPECTED_S_IN_FIELD_NAME = tsLiteral("unexpected %s in field name");
     public static final TruffleString UNDEFINED_CHARACTER_NAME = tsLiteral("undefined character name '%s'");
     public static final TruffleString UNHASHABLE_TYPE_P = tsLiteral("unhashable type: '%p'");
-    public static final TruffleString UNINITIALIZED_S_OBJECT = tsLiteral("uninitialized classmethod object");
+    public static final TruffleString UNINITIALIZED_S_OBJECT = tsLiteral("uninitialized %s object");
     public static final TruffleString UNKNOWN_ADDR_FAMILY = tsLiteral("unknown address family %d");
     public static final TruffleString UNKNOWN_ATTR = tsLiteral("Unknown attribute: '%s'");
     public static final TruffleString UNKNOWN_ENCODING = tsLiteral("unknown encoding %s");
@@ -1001,6 +1002,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INPUT_FMT_NOT_SUPPORTED_BY_DECODER = tsLiteral("Input format not supported by decoder");
     public static final TruffleString INVALID_UNSUPPORTED_OPTIONS = tsLiteral("Invalid or unsupported options");
     public static final TruffleString INDENT_MUST_BE_STR_OR_NONE_NOT_P = tsLiteral("indent must be str or None, not %p");
+    public static final TruffleString INITIAL_VALUE_MUST_BE_STR_OR_NONE_NOT_P = tsLiteral("initial_value must be str or None, not %p");
     public static final TruffleString CORRUPT_INPUT_DATA = tsLiteral("Corrupt input data");
     public static final TruffleString INSUFFICIENT_BUFFER_SPACE = tsLiteral("Insufficient buffer space");
     public static final TruffleString INTERNAL_ERROR = tsLiteral("Internal error");

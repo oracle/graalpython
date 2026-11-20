@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -119,7 +119,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(name = "TeeDataObject", minNumOfPositionalArgs = 1, parameterNames = {"$self", "it", "values", "nxt"})
+    @SlotSignature(name = "TeeDataObject", minNumOfPositionalArgs = 4, parameterNames = {"$self", "it", "values", "nxt"})
     @ArgumentClinic(name = "values", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "nxt", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -131,26 +131,6 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         }
 
         abstract Object execute(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt);
-
-        @Specialization(guards = "isNone(values)")
-        static Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, @SuppressWarnings("unused") PNone nxt) {
-            init(self, it, null);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isNone(values)")
-        static Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, PTeeDataObject nxt) {
-            init(self, it, nxt);
-            return PNone.NONE;
-        }
-
-        private static void init(PTeeDataObject self, Object it, PTeeDataObject nxt) {
-            self.setIt(it);
-            self.setValues(new Object[LINKCELLS]);
-            self.setNumread(0);
-            self.setRunning(false);
-            self.setNextlink(nxt);
-        }
 
         @Specialization
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
@@ -182,7 +162,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isList(values)", "!isNone(values)"})
+        @Specialization(guards = "!isList(values)")
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);

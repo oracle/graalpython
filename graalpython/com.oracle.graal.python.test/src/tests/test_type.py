@@ -155,6 +155,33 @@ def test_base():
 #    assert C.__bases__ == [object]
 
 
+def test_non_type_base_metaclass_conflict_comes_first():
+    try:
+        type('X', (3,), {})
+    except TypeError as e:
+        assert str(e).startswith("metaclass conflict")
+    else:
+        assert False, "TypeError was not raised"
+
+
+def test_non_type_base_must_be_a_type():
+    try:
+        type('X', (object(),), {})
+    except TypeError as e:
+        assert str(e) == "bases must be types"
+    else:
+        assert False, "TypeError was not raised"
+
+
+def test_unacceptable_base_type():
+    try:
+        type('X', (bool,), {})
+    except TypeError as e:
+        assert str(e) == "type 'bool' is not an acceptable base type"
+    else:
+        assert False, "TypeError was not raised"
+
+
 def test_namespace_with_non_string_keys():
     class MyStr(str):
         pass

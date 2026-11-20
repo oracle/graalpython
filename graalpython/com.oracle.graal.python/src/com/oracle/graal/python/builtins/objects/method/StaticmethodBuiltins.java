@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -123,7 +123,7 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetNode extends DescrGetBuiltinNode {
         /**
-         * @see ClassmethodCommonBuiltins.GetNode#getCached
+         * @see ClassmethodBuiltins.GetNode#getCached
          */
         @Specialization(guards = {"isSingleContext()", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
@@ -138,7 +138,7 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             Object callable = self.getCallable();
             if (callable == null) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT, "staticmethod");
             }
             return callable;
         }

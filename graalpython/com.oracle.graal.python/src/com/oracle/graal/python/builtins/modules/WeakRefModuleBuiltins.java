@@ -90,55 +90,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         return WeakRefModuleBuiltinsFactory.getFactories();
     }
 
-    public static int getBuiltinTypeWeaklistoffset(PythonBuiltinClassType cls) {
-        // @formatter:off
-        return switch (cls) {
-            case PythonClass -> 368; // type
-            case PSet, // set
-                    PFrozenSet // frozenset
-                    -> 192;
-            case PMemoryView, // memoryview
-                    PCode // code
-                    -> 136;
-            case PBuiltinFunctionOrMethod, // builtin_function_or_method
-                    PGenerator, // generator
-                    PCoroutine, // coroutine
-                    PythonModule, // module
-                    PThreadLocal, // _thread._local
-                    PRLock, // _thread.RLock
-                    PBufferedRWPair, // _io.BufferedRWPair
-                    PAsyncGenerator, // async_generator
-                    PGenericAlias
-                    -> 40;
-            case PMethod, // method
-                    PFileIO, // _io.FileIO
-                    PTee // itertools._tee
-                    -> 32;
-            case PFunction -> 80; // function
-            case PIOBase, // _io._IOBase
-                    PRawIOBase, // _io._RawIOBase
-                    PBufferedIOBase, // _io._BufferedIOBase
-                    PTextIOBase, // _io._TextIOBase
-                    PLock // _thread.LockType
-                    -> 24;
-            case PBytesIO, // _io.BytesIO
-                    PPartial // functools.partial
-                    -> 48;
-            case PPattern -> 64; // _sre.Pattern
-            case PStringIO -> 112; // _io.StringIO
-            case PBufferedReader, // _io.BufferedReader
-                    PBufferedWriter, // _io.BufferedWriter
-                    PBufferedRandom, // _io.BufferedRandom
-                    PLruCacheWrapper
-                    -> 144;
-            case PickleBuffer -> 96; // _pickle.PickleBuffer
-            case PTextIOWrapper -> 176; // _io.TextIOWrapper
-            case POrderedDict -> 104;
-            default -> 0;
-            // @formatter:on
-        };
-    }
-
     private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
         private final WeakRefStorage[] references;
         private int index;

@@ -3,7 +3,7 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
-import unittest, sys
+import itertools, unittest, sys
 from itertools import *
 
 
@@ -182,3 +182,38 @@ class CombinationsTests(unittest.TestCase):
         p = pairwise("abcd")
         self.assertEqual(list(p), [('a', 'b'), ('b', 'c'), ('c', 'd')])
         self.assertEqual(list(p), [])
+
+
+class CountTests(unittest.TestCase):
+
+    def test_count_rejects_none_start(self):
+        self.assertRaises(TypeError, count, None)
+        self.assertRaises(TypeError, count, start=None)
+
+    def test_count_rejects_none_step(self):
+        self.assertRaises(TypeError, count, 0, None)
+        self.assertRaises(TypeError, count, step=None)
+
+    def test_count_defaults(self):
+        c = count()
+        self.assertEqual(next(c), 0)
+        self.assertEqual(next(c), 1)
+        c = count(5)
+        self.assertEqual(next(c), 5)
+        self.assertEqual(next(c), 6)
+
+
+class TeeDataObjectTests(unittest.TestCase):
+
+    def test_teedataobject_rejects_none_values(self):
+        self.assertRaises(TypeError, itertools._tee_dataobject, iter([]), None, None)
+        self.assertRaises(TypeError, itertools._tee_dataobject, iter([]), None, 5)
+
+    def test_teedataobject_requires_three_arguments(self):
+        self.assertRaises(TypeError, itertools._tee_dataobject)
+        self.assertRaises(TypeError, itertools._tee_dataobject, 1)
+        self.assertRaises(TypeError, itertools._tee_dataobject, iter([]), [])
+
+    def test_teedataobject_list_values(self):
+        t = itertools._tee_dataobject(iter([]), [1, 2], None)
+        self.assertIs(type(t), itertools._tee_dataobject)

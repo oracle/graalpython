@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,54 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import java.util.List;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PBuiltinClassMethod})
-public final class ClassmethodCommonBuiltins extends PythonBuiltins {
-
-    public static final TpSlots SLOTS = ClassmethodCommonBuiltinsSlotsGen.SLOTS;
-
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return ClassmethodCommonBuiltinsFactory.getFactories();
-    }
-
-    static Object getCallable(Node inliningTarget, PDecoratedMethod self, PRaiseNode raiseNode) {
-        Object callable = self.getCallable();
-        if (callable == null) {
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
-        }
-        return callable;
+public final class MethodNodes {
+    private MethodNodes() {
     }
 
     @GenerateInline
@@ -121,18 +90,5 @@ public final class ClassmethodCommonBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language) {
             return PFactory.createMethod(language, self, func);
         }
-    }
-
-    @Slot(value = SlotKind.tp_call, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    abstract static class CallNode extends PythonVarargsBuiltinNode {
-        @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
-
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PDecoratedMethod self, Object[] arguments, PKeyword[] keywords) {
-            return callNode.execute(frame, self.getCallable(), arguments, keywords);
-        }
-
     }
 }

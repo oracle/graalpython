@@ -332,7 +332,6 @@ import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
-import com.oracle.graal.python.builtins.objects.method.ClassmethodCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
@@ -494,7 +493,6 @@ public abstract class Python3Core {
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
-                        new ClassmethodCommonBuiltins(),
                         new StaticmethodBuiltins(),
                         new InstancemethodBuiltins(),
                         new SimpleNamespaceBuiltins(),
