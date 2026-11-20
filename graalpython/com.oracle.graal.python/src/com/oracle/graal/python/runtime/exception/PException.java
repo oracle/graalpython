@@ -97,12 +97,6 @@ public final class PException extends AbstractTruffleException {
     /** A marker object indicating that there is for sure no exception. */
     public static final PException NO_EXCEPTION = new PException(null, null);
 
-    /**
-     * Marker for an unknown exception state, which may need to be recovered by stack walking. In
-     * contrast, {@link #NO_EXCEPTION} means that the absence of an exception is known.
-     */
-    public static final PException UNKNOWN_EXCEPTION_STATE = new PException(null, null);
-
     private String message = null;
     final transient Object pythonException;
     private transient PFrame.Reference frameInfo;
@@ -219,9 +213,6 @@ public final class PException extends AbstractTruffleException {
         CompilerAsserts.neverPartOfCompilation();
         if (this == PException.NO_EXCEPTION) {
             return "NO_EXCEPTION";
-        }
-        if (this == PException.UNKNOWN_EXCEPTION_STATE) {
-            return "UNKNOWN_EXCEPTION_STATE";
         }
         return getMessage();
     }
