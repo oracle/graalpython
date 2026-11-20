@@ -56,6 +56,42 @@ missing_python_import() {
     exit 1
 }
 
+# Rewrite the wheel's RECORD (run from the unpacked wheel root) so that hashes and
+# sizes match the patched files. Entries keep their original order, files that are
+# no longer present are dropped and new files (e.g. GRAALPY_MARKER) are appended.
+update_record() {
+    python3 - "$1" <<'EOF'
+import base64
+import csv
+import hashlib
+import os
+import sys
+
+record = sys.argv[1]
+
+
+def entry(path):
+    with open(path, "rb") as f:
+        data = f.read()
+    digest = base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(b"=").decode("ascii")
+    return [path, f"sha256={digest}", str(len(data))]
+
+
+with open(record, newline="") as f:
+    paths = [row[0] for row in csv.reader(f) if row]
+present = set()
+for root, dirs, files in os.walk("."):
+    for name in files:
+        present.add(os.path.relpath(os.path.join(root, name), ".").replace(os.sep, "/"))
+paths = [p for p in paths if p in present]
+paths += sorted(present - set(paths))
+with open(record, "w", newline="") as f:
+    writer = csv.writer(f, lineterminator="\n")
+    for path in paths:
+        writer.writerow([record, "", ""] if path == record else entry(path))
+EOF
+}
+
 patch_wheel() {
     cd "$GIT_DIR"
     local name="$1"
@@ -72,6 +108,7 @@ patch_wheel() {
     rm ../tmp.whl
     patch --quiet -p1 < "../$patch"
     touch "$(echo $name-*.dist-info)/GRAALPY_MARKER"
+    update_record "$(echo $name-*.dist-info)/RECORD"
     rm "../$wheel"
     zip -qr "../$wheel" .
     cd ..
