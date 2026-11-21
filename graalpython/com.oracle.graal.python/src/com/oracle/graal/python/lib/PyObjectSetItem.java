@@ -53,7 +53,6 @@ import com.oracle.graal.python.lib.PySequenceGetItemNode.IndexForSqSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -137,14 +136,10 @@ public abstract class PyObjectSetItem extends Node {
         @InliningCutoff
         static void doSequenceNoAssItem(VirtualFrame frame, Node inliningTarget, Object object, @SuppressWarnings("unused") TpSlots slots, Object key, @SuppressWarnings("unused") Object value,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             if (indexCheckNode.execute(inliningTarget, key)) {
-                // CPython converts to Py_ssize_t only for the errors; the value is not used
-                try {
-                    asLongNode.execute(frame, inliningTarget, key);
-                } catch (OverflowException e) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
-                }
+                // only for the errors the conversion raises; the value is not used
+                asSizeNode.executeExact(frame, inliningTarget, key, IndexError);
             }
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, object);
         }

@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import operator
+import sys
 import unittest
 
 class OperatorTest(unittest.TestCase):
@@ -83,8 +84,10 @@ class OperatorTest(unittest.TestCase):
         self.assertRaises(ZeroDivisionError, operator.delitem, '', RaisingIndex())
         self.assertRaises(ZeroDivisionError, operator.delitem, Plain(), RaisingIndex())
         self.assertRaises(IndexError, operator.delitem, (), 2**100)
-        self.assertRaises(TypeError, operator.setitem, (), 2**40, 0)
-        self.assertRaises(TypeError, operator.delitem, '', 2**40)
+        self.assertRaises(IndexError, operator.setitem, (), sys.maxsize + 1, 0)
+        self.assertRaises(IndexError, operator.delitem, '', -sys.maxsize - 2)
+        self.assertRaises(TypeError, operator.setitem, (), sys.maxsize, 0)
+        self.assertRaises(TypeError, operator.delitem, '', -sys.maxsize - 1)
         self.assertRaises(TypeError, operator.setitem, (), 0, 0)
         self.assertRaises(TypeError, operator.delitem, (), 'a')
         self.assertRaises(TypeError, operator.setitem, 1, RaisingIndex(), 0)
