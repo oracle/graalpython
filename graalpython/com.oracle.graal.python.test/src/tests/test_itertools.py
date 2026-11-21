@@ -102,6 +102,28 @@ class CombinationsTests(unittest.TestCase):
         data = [None, None, None, 20]
         assert list(map(lambda x: x[0], list(groupby(data)))) == [None, 20]
 
+    def test_groupby_eq_advances_grouper(self):
+        # The key's __eq__ advances the same grouper while the grouper compares keys (bpo-30347)
+        g = None
+        calls = 0
+        inner = []
+
+        class K:
+            def __init__(self, v):
+                pass
+
+            def __eq__(self, other):
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    inner.append(next(g, "inner default"))
+                return True
+
+        g = next(groupby(range(10), K))[1]
+        self.assertEqual(next(g, "outer default"), 0)
+        self.assertEqual(next(g, "outer default"), "outer default")
+        self.assertEqual(inner, [1])
+
     def test_generators(self):
         # test that generators are accepted like input values
 
