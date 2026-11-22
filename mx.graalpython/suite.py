@@ -241,7 +241,7 @@ suite = {
         "com.oracle.graal.python.pegparser": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "dependencies": [
                 "truffle:TRUFFLE_ICU4J",
             ],
@@ -255,7 +255,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "testProject": True,
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "dependencies": [
                 "com.oracle.graal.python.pegparser",
                 "mx:JUNIT",
@@ -288,7 +288,7 @@ suite = {
                 "java.xml",
             ],
             "jacoco": "include",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -296,7 +296,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "jacoco": "include",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -312,7 +312,7 @@ suite = {
                 "jdk.compiler",
             ],
             "jacoco": "exclude",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -346,7 +346,7 @@ suite = {
                 "truffle:TRUFFLE_API",
             ],
             "jacoco": "include",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "checkstyle": "com.oracle.graal.python",
             "annotationProcessors": [
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -379,7 +379,7 @@ suite = {
                 "jdk.security.auth",
             ],
             "jacoco": "include",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "checkstyleVersion": "10.7.0",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
@@ -408,7 +408,7 @@ suite = {
             ],
             "jacoco": "include",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
         },
@@ -433,7 +433,7 @@ suite = {
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -463,7 +463,7 @@ suite = {
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "workingSets": "Truffle,Python",
             "testProject": True,
         },
@@ -483,7 +483,7 @@ suite = {
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "annotationProcessors": ["mx:JMH_1_21"],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
@@ -498,7 +498,7 @@ suite = {
                 "mx:JUNIT"
             ],
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "17+",
+            "javaCompliance": "21+",
             "workingSets": "Truffle,Python",
             "jacoco": "exclude",
         },
