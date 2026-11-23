@@ -1546,7 +1546,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private Value evalInternal(Context context, String code) {
-        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).option("python.NewGlobals", "true").buildLiteral());
+        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).option("python.NewGlobals", "true").option("python.NoPythonFrame", "true").buildLiteral());
     }
 
     /**
