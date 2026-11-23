@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import errno
 import unittest
 import shutil
 import io
@@ -88,10 +89,9 @@ class TestShUtil(unittest.TestCase):
 
     def test_disk_usage_raises_exception_when_given_path_does_not_exist(self):
         not_existing_path = __file__ + '.not-existing'
-        not_existing_file_name = os.path.basename(not_existing_path)
-
-        with self.assertRaisesRegex(FileNotFoundError, rf"No such file or directory: '.+{not_existing_file_name}'"):
+        with self.assertRaises(FileNotFoundError) as caught:
             shutil.disk_usage(not_existing_path)
+        self.assertEqual(caught.exception.errno, errno.ENOENT)
 
     def test_disk_usage_raises_exception_when_there_is_no_open_file_with_given_file_descriptor(self):
         not_existing_file_descriptor = 1_000_000 # expect the current process to not open 1M files
