@@ -36,11 +36,86 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import errno
+import os
 import socket
+import struct
+import sys
 import threading
 import unittest
 
 from tests.util import storage_to_native
+
+
+@unittest.skipUnless(sys.platform == "win32", "Windows socket errors")
+class TestWindowsSocketErrors(unittest.TestCase):
+    def test_strerror_uses_crt_messages(self):
+        # Winsock messages belong to socket exceptions, not os.strerror().
+        unknown_error = os.strerror(123456)
+        for code in (10022, 10054, 10061):
+            with self.subTest(code=code):
+                self.assertEqual(os.strerror(code), unknown_error)
+
+    def assert_system_message(self, error):
+        self.assertTrue(error.strerror)
+        self.assertNotIn("Unknown error", error.strerror)
+        self.assertEqual(error.strerror, error.strerror.rstrip(" \t\r\n."))
+
+    def test_winsock_crt_errno(self):
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            with self.assertRaises(OSError) as caught:
+                sock.bind(("127.0.0.1", 0))
+            # Winsock duplicates of CRT errors use the CRT errno, retaining winerror.
+            self.assertEqual(caught.exception.errno, errno.EINVAL)
+            self.assertEqual(caught.exception.winerror, 10022)
+            self.assert_system_message(caught.exception)
+
+    def test_connection_reset(self):
+        self.assertEqual(errno.ECONNRESET, 10054)
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            with socket.create_connection(listener.getsockname(), timeout=5) as client:
+                peer, _ = listener.accept()
+                with peer:
+                    # Abort the connection rather than sending an orderly EOF.
+                    peer.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("HH", 1, 0))
+                with self.assertRaises(ConnectionResetError) as caught:
+                    client.recv(1)
+                self.assertEqual(caught.exception.errno, errno.ECONNRESET)
+                self.assertEqual(caught.exception.winerror, 10054)
+                self.assert_system_message(caught.exception)
+
+    def test_would_block(self):
+        self.assertEqual(errno.EWOULDBLOCK, 10035)
+        self.assertNotEqual(errno.EWOULDBLOCK, errno.EAGAIN)
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            with socket.create_connection(listener.getsockname()) as client:
+                peer, _ = listener.accept()
+                with peer:
+                    client.setblocking(False)
+                    with self.assertRaises(BlockingIOError) as caught:
+                        client.recv(1)
+                    self.assertEqual(caught.exception.errno, errno.EWOULDBLOCK)
+                    self.assertEqual(caught.exception.winerror, 10035)
+                    self.assert_system_message(caught.exception)
+
+    def test_connection_refused(self):
+        self.assertEqual(errno.ECONNREFUSED, 10061)
+        # Keep the port reserved without listening, so another process cannot take it.
+        with socket.socket() as reserved:
+            reserved.bind(("127.0.0.1", 0))
+            for timeout in (None, 5):
+                with self.subTest(timeout=timeout), socket.socket() as client:
+                    client.settimeout(timeout)
+                    with self.assertRaises(ConnectionRefusedError) as caught:
+                        client.connect(reserved.getsockname())
+                    self.assertEqual(caught.exception.errno, errno.ECONNREFUSED)
+                    self.assertEqual(caught.exception.winerror, 10061)
+                    self.assert_system_message(caught.exception)
 
 
 def test_shutdown_write_sends_eof():

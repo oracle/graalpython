@@ -422,6 +422,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @Override
     @TruffleBoundary
+    public TruffleString winerror(int errorCode) {
+        // Without native access, use the same best-effort messages as strerror.
+        return strerror(errorCode);
+    }
+
+    @Override
+    @TruffleBoundary
     public int close(int fd) throws PosixException {
         try {
             if (!removeFD(fd)) {

@@ -132,6 +132,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final TruffleString winerror(int errorCode) {
+        logEnter(Level.FINEST, "winerror", "%d", errorCode);
+        return logExit(Level.FINEST, "winerror", "%s", delegate.winerror(errorCode));
+    }
+
+    @Override
+    @TruffleBoundary
     public final long getpid() {
         logEnter("getpid", "");
         return logExit("getpid", "%d", delegate.getpid());
