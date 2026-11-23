@@ -365,6 +365,8 @@ ACTION_MAPPINGS = {
     '_PyAST_ParamSpec ( a -> v . Name . id , b , EXTRA )': (1, 'factory.createParamSpec(((ExprTy.Name) a).id, b, $RANGE)'),
     'CHECK_VERSION ( expr_ty , 13 , "Type parameter defaults are" , e )': (2, 'checkVersion(13, "Type parameter defaults are", e)'),
 
+    '_PyPegen_tokens_are_adjacent ( a , b ) ? RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "invalid syntax.  Maybe you meant \'!=\' instead of \'<>\'?" ) : NULL': (1, 'a.endOffset == b.startOffset ? this.raiseSyntaxErrorKnownRange(a, b, "invalid syntax.  Maybe you meant \'!=\' instead of \'<>\'?") : null'),
+
     # f-strings
     '_PyPegen_constant_from_token ( p , t )': (1, 'constantFromToken(t)'),
     '_PyPegen_constant_from_string ( p , s )': (1, 'constantFromString(s)'),
