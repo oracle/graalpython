@@ -568,6 +568,13 @@ class ParseArgsTestCase(unittest.TestCase):
         self.assertEqual(regrtest.num_workers, 0)
         self.assertTrue(regrtest.single_process)
 
+    def test_pythoninfo(self):
+        ns = self.parse_args([])
+        self.assertFalse(ns.pythoninfo)
+
+        ns = self.parse_args(['--pythoninfo'])
+        self.assertTrue(ns.pythoninfo)
+
 
 @dataclasses.dataclass(slots=True)
 class Rerun:
@@ -702,9 +709,13 @@ class BaseTestCase(unittest.TestCase):
             self.check_line(output, regex)
 
         if env_changed:
-            regex = list_regex(r'%s test%s altered the execution environment '
-                               r'\(env changed\)',
-                               env_changed)
+            # Every test is listed on a separate line, followed by the
+            # reasons why the environment was altered, one per line.
+            count = len(env_changed)
+            regex = (r'%s test%s altered the execution environment '
+                     r'\(env changed\):\n' % (count, plural(count)))
+            regex += ''.join(r'    %s:?\n(?:        .*\n)*' % re.escape(name)
+                             for name in sorted(env_changed))
             self.check_line(output, regex)
 
         if omitted:
@@ -793,7 +804,8 @@ class BaseTestCase(unittest.TestCase):
         state = ', '.join(state)
         if rerun is not None:
             new_state = 'SUCCESS' if rerun.success else 'FAILURE'
-            state = f'{state} then {new_state}'
+            if new_state != state:
+                state = f'{state} then {new_state}'
         self.check_line(output, f'Result: {state}', full=True)
 
     def parse_random_seed(self, output: str) -> str:
@@ -2426,6 +2438,11 @@ class ArgsTestCase(BaseTestCase):
         tests = output.strip().split()
         self.assertNotIn('test_re', tests)
         self.assertEqual(len(tests), len(pgo_tests) - 1)
+
+    def test_pythoninfo(self):
+        testname = self.create_test()
+        output = self.run_tests('--pythoninfo', testname)
+        self.assertIn("Python build information", output)
 
 
 class TestUtils(unittest.TestCase):

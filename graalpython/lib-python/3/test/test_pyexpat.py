@@ -783,6 +783,20 @@ class ChardataBufferTest(unittest.TestCase):
         parser.Parse(xml2, True)
         self.assertEqual(self.n, 4)
 
+    @support.requires_resource('cpu')
+    @support.requires_resource('walltime')
+    @support.bigmemtest(size=2**31, memuse=4, dry_run=False)
+    def test_large_character_data_does_not_crash(self, size):
+        # See https://github.com/python/cpython/issues/148441
+        parser = expat.ParserCreate()
+        parser.buffer_text = True
+        parser.buffer_size = 2**31 - 1  # INT_MAX
+        N = 2049 * (1 << 20) - 3  # Character data greater than INT_MAX
+        self.assertGreater(N, parser.buffer_size)
+        parser.CharacterDataHandler = lambda text: None
+        xml_data = b"<r>" + b"A" * N + b"</r>"
+        self.assertEqual(parser.Parse(xml_data, True), 1)
+
 class ElementDeclHandlerTest(unittest.TestCase):
     def test_trigger_leak(self):
         # Unfixed, this test would leak the memory of the so-called
@@ -938,6 +952,16 @@ class ParentParserLifetimeTest(unittest.TestCase):
         del parser
         del subparser
 
+    # gh-155485: GetReparseDeferralEnabled always returns False with Expat <2.6.0.
+    @unittest.skipIf(not expat.ParserCreate().GetReparseDeferralEnabled(),
+                     "requires Python compiled with Expat >= 2.6.0")
+    def test_subparser_inherits_reparse_deferral(self):
+        for enabled in (True, False):
+            parser = expat.ParserCreate()
+            parser.SetReparseDeferralEnabled(enabled)
+            subparser = parser.ExternalEntityParserCreate(None)
+            self.assertEqual(subparser.GetReparseDeferralEnabled(), enabled)
+
 
 class ExternalEntityParserCreateErrorTest(unittest.TestCase):
     """ExternalEntityParserCreate error paths should not crash or leak
@@ -950,8 +974,7 @@ class ExternalEntityParserCreateErrorTest(unittest.TestCase):
     def setUpClass(cls):
         cls.testcapi = import_helper.import_module('_testcapi')
 
-    @unittest.skipIf(support.Py_TRACE_REFS,
-                     'Py_TRACE_REFS conflicts with testcapi.set_nomemory')
+    @support.nomemtest
     def test_error_path_no_crash(self):
         # When an allocation inside ExternalEntityParserCreate fails,
         # the partially-initialized subparser is deallocated.  This

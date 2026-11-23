@@ -118,11 +118,20 @@ class Task(futures._PyFuture):  # Inherit Python Task implementation
         self._coro = coro
         if context is None:
             self._context = contextvars.copy_context()
+        elif not isinstance(context, contextvars.Context):
+            # gh-157301: the passed value must be a contextvars.Context
+            self._log_destroy_pending = False
+            raise TypeError('a contextvars.Context was expected, '
+                            f'got {type(context).__name__}')
         else:
             self._context = context
 
         if eager_start and self._loop.is_running():
-            self.__eager_start()
+            try:
+                self.__eager_start()
+            except:
+                self._log_destroy_pending = False
+                raise
         else:
             self._loop.call_soon(self.__step, context=self._context)
             _register_task(self)
@@ -459,15 +468,13 @@ def _release_waiter(waiter, *args):
 async def wait_for(fut, timeout):
     """Wait for the single Future or coroutine to complete, with timeout.
 
-    Coroutine will be wrapped in Task.
-
     Returns result of the Future or coroutine.  When a timeout occurs,
-    it cancels the task and raises TimeoutError.  To avoid the task
-    cancellation, wrap it in shield().
+    it cancels fut and raises TimeoutError.  To prevent fut from being
+    cancelled, wrap it in shield().
 
-    If the wait is cancelled, the task is also cancelled.
+    If the wait is cancelled, fut is also cancelled.
 
-    If the task suppresses the cancellation and returns a value instead,
+    If fut suppresses the cancellation and returns a value instead,
     that value is returned.
 
     This function is a coroutine.
