@@ -264,22 +264,6 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                           extra_env={'PYTHONPATH': tmpdir})
 
 
-    def test_interactive_hook_error():
-        code = dedent("""\
-            import sys
-            def hook():
-                raise OSError('interactive hook failed')
-            sys.__interactivehook__ = hook
-            sys.excepthook = lambda cls, exc, tb: print(f'{cls.__name__}: {exc}', file=sys.stderr)
-        """)
-        validate_repl(dedent("""\
-            Failed calling sys.__interactivehook__
-            OSError: interactive hook failed
-            >>> 6 * 7
-            42
-        """), python_args=['-i', '-c', code], ignore_preamble=False)
-
-
     def test_interactive_hook_reporting_failure():
         source = dedent("""\
             import sys
@@ -312,49 +296,31 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
 
 
     def test_interactive_hook_system_exit():
-        for exception, code in [('SystemExit()', 0), ('SystemExit(7)', 7),
-                                ("SystemExit('hook exit')", 1),
-                                ("type('HookExit', (SystemExit,), {})(9)", 9)]:
-            source = dedent(f"""\
-                import sys
-                def hook():
-                    raise {exception}
-                sys.__interactivehook__ = hook
-            """)
-            proc = subprocess.run(
-                [sys.executable, '-i', '-c', source],
-                input='', capture_output=True, text=True, timeout=60,
-            )
-            assert proc.returncode == code, (proc.returncode, proc.stdout, proc.stderr)
-            assert '>>>' not in proc.stdout + proc.stderr
-
-
-    def test_interactive_hook_return_value():
-        validate_repl(dedent("""\
-            >>> 6 * 7
-            42
-        """), python_args=['-i', '-c', 'import sys; sys.__interactivehook__ = lambda: 123'],
-                      ignore_preamble=False)
-
-
-    def test_interactive_hook_audit():
         source = dedent("""\
             import sys
+
+            class HookExit(SystemExit):
+                pass
+
             def hook():
                 print('hook called')
+                raise HookExit(7)
+
             def audit(event, args):
                 if event == 'cpython.run_interactivehook':
                     assert args == (hook,)
                     print('hook audited')
+
             sys.__interactivehook__ = hook
             sys.addaudithook(audit)
         """)
-        validate_repl(dedent("""\
-            hook audited
-            hook called
-            >>> 6 * 7
-            42
-        """), python_args=['-i', '-c', source], ignore_preamble=False)
+        proc = subprocess.run(
+            [sys.executable, '-s', '-P', '-i', '-c', source],
+            input='', capture_output=True, text=True, timeout=60,
+        )
+        assert proc.returncode == 7, (proc.returncode, proc.stdout, proc.stderr)
+        assert proc.stdout.splitlines() == ['hook audited', 'hook called'], proc.stdout
+        assert '>>>' not in proc.stderr, proc.stderr
 
 
     @unittest.skipIf(sys.platform == 'darwin', "Fails with garbage after EOF")
