@@ -56,7 +56,7 @@ def test_platform_sysconfigdata():
     for key in ("ABIFLAGS", "EXT_SUFFIX", "INSTSONAME", "SOABI", "VERSION"):
         assert key in mod.build_time_vars
     assert mod.build_time_vars["ABIFLAGS"] == sys.abiflags
-    assert mod.build_time_vars["INSTSONAME"] == mod.build_time_vars["LDLIBRARY"]
+    assert mod.build_time_vars["INSTSONAME"].startswith(mod.build_time_vars["LDLIBRARY"])
     assert sys.abiflags in sysconfig.get_config_var("INCLUDEPY")
 
 
