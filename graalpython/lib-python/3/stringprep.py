@@ -9,7 +9,8 @@ and mappings, for which a mapping function is provided.
 # when unicodedata is modified to ensure conformant behavior.
 import unicodedata
 
-assert unicodedata.unidata_version == '15.1.0'
+# GraalPy change: ICU determines the Unicode version independently of CPython's tables.
+# assert unicodedata.unidata_version == '15.1.0'
 
 from unicodedata import ucd_3_2_0 as unicodedata_320
 
