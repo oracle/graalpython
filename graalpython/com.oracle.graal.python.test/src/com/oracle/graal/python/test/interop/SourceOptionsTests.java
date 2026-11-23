@@ -41,10 +41,13 @@
 package com.oracle.graal.python.test.interop;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.junit.After;
 import org.junit.Before;
@@ -91,5 +94,32 @@ public class SourceOptionsTests extends PythonTests {
 
         context.eval(writeSource);
         assertEquals(1, context.eval(readSource).asInt());
+    }
+
+    @Test
+    public void testOptimizationLevelAndSourceOverride() throws IOException {
+        try (Context optimized = Context.newBuilder("python").allowAllAccess(true).option("python.OptimizationLevel", "2").build()) {
+            assertEquals(2, optimized.eval("python", "import sys; sys.flags.optimize").asInt());
+            assertFalse(optimized.eval("python", "__debug__").asBoolean());
+            optimized.eval(Source.newBuilder("python", "interactive_debug = __debug__\n", "interactive.py").interactive(true).build());
+            assertFalse(optimized.getBindings("python").getMember("interactive_debug").asBoolean());
+            for (boolean interactive : new boolean[]{false, true}) {
+                Source source = Source.newBuilder("python", "source_debug = __debug__\n", "unoptimized.py").interactive(interactive).option("python.Optimize", "0").build();
+                optimized.eval(source);
+                assertTrue(optimized.getBindings("python").getMember("source_debug").asBoolean());
+            }
+        }
+    }
+
+    @Test
+    public void testOptimizationLevelsDoNotShareCachedCode() throws IOException {
+        Source source = Source.newBuilder("python", "__debug__", "shared.py").build();
+        try (Engine engine = Engine.create()) {
+            for (int level : new int[]{0, 1, 2, 0}) {
+                try (Context child = Context.newBuilder("python").engine(engine).allowAllAccess(true).option("python.OptimizationLevel", Integer.toString(level)).build()) {
+                    assertEquals(level == 0, child.eval(source).asBoolean());
+                }
+            }
+        }
     }
 }

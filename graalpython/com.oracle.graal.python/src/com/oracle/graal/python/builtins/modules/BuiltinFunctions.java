@@ -344,7 +344,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
-        builtinsModule.setAttribute(T___DEBUG__, !core.getLanguage().getEngineOption(PythonOptions.PythonOptimizeFlag));
+        builtinsModule.setAttribute(T___DEBUG__, core.getLanguage().getOptimizationLevel() == 0);
     }
 
     // abs(x)
@@ -1125,7 +1125,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (optimize >= 0) {
                 return optimize;
             }
-            return context.getLanguage().getEngineOption(PythonOptions.PythonOptimizeFlag) ? 1 : 0;
+            return context.getLanguage().getOptimizationLevel();
         }
 
         @TruffleBoundary

@@ -699,7 +699,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         0, // debug
                         PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
                         PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
-                        PInt.intValue(language.getEngineOption(PythonOptions.PythonOptimizeFlag)), // optimize
+                        language.getOptimizationLevel(), // optimize
                         PInt.intValue(context.getOption(PythonOptions.DontWriteBytecodeFlag)),  // dont_write_bytecode
                         PInt.intValue(context.getOption(PythonOptions.NoUserSiteFlag)), // no_user_site
                         PInt.intValue(context.getOption(PythonOptions.NoSiteFlag)), // no_site
