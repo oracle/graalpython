@@ -59,6 +59,7 @@ test.test_pydoc.test_pydoc.TestDescriptions.test_bound_builtin_method_noargs @ d
 test.test_pydoc.test_pydoc.TestDescriptions.test_bound_python_method @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_builtin @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_pydoc.test_pydoc.TestDescriptions.test_classmethod @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.TestDescriptions.test_custom_data_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_custom_non_data_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pydoc.test_pydoc.TestDescriptions.test_dict_attr_descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

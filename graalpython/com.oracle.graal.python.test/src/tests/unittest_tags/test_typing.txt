@@ -217,8 +217,10 @@ test.test_typing.GenericTests.test_init_subclass_super_called @ darwin-arm64,lin
 test.test_typing.GenericTests.test_multi_subscr_base @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_multiple_bases @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_multiple_inheritance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_typing.GenericTests.test_multiple_inheritance___mro_entries___returns_non_type @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.GenericTests.test_multiple_inheritance_non_type_bad___mro_entries__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_multiple_inheritance_non_type_with___mro_entries__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_typing.GenericTests.test_multiple_inheritance_non_type_without___mro_entries__ @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.GenericTests.test_multiple_inheritance_special @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_multiple_inheritance_with_genericalias @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.GenericTests.test_multiple_inheritance_with_genericalias_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
