@@ -386,11 +386,12 @@ simple_native_module(${TARGET_PYEXPAT})
 set(EXPAT_SRC "${SRC_DIR}/expat")
 set(PYEXPAT_HEADERS
     ${EXPAT_SRC}/ascii.h ${EXPAT_SRC}/asciitab.h ${EXPAT_SRC}/expat.h ${EXPAT_SRC}/expat_config.h
-    ${EXPAT_SRC}/expat_external.h ${EXPAT_SRC}/internal.h ${EXPAT_SRC}/latin1tab.h ${EXPAT_SRC}/utf8tab.h
+    ${EXPAT_SRC}/expat_external.h ${EXPAT_SRC}/fallthrough.h ${EXPAT_SRC}/hash_table.h
+    ${EXPAT_SRC}/memory_sanitizer.h ${EXPAT_SRC}/xcs.h ${EXPAT_SRC}/internal.h ${EXPAT_SRC}/latin1tab.h ${EXPAT_SRC}/utf8tab.h
     ${EXPAT_SRC}/xmlrole.h ${EXPAT_SRC}/xmltok.h ${EXPAT_SRC}/xmltok_impl.h
 )
 target_sources(${TARGET_PYEXPAT} PRIVATE ${PYEXPAT_HEADERS})
-target_sources(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC}/xmlparse.c ${EXPAT_SRC}/xmlrole.c ${EXPAT_SRC}/xmltok.c)
+target_sources(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC}/xmlparse.c ${EXPAT_SRC}/xmlrole.c ${EXPAT_SRC}/xmltok.c ${EXPAT_SRC}/xcs.c)
 target_include_directories(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC})
 # bpo-30947: Python uses best available entropy sources to call XML_SetHashSalt(),
 # expat entropy sources are not needed
