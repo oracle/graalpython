@@ -1028,7 +1028,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 if (notStandaloneDtd) {
                     callInt(parser.getNotStandaloneHandler());
                 }
-                call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toOptionalTs(publicId), doctypeHasInternalSubset ? 1 : 0);
+                call(parser.getStartDoctypeDeclHandler(), toTs(name), systemId == null ? PNone.NONE : toTs(systemId), toOptionalTs(publicId), doctypeHasInternalSubset ? 1 : 0);
             }
 
             @Override
