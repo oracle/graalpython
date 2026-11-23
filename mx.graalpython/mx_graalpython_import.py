@@ -143,6 +143,8 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/lib-graalpython/modules/graalpy-config.py": Ignore(),
 
     # C API
+    # Backported from CPython 3.15 for experimental ABI3T support.
+    "graalpython/com.oracle.graal.python.cext/include/slots.h": Ignore(),
     "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
     # Different copyright
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
