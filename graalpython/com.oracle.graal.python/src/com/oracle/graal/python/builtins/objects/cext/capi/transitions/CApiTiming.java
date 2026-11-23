@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
-import static java.util.stream.Collectors.summingLong;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -54,7 +51,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public final class CApiTiming {
 
     /**
-     * Set this property to non-zero to enable timing of C API calls (upcalls and downcalls).
+     * Set this property to a positive reporting interval in milliseconds to enable timing of C API
+     * calls (upcalls and downcalls). For a native standalone, set it when building the image; the
+     * default value allows the instrumentation to be folded away.
      */
     private static final int PROFILE_CALL_INTERVAL = Integer.getInteger("python.CAPITiming", 0);
 
@@ -76,6 +75,7 @@ public final class CApiTiming {
 
     private static final ThreadLocal<TimingStack> STACK = ThreadLocal.withInitial(TimingStack::new);
     private static final ArrayList<CApiTiming> TIMINGS = new ArrayList<>();
+    private static volatile boolean reporterStarted;
 
     private final String name;
     private final boolean fromJava;
@@ -94,52 +94,61 @@ public final class CApiTiming {
         return PROFILE_CALL_INTERVAL == 0 ? null : new CApiTiming(fromJava, delegate + (fromJava ? " J->N" : " N->J"));
     }
 
-    static {
-        if (PROFILE_CALL_INTERVAL != 0 && !ImageInfo.inImageBuildtimeCode()) {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    while (true) {
-                        try {
-                            Thread.sleep(PROFILE_CALL_INTERVAL);
-                        } catch (InterruptedException e) {
-                            // continue
-                        }
-                        synchronized (TIMINGS) {
-                            dumpCallStatistics();
-                        }
+    private static void ensureReporterStarted() {
+        if (reporterStarted) {
+            return;
+        }
+        synchronized (TIMINGS) {
+            if (reporterStarted) {
+                return;
+            }
+            // This class and its timing entries may be initialized into the image heap. Install
+            // runtime threads lazily, rather than skipping their installation at image build time.
+            Thread thread = new Thread(() -> {
+                while (true) {
+                    try {
+                        Thread.sleep(PROFILE_CALL_INTERVAL);
+                    } catch (InterruptedException e) {
+                        // continue
                     }
-                }
-
-            };
-            thread.setDaemon(true);
-            thread.start();
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
                     dumpCallStatistics();
                 }
-            });
+            }, "C API timing reporter");
+            thread.setDaemon(true);
+            Runtime.getRuntime().addShutdownHook(new Thread(CApiTiming::dumpCallStatistics, "C API timing shutdown"));
+            thread.start();
+            reporterStarted = true;
         }
     }
 
-    private static void dumpCallStatistics() {
-        ArrayList<CApiTiming> sorted = new ArrayList<>(TIMINGS);
+    @TruffleBoundary
+    private static synchronized void dumpCallStatistics() {
+        ArrayList<CApiTiming> sorted;
+        synchronized (TIMINGS) {
+            sorted = new ArrayList<>(TIMINGS);
+        }
         sorted.sort((a, b) -> Boolean.compare(a.fromJava, b.fromJava) * 100 + a.name.compareTo(b.name));
         System.out.println("======================================================================");
         System.out.printf("%70s  %8s %10s\n", "Name:", "Count:", "Time:");
-        long totalCount = sorted.stream().collect(summingLong(e -> e.count.get()));
-        long totalTime = sorted.stream().collect(summingLong(e -> e.time.get()));
-        long cutoffTime = getCutoff(totalTime, sorted.stream().map(e -> e.time.get()));
-        long cutoffCount = getCutoff(totalCount, sorted.stream().map(e -> e.count.get()));
+        long[] counts = new long[sorted.size()];
+        long[] times = new long[sorted.size()];
+        long totalCount = 0;
+        long totalTime = 0;
+        for (int i = 0; i < sorted.size(); i++) {
+            CApiTiming entry = sorted.get(i);
+            totalCount += counts[i] = entry.count.get();
+            totalTime += times[i] = entry.time.get();
+        }
+        long cutoffTime = getCutoff(totalTime, times, CUTOFF_TIME);
+        long cutoffCount = getCutoff(totalCount, counts, CUTOFF_COUNT);
         long percent = totalTime / 100;
         long visibleCount = 0;
         long visibleTime = 0;
-        for (var e : sorted) {
-            if (e.time.get() >= cutoffTime || e.count.get() >= cutoffCount) {
-                System.out.printf("%70s  %8s %8sms %s\n", e.name, e.count, e.time.get() / 1000000, stars(percent, e.time.get()));
-                visibleCount += e.count.get();
-                visibleTime += e.time.get();
+        for (int i = 0; i < sorted.size(); i++) {
+            if (times[i] >= cutoffTime || counts[i] >= cutoffCount) {
+                System.out.printf("%70s  %8s %8sms %s\n", sorted.get(i).name, counts[i], times[i] / 1000000, stars(percent, times[i]));
+                visibleCount += counts[i];
+                visibleTime += times[i];
             }
         }
         System.out.printf("%70s  %8s %8sms %s\n", "Others:", (totalCount - visibleCount), (totalTime - visibleTime) / 1000000, stars(percent, totalTime - visibleTime));
@@ -149,14 +158,14 @@ public final class CApiTiming {
         System.out.println();
     }
 
-    private static long getCutoff(long total, Stream<Long> values) {
-        ArrayList<Long> sorted = new ArrayList<>(values.toList());
-        sorted.sort(Long::compare);
+    private static long getCutoff(long total, long[] values, double fraction) {
+        long[] sorted = Arrays.copyOf(values, values.length);
+        Arrays.sort(sorted);
         long accountedTime = 0;
         long cutoffTime = 0;
-        for (int i = sorted.size() - 1; i >= 0; i--) {
-            if (accountedTime <= total * CUTOFF_TIME) {
-                cutoffTime = sorted.get(i);
+        for (int i = sorted.length - 1; i >= 0; i--) {
+            if (accountedTime <= total * fraction) {
+                cutoffTime = sorted[i];
                 accountedTime += cutoffTime;
             }
         }
@@ -173,19 +182,20 @@ public final class CApiTiming {
     }
 
     public static void enter() {
-        if (PROFILE_CALL_INTERVAL != 0) {
+        if (PROFILE_CALL_INTERVAL != 0 && !ImageInfo.inImageBuildtimeCode()) {
             enterInternal();
         }
     }
 
     public static void exit(CApiTiming t) {
-        if (PROFILE_CALL_INTERVAL != 0) {
+        if (PROFILE_CALL_INTERVAL != 0 && !ImageInfo.inImageBuildtimeCode()) {
             exitInternal(t);
         }
     }
 
     @TruffleBoundary
     private static void enterInternal() {
+        ensureReporterStarted();
         TimingStack stack = STACK.get();
         if (stack.sp >= stack.startTimes.length) {
             // grow stack if necessary

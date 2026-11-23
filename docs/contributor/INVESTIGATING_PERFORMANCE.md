@@ -54,6 +54,27 @@ When I identify something that takes long using gprofng, for example, I find it 
 
 Supposedly Intel VTune and Oracle Developer Studio work well, but I haven't tried them.
 
+## C API Calls
+
+The diagnostic Java property `python.CAPITiming` enables invocation counts and timing for
+instrumented C API upcalls and downcalls. Its value is the reporting interval in milliseconds;
+statistics are also printed at process shutdown. For a JVM standalone, pass
+`--vm.Dpython.CAPITiming=1000` to the launcher.
+
+For a native standalone, enable it when building the image, for example:
+
+```bash
+mx --java-home=lookup:default --env native-ee \
+    --extra-image-builder-argument=-Dpython.CAPITiming=1000 \
+    build --target GRAALPY_NATIVE_STANDALONE
+```
+
+The interval is fixed in the image; setting the property when launching an existing native
+standalone does not enable instrumentation. Reporting starts on the first instrumented runtime
+call, and image-build activity is excluded. The default value, zero, lets the compiler eliminate
+the instrumentation. These statistics cover instrumented transitions, rather than every public
+C API function, and timing excludes time spent in nested instrumented calls.
+
 ## Memory Usage
 
 Memory usage is best tracked with VisualVM for the Java heap.
