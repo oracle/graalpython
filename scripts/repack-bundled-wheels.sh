@@ -78,4 +78,4 @@ patch_wheel() {
     rm -rf "$tmpdir"
 }
 
-patch_wheel pip graalpython/lib-graalpython/patches/pip-26.1.2.patch
+patch_wheel pip graalpython/lib-graalpython/patches/pip-26.2.2.patch
