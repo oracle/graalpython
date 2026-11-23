@@ -4101,6 +4101,15 @@ class ContextFlags:
 @requires_cdecimal
 class CContextFlags(ContextFlags, unittest.TestCase):
     decimal = C
+
+    def test_signaldict_repr(self):
+        Context = self.decimal.Context
+        ctx = Context(prec=7)
+        mapping = ctx.flags
+        del ctx
+        with self.assertRaisesRegex(ValueError, 'invalid signal dict'):
+            repr(mapping)
+
 class PyContextFlags(ContextFlags, unittest.TestCase):
     decimal = P
 
@@ -4233,7 +4242,7 @@ class ContextInputValidation:
 
         # Attributes cannot be deleted
         for attr in ['prec', 'Emax', 'Emin', 'rounding', 'capitals', 'clamp',
-                     'flags', 'traps']:
+                     'flags', 'traps', '_allcr', '_flags', '_traps']:
             self.assertRaises(AttributeError, c.__delattr__, attr)
 
         # Invalid attributes

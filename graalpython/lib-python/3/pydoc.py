@@ -71,7 +71,6 @@ import sys
 import sysconfig
 import time
 import tokenize
-import urllib.parse
 import warnings
 from collections import deque
 from reprlib import Repr
@@ -846,7 +845,8 @@ class HTMLDoc(Doc):
         head = '<strong class="title">%s</strong>' % linkedname
         try:
             path = inspect.getabsfile(object)
-            url = urllib.parse.quote(path)
+            import urllib.request
+            url = urllib.request.pathname2url(path)
             filelink = self.filelink(url, path)
         except TypeError:
             filelink = '(built-in)'
@@ -1798,7 +1798,8 @@ def writedoc(thing, forceload=0):
     """Write HTML documentation to a file in the current directory."""
     object, name = resolve(thing, forceload)
     page = html.page(describe(object), html.document(object, name))
-    with open(name + '.html', 'w', encoding='utf-8') as file:
+    with open(name + '.html', 'w', encoding='utf-8',
+              errors='backslashreplace') as file:
         file.write(page)
     print('wrote', name + '.html')
 
@@ -1832,6 +1833,7 @@ class Helper:
         'async': ('async', ''),
         'await': ('await', ''),
         'break': ('break', 'while for'),
+        'case': 'match',
         'class': ('class', 'CLASSES SPECIALMETHODS'),
         'continue': ('continue', 'while for'),
         'def': ('function', ''),
@@ -1843,11 +1845,12 @@ class Helper:
         'for': ('for', 'break continue while'),
         'from': 'import',
         'global': ('global', 'nonlocal NAMESPACES'),
-        'if': ('if', 'TRUTHVALUE'),
+        'if': ('if', 'TRUTHVALUE match'),
         'import': ('import', 'MODULES'),
         'in': ('in', 'SEQUENCEMETHODS'),
         'is': 'COMPARISON',
         'lambda': ('lambda', 'FUNCTIONS'),
+        'match': ('match', 'if'),
         'nonlocal': ('nonlocal', 'global NAMESPACES'),
         'not': 'BOOLEAN',
         'or': 'BOOLEAN',
@@ -2379,7 +2382,7 @@ def _start_server(urlhandler, hostname, port):
             self.send_header('Content-Type', '%s; charset=UTF-8' % content_type)
             self.end_headers()
             self.wfile.write(self.urlhandler(
-                self.path, content_type).encode('utf-8'))
+                self.path, content_type).encode('utf-8', 'backslashreplace'))
 
         def log_message(self, *args):
             # Don't log messages.

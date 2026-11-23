@@ -6,6 +6,7 @@ if __name__ != 'test.support':
 import contextlib
 import dataclasses
 import functools
+import inspect
 import logging
 # GraalPy change
 try:
@@ -39,7 +40,7 @@ __all__ = [
     "check_syntax_error",
     "requires_gzip", "requires_bz2", "requires_lzma",
     # GraalPy change: export the optional C API fixture guard.
-    "bigmemtest", "bigaddrspacetest", "cpython_only", "requires_testcapi", "get_attribute",
+    "bigmemtest", "nomemtest", "bigaddrspacetest", "cpython_only", "requires_testcapi", "get_attribute",
     "requires_IEEE_754", "requires_zlib",
     "has_fork_support", "requires_fork",
     "has_subprocess_support", "requires_subprocess",
@@ -70,6 +71,7 @@ __all__ = [
     "force_not_colorized_test_class",
     "make_clean_env",
     "BrokenIter",
+    "requires_root_user", "requires_non_root_user",
     ]
 
 
@@ -999,16 +1001,29 @@ def subTests(arg_names, arg_values, /, *, _do_cleanups=False):
     def decorator(func):
         if isinstance(func, type):
             raise TypeError('subTests() can only decorate methods, not classes')
-        @functools.wraps(func)
-        def wrapper(self, /, *args, **kwargs):
+
+        def iter_subtest_kwargs():
             for values in arg_values:
-                if single_param:
-                    values = (values,)
-                subtest_kwargs = dict(zip(arg_names, values))
-                with self.subTest(**subtest_kwargs):
-                    func(self, *args, **kwargs, **subtest_kwargs)
-                if _do_cleanups:
-                    self.doCleanups()
+                yield dict(zip(arg_names, (values,) if single_param else values))
+
+        # A synchronous wrapper would discard the coroutine without awaiting
+        # it, so an asynchronous test would not run at all.
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def wrapper(self, /, *args, **kwargs):
+                for subtest_kwargs in iter_subtest_kwargs():
+                    with self.subTest(**subtest_kwargs):
+                        await func(self, *args, **kwargs, **subtest_kwargs)
+                    if _do_cleanups:
+                        self.doCleanups()
+        else:
+            @functools.wraps(func)
+            def wrapper(self, /, *args, **kwargs):
+                for subtest_kwargs in iter_subtest_kwargs():
+                    with self.subTest(**subtest_kwargs):
+                        func(self, *args, **kwargs, **subtest_kwargs)
+                    if _do_cleanups:
+                        self.doCleanups()
         return wrapper
     return decorator
 
@@ -1158,38 +1173,6 @@ def set_memlimit(limit: str) -> None:
     max_memuse = memlimit
 
 
-class _MemoryWatchdog:
-    """An object which periodically watches the process' memory consumption
-    and prints it out.
-    """
-
-    def __init__(self):
-        self.procfile = '/proc/{pid}/statm'.format(pid=os.getpid())
-        self.started = False
-
-    def start(self):
-        import warnings
-        try:
-            f = open(self.procfile, 'r')
-        except OSError as e:
-            logging.getLogger(__name__).warning('/proc not available for stats: %s', e, exc_info=e)
-            sys.stderr.flush()
-            return
-
-        import subprocess
-        with f:
-            watchdog_script = findfile("memory_watchdog.py")
-            self.mem_watchdog = subprocess.Popen([sys.executable, watchdog_script],
-                                                 stdin=f,
-                                                 stderr=subprocess.DEVNULL)
-        self.started = True
-
-    def stop(self):
-        if self.started:
-            self.mem_watchdog.terminate()
-            self.mem_watchdog.wait()
-
-
 def bigmemtest(size, memuse, dry_run=True):
     """Decorator for bigmem tests.
 
@@ -1202,8 +1185,15 @@ def bigmemtest(size, memuse, dry_run=True):
     extra argument. If 'dry_run' is true, the value passed to the test method
     may be less than the requested value. If 'dry_run' is false, it means the
     test doesn't support dummy runs when -M is not specified.
+
+    A test that actually allocates the requested memory (that is, one run with
+    -M) runs in a subprocess, so that the memory it uses and the address space
+    it fragments are released when it ends.  A dummy run stays in the process.
     """
     def decorator(f):
+        from test.support import isolation
+
+        @functools.wraps(f)
         def wrapper(self):
             size = wrapper.size
             memuse = wrapper.memuse
@@ -1218,28 +1208,46 @@ def bigmemtest(size, memuse, dry_run=True):
                     "not enough memory: %.1fG minimum needed"
                     % (size * memuse / (1024 ** 3)))
 
-            if real_max_memuse and verbose:
+            if (real_max_memuse and verbose
+                    and not isolation.runningInSubprocess):
                 print()
-                print(" ... expected peak memory use: {peak:.1f}G"
-                      .format(peak=size * memuse / (1024 ** 3)))
-                watchdog = _MemoryWatchdog()
-                watchdog.start()
-            else:
-                watchdog = None
+                peak = (size * memuse) / (1024 ** 3)
+                print(f" ... expected peak memory use: {peak:.1f} GiB")
 
-            try:
-                return f(self, maxsize)
-            finally:
-                if watchdog:
-                    watchdog.stop()
+            if (real_max_memuse and has_subprocess_support
+                    and not isolation.runningInSubprocess):
+                cls = type(self)
+                qualname = f'{cls.__qualname__}.{f.__name__}'
+                proc = isolation._start_test(cls.__module__, qualname)
+                isolation._replay_test(self, *proc.wait())
+                return
+
+            return f(self, maxsize)
 
         wrapper.size = size
         wrapper.memuse = memuse
         return wrapper
     return decorator
 
+def nomemtest(f):
+    """Check that we can use this test with `_testcapi.set_nomemory`."""
+    from .import_helper import import_module
+
+    @functools.wraps(f)
+    def internal(*args, **kwargs):
+        import_module('_testcapi')
+        return f(*args, **kwargs)
+
+    return unittest.skipIf(
+        # Python built with Py_TRACE_REFS fail with a fatal error in
+        # _PyRefchain_Trace() on memory allocation error.
+        Py_TRACE_REFS,
+        'cannot test Py_TRACE_REFS build',
+    )(cpython_only(internal))
+
 def bigaddrspacetest(f):
     """Decorator for tests that fill the address space."""
+    @functools.wraps(f)
     def wrapper(self):
         if max_memuse < MAX_Py_ssize_t:
             if MAX_Py_ssize_t >= 2**63 - 1 and max_memuse >= 2**31:
@@ -1425,14 +1433,25 @@ print_warning.orig_stderr = sys.stderr
 # to cleanup threads.
 environment_altered = False
 
+# Short descriptions of what was altered, e.g. "unraisable exception".
+# They are reported by regrtest together with the name of the test.
+environment_altered_reasons = []
+
+
+def set_environment_altered(reason):
+    """Set the environment_altered flag and record why it was set."""
+    global environment_altered
+    environment_altered = True
+    if reason not in environment_altered_reasons:
+        environment_altered_reasons.append(reason)
+
+
 def reap_children():
     """Use this function at the end of test_main() whenever sub-processes
     are started.  This will help ensure that no extra children (zombies)
     stick around to hog resources and create problems when looking
     for refleaks.
     """
-    global environment_altered
-
     # Need os.waitpid(-1, os.WNOHANG): Windows is not supported
     if not (hasattr(os, 'waitpid') and hasattr(os, 'WNOHANG')):
         return
@@ -1452,7 +1471,7 @@ def reap_children():
             break
 
         print_warning(f"reap_children() reaped child process {pid}")
-        environment_altered = True
+        set_environment_altered("reaped child process")
 
 
 @contextlib.contextmanager
@@ -2917,3 +2936,7 @@ def skip_on_low_desktop_heap_memory_subprocess(returncode):
     if returncode == STATUS_DLL_INIT_FAILED:
         raise unittest.SkipTest('gh-150436: DLL init failed, likely because '
                                 'of low desktop heap memory')
+
+_ROOT_IN_POSIX = hasattr(os, 'geteuid') and os.geteuid() == 0
+requires_root_user = unittest.skipUnless(_ROOT_IN_POSIX, "test needs root privilege")
+requires_non_root_user = unittest.skipIf(_ROOT_IN_POSIX, "test needs non-root account")

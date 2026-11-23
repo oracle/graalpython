@@ -2030,8 +2030,9 @@ class RunFuncTestCase(BaseTestCase):
             run("echo hello", shell=True, text=True)
             check_output("echo hello", shell=True, text=True)
             """)
+        env = support.make_clean_env()
         cp = subprocess.run([sys.executable, "-Xwarn_default_encoding", "-c", code],
-                            capture_output=True)
+                            capture_output=True, env=env)
         lines = cp.stderr.splitlines()
         self.assertEqual(len(lines), 2, lines)
         self.assertTrue(lines[0].startswith(b"<string>:2: EncodingWarning: "))
@@ -2427,6 +2428,16 @@ class POSIXProcessTestCase(BaseTestCase):
         err = subprocess.CalledProcessError(2, "fake cmd")
         error_string = str(err)
         self.assertIn("non-zero exit status 2.", error_string)
+
+        # returncode which is not an integer, which happens for example when
+        # Popen is mocked: str() must not fail
+        for returncode in (None, "2", 2.5, [2]):
+            with self.subTest(returncode=returncode):
+                err = subprocess.CalledProcessError(returncode, "fake cmd")
+                self.assertEqual(
+                    str(err),
+                    f"Command 'fake cmd' returned non-zero "
+                    f"exit status {returncode}.")
 
     @support.impl_detail("preexec support missing", graalpy=False)
     def test_preexec(self):

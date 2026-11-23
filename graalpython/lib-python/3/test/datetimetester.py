@@ -1949,6 +1949,15 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
             '10000-W25-1',      # Invalid year
             '2020-W25-0',       # Invalid day-of-week
             '2020-W25-8',       # Invalid day-of-week
+            # gh-152204: each fixed-width field must be exactly N ASCII digits
+            '2020+12',          # '+' in a basic-format field
+            '2020 12',          # space in a basic-format field
+            '+020-06-15',       # leading sign in the year
+            '202012+9',         # '+' in the day field
+            '2020-W 5',         # space in the week number
+            '2020061',          # 7 chars: day slice reads a 1-character tail
+            '2020-W2',          # 1-digit week number
+            '٢025-03-09',       # Unicode characters
             '2009\ud80002\ud80028',     # Separators are surrogate codepoints
         ]
 
@@ -3398,6 +3407,20 @@ class TestDateTime(TestDate):
             '2009-04-19T12:30:45.400 +02:30',  # Space between ms and timezone (gh-130959)
             '2009-04-19T12:30:45.400 ',        # Trailing space (gh-130959)
             '2009-04-19T12:30:45. 400',        # Space before fraction (gh-130959)
+            '2020-2020',                       # Ambiguous 9-char date portion
+            # gh-152204: each time field must be exactly N ASCII digits
+            '2020-12-12T0٥:02:03',          # Unicode digit in the hour
+            '2020-12-12T01:0٥:03',          # Unicode digit in the minute
+            '2020-12-12T01:02:0٥',          # Unicode digit in the second
+            '2020-12-12T01:02:03.٥',        # Unicode digit in the fraction
+            '2020-12-12T01:02:03.4_6',      # underscore in the fraction
+            '2020-12-12T01:02:03+0٥:00',    # Unicode digit in the tz hour
+            '2020-12-12T01:02:03+01:0٥',    # Unicode digit in the tz minute
+            '20201212T0102٣٤',              # Unicode digits in the basic-format time
+            '2009-04-19T12:30:45.+05:00',      # Empty fraction before offset
+            '2009-04-19T12:30:45.-05:00',      # Empty fraction before offset
+            '2009-04-19T12:30:45.Z',           # Empty fraction before Z
+            '2009-04-19T12:30:45,+05:00',      # Empty fraction (comma) before offset
         ]
 
         for bad_str in bad_strs:
@@ -3418,6 +3441,32 @@ class TestDateTime(TestDate):
         dt = self.theclass.fromisoformat(dt_str)
 
         self.assertIs(dt.tzinfo, timezone.utc)
+
+    def test_fromisoformat_utc_subsecond_offset(self):
+        # A UTC offset whose whole-second part is zero but with a non-zero
+        # microsecond part must be preserved, not collapsed to UTC.
+        for us in (1, -1, 999999, -999999):
+            with self.subTest(microseconds=us):
+                tz = timezone(timedelta(microseconds=us))
+                dt = self.theclass(2020, 6, 15, 12, 34, 56, tzinfo=tz)
+                rt = self.theclass.fromisoformat(dt.isoformat())
+                self.assertEqual(rt.utcoffset(), timedelta(microseconds=us))
+                self.assertEqual(rt, dt)
+                self.assertIsNot(rt.tzinfo, timezone.utc)
+
+        tz = timezone(timedelta(hours=5, minutes=30, seconds=15,
+                                microseconds=123456))
+        dt = self.theclass(2020, 6, 15, 12, 34, 56, tzinfo=tz)
+        rt = self.theclass.fromisoformat(dt.isoformat())
+        self.assertEqual(rt.utcoffset(), tz.utcoffset(None))
+        self.assertEqual(rt, dt)
+
+        for tstr in ('2020-06-15T12:34:56+00:00',
+                     '2020-06-15T12:34:56+00:00:00.000000',
+                     '2020-06-15T12:34:56Z'):
+            with self.subTest(tstr=tstr):
+                self.assertIs(self.theclass.fromisoformat(tstr).tzinfo,
+                              timezone.utc)
 
     def test_fromisoformat_subclass(self):
         class DateTimeSubclass(self.theclass):
@@ -4486,6 +4535,10 @@ class TestTimeTZ(TestTime, TZInfoBase, unittest.TestCase):
             '12:30:45.400 +02:30',      # Space between ms and timezone (gh-130959)
             '12:30:45.400 ',            # Trailing space (gh-130959)
             '12:30:45. 400',            # Space before fraction (gh-130959)
+            '12:30:45.+05:00',          # Empty fraction before offset
+            '12:30:45.-05:00',          # Empty fraction before offset
+            '12:30:45.Z',               # Empty fraction before Z
+            '12:30:45,+05:00',          # Empty fraction (comma) before offset
         ]
 
         for bad_str in bad_strs:
