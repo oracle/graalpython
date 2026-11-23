@@ -292,8 +292,6 @@ if sys.implementation.name == "graalpy":
             assert self.run_test_fun() == "Patched"
 
         def test_mark_wheel_preserves_executable_scripts(self):
-            import graalpy_pip_extensions
-
             wheel = self.build_dir / 'executable_script-1.0-py3-none-any.whl'
             script = 'executable_script-1.0.data/scripts/executable-script'
             with zipfile.ZipFile(wheel, 'w') as z:
@@ -304,7 +302,13 @@ if sys.implementation.name == "graalpy":
                 z.writestr('executable_script-1.0.dist-info/WHEEL', 'Wheel-Version: 1.0\n')
                 z.writestr('executable_script-1.0.dist-info/RECORD', '')
 
-            graalpy_pip_extensions.mark_wheel(wheel)
+            # Importing pip via graalpy_pip_extensions can make setuptools remove distutils from sys.modules.
+            # Keep this isolated from C-extension tests that share this worker.
+            subprocess.check_call([
+                self.venv_python, '-c',
+                'import sys, graalpy_pip_extensions; graalpy_pip_extensions.mark_wheel(sys.argv[1])',
+                str(wheel),
+            ])
 
             with zipfile.ZipFile(wheel) as z:
                 mode = z.getinfo(script).external_attr >> 16
