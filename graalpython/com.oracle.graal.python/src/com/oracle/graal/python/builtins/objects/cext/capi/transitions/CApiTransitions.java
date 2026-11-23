@@ -583,13 +583,18 @@ public abstract class CApiTransitions {
                         count++;
                         Reference<?> currentEntry = entry;
                         entry = null;
-                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", currentEntry));
+                        if (LOGGER.isLoggable(Level.FINE)) {
+                            LOGGER.fine(PythonUtils.formatJString("releasing %s, no remaining managed references", currentEntry));
+                        }
+                        boolean isLoggableFiner = LOGGER.isLoggable(Level.FINER);
                         if (currentEntry instanceof PythonObjectReference reference) {
                             if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
                                 assert !HandlePointerConverter.pointsToPyIntHandle(reference.pointer);
                                 assert !HandlePointerConverter.pointsToPyFloatHandle(reference.pointer);
                                 assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
-                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
+                                if (isLoggableFiner) {
+                                    LOGGER.finer(PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
+                                }
                                 nativeStubLookupRemove(handleContext, reference);
                                 /*
                                  * We may only free native object stubs if their reference count is
@@ -600,10 +605,14 @@ public abstract class CApiTransitions {
                                 long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
                                 long newRefCount = subNativeRefCount(stubPointer, MANAGED_REFCNT);
                                 if (newRefCount == 0) {
-                                    LOGGER.finer(() -> PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
+                                    if (isLoggableFiner) {
+                                        LOGGER.finer(PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
+                                    }
                                     freeNativeStub(reference);
                                 } else {
-                                    LOGGER.finer(() -> PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
+                                    if (isLoggableFiner) {
+                                        LOGGER.finer(PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
+                                    }
                                     /*
                                      * In this case, the object is no longer referenced from managed but
                                      * still from native code (since the reference count is greater 0).
@@ -625,12 +634,16 @@ public abstract class CApiTransitions {
                                 }
                             } else {
                                 assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
-                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
+                                if (isLoggableFiner) {
+                                    LOGGER.finer(PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
+                                }
                                 if (nativeLookupRemove(handleContext, reference.pointer) != null) {
                                     // The reference was still in our lookup table, it was not otherwise
                                     // freed and we can process it now.
                                     if (reference.isAllocatedFromJava()) {
-                                        LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
+                                        if (isLoggableFiner) {
+                                            LOGGER.finer(PythonUtils.formatJString("freeing managed object %s replacement", reference));
+                                        }
                                         freeNativeStruct(reference);
                                     } else {
                                         referencesToBeFreed.add(reference.pointer);
@@ -647,7 +660,9 @@ public abstract class CApiTransitions {
                             if (nativeLookupRemove(handleContext, reference.pointer, reference)) {
                                 // The reference was still in our lookup table, it was not otherwise
                                 // freed and we can process it now
-                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
+                                if (isLoggableFiner) {
+                                    LOGGER.finer(PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
+                                }
                                 processNativeObjectReference(reference, referencesToBeFreed);
                             }
                         } else if (currentEntry instanceof NativeStorageReference reference) {
@@ -687,7 +702,9 @@ public abstract class CApiTransitions {
      * method neither frees any native memory nor runs any object destructor (guest code).
      */
     private static void processNativeObjectReference(NativeObjectReference reference, ArrayList<Long> referencesToBeFreed) {
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("releasing %s", reference.toString()));
+        }
         if (subNativeRefCount(reference.pointer, MANAGED_REFCNT) == 0) {
             referencesToBeFreed.add(reference.pointer);
         }
@@ -718,7 +735,9 @@ public abstract class CApiTransitions {
     }
 
     private static void processPyCapsuleReference(PyCapsuleReference reference) {
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("releasing %s", reference.toString()));
+        }
         if (reference.data.getDestructor() != NULLPTR) {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
@@ -758,7 +777,9 @@ public abstract class CApiTransitions {
             Object savedException = CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
             try {
                 int size = referencesToBeFreed.size();
-                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", size));
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(PythonUtils.formatJString("releasing %d NativeObjectReference instances", size));
+                }
                 long pointer = mallocPtrArray(size);
                 for (int i = 0; i < size; i++) {
                     NativeMemory.writeLongArrayElement(pointer, i, referencesToBeFreed.get(i));
@@ -974,12 +995,16 @@ public abstract class CApiTransitions {
         assert ref.handleTableIndex == -1;
         assert ref.isAllocatedFromJava();
         assert !ref.gc;
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("releasing %s", ref));
+        }
         free(ref.pointer);
     }
 
     private static void freeNativeStorage(NativeStorageReference ref) {
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("releasing %s", ref));
+        }
         free(ref.ptr);
     }
 
@@ -2236,7 +2261,7 @@ public abstract class CApiTransitions {
                      * pointer check.
                      */
                     if (LOGGER.isLoggable(Level.FINE)) {
-                        LOGGER.fine(() -> "managed weak reference has been collected: " + Long.toHexString(pointer));
+                        LOGGER.fine(PythonUtils.formatJString("managed weak reference has been collected: 0x%x", pointer));
                     }
                     return PNone.NO_VALUE;
                 }
@@ -2255,7 +2280,7 @@ public abstract class CApiTransitions {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         if (LOGGER.isLoggable(Level.FINE)) {
-                            LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
+                            LOGGER.fine(PythonUtils.formatJString("re-creating collected PythonAbstractNativeObject reference 0x%x", pointer));
                         }
                         return createAbstractNativeObject(pythonContext, threadState, handleContext, needsTransfer, pointer);
                     }
@@ -2439,7 +2464,9 @@ public abstract class CApiTransitions {
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
-                        LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
+                        if (LOGGER.isLoggable(Level.FINE)) {
+                            LOGGER.fine(PythonUtils.formatJString("re-creating collected PythonAbstractNativeObject reference 0x%x", pointer));
+                        }
                         return createAbstractNativeObject(pythonContext, threadState, handleContext, stealing, pointer);
                     }
                     if (isNativeObjectProfile.profile(inliningTarget, ref instanceof PythonAbstractNativeObject)) {
@@ -2659,7 +2686,10 @@ public abstract class CApiTransitions {
     private static long addNativeRefCount(long pointer, long refCntDelta, boolean ignoreIfDead) {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
-        LOGGER.finest(() -> PythonUtils.formatJString("addNativeRefCount %x ? + %d", pointer, refCntDelta));
+        boolean isLoggableFinest = LOGGER.isLoggable(Level.FINEST);
+        if (isLoggableFinest) {
+            LOGGER.finest(PythonUtils.formatJString("addNativeRefCount %x ? + %d", pointer, refCntDelta));
+        }
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         if (ignoreIfDead && refCount == 0) {
             return 0;
@@ -2670,7 +2700,9 @@ public abstract class CApiTransitions {
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
-        LOGGER.finest(() -> PythonUtils.formatJString("addNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
+        if (isLoggableFinest) {
+            LOGGER.finest(PythonUtils.formatJString("addNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
+        }
 
         assert !PythonOptions.detailedAssertionsEnabled() || !isDeallocatingSlowPath(pointer);
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount + refCntDelta);
@@ -2688,7 +2720,9 @@ public abstract class CApiTransitions {
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
 
-        LOGGER.finest(() -> PythonUtils.formatJString("subNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.finest(PythonUtils.formatJString("subNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
+        }
 
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount - refCntDelta);
         return refCount - refCntDelta;
