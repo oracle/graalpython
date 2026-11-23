@@ -57,6 +57,7 @@ test.test_array.ByteTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-aar
 test.test_array.ByteTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ByteTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ByteTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.ByteTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.DoubleTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_alloc_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -113,6 +114,7 @@ test.test_array.DoubleTest.test_subclassing @ darwin-arm64,linux-aarch64,linux-a
 test.test_array.DoubleTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.DoubleTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.DoubleTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.FloatTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -168,6 +170,7 @@ test.test_array.FloatTest.test_subclassing @ darwin-arm64,linux-aarch64,linux-aa
 test.test_array.FloatTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.FloatTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.FloatTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.IntTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -224,6 +227,7 @@ test.test_array.IntTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-aarc
 test.test_array.IntTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.IntTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.IntTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.LargeArrayTest.test_access @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LargeArrayTest.test_append @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LargeArrayTest.test_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -295,6 +299,7 @@ test.test_array.LongLongTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux
 test.test_array.LongLongTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongLongTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongLongTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.LongLongTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.LongTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -351,6 +356,7 @@ test.test_array.LongTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-aar
 test.test_array.LongTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.LongTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.LongTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.MiscTest.test_array_is_sequence @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.MiscTest.test_bad_constructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.MiscTest.test_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -410,6 +416,7 @@ test.test_array.ShortTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-aa
 test.test_array.ShortTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ShortTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.ShortTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.ShortTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UCS4Test.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_buffer_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -462,6 +469,7 @@ test.test_array.UCS4Test.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarc
 test.test_array.UCS4Test.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_typecode_u_deprecation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UCS4Test.test_unicode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UCS4Test.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UnicodeTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_buffer_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -514,6 +522,7 @@ test.test_array.UnicodeTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-a
 test.test_array.UnicodeTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_typecode_u_deprecation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnicodeTest.test_unicode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UnicodeTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UnsignedByteTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -571,6 +580,7 @@ test.test_array.UnsignedByteTest.test_tofrombytes @ darwin-arm64,linux-aarch64,l
 test.test_array.UnsignedByteTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedByteTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UnsignedByteTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UnsignedIntTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -628,6 +638,7 @@ test.test_array.UnsignedIntTest.test_tofrombytes @ darwin-arm64,linux-aarch64,li
 test.test_array.UnsignedIntTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedIntTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UnsignedIntTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UnsignedLongLongTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -685,6 +696,7 @@ test.test_array.UnsignedLongLongTest.test_tofrombytes @ darwin-arm64,linux-aarch
 test.test_array.UnsignedLongLongTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongLongTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UnsignedLongLongTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UnsignedLongTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -742,6 +754,7 @@ test.test_array.UnsignedLongTest.test_tofrombytes @ darwin-arm64,linux-aarch64,l
 test.test_array.UnsignedLongTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedLongTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UnsignedLongTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.UnsignedShortTest.test_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -799,3 +812,4 @@ test.test_array.UnsignedShortTest.test_tofrombytes @ darwin-arm64,linux-aarch64,
 test.test_array.UnsignedShortTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_array.UnsignedShortTest.test_type_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_array.UnsignedShortTest.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

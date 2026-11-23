@@ -36,6 +36,7 @@ test.test_threading.CRLockTests.test_recursion_count @ darwin-arm64,linux-aarch6
 test.test_threading.CRLockTests.test_release_save_unacquired @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading.CRLockTests.test_release_unacquired @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading.CRLockTests.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_threading.CRLockTests.test_signature @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.CRLockTests.test_thread_leak @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading.CRLockTests.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_threading.CRLockTests.test_try_acquire @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

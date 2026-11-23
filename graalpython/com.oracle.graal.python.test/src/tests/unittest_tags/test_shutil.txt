@@ -70,11 +70,11 @@ test.test_shutil.TestGetTerminalSize.test_os_environ_first @ darwin-arm64,linux-
 test.test_shutil.TestMisc.test_disk_usage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_destinsrc_false_negative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_destinsrc_false_positive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_shutil.TestMove.test_destinsrc_symlink_bypass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_shutil.TestMove.test_destinsrc_symlink_bypass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_shutil.TestMove.test_dont_move_dir_in_itself @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_existing_file_inside_dest_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_move_as_rename_return_value @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_shutil.TestMove.test_move_dangling_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_shutil.TestMove.test_move_dangling_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_shutil.TestMove.test_move_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_move_dir_altsep_to_dir @ win32-AMD64,win32-AMD64-github
 test.test_shutil.TestMove.test_move_dir_caseinsensitive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

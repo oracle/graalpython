@@ -861,6 +861,7 @@ test.test_asyncio.test_sock_lowlevel.ProactorEventLoopTests.test_recvfrom_into_w
 test.test_asyncio.test_sock_lowlevel.ProactorEventLoopTests.test_sock_accept @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_sock_lowlevel.ProactorEventLoopTests.test_sock_client_fail @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_sock_lowlevel.ProactorEventLoopTests.test_sock_client_ops @ win32-AMD64,win32-AMD64-github
+test.test_asyncio.test_sock_lowlevel.ProactorEventLoopTests.test_sock_client_racing @ win32-AMD64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_cancel_sock_accept @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_create_connection_sock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_huge_content @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -873,7 +874,7 @@ test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_accept @ dar
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_connect_racing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_fail @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_racing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_racing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_unix_sock_client_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_ssl.TestSSL.test_connect_accepted_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_ssl.TestSSL.test_connect_timeout_warning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -885,7 +886,7 @@ test.test_asyncio.test_ssl.TestSSL.test_flush_before_shutdown @ darwin-arm64,lin
 test.test_asyncio.test_ssl.TestSSL.test_shutdown_cleanly @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 # transiently fails
 !test.test_asyncio.test_ssl.TestSSL.test_shutdown_timeout_handler_leak
-test.test_asyncio.test_ssl.TestSSL.test_shutdown_timeout_handler_not_set @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_asyncio.test_ssl.TestSSL.test_shutdown_timeout_handler_not_set @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_asyncio.test_ssl.TestSSL.test_ssl_connect_accepted_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_ssl.TestSSL.test_ssl_handshake_connection_lost @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_ssl.TestSSL.test_ssl_handshake_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

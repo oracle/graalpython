@@ -4,7 +4,7 @@ test.test_compileall.CommandLineTestsNoSourceEpoch.test_d_runtime_error @ darwin
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_force @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_hardlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_hardlink_bad_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compileall.CommandLineTestsNoSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compileall.CommandLineTestsNoSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_include_bad_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_include_file_no_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_include_file_with_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -34,7 +34,7 @@ test.test_compileall.CommandLineTestsWithSourceEpoch.test_d_runtime_error @ darw
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_force @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_hardlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_hardlink_bad_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compileall.CommandLineTestsWithSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compileall.CommandLineTestsWithSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_include_bad_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_include_file_no_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_include_file_with_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -74,7 +74,7 @@ test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_path @ darwin-a
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_pool_called @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_workers_cpu_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_workers_non_positive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compileall.CompileallTestsWithSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compileall.CompileallTestsWithSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_larger_than_32_bit_times @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_multiple_optimization_levels @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithSourceEpoch.test_no_pycache_in_non_package @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -101,7 +101,7 @@ test.test_compileall.CompileallTestsWithoutSourceEpoch.test_compile_path @ darwi
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_compile_pool_called @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_compile_workers_cpu_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_compile_workers_non_positive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compileall.CompileallTestsWithoutSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_compileall.CompileallTestsWithoutSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_larger_than_32_bit_times @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_magic_number @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compileall.CompileallTestsWithoutSourceEpoch.test_mtime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

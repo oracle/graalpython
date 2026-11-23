@@ -92,3 +92,4 @@ test.test_type_params.TypeParamsTypeVarTest.test_typevar_coroutine @ darwin-arm6
 test.test_type_params.TypeParamsTypeVarTest.test_typevar_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsTypeVarTupleTest.test_typevartuple_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_type_params.TypeParamsTypeVarTupleTest.test_typevartuple_02 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_type_params.TypeParamsWeakRefTest.test_weakrefs @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
