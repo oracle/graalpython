@@ -25,7 +25,9 @@
 #undef PyRun_String
 #undef PyRun_SimpleString
 #undef Py_CompileString
+#if 0 // GraalPy change: keep the macro alias to Py_CompileStringExFlags.
 #undef Py_CompileStringFlags
+#endif // GraalPy change
 #undef PyRun_InteractiveOne
 #undef PyRun_InteractiveLoop
 
