@@ -77,6 +77,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
@@ -370,16 +371,45 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     SysModuleBuiltins.AuditNode.auditUncached(T_CPYTHON_RUN_INTERACTIVEHOOK, hook);
                     CallNode.executeUncached(hook);
                 } catch (PException e) {
-                    PyObjectCallMethodObjArgs.executeUncached(context.getStderr(), T_WRITE, ErrorMessages.FAILED_CALLING_INTERACTIVE_HOOK);
-                    Object exception = e.getEscapedException();
-                    if (exception instanceof PBaseException managedException &&
-                                    IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(exception), PythonBuiltinClassType.SystemExit)) {
-                        ExceptionUtils.handleSystemExit(this, context, managedException);
-                    }
-                    ExceptionUtils.printExceptionForLauncher(context, e);
+                    reportHookFailure(context, e);
                 }
             }
             return PNone.NONE;
+        }
+
+        private void reportHookFailure(PythonContext context, PException error) {
+            Object exception = error.getEscapedException();
+            PBaseException systemExit = exception instanceof PBaseException managedException &&
+                            IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(exception), PythonBuiltinClassType.SystemExit) ? managedException : null;
+            try {
+                PyObjectCallMethodObjArgs.executeUncached(context.getStderr(), T_WRITE, ErrorMessages.FAILED_CALLING_INTERACTIVE_HOOK);
+            } catch (PException ignored) {
+                writeToStandardErr(context, ErrorMessages.FAILED_CALLING_INTERACTIVE_HOOK.toJavaStringUncached());
+            }
+            try {
+                if (systemExit != null) {
+                    ExceptionUtils.handleSystemExit(this, context, systemExit);
+                }
+                ExceptionUtils.printExceptionForLauncher(context, error);
+            } catch (PException reportingError) {
+                if (systemExit != null && !context.getOption(PythonOptions.AlwaysRunExcepthook)) {
+                    throw reportingError;
+                }
+                writeToStandardErr(context, error.getMessage() + "\n");
+                if (systemExit != null) {
+                    throw new PythonExitException(this, 1);
+                }
+            }
+        }
+
+        private static void writeToStandardErr(PythonContext context, String message) {
+            try {
+                OutputStream stderr = context.getStandardErr();
+                stderr.write(message.getBytes(StandardCharsets.UTF_8));
+                stderr.flush();
+            } catch (IOException ignored) {
+                // A broken process stderr must not interrupt interactive startup.
+            }
         }
     }
 

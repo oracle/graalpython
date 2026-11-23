@@ -280,6 +280,37 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         """), python_args=['-i', '-c', code], ignore_preamble=False)
 
 
+    def test_interactive_hook_reporting_failure():
+        source = dedent("""\
+            import sys
+
+            class BrokenStderr:
+                def write(self, message):
+                    raise RuntimeError('stderr write failed')
+
+            def hook():
+                raise OSError('interactive hook failed')
+
+            def excepthook(*args):
+                sys.stderr = sys.__stderr__
+                print('excepthook called', file=sys.stderr)
+                raise RuntimeError('excepthook failed')
+
+            sys.stderr = BrokenStderr()
+            sys.__interactivehook__ = hook
+            sys.excepthook = excepthook
+        """)
+        proc = subprocess.run(
+            [sys.executable, '-s', '-P', '-i', '-c', source],
+            input='6 * 7\n', capture_output=True, text=True, timeout=60,
+        )
+        assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+        assert 'Failed calling sys.__interactivehook__' in proc.stderr, proc.stderr
+        assert 'excepthook called' in proc.stderr, proc.stderr
+        assert 'OSError' in proc.stderr, proc.stderr
+        assert proc.stdout.strip() == '42', proc.stdout
+
+
     def test_interactive_hook_system_exit():
         for exception, code in [('SystemExit()', 0), ('SystemExit(7)', 7),
                                 ("SystemExit('hook exit')", 1),
