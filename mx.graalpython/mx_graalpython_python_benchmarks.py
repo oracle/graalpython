@@ -163,7 +163,7 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     "chaos",
     # "crypto_pyaes",
     # "django_template",
-    # "dulwich_log",
+    "dulwich_log",
     "fannkuch",
     "float",
     "go",
