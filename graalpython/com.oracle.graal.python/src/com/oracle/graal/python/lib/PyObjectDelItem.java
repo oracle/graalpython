@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -122,6 +123,18 @@ public abstract class PyObjectDelItem extends Node {
                         @Exclusive @Cached CallSlotSqAssItemNode callSqItem) {
             int index = indexForSqSlot.execute(frame, inliningTarget, object, slots, key);
             callSqItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, index, PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = {"slots.mp_ass_subscript() == null", "slots.sq_ass_item() == null", "slots.has_as_sequence()"})
+        @InliningCutoff
+        static void doSequenceNoAssItem(VirtualFrame frame, Node inliningTarget, Object object, @SuppressWarnings("unused") TpSlots slots, Object key,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (indexCheckNode.execute(inliningTarget, key)) {
+                // only for the errors the conversion raises; the value is not used
+                asSizeNode.executeExact(frame, inliningTarget, key, IndexError);
+            }
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_DELETION, object);
         }
 
         @Fallback
