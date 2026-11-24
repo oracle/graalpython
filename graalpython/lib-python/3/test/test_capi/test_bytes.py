@@ -1,5 +1,7 @@
 import sys
 import unittest
+# GraalPy change: Guard CPython implementation details.
+from test import support
 from test.support import import_helper
 
 _testlimitedcapi = import_helper.import_module('_testlimitedcapi')
@@ -237,6 +239,9 @@ class CAPITest(unittest.TestCase):
 
         def resize(obj, size, new):
             result = _resize(obj, size, new)
+            # GraalPy change: Reference counts and bytes singletons are CPython implementation details.
+            if not support.check_impl_detail(cpython=True):
+                return result
             if 1 <= len(result):
                 if new or size != len(obj):
                     # gh-156995: Make sure that the result is a fresh object.
