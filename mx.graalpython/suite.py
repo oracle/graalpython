@@ -243,6 +243,7 @@ suite = {
             "sourceDirs": ["src"],
             "javaCompliance": "21+",
             "dependencies": [
+                "regex:TREGEX",
                 "truffle:TRUFFLE_ICU4J",
             ],
             "buildDependencies": [

@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -280,18 +281,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String getCharacterByUnicodeName(String unicodeName) {
-            int codepoint = UCharacter.getCharFromName(unicodeName);
-
-            if (codepoint < 0) {
-                return null;
-            }
-
-            return UCharacter.toString(codepoint);
-        }
-
-        @TruffleBoundary
-        private static String getCharacterByUnicodeNameAlias(String unicodeName) {
-            int codepoint = UCharacter.getCharFromNameAlias(unicodeName);
+            int codepoint = StringUtils.getCodePoint(unicodeName);
 
             if (codepoint < 0) {
                 return null;
@@ -303,9 +293,6 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object lookupBoundary(PythonLanguage lang, String nameString, TruffleString name) {
             String character = getCharacterByUnicodeName(nameString);
-            if (character == null) {
-                character = getCharacterByUnicodeNameAlias(nameString);
-            }
             if (character != null) {
                 return FromJavaStringNode.getUncached().execute(character, TS_ENCODING);
             }

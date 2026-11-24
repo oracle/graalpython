@@ -42,9 +42,7 @@
 package com.oracle.graal.python.pegparser;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 
@@ -55,6 +53,7 @@ import com.oracle.graal.python.pegparser.tokenizer.CodePoints.Builder;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
+import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
 final class StringParser {
 
@@ -430,7 +429,7 @@ final class StringParser {
         if (closeIndex == -1) {
             throw parserCallbacks.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
-        String charName = new String(codePoints, offset + 1, closeIndex - offset - 1).toUpperCase();
+        String charName = new String(codePoints, offset + 1, closeIndex - offset - 1).toUpperCase(Locale.ROOT);
         int cp = getCodePoint(charName);
         if (cp >= 0) {
             sb.appendCodePoint(cp);
@@ -440,62 +439,12 @@ final class StringParser {
         return closeIndex + 1;
     }
 
-    // Names for most control characters that mean 0-31, not some symbol
-    private static final Map<String, Integer> CONTROL_CHAR_NAMES = new HashMap<>(32);
-    static {
-        CONTROL_CHAR_NAMES.put("NULL", 0x0000);
-        CONTROL_CHAR_NAMES.put("START OF HEADING", 0x0001);
-        CONTROL_CHAR_NAMES.put("START OF TEXT", 0x0002);
-        CONTROL_CHAR_NAMES.put("END OF TEXT", 0x0003);
-        CONTROL_CHAR_NAMES.put("END OF TRANSMISSION", 0x0004);
-        CONTROL_CHAR_NAMES.put("ENQUIRY", 0x0005);
-        CONTROL_CHAR_NAMES.put("ACKNOWLEDGE", 0x0006);
-        CONTROL_CHAR_NAMES.put("BELL", 0x0007);
-        CONTROL_CHAR_NAMES.put("BACKSPACE", 0x0008);
-        CONTROL_CHAR_NAMES.put("CHARACTER TABULATION", 0x0009);
-        CONTROL_CHAR_NAMES.put("LINE FEED", 0x000A);
-        CONTROL_CHAR_NAMES.put("LINE TABULATION", 0x000B);
-        CONTROL_CHAR_NAMES.put("FORM FEED", 0x000C);
-        CONTROL_CHAR_NAMES.put("CARRIAGE RETURN", 0x000D);
-        CONTROL_CHAR_NAMES.put("SHIFT OUT", 0x000E);
-        CONTROL_CHAR_NAMES.put("SHIFT IN", 0x000F);
-        CONTROL_CHAR_NAMES.put("DATA LINK ESCAPE", 0x0010);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL ONE", 0x0011);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL TWO", 0x0012);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL THREE", 0x0013);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL FOUR", 0x0014);
-        CONTROL_CHAR_NAMES.put("NEGATIVE ACKNOWLEDGE", 0x0015);
-        CONTROL_CHAR_NAMES.put("SYNCHRONOUS IDLE", 0x0016);
-        CONTROL_CHAR_NAMES.put("END OF TRANSMISSION BLOCK", 0x0017);
-        CONTROL_CHAR_NAMES.put("CANCEL", 0x0018);
-        CONTROL_CHAR_NAMES.put("END OF MEDIUM", 0x0019);
-        CONTROL_CHAR_NAMES.put("SUBSTITUTE", 0x001A);
-        CONTROL_CHAR_NAMES.put("ESCAPE", 0x001B);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR FOUR", 0x001C);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR THREE", 0x001D);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR TWO", 0x001E);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR ONE", 0x001F);
-        CONTROL_CHAR_NAMES.put("BYTE ORDER MARK", 0xFEFF);
-    }
-
     private static int getCodePoint(String charName) {
-        int possibleChar = CONTROL_CHAR_NAMES.getOrDefault(charName.toUpperCase(Locale.ROOT), -1);
-        if (possibleChar > -1) {
-            return possibleChar;
+        Integer alias = UnicodeCharacterAliases.CHARACTER_ALIASES.get(charName);
+        if (alias != null) {
+            return alias;
         }
-        possibleChar = UCharacter.getCharFromName(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        possibleChar = UCharacter.getCharFromExtendedName(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        possibleChar = UCharacter.getCharFromNameAlias(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        return -1;
+        return UCharacter.getCharFromName(charName);
     }
 
     private static void warnInvalidEscapeSequence(AbstractParser parser, int[] codePoints, int inputStart, int firstInvalidEscape, Token token) {

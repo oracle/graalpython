@@ -56,6 +56,10 @@ SOFTWARE.
 
   <dependencies>
     <dependency>
+      <groupId>org.graalvm.regex</groupId>
+      <artifactId>regex</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.graalvm.shadowed</groupId>
       <artifactId>icu4j</artifactId>
     </dependency>
