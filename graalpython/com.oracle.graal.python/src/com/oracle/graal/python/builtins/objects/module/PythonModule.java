@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -58,6 +59,7 @@ public final class PythonModule extends PythonObject {
     @TruffleBoundary
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
+        DynamicObject.MarkSharedNode.getUncached().execute(this);
         setAttribute(T___NAME__, PNone.NO_VALUE);
         setAttribute(T___DOC__, PNone.NO_VALUE);
         setAttribute(T___PACKAGE__, PNone.NO_VALUE);
@@ -74,6 +76,7 @@ public final class PythonModule extends PythonObject {
      */
     private PythonModule(PythonLanguage lang, TruffleString moduleName) {
         super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape(lang));
+        DynamicObject.MarkSharedNode.getUncached().execute(this);
         setAttribute(T___NAME__, moduleName);
         setAttribute(T___DOC__, PNone.NONE);
         setAttribute(T___PACKAGE__, PNone.NONE);
