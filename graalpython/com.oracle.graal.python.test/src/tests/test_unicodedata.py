@@ -116,3 +116,14 @@ class TestUnicodedata(unittest.TestCase):
         empty_string = ""
         with self.assertRaisesRegex(TypeError, r"combining\(\) argument must be a unicode character, not str"):
             unicodedata.combining(empty_string)
+
+    def test_decomposition(self):
+        # the mapping of the decomposition field, not applied recursively
+        self.assertEqual(unicodedata.decomposition('Ǆ'), '<compat> 0044 017D')
+        self.assertEqual(unicodedata.decomposition('ẛ'), '017F 0307')
+        self.assertEqual(unicodedata.decomposition('Ǖ'), '00DC 0304')
+        self.assertEqual(unicodedata.decomposition('¼'), '<fraction> 0031 2044 0034')
+        self.assertEqual(unicodedata.decomposition('a'), '')
+        # Hangul syllables decompose into their jamo in one step
+        self.assertEqual(unicodedata.decomposition('가'), '1100 1161')
+        self.assertEqual(unicodedata.decomposition('각'), '1100 1161 11A8')
