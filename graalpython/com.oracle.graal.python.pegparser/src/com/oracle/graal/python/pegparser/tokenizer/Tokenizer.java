@@ -1994,14 +1994,10 @@ public class Tokenizer {
                 break;
             case '{':
                 tokMode.debugExprStart = nextCharIndex;
-                tokMode.debugExprEnd = -1;
                 break;
             case '}':
             case '!':
             case ':':
-                if (tokMode.debugExprEnd == -1) {
-                    tokMode.debugExprEnd = nextCharIndex - 1;
-                }
                 break;
             default:
                 assert false;
@@ -2015,12 +2011,14 @@ public class Tokenizer {
         if (!tokMode.debug || tokenMetadata != null) {
             return;
         }
+        // Earlier punctuation, such as the '!' in '!=', may still belong to the expression.
+        int debugExprEnd = tokenStart;
         // Look for a '#' outside of string literals. A '#' inside a string is part of the
         // debug expression and must not be treated as the start of a comment.
         boolean hashDetected = false;
         boolean inString = false;
         int quoteChar = 0;
-        for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
+        for (int i = tokMode.debugExprStart; i < debugExprEnd; ++i) {
             int ch = codePointsInput[i];
             if (ch == '\\') {
                 i++;
@@ -2041,11 +2039,19 @@ public class Tokenizer {
             }
         }
         if (hashDetected) {
-            CodePoints.Builder sb = new CodePoints.Builder(tokMode.debugExprEnd - tokMode.debugExprStart);
+            CodePoints.Builder sb = new CodePoints.Builder(debugExprEnd - tokMode.debugExprStart);
             inString = false;
             quoteChar = 0;
-            for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
+            for (int i = tokMode.debugExprStart; i < debugExprEnd; ++i) {
                 int ch = codePointsInput[i];
+                // Preserve escaped quotes without changing the string state, as in CPython.
+                if (ch == '\\') {
+                    sb.appendCodePoint(ch);
+                    if (++i < debugExprEnd) {
+                        sb.appendCodePoint(codePointsInput[i]);
+                    }
+                    continue;
+                }
                 if (ch == '"' || ch == '\'') {
                     if (!inString) {
                         inString = true;
@@ -2055,7 +2061,7 @@ public class Tokenizer {
                     }
                     sb.appendCodePoint(ch);
                 } else if (ch == '#' && !inString) {
-                    while (i < tokMode.debugExprEnd) {
+                    while (i < debugExprEnd) {
                         if (codePointsInput[i] == '\n') {
                             sb.appendCodePoint('\n');
                             break;
@@ -2068,7 +2074,7 @@ public class Tokenizer {
             }
             tokenMetadata = sb.build();
         } else {
-            tokenMetadata = CodePoints.fromBuffer(codePointsInput, tokMode.debugExprStart, tokMode.debugExprEnd - tokMode.debugExprStart);
+            tokenMetadata = CodePoints.fromBuffer(codePointsInput, tokMode.debugExprStart, debugExprEnd - tokMode.debugExprStart);
         }
     }
 
@@ -2099,7 +2105,6 @@ public class Tokenizer {
         /** {@code f_string_line_start} */
         final int startLineNo;
         int debugExprStart;
-        int debugExprEnd;
         /** {@code last_expr_size} */
         int lastExprSize;
         /** {@code last_expr_end} */
