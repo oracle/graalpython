@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,6 +136,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile currGrouperProfile,
                         @Cached InlinedBranchProfile currValueMarkerProfile,
                         @Cached InlinedBranchProfile currValueTgtProfile,
+                        @Cached InlinedBranchProfile currValueTakenProfile,
                         @Cached InlinedConditionProfile hasFuncProfile) {
             PGroupBy gbo = self.getParent();
             if (gbo.getCurrGrouper() != self) {
@@ -151,6 +152,12 @@ public final class GrouperBuiltins extends PythonBuiltins {
                 throw iteratorExhausted();
             }
             Object r = gbo.getCurrValue();
+            if (r == null) {
+                // The key's __eq__ advanced this grouper and took the current value. Like _grouper_next() in
+                // CPython, which then returns NULL without an exception, the grouper is exhausted.
+                currValueTakenProfile.enter(inliningTarget);
+                throw iteratorExhausted();
+            }
             gbo.setCurrValue(null);
             return r;
         }
