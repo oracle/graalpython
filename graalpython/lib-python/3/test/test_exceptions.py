@@ -780,8 +780,8 @@ class ExceptionTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError,
                                     'attribute value type must be bool'):
             e.__suppress_context__ = 1
-        with self.assertRaisesRegex(TypeError,
-                                    "can't delete numeric/char attribute"):
+        # GraalPy change: allow a different error message when deleting the attribute.
+        with self.assertRaises(TypeError):
             del e.__suppress_context__
         self.assertFalse(e.__suppress_context__)
 
