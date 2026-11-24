@@ -38,6 +38,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import argparse
 import io
 from pathlib import Path
 import subprocess
@@ -47,9 +48,11 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BUNDLED_DIR = REPO_ROOT / "graalpython/lib-python/3/ensurepip/_bundled"
+# Update this explicitly when importing a new upstream wheel into `python-import` branch. Don't use a mutable branch here.
+SOURCE_COMMIT = "c64e1c57bab76889954e153d557cbd21ac9cdcbc"
 
 
-def patch_wheel(name, patch):
+def patch_wheel(name, patch, *, output_dir=BUNDLED_DIR):
     patch = REPO_ROOT / patch
     wheels = sorted(BUNDLED_DIR.glob(f"{name}-*.whl"))
     if len(wheels) != 1:
@@ -58,13 +61,12 @@ def patch_wheel(name, patch):
     with patch.open("rb") as patch_file:
         try:
             original_bytes = subprocess.check_output(
-                ["git", "show", f"python-import:{wheel.relative_to(REPO_ROOT).as_posix()}"], cwd=REPO_ROOT
+                ["git", "show", f"{SOURCE_COMMIT}:{wheel.relative_to(REPO_ROOT).as_posix()}"], cwd=REPO_ROOT
             )
         except subprocess.CalledProcessError:
             raise SystemExit(
-                "Error when getting the vanilla wheel from the python-import branch\n"
-                "Do you have a local branch named 'python-import'?\n"
-                "If not, you can use: git fetch origin python-import:python-import"
+                f"Error when getting the vanilla wheel from pinned commit {SOURCE_COMMIT}\n"
+                f"Make sure the commit is available locally: git fetch origin {SOURCE_COMMIT}"
             ) from None
 
         with tempfile.TemporaryDirectory(prefix="repack-bundled-wheels-") as tmp:
@@ -92,8 +94,12 @@ def patch_wheel(name, patch):
                         info.create_system = 3  # Unix, independent of the host platform.
                         info.external_attr = 0o100644 << 16
                         archive.writestr(info, path.read_bytes(), compress_type=ZIP_DEFLATED, compresslevel=9)
-            wheel.write_bytes(repacked.read_bytes())
+            (output_dir / wheel.name).write_bytes(repacked.read_bytes())
 
 
 if __name__ == "__main__":
-    patch_wheel("pip", "graalpython/lib-graalpython/patches/pip-26.2.2.patch")
+    parser = argparse.ArgumentParser(description="Rebuild bundled wheels from the pinned source and local patches.")
+    parser.add_argument("--output-dir", type=Path, default=BUNDLED_DIR, help="Directory for the repacked wheels")
+    args = parser.parse_args()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    patch_wheel("pip", "graalpython/lib-graalpython/patches/pip-26.2.2.patch", output_dir=args.output_dir)
