@@ -145,6 +145,33 @@ def test_property_subclass_override():
         assert read_attr(K()) == 43
 
 
+def test_property_subclass_copy():
+    class CustomProperty(property):
+        pass
+
+    class K:
+        @CustomProperty
+        def attr(self):
+            return self._attr
+
+        @attr.setter
+        def attr(self, value):
+            self._attr = value
+
+        @attr.deleter
+        def attr(self):
+            del self._attr
+
+    p = K.__dict__['attr']
+    assert type(p) is CustomProperty
+    assert type(p.getter(lambda self: 1)) is CustomProperty
+    k = K()
+    k.attr = 5
+    assert k.attr == 5
+    del k.attr
+    assert not hasattr(k, '_attr')
+
+
 def test_property_without_getter():
     class K:
         attr = property()
