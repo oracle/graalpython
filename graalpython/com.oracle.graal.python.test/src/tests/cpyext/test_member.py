@@ -270,7 +270,6 @@ class TestMethod(unittest.TestCase):
 
         # T_LONG, T_ULONG, T_PYSSIZET
         max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF)
-        err_values = (-1, 42, -1, -1, 42)
         err_messages = ("Python int too large to convert to C long",
                         "Python int too large to convert to C unsigned long",
                         "Python int too large to convert to C ssize_t",
@@ -283,7 +282,7 @@ class TestMethod(unittest.TestCase):
             setattr(obj, m, max_values[i])
             assert getattr(obj, m) == max_values[i]
             setattr(obj, m, 42)
-            assert_overflow(m, max_values[i] + 1, err_messages[i], err_values[i])
+            assert_overflow(m, max_values[i] + 1, err_messages[i], 42)
 
         class Indexable:
             def __index__(self):
@@ -291,7 +290,7 @@ class TestMethod(unittest.TestCase):
 
         obj.member_pyssizet = 42
         assert_raises(TypeError, setattr, obj, "member_pyssizet", Indexable())
-        assert obj.member_pyssizet == -1
+        assert obj.member_pyssizet == 42
 
         # T_FLOAT, T_DOUBLE
         for i, m in enumerate(("member_float", "member_double")):
@@ -301,15 +300,13 @@ class TestMethod(unittest.TestCase):
             setattr(obj, m, 1.1)
             assert 1.0 <= getattr(obj, m) <= 1.2
 
-        # T_FLOAT and T_DOUBLE behave a bit different when writing invalid values
+        # Failed conversions leave both floating-point members unchanged.
         obj.member_float = 1.0
         obj.member_double = 1.0
         assert_raises(TypeError, setattr, obj, "member_float", "hello")
         assert_raises(TypeError, setattr, obj, "member_double", "hello")
-        # T_FLOAT will just keep its previous value
         assert obj.member_float >= 1.0, "was: %r" % obj.member_float
-        # T_DOUBLE will be set to '(double) -1'
-        assert obj.member_double == -1.0, "was: %r" % obj.member_double
+        assert obj.member_double == 1.0, "was: %r" % obj.member_double
 
         # T_STRING
         assert obj.member_string is None
