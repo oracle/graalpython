@@ -217,10 +217,10 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "default_factory", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "Factory for default value called by __missing__().")
+    @Builtin(name = "default_factory", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "Factory for default value called by __missing__().")
     @GenerateNodeFactory
     abstract static class DefaultFactoryNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "!isNoValue(value)")
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         @SuppressWarnings("unused")
         Object set(PDefaultDict self, Object value) {
             self.setDefaultFactory(value);
@@ -231,6 +231,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object get(PDefaultDict self, @SuppressWarnings("unused") PNone value) {
             return self.getDefaultFactory();
+        }
+
+        @Specialization(guards = "isDeleteMarker(value)")
+        Object delete(PDefaultDict self, @SuppressWarnings("unused") Object value) {
+            self.setDefaultFactory(PNone.NONE);
+            return PNone.NONE;
         }
     }
 
