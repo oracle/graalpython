@@ -278,22 +278,27 @@ pysqlite_connection_init_impl(pysqlite_Connection *self, PyObject *database,
         goto error;
     }
 
-    // Create LRU statement cache; returns a new reference.
-    PyObject *statement_cache = new_statement_cache(self, state, cache_size);
-    if (statement_cache == NULL) {
-        goto error;
+    // GraalPy change: avoid the managed LRU wrapper when caching is disabled.
+    PyObject *statement_cache = NULL;
+    if (cache_size > 0) {
+        statement_cache = new_statement_cache(self, state, cache_size);
+        if (statement_cache == NULL) {
+            goto error;
+        }
     }
 
     /* Create lists of weak references to cursors and blobs */
     PyObject *cursors = PyList_New(0);
     if (cursors == NULL) {
-        Py_DECREF(statement_cache);
+        // GraalPy change: the statement cache can be NULL.
+        Py_XDECREF(statement_cache);
         goto error;
     }
 
     PyObject *blobs = PyList_New(0);
     if (blobs == NULL) {
-        Py_DECREF(statement_cache);
+        // GraalPy change: the statement cache can be NULL.
+        Py_XDECREF(statement_cache);
         Py_DECREF(cursors);
         goto error;
     }
