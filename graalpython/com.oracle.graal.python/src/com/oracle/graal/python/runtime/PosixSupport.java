@@ -963,6 +963,10 @@ public abstract class PosixSupport {
     @TruffleBoundary
     public abstract TruffleString strerror(int errorCode);
 
+    /** Formats a Windows system error code rather than a CRT errno. */
+    @TruffleBoundary
+    public abstract TruffleString winerror(int errorCode);
+
     @TruffleBoundary
     public abstract long getpid();
 

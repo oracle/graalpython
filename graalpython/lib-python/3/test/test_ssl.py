@@ -3465,19 +3465,22 @@ class ThreadedTests(unittest.TestCase):
                                         server_hostname=hostname,
                                         suppress_ragged_eofs=False) as s:
             s.connect((HOST, server.port))
-            # GraalPy change: add our message expectation
-            with self.assertRaisesRegex(
-                OSError,
-                'alert unknown ca|EOF occurred|TLSV1_ALERT_UNKNOWN_CA|'
-                'certificate_required|'
-                'closed by the remote host|Connection reset by peer|'
-                'Broken pipe'
-            ):
+            # GraalPy change: Batched TLS records can cause Windows ECONNABORTED after a graceful server close.
+            with self.assertRaises(OSError) as cm:
                 # TLS 1.3 perform client cert exchange after handshake
                 s.write(b'data')
                 s.read(1000)
                 s.write(b'should have failed already')
                 s.read(1000)
+            if not (sys.platform == 'win32' and cm.exception.errno == errno.ECONNABORTED):
+                # GraalPy change: add our message expectation
+                self.assertRegex(
+                    str(cm.exception),
+                    'alert unknown ca|EOF occurred|TLSV1_ALERT_UNKNOWN_CA|'
+                    'certificate_required|'
+                    'closed by the remote host|Connection reset by peer|'
+                    'Broken pipe'
+                )
 
     def test_rude_shutdown(self):
         """A brutal shutdown of an SSL server should raise an OSError

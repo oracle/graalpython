@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -95,7 +96,7 @@ public enum OSErrorEnum {
     ENOEXEC(8, tsLiteral("Exec format error")),
     EBADF(9, tsLiteral("Bad file number")),
     ECHILD(10, tsLiteral("No child processes")),
-    EWOULDBLOCK(platformSpecific(11, 35), tsLiteral("Operation would block")),
+    EWOULDBLOCK(platformSpecific(11, 35, 10035), tsLiteral("Operation would block")),
     EAGAIN(platformSpecific(11, 35), tsLiteral("Try again")),
     ENOMEM(12, tsLiteral("Out of memory")),
     EACCES(13, tsLiteral("Permission denied")),
@@ -150,7 +151,7 @@ public enum OSErrorEnum {
     ENOSR(platformSpecific(63, 98), tsLiteral("Out of streams resources")),
     ENONET(64, tsLiteral("Machine is not on the network")),
     ENOPKG(65, tsLiteral("Package not installed")),
-    EREMOTE(platformSpecific(66, 71), tsLiteral("Object is remote")),
+    EREMOTE(platformSpecific(66, 71, 10071), tsLiteral("Object is remote")),
     ENOLINK(platformSpecific(67, 97), tsLiteral("Link has been severed")),
     EADV(68, tsLiteral("Advertise error")),
     ESRMNT(69, tsLiteral("Srmount error")),
@@ -171,43 +172,43 @@ public enum OSErrorEnum {
     EILSEQ(platformSpecific(84, 92), tsLiteral("Illegal byte sequence")),
     ERESTART(85, tsLiteral("Interrupted system call should be restarted")),
     ESTRPIPE(86, tsLiteral("Streams pipe error")),
-    EUSERS(platformSpecific(87, 68), tsLiteral("Too many users")),
-    ENOTSOCK(platformSpecific(88, 38), tsLiteral("Socket operation on non-socket")),
-    EDESTADDRREQ(platformSpecific(89, 39), tsLiteral("Destination address required")),
-    EMSGSIZE(platformSpecific(90, 40), tsLiteral("Message too long")),
-    EPROTOTYPE(platformSpecific(91, 41), tsLiteral("Protocol wrong type for socket")),
-    ENOPROTOOPT(platformSpecific(92, 42), tsLiteral("Protocol not available")),
-    EPROTONOSUPPORT(platformSpecific(93, 43), tsLiteral("Protocol not supported")),
-    ESOCKTNOSUPPORT(platformSpecific(94, 44), tsLiteral("Socket type not supported")),
-    EOPNOTSUPP(platformSpecific(95, 102), tsLiteral("Operation not supported on transport endpoint")),
+    EUSERS(platformSpecific(87, 68, 10068), tsLiteral("Too many users")),
+    ENOTSOCK(platformSpecific(88, 38, 10038), tsLiteral("Socket operation on non-socket")),
+    EDESTADDRREQ(platformSpecific(89, 39, 10039), tsLiteral("Destination address required")),
+    EMSGSIZE(platformSpecific(90, 40, 10040), tsLiteral("Message too long")),
+    EPROTOTYPE(platformSpecific(91, 41, 10041), tsLiteral("Protocol wrong type for socket")),
+    ENOPROTOOPT(platformSpecific(92, 42, 10042), tsLiteral("Protocol not available")),
+    EPROTONOSUPPORT(platformSpecific(93, 43, 10043), tsLiteral("Protocol not supported")),
+    ESOCKTNOSUPPORT(platformSpecific(94, 44, 10044), tsLiteral("Socket type not supported")),
+    EOPNOTSUPP(platformSpecific(95, 102, 10045), tsLiteral("Operation not supported on transport endpoint")),
     ENOTSUP(platformSpecific(95, 45), tsLiteral("Operation not supported")),
-    EPFNOSUPPORT(platformSpecific(96, 46), tsLiteral("Protocol family not supported")),
-    EAFNOSUPPORT(platformSpecific(97, 47), tsLiteral("Address family not supported by protocol")),
-    EADDRINUSE(platformSpecific(98, 48), tsLiteral("Address already in use")),
-    EADDRNOTAVAIL(platformSpecific(99, 49), tsLiteral("Cannot assign requested address")),
-    ENETDOWN(platformSpecific(100, 50), tsLiteral("Network is down")),
-    ENETUNREACH(platformSpecific(101, 51), tsLiteral("Network is unreachable")),
-    ENETRESET(platformSpecific(102, 52), tsLiteral("Network dropped connection because of reset")),
-    ECONNABORTED(platformSpecific(103, 53), tsLiteral("Software caused connection abort")),
-    ECONNRESET(platformSpecific(104, 54), tsLiteral("Connection reset by peer")),
-    ENOBUFS(platformSpecific(105, 55), tsLiteral("No buffer space available")),
-    EISCONN(platformSpecific(106, 56), tsLiteral("Transport endpoint is already connected")),
-    ENOTCONN(platformSpecific(107, 57), tsLiteral("Transport endpoint is not connected")),
-    ESHUTDOWN(platformSpecific(108, 58), tsLiteral("Cannot send after transport endpoint shutdown")),
-    ETOOMANYREFS(platformSpecific(109, 59), tsLiteral("Too many references: cannot splice")),
-    ETIMEDOUT(platformSpecific(110, 60), tsLiteral("Connection timed out")),
-    ECONNREFUSED(platformSpecific(111, 61), tsLiteral("Connection refused")),
-    EHOSTDOWN(platformSpecific(112, 64), tsLiteral("Host is down")),
-    EHOSTUNREACH(platformSpecific(113, 65), tsLiteral("No route to host")),
-    EALREADY(platformSpecific(114, 37), tsLiteral("Operation already in progress")),
-    EINPROGRESS(platformSpecific(115, 36), tsLiteral("Operation now in progress")),
-    ESTALE(platformSpecific(116, 70), tsLiteral("Stale file handle")),
+    EPFNOSUPPORT(platformSpecific(96, 46, 10046), tsLiteral("Protocol family not supported")),
+    EAFNOSUPPORT(platformSpecific(97, 47, 10047), tsLiteral("Address family not supported by protocol")),
+    EADDRINUSE(platformSpecific(98, 48, 10048), tsLiteral("Address already in use")),
+    EADDRNOTAVAIL(platformSpecific(99, 49, 10049), tsLiteral("Cannot assign requested address")),
+    ENETDOWN(platformSpecific(100, 50, 10050), tsLiteral("Network is down")),
+    ENETUNREACH(platformSpecific(101, 51, 10051), tsLiteral("Network is unreachable")),
+    ENETRESET(platformSpecific(102, 52, 10052), tsLiteral("Network dropped connection because of reset")),
+    ECONNABORTED(platformSpecific(103, 53, 10053), tsLiteral("Software caused connection abort")),
+    ECONNRESET(platformSpecific(104, 54, 10054), tsLiteral("Connection reset by peer")),
+    ENOBUFS(platformSpecific(105, 55, 10055), tsLiteral("No buffer space available")),
+    EISCONN(platformSpecific(106, 56, 10056), tsLiteral("Transport endpoint is already connected")),
+    ENOTCONN(platformSpecific(107, 57, 10057), tsLiteral("Transport endpoint is not connected")),
+    ESHUTDOWN(platformSpecific(108, 58, 10058), tsLiteral("Cannot send after transport endpoint shutdown")),
+    ETOOMANYREFS(platformSpecific(109, 59, 10059), tsLiteral("Too many references: cannot splice")),
+    ETIMEDOUT(platformSpecific(110, 60, 10060), tsLiteral("Connection timed out")),
+    ECONNREFUSED(platformSpecific(111, 61, 10061), tsLiteral("Connection refused")),
+    EHOSTDOWN(platformSpecific(112, 64, 10064), tsLiteral("Host is down")),
+    EHOSTUNREACH(platformSpecific(113, 65, 10065), tsLiteral("No route to host")),
+    EALREADY(platformSpecific(114, 37, 10037), tsLiteral("Operation already in progress")),
+    EINPROGRESS(platformSpecific(115, 36, 10036), tsLiteral("Operation now in progress")),
+    ESTALE(platformSpecific(116, 70, 10070), tsLiteral("Stale file handle")),
     EUCLEAN(117, tsLiteral("Structure needs cleaning")),
     ENOTNAM(118, tsLiteral("Not a XENIX named type file")),
     ENAVAIL(119, tsLiteral("No XENIX semaphores available")),
     EISNAM(120, tsLiteral("Is a named type file")),
     EREMOTEIO(121, tsLiteral("Remote I/O error")),
-    EDQUOT(platformSpecific(122, 69), tsLiteral("Quota exceeded")),
+    EDQUOT(platformSpecific(122, 69, 10069), tsLiteral("Quota exceeded")),
     ENOMEDIUM(123, tsLiteral("No medium found")),
     EMEDIUMTYPE(124, tsLiteral("Wrong medium type")),
     ECANCELED(platformSpecific(125, 89), tsLiteral("Operation Canceled")),
@@ -383,6 +384,10 @@ public enum OSErrorEnum {
 
     private static int platformSpecific(int linuxValue, int darwinValue) {
         return getPythonOS() == PLATFORM_DARWIN ? darwinValue : linuxValue;
+    }
+
+    private static int platformSpecific(int linuxValue, int darwinValue, int windowsValue) {
+        return getPythonOS() == PLATFORM_WIN32 ? windowsValue : platformSpecific(linuxValue, darwinValue);
     }
 
     public static class OperationWouldBlockException extends IllegalStateException {

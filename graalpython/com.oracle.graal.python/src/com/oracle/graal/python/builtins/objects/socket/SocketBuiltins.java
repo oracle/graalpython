@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EBADF;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINPROGRESS;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EISCONN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
@@ -437,7 +438,10 @@ public final class SocketBuiltins extends PythonBuiltins {
                     PythonContext.triggerAsyncActions(constructAndRaiseNode);
                     waitConnect = self.getTimeoutNs() != 0 && isSelectable(self);
                 } else {
-                    waitConnect = self.getTimeoutNs() > 0 && e.hasErrno(EINPROGRESS) && isSelectable(self);
+                    // Winsock reports WSAEWOULDBLOCK for a nonblocking connection in progress.
+                    boolean inProgress = e.hasErrno(EINPROGRESS) ||
+                                    (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && e.hasErrno(EWOULDBLOCK));
+                    waitConnect = self.getTimeoutNs() > 0 && inProgress && isSelectable(self);
                 }
                 if (waitConnect) {
                     SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixSupport, gil, self,
@@ -446,7 +450,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                         s.getsockopt(self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
                                         int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
-                                            throw new PosixErrnoException(err, s.strerror(err));
+                                            throw new PosixErrnoException(err, PosixConstants.IS_WIN32 ? s.winerror(err) : s.strerror(err), PosixConstants.IS_WIN32 ? err : null);
                                         }
                                         return null;
                                     },

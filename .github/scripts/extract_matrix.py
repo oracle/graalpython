@@ -77,7 +77,7 @@ DOWNLOADS_LINKS = {
 
 # Github Runners OSS
 OSS = {
-    "ubuntu-latest": ["linux", "amd64"],
+    "ubuntu-24.04": ["linux", "amd64"],
     "ubuntu-24.04-arm": ["linux", "aarch64"],
     "windows-latest": ["windows", "amd64"]
 }
@@ -85,7 +85,7 @@ OSS = {
 # Override unavailable Python versions for some OS/Arch / job name combinations
 PYTHON_VERSIONS = {
     "ubuntu-24.04-arm": "3.12.8",
-    "ubuntu-latest": "3.12.8",
+    "ubuntu-24.04": "3.12.8",
     "style-gate": "3.8.12",
     "style-ecj-gate": "3.8.12",
 }
@@ -119,7 +119,7 @@ class Job:
         for os, caps in OSS.items():
             if all(required in capabilities for required in caps): return os
 
-        return "ubuntu-latest"
+        return "ubuntu-24.04"
 
     @cached_property
     def name(self) -> str:

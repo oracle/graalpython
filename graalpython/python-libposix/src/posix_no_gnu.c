@@ -47,10 +47,41 @@
 #include <stdio.h>
 
 #ifdef _WIN32
+#include <windows.h>
 #define GP_EXPORT __declspec(dllexport)
 #else
 #define GP_EXPORT
 #endif
+
+// Return the required UTF-8 buffer size including the terminating null byte.
+// A null buffer with size zero can be used to query the size before allocating.
+GP_EXPORT int32_t call_winerror(int32_t error, char *buf, int32_t buflen) {
+#ifdef _WIN32
+    wchar_t *message = NULL;
+    DWORD len = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL, (DWORD) error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (wchar_t *) &message, 0, NULL);
+    if (len != 0) {
+        // Match CPython: remove trailing whitespace and periods from the system message.
+        while (len > 0 && (message[len - 1] <= L' ' || message[len - 1] == L'.')) {
+            message[--len] = L'\0';
+        }
+        int required = WideCharToMultiByte(CP_UTF8, 0, message, -1, NULL, 0, NULL, NULL);
+        if (required > 0) {
+            int written = 0;
+            if (buflen >= required) {
+                written = WideCharToMultiByte(CP_UTF8, 0, message, -1, buf, buflen, NULL, NULL);
+            }
+            LocalFree(message);
+            if (buflen < required || written != 0) {
+                return required;
+            }
+        } else {
+            LocalFree(message);
+        }
+    }
+#endif
+    return snprintf(buf, buflen, "Windows Error 0x%x", (unsigned int) error) + 1;
+}
 
 GP_EXPORT void call_strerror(int32_t error, char *buf, int32_t buflen) {
 #ifdef _WIN32

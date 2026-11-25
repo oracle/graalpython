@@ -151,6 +151,13 @@ public final class PreInitPosixSupport extends PosixSupport {
 
     @Override
     @TruffleBoundary
+    public final TruffleString winerror(int errorCode) {
+        checkNotInPreInitialization();
+        return nativePosixSupport.winerror(errorCode);
+    }
+
+    @Override
+    @TruffleBoundary
     public final long getpid() {
         checkNotInPreInitialization();
         return nativePosixSupport.getpid();

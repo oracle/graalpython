@@ -152,6 +152,13 @@ public final class NativePosixSupport extends PosixSupport {
     private static final int ERROR_SOURCE_ERRNO = 0;
     private static final int ERROR_SOURCE_WINAPI = 1;
     private static final int ERROR_SOURCE_WINSOCK = 2;
+    private static final int WSABASEERR = 10000;
+    private static final int WSAEINTR = 10004;
+    private static final int WSAEBADF = 10009;
+    private static final int WSAEACCES = 10013;
+    private static final int WSAEFAULT = 10014;
+    private static final int WSAEINVAL = 10022;
+    private static final int WSAEMFILE = 10024;
     private static final boolean WINDOWS = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
@@ -190,6 +197,9 @@ public final class NativePosixSupport extends PosixSupport {
 
         @DowncallSignature(returnType = VOID, argumentTypes = {SINT32, POINTER, SINT32})
         abstract void call_strerror(int error, long buf, int buflen);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract int call_winerror(int error, long buf, int buflen);
 
         @DowncallSignature(returnType = SINT64)
         abstract long call_getpid();
@@ -725,6 +735,25 @@ public final class NativePosixSupport extends PosixSupport {
             return message;
         } finally {
             NativeMemory.free(buf);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public TruffleString winerror(int errorCode) {
+        int buflen = posixNativeFunctionInvoker.call_winerror(errorCode, NULLPTR, 0);
+        while (true) {
+            long buf = NativeMemory.mallocByteArray(buflen);
+            try {
+                int required = posixNativeFunctionInvoker.call_winerror(errorCode, buf, buflen);
+                if (required <= buflen) {
+                    return NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(buf);
+                }
+                // Retry if the system message grew between the size query and conversion.
+                buflen = required;
+            } finally {
+                NativeMemory.free(buf);
+            }
         }
     }
 
@@ -2490,7 +2519,7 @@ public final class NativePosixSupport extends PosixSupport {
             nativeAddr = NativeMemory.copyToNativeByteArray(addr.data, 0, addrLen);
             int result = posixNativeFunctionInvoker.call_connect(sockfd, nativeAddr, addrLen);
             if (result == -1) {
-                throw getConnectErrnoAndThrowPosixException();
+                throw getErrnoAndThrowPosixException();
             }
         } finally {
             NativeMemory.free(nativeAddr);
@@ -3697,19 +3726,6 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @TruffleBoundary
-    private PosixException getConnectErrnoAndThrowPosixException() throws PosixException {
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && posixNativeFunctionInvoker.get_error_source() == ERROR_SOURCE_WINSOCK) {
-            int winerror = posixNativeFunctionInvoker.get_wsaerror();
-            // A nonblocking Winsock connect reports WSAEWOULDBLOCK, but the socket layer uses
-            // EINPROGRESS to decide whether to wait for the connection to complete.
-            if (winerror == WSAError.WSAEWOULDBLOCK.getNumber()) {
-                throw newPosixException(OSErrorEnum.EINPROGRESS.getNumber(), winerror);
-            }
-        }
-        throw newPosixException(getErrno());
-    }
-
-    @TruffleBoundary
     private PosixException getSemPostErrnoAndThrowPosixException() throws PosixException {
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && posixNativeFunctionInvoker.get_error_source() == ERROR_SOURCE_WINAPI) {
             int winerror = posixNativeFunctionInvoker.get_winerror();
@@ -3745,7 +3761,7 @@ public final class NativePosixSupport extends PosixSupport {
 
     @TruffleBoundary
     private PosixException newPosixException(int errno, Integer winerror) throws PosixException {
-        throw new PosixErrnoException(errno, strerror(errno), winerror);
+        throw new PosixErrnoException(errno, winerror == null ? strerror(errno) : winerror(winerror), winerror);
     }
 
     // CPython performs this mapping in PC/errmap.h:winerror_to_errno().
@@ -3756,8 +3772,12 @@ public final class NativePosixSupport extends PosixSupport {
 
     // CPython handles Winsock errors in PC/errmap.h:winerror_to_errno().
     private static int winsockErrorToErrno(int error) {
-        WSAError wsaError = WSAError.fromNumber(error);
-        return wsaError == null ? error : wsaError.getDefaultErrnoNumber();
+        // Only Winsock duplicates of the original CRT errno values are translated. All other
+        // Winsock codes are exposed unchanged, including WSAECONNRESET and WSAEWOULDBLOCK.
+        return switch (error) {
+            case WSAEINTR, WSAEBADF, WSAEACCES, WSAEFAULT, WSAEINVAL, WSAEMFILE -> error - WSABASEERR;
+            default -> error;
+        };
     }
 
     private enum WinAPIError {
@@ -3817,63 +3837,6 @@ public final class NativePosixSupport extends PosixSupport {
 
         static WinAPIError fromNumber(int number) {
             for (WinAPIError error : values()) {
-                if (error.number == number) {
-                    return error;
-                }
-            }
-            return null;
-        }
-    }
-
-    private enum WSAError {
-        WSAEINTR(10004, OSErrorEnum.EINTR),
-        WSAEBADF(10009, OSErrorEnum.EBADF),
-        WSAEACCES(10013, OSErrorEnum.EACCES),
-        WSAEFAULT(10014, OSErrorEnum.EFAULT),
-        WSAEINVAL(10022, OSErrorEnum.EINVAL),
-        WSAEMFILE(10024, OSErrorEnum.EMFILE),
-        WSAEWOULDBLOCK(10035, OSErrorEnum.EWOULDBLOCK),
-        WSAEINPROGRESS(10036, OSErrorEnum.EINPROGRESS),
-        WSAEALREADY(10037, OSErrorEnum.EALREADY),
-        WSAENOTSOCK(10038, OSErrorEnum.ENOTSOCK),
-        WSAEDESTADDRREQ(10039, OSErrorEnum.EDESTADDRREQ),
-        WSAEMSGSIZE(10040, OSErrorEnum.EMSGSIZE),
-        WSAEPROTOTYPE(10041, OSErrorEnum.EPROTOTYPE),
-        WSAENOPROTOOPT(10042, OSErrorEnum.ENOPROTOOPT),
-        WSAEPROTONOSUPPORT(10043, OSErrorEnum.EPROTONOSUPPORT),
-        WSAEAFNOSUPPORT(10047, OSErrorEnum.EAFNOSUPPORT),
-        WSAEADDRINUSE(10048, OSErrorEnum.EADDRINUSE),
-        WSAEADDRNOTAVAIL(10049, OSErrorEnum.EADDRNOTAVAIL),
-        WSAENETDOWN(10050, OSErrorEnum.ENETDOWN),
-        WSAENETUNREACH(10051, OSErrorEnum.ENETUNREACH),
-        WSAENETRESET(10052, OSErrorEnum.ENETRESET),
-        WSAECONNABORTED(10053, OSErrorEnum.ECONNABORTED),
-        WSAECONNRESET(10054, OSErrorEnum.ECONNRESET),
-        WSAENOBUFS(10055, OSErrorEnum.ENOBUFS),
-        WSAEISCONN(10056, OSErrorEnum.EISCONN),
-        WSAENOTCONN(10057, OSErrorEnum.ENOTCONN),
-        WSAETIMEDOUT(10060, OSErrorEnum.ETIMEDOUT),
-        WSAECONNREFUSED(10061, OSErrorEnum.ECONNREFUSED),
-        WSAEHOSTUNREACH(10065, OSErrorEnum.EHOSTUNREACH);
-
-        private final int number;
-        private final OSErrorEnum defaultErrno;
-
-        WSAError(int number, OSErrorEnum defaultErrno) {
-            this.number = number;
-            this.defaultErrno = defaultErrno;
-        }
-
-        int getNumber() {
-            return number;
-        }
-
-        int getDefaultErrnoNumber() {
-            return defaultErrno.getNumber();
-        }
-
-        static WSAError fromNumber(int number) {
-            for (WSAError error : values()) {
                 if (error.number == number) {
                     return error;
                 }
