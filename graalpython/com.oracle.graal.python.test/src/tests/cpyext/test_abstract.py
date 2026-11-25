@@ -237,6 +237,13 @@ def _reference_setitem(args):
     seq = args[0]
     idx = args[1]
     value = args[2]
+    if isinstanceof(seq, [mmap.mmap]):
+        # sq_ass_item checks bounds first and accepts bytes, unlike mp_ass_subscript.
+        if idx < -len(seq) or idx >= len(seq):
+            raise IndexError('mmap index out of range')
+        if not isinstance(value, bytes) or len(value) != 1:
+            raise IndexError('mmap assignment must be length-1 bytes()')
+        value = value[0]
     if not hasattr(seq, '__setitem__'):
         raise TypeError
     seq.__setitem__(idx, value)
@@ -246,6 +253,9 @@ def _reference_setitem(args):
 def _reference_delitem(args):
     seq = args[0]
     idx = args[1]
+    if isinstanceof(seq, [mmap.mmap]) and (idx < -len(seq) or idx >= len(seq)):
+        # sq_ass_item checks bounds before rejecting deletion.
+        raise IndexError('mmap index out of range')
     if not hasattr(seq, '__delitem__'):
         raise TypeError
     seq.__delitem__(idx)

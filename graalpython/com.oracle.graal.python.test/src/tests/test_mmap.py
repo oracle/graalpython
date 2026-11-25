@@ -210,17 +210,49 @@ def test_delitem_negative_index_boundary():
     for i in range(-len(m) - 1, -2 * len(m) - 1, -1):
         try:
             del m[i]
-        except IndexError:
+        except TypeError:
             pass
         else:
-            assert False, "expected IndexError"
+            assert False, "expected TypeError"
         try:
             m.__delitem__(i)
-        except IndexError:
+        except TypeError:
             pass
         else:
-            assert False, "expected IndexError"
+            assert False, "expected TypeError"
     assert m[:] == b'abcde'
+
+
+def test_setitem_validation_order():
+    test_case = unittest.TestCase()
+    with mmap.mmap(-1, 5) as m:
+        for index in (-6, 5):
+            with test_case.assertRaises(TypeError):
+                m[index] = b'x'
+            with test_case.assertRaises(ValueError):
+                m[index] = 256
+            with test_case.assertRaises(IndexError):
+                m[index] = ord('x')
+
+
+def test_setitem_close_reentrancy():
+    test_case = unittest.TestCase()
+
+    class CloseOnIndex:
+        def __index__(self):
+            m.close()
+            return 0
+
+    for source in ('index', 'value', 'slice'):
+        with mmap.mmap(-1, 5) as m:
+            with test_case.assertRaises(ValueError):
+                if source == 'index':
+                    m[CloseOnIndex()] = 0
+                elif source == 'value':
+                    m[0] = CloseOnIndex()
+                else:
+                    m[slice(CloseOnIndex(), 1)] = b'x'
+            assert m.closed
 
 
 def test_readline():

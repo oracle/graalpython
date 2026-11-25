@@ -816,6 +816,8 @@ class DecimalSignalDictTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             flags == values
 
+    @unittest.skipUnless(sys.implementation.name == 'graalpy',
+                         'GraalPy keeps the context alive; CPython invalidates orphaned signal dicts')
     def test_ownership(self):
         flags = self.ctx.flags
         del self.ctx
