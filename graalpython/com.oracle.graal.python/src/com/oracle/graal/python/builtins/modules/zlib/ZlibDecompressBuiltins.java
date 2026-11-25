@@ -75,9 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -259,15 +257,11 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         PBytes doit(VirtualFrame frame, JavaDecompress self, int length,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toBytes) {
-            byte[] res;
-            try {
-                byte[] bytes = toBytes.execute(self.getUnconsumedTail());
-                res = self.decompress(frame, bytes, bytes.length, 0, length, this, toBytes);
-            } catch (PException e) {
-                // CPython ignores errors here
-                res = PythonUtils.EMPTY_BYTE_ARRAY;
+            byte[] bytes = toBytes.execute(self.getUnconsumedTail());
+            byte[] res = self.decompress(frame, bytes, bytes.length, 0, length, this, toBytes);
+            if (self.isEof()) {
+                self.setUninitialized();
             }
-            self.setUninitialized();
             return PFactory.createBytes(language, res);
         }
 

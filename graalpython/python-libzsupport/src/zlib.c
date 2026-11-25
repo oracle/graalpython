@@ -138,7 +138,7 @@
     #define END_TIME(zst)
 #endif
 
-// The ref_count is important for `copy` as we 
+// The ref_count is important for `copy` as we
 // share off heap storage between native objects.
 typedef struct
 {
@@ -225,7 +225,7 @@ static void* zlib_allocate(voidpf ctx, uInt items, uInt size)
 {
     void *m = malloc((size_t)items * (size_t)size);
     LOG_FINER("malloc(address: %p, items: %u, size: %u)\n", m, items, size);
-    return m; 
+    return m;
 }
 
 static void zlib_deallocate(voidpf ctx, void *ptr)
@@ -261,7 +261,7 @@ static off_heap_buffer* zlib_create_copy_buffer(Byte *src, size_t len) {
     if (dest && len > 0) {
         memcpy(dest->buf, src, len);
     }
-    return dest; 
+    return dest;
 }
 
 static void zlib_release_buffer(off_heap_buffer *o) {
@@ -563,7 +563,7 @@ int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t bu
     ssize_t ibuflen = in_len, obuflen = buf_size;
 
     zst->zst.next_in = in;
-    
+
     err = deflateInit2(&zst->zst, level, DEFLATED, wbits, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY);
     if (err != Z_OK) {
         zst->error_function = DEFLATE_INIT_ERROR;
@@ -626,7 +626,7 @@ int zlib_inflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t bu
     ssize_t ibuflen = in_len, obuflen = buf_size;
 
     zst->zst.next_in = in;
-    
+
     err = inflateInit2(&zst->zst, wbits);
     if (err != Z_OK) {
         zst->error_function = INFLATE_INIT_ERROR;
@@ -656,8 +656,8 @@ int zlib_inflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t bu
             err = inflate(&zst->zst, flush);
 
             switch (err) {
-                case Z_OK:           
-                case Z_BUF_ERROR:    
+                case Z_OK:
+                case Z_BUF_ERROR:
                 case Z_STREAM_END:
                     break;
                 default:
@@ -694,9 +694,9 @@ int zlib_inflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t bu
 /************************************************
  *               Compress Object                *
  ************************************************/
-int zlib_Compress_init(zlib_stream *zst, 
-                        int level, int method, 
-                        int wbits, int memLevel, 
+int zlib_Compress_init(zlib_stream *zst,
+                        int level, int method,
+                        int wbits, int memLevel,
                         int strategy, Byte *dict, size_t dict_len) {
     LOG_INFO("zlib_Compress_init(%p)\n", zst);
     int err = deflateInit2(&zst->zst, level, method, wbits, memLevel, strategy);
@@ -717,9 +717,9 @@ int zlib_Compress_init(zlib_stream *zst,
     }
     return Z_OK;
 }
-int zlib_Compress_init_no_dict(zlib_stream *zst, 
-                        int level, int method, 
-                        int wbits, int memLevel, 
+int zlib_Compress_init_no_dict(zlib_stream *zst,
+                        int level, int method,
+                        int wbits, int memLevel,
                         int strategy) {
     return zlib_Compress_init(zst, level, method, wbits, memLevel, strategy, NULL, 0);
 }
@@ -773,7 +773,7 @@ int zlib_Compress_flush(zlib_stream *zst, Byte *in, ssize_t buf_size, int mode) 
     /* Flushing with Z_NO_FLUSH is a no-op, so there's no point in
        doing any work at all; just return an empty string. */
     // (mq) this should be handled in the java side
-    assert (mode != Z_NO_FLUSH); 
+    assert (mode != Z_NO_FLUSH);
 
     if(zst->zst.next_in) {
         zst->zst.next_in = in + zst->comp->next_in_index;
@@ -847,7 +847,7 @@ int zlib_Compress_copy(zlib_stream *zst, zlib_stream *new_copy) {
  ************************************************/
 int zlib_Decompress_init(zlib_stream *zst, int wbits, Byte *dict, size_t dict_len) {
     LOG_INFO("zlib_Decompress_init(%p)\n", zst);
-    
+
     int err = inflateInit2(&zst->zst, wbits);
     if (err != Z_OK) {
         zst->error_function = INFLATE_OBJ_ERROR;
@@ -896,6 +896,7 @@ static int save_unconsumed_input(zlib_stream *zst, Byte *in, size_t in_len, int 
             memcpy(new_data->buf + old_size, zst->zst.next_in, left_size);
             zlib_release_buffer(zst->comp->unused_data);
             zst->comp->unused_data = new_data;
+            zst->zst.next_in += left_size;
             zst->zst.avail_in = 0;
         }
     }
@@ -920,7 +921,7 @@ static int save_unconsumed_input(zlib_stream *zst, Byte *in, size_t in_len, int 
 int zlib_Decompress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, ssize_t max_length) {
     LOG_INFO("zlib_Decompress_obj(%p, in_len: %zd, buf_size: %zd, max_length: %zd)\n", zst, in_len, buf_size, max_length);
     clear_output(zst);
-    
+
     int err = Z_OK, serr;
     ssize_t ibuflen = in_len, obuflen = buf_size, hard_limit;
     zst->zst.next_in = in;
@@ -963,8 +964,8 @@ int zlib_Decompress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_
             LOG_INFO("inflate(&zst->zst, Z_SYNC_FLUSH) -> %d\n", err);
 
             switch (err) {
-                case Z_OK:           
-                case Z_BUF_ERROR:    
+                case Z_OK:
+                case Z_BUF_ERROR:
                 case Z_STREAM_END:
                     break;
                 default:
@@ -1046,7 +1047,7 @@ int zlib_Decompress_flush(zlib_stream *zst, ssize_t length) {
 
             switch (err) {
                 case Z_OK:
-                case Z_BUF_ERROR:    
+                case Z_BUF_ERROR:
                 case Z_STREAM_END:
                     break;
                 default:
@@ -1086,6 +1087,10 @@ int zlib_Decompress_flush(zlib_stream *zst, ssize_t length) {
             error_occurred(zst, INFLATE_END_ERROR);
             return err;
         }
+    }
+    else if (err != Z_OK && err != Z_BUF_ERROR) {
+        error_occurred(zst, INFLATE_ERROR);
+        return err;
     }
     if (zst->output->size) {
         zst->output_size = zst->zst.next_out - zst->output->buf;
