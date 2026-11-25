@@ -42,6 +42,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from zipfile import ZipFile
 
 from tests.util import skip_if_sandboxed
 
@@ -68,7 +69,9 @@ class RepackBundledWheelsTest(unittest.TestCase):
             )
             for repacked in output_dir.glob("*.whl"):
                 with self.subTest(wheel=repacked.name):
-                    self.assertTrue(
-                        repacked.read_bytes() == (bundled_dir / repacked.name).read_bytes(),
-                        f"{repacked.name} differs from the wheel rebuilt from the pinned source and patch",
-                    )
+                    # Compression output can differ between zlib implementations.
+                    with ZipFile(repacked) as rebuilt, ZipFile(bundled_dir / repacked.name) as bundled:
+                        self.assertEqual(sorted(rebuilt.namelist()), sorted(bundled.namelist()))
+                        for name in rebuilt.namelist():
+                            with self.subTest(entry=name):
+                                self.assertEqual(rebuilt.read(name), bundled.read(name))
