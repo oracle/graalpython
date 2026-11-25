@@ -119,6 +119,10 @@ class BaseCompressTestCase(object):
 
 class CompressTests(BaseCompressTestCase, unittest.TestCase):
     # Test compression in one go (whole message compression)
+    def test_empty_raw_stream(self):
+        self.assertEqual(zlib.decompress(b'\x03\x00', -zlib.MAX_WBITS), b'')
+        self.assertRaises(zlib.error, zlib.decompress, b'\x03', -zlib.MAX_WBITS)
+
     def test_speech(self):
         x = zlib.compress(HAMLET_SCENE)
         self.assertEqual(zlib.decompress(x), HAMLET_SCENE)

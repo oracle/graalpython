@@ -437,7 +437,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             }
             while (!stream.inflater.finished()) {
                 int howmany = stream.inflater.inflate(resultArray);
-                if (howmany == 0 && stream.inflater.needsInput()) {
+                if (howmany == 0 && stream.inflater.needsInput() && !stream.inflater.finished()) {
                     throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
                 }
                 updateGZIPCrc(stream, resultArray, howmany);
