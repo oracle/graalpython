@@ -342,6 +342,8 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         """))
 
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[:2] == (3, 13),
+                     "CPython 3.13.15+ (but not 3.14+) has a bug that it invokes PyREPL twice in inspect mode")
     def test_inspect_flag():
         with tempfile.NamedTemporaryFile('w') as f:
             f.write('a = 1\n')
@@ -352,6 +354,8 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             """), python_args=['-i', f.name], ignore_preamble=False)
 
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[:2] == (3, 13),
+                     "CPython 3.13.15+ (but not 3.14+) has a bug that it invokes PyREPL twice in inspect mode")
     def test_inspect_flag_repl_selection():
         for initial_value, code, flags, repl in [
             ('', "os.environ['PYTHON_BASIC_REPL'] = '1'", [], 'basic'),
@@ -372,6 +376,8 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                           ])
 
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[:2] == (3, 13),
+                     "CPython 3.13.15+ (but not 3.14+) has a bug that it invokes PyREPL twice in inspect mode")
     def test_inspect_flag_exit():
         with tempfile.NamedTemporaryFile('w') as f:
             f.write('a = 1\nimport sys\nsys.exit(1)\n')
