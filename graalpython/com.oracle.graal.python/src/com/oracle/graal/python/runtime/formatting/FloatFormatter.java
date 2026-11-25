@@ -7,6 +7,7 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.specified;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -15,6 +16,8 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -53,6 +56,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
      */
     public FloatFormatter(FormattingBuffer result, Spec spec, boolean addDot0, Node raisingNode) {
         super(result, spec, raisingNode);
+        checkPrecision(spec, raisingNode);
         boolean reprLike = spec.type == 'r' || spec.type == Spec.NONE && !specified(spec.precision);
         if (spec.alternate && reprLike) {
             // In repr-like formats, alternate form only preserves the decimal point. A regular
@@ -83,7 +87,14 @@ public class FloatFormatter extends InternalFormat.Formatter {
     }
 
     public FloatFormatter(Spec spec, Node raisingNode) {
-        this(new FormattingBuffer.StringFormattingBuffer(size(spec)), spec, raisingNode);
+        this(new FormattingBuffer.StringFormattingBuffer(size(spec, raisingNode)), spec, raisingNode);
+    }
+
+    private static void checkPrecision(Spec spec, Node raisingNode) {
+        // Match PyOS_double_to_string(), leaving room for buffer-size arithmetic.
+        if (spec.precision > Integer.MAX_VALUE - 1024) {
+            throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.PRECISION_TOO_BIG);
+        }
     }
 
     /**
@@ -92,7 +103,8 @@ public class FloatFormatter extends InternalFormat.Formatter {
      *
      * @param spec parsed conversion specification
      */
-    public static int size(Spec spec) {
+    private static int size(Spec spec, Node raisingNode) {
+        checkPrecision(spec, raisingNode);
         // Rule of thumb used here (no right answer):
         // in e format each float occupies: (p-1) + len("+1.e+300") = p+7;
         // in f format each float occupies: p + len("1,000,000.%") = p+11;
