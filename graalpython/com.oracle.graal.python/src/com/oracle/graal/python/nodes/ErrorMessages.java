@@ -330,6 +330,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %P");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
     public static final TruffleString EXPECTED_TYPING_SUBST_OF_T_OBJECTS_TO_RETURN_TUPLE_NOT_T = tsLiteral("expected __typing_subst__ of %T objects to return a tuple, not %T");
+    public static final TruffleString ARGUMENT_S_WITH_TYPING_SUBST_NOT_FOUND_IN_PARAMETERS = tsLiteral("argument %s with __typing_subst__ was not found in __parameters__");
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");
     public static final TruffleString EXPECTED_S_P_FOUND = tsLiteral("expected %s, %p found");
     public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected '%s' after conversion specifier");
