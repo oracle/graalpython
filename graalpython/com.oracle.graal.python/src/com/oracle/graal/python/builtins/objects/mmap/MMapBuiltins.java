@@ -500,11 +500,6 @@ public final class MMapBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_INDICES_MUST_BE_INTEGER);
             }
             long idx = asSizeNode.executeExact(frame, inliningTarget, idxObj, PythonBuiltinClassType.IndexError);
-            long len = self.getLength();
-            idx = idx < 0 ? idx + len : idx;
-            if (idx < 0 || idx >= len) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
-            }
             if (valueObj == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
             }
@@ -515,6 +510,13 @@ public final class MMapBuiltins extends PythonBuiltins {
             if (value < 0 || value > 255) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_ITEM_VALUE_MUST_BE_IN_RANGE);
             }
+            // Index and value conversion can close or resize the mapping.
+            if (self.isClosed()) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            long len = self.getLength();
+            idx = idx < 0 ? idx + len : idx;
+            checkBounds(inliningTarget, raiseNode, MMAP_INDEX_OUT_OF_RANGE, idx, len);
             try {
                 context.getPosixSupport().mmapWriteByte(self.getPosixSupportHandle(), idx, (byte) value);
             } catch (PosixException ex) {
@@ -541,18 +543,23 @@ public final class MMapBuiltins extends PythonBuiltins {
             if (self.isReadonly()) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
             }
-            int len;
-            try {
-                len = PInt.intValueExact(self.getLength());
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError);
-            }
-            SliceInfo info = adjustIndices.execute(inliningTarget, len, sliceUnpack.execute(inliningTarget, slice));
+            SliceInfo unpacked = sliceUnpack.execute(inliningTarget, slice);
             if (valueObj == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION);
             }
             Object buffer = getBuffer.executeReadonly(frame, valueObj);
             try {
+                // Unpacking the slice and acquiring the buffer can close or resize the mapping.
+                if (self.isClosed()) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+                }
+                int len;
+                try {
+                    len = PInt.intValueExact(self.getLength());
+                } catch (OverflowException e) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError);
+                }
+                SliceInfo info = adjustIndices.execute(inliningTarget, len, unpacked);
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 if (info.sliceLength != bufferLen) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE);
