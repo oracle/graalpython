@@ -74,7 +74,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.IsKeysSubset;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetPythonObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
@@ -500,7 +500,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         @Specialization
         static Object doPSet(Node inliningTarget, PSet key,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached GetObjectSlotsNode getSlotsNode) {
+                        @Cached GetPythonObjectSlotsNode getSlotsNode) {
             // This follows the logic in CPython's setobject.c:set_contains
             // TODO: CPython first tries the search and only if it gets back TypeError and the key
             // type is set, then it transforms it to frozenset. The issue is that the TypeError can

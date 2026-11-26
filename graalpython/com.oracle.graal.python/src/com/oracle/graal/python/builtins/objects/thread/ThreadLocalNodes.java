@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetPythonObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -66,7 +66,7 @@ public abstract class ThreadLocalNodes {
         static PDict get(VirtualFrame frame, PThreadLocal self,
                         @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile create,
-                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached GetPythonObjectSlotsNode getSlots,
                         @Cached CallSlotTpInitNode callInit) {
             PDict dict = self.getThreadLocalDict();
             if (dict == null) {

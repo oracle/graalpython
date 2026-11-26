@@ -169,6 +169,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetObjectSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
@@ -214,6 +215,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -2089,6 +2091,19 @@ public record TpSlots(TpSlot nb_bool, //
         @Specialization
         static TpSlots doIt(Node inliningTarget, Object pythonObject,
                         @Cached GetClassNode getClassNode,
+                        @Cached GetCachedTpSlotsNode getSlotsNode) {
+            return getSlotsNode.execute(inliningTarget, getClassNode.execute(inliningTarget, pythonObject));
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetPythonObjectSlotsNode extends Node {
+        public abstract TpSlots execute(Node inliningTarget, PythonObject pythonObject);
+
+        @Specialization
+        static TpSlots doIt(Node inliningTarget, PythonObject pythonObject,
+                        @Cached GetPythonObjectClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlotsNode) {
             return getSlotsNode.execute(inliningTarget, getClassNode.execute(inliningTarget, pythonObject));
         }

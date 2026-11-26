@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltinsClinicP
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -130,11 +130,11 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         @Specialization()
         static Object getTuple(VirtualFrame frame, PTupleGetter self, PTuple instance, @SuppressWarnings("unused") Object owner,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyTupleSizeNode sizeNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
             final int index = self.getIndex();
-            if (index >= sizeNode.execute(frame, inliningTarget, instance)) {
+            if (index < 0 || index >= sizeNode.execute(inliningTarget, instance)) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
             }
             return getItemNode.execute(frame, instance, index);

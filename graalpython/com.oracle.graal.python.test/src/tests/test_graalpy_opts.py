@@ -594,5 +594,369 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_forced_uncach
             assert tester(MyDict()) == 42
 
 
+    @skipUnlessSingleContext
+    def test_get_attr_cached_object_or_module_class_value():
+        class Base:
+            attr = []
+
+        class Child(Base):
+            pass
+
+        def tester(obj):
+            return obj.attr
+
+        obj = Child()
+        for _ in range(5):
+            assert tester(obj) is Base.attr
+        assert_contains_bytecode(tester, "GetAttribute$CachedObjectOrModule")
+        Base.attr = "changed"
+        assert tester(obj) == "changed"
+        obj.attr = "instance"
+        assert tester(obj) == "instance"
+        del obj.attr
+        assert tester(obj) == "changed"
+        Child.__getattr__ = lambda self, name: "fallback"
+        del Base.attr
+        assert tester(obj) == "fallback"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_cached_object_or_module_descriptor_slots():
+        class Descriptor:
+            def __get__(self, instance, owner):
+                return instance, owner
+
+        descriptor = Descriptor()
+
+        class K:
+            attr = descriptor
+
+        def tester(obj):
+            return obj.attr
+
+        obj = K()
+        for _ in range(5):
+            assert tester(obj) == (obj, K)
+        assert_contains_bytecode(tester, "GetAttribute$CachedObjectOrModule")
+        obj.attr = "instance"
+        assert tester(obj) == "instance"
+        Descriptor.__set__ = lambda self, instance, value: None
+        assert tester(obj) == (obj, K)
+        del Descriptor.__get__
+        assert tester(obj) == "instance"
+        del Descriptor.__set__
+        del obj.attr
+        assert tester(obj) is descriptor
+        Descriptor.__get__ = lambda self, instance, owner: "new get"
+        assert tester(obj) == "new get"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_instance_five_shapes():
+        class K:
+            pass
+
+        def tester(obj):
+            return obj.attr
+
+        def tester_int(obj):
+            return obj.attr + 1
+
+        objects = []
+        for i in range(5):
+            obj = K()
+            setattr(obj, "other" + str(i), None)
+            obj.attr = str(i)
+            objects.append(obj)
+        for _ in range(5):
+            for i, obj in enumerate(objects):
+                assert tester(obj) == str(i)
+        assert_contains_bytecode(tester, "GetAttribute$InstanceValue")
+        class IntK:
+            pass
+
+        int_objects = []
+        for i in range(5):
+            obj = IntK()
+            setattr(obj, "other" + str(i), None)
+            obj.attr = i
+            int_objects.append(obj)
+        for _ in range(5):
+            for i, obj in enumerate(int_objects):
+                assert tester_int(obj) == i + 1
+        assert_contains_bytecode(tester_int, "GetAttribute$InstanceValue$int")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_cached_object_or_module_five_shapes():
+        class K:
+            attr = []
+
+        def tester(obj):
+            return obj.attr
+
+        objects = []
+        for i in range(5):
+            obj = K()
+            setattr(obj, "other" + str(i), None)
+            objects.append(obj)
+        for _ in range(5):
+            for obj in objects:
+                assert tester(obj) is K.attr
+        assert_contains_bytecode(tester, "GetAttribute$CachedObjectOrModule")
+        objects[0].attr = "instance"
+        assert tester(objects[0]) == "instance"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_generic_beyond_fast_cache():
+        class K:
+            pass
+
+        def tester(obj):
+            return obj.attr
+
+        objects = []
+        # Six shapes overflow both five-entry caches.
+        for i in range(6):
+            obj = K()
+            setattr(obj, "other" + str(i), None)
+            obj.attr = str(i)
+            objects.append(obj)
+        for _ in range(5):
+            for i, obj in enumerate(objects):
+                assert tester(obj) == str(i)
+        assert_contains_bytecode(tester, "GetAttribute$It")
+        objects[0].__dict__ = {"attr": "dictionary"}
+        assert tester(objects[0]) == "dictionary"
+        del objects[1].attr
+        with unittest.TestCase().assertRaises(AttributeError):
+            tester(objects[1])
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_cached_object_or_module_mixed_descriptors():
+        class Plain:
+            attr = []
+
+        class Property:
+            attr = property(lambda self: "property")
+
+        class Slot:
+            __slots__ = ("attr",)
+
+        def tester(obj):
+            return obj.attr
+
+        slot = Slot()
+        slot.attr = "slot"
+        objects = (Plain(), Property(), slot)
+        for _ in range(5):
+            for obj, expected in zip(objects, (Plain.attr, "property", "slot")):
+                assert tester(obj) == expected
+        assert_contains_bytecode(tester, "GetAttribute$CachedObjectOrModule")
+        Property.attr = property(lambda self: "changed")
+        assert tester(objects[1]) == "changed"
+        del slot.attr
+        with unittest.TestCase().assertRaises(AttributeError):
+            tester(slot)
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_cached_object_or_module_module_descriptor_error():
+        class Descriptor:
+            def __get__(self, instance, owner):
+                raise AttributeError("descriptor failure")
+
+        class Module(types.ModuleType):
+            attr = Descriptor()
+
+        module = Module("cached_module")
+        module.__getattr__ = lambda name: "module fallback: " + name
+
+        def tester(obj):
+            return obj.attr
+
+        for _ in range(5):
+            assert tester(module) == "module fallback: attr"
+        assert_contains_bytecode(tester, "GetAttribute$CachedObjectOrModule")
+        del module.__getattr__
+        with unittest.TestCase().assertRaisesRegex(AttributeError, "attr"):
+            tester(module)
+
+
+    def test_get_attr_quickening_getset_descriptor():
+        def tester(obj):
+            return obj.real
+
+        for _ in range(5):
+            assert tester(1 + 2j) == 1.0
+        if __graalpython__.is_single_context:
+            assert_contains_bytecode(tester, "GetAttribute$GetSetDescriptor")
+        else:
+            assert_contains_bytecode(tester, "GetAttribute$It")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_generic_rejects_custom_getattribute():
+        class K:
+            attr = "class"
+
+            def __getattribute__(self, name):
+                return "custom"
+
+        def tester(obj):
+            return obj.attr
+
+        for _ in range(5):
+            assert tester(K()) == "custom"
+        assert_contains_bytecode(tester, "GetAttribute$It")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_getset_descriptor_inherited():
+        class K(complex):
+            attr = complex.real
+
+        def tester(obj):
+            return obj.attr
+
+        obj = K(1, 2)
+        obj.__dict__["attr"] = "shadow"
+        for _ in range(5):
+            assert tester(obj) == 1.0
+        assert_contains_bytecode(tester, "GetAttribute$GetSetDescriptor")
+        K.attr = property(lambda self: "changed")
+        assert tester(obj) == "changed"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_getset_descriptor_owner_check():
+        class K:
+            attr = complex.real
+
+        def tester(obj):
+            return obj.attr
+
+        for _ in range(5):
+            with unittest.TestCase().assertRaises(TypeError):
+                tester(K())
+        assert_contains_bytecode(tester, "GetAttribute$CachedObjectOrModule")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_getset_descriptor_custom_getattribute():
+        class K(complex):
+            def __getattribute__(self, name):
+                return "custom"
+
+        def tester(obj):
+            return obj.real
+
+        for _ in range(5):
+            assert tester(K(1, 2)) == "custom"
+        assert_contains_bytecode(tester, "GetAttribute$It")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_tuple_getter():
+        from collections import namedtuple
+        Pair = namedtuple("Pair", "first second")
+
+        class K(Pair):
+            pass
+
+        def tester(obj):
+            return obj.first
+
+        obj = K("first", "second")
+        obj.__dict__["first"] = "shadow"
+        for _ in range(5):
+            assert tester(obj) == "first"
+        assert_contains_bytecode(tester, "GetAttribute$TupleGetter")
+        K.first = property(lambda self: "changed")
+        assert tester(obj) == "changed"
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_tuple_getter_bounds_and_len():
+        from _collections import _tuplegetter
+
+        class K(tuple):
+            attr = _tuplegetter(1, "doc")
+
+        def tester(obj):
+            return obj.attr
+
+        for _ in range(5):
+            assert tester(K((1, 2))) == 2
+        assert_contains_bytecode(tester, "GetAttribute$TupleGetter")
+        with unittest.TestCase().assertRaises(IndexError):
+            tester(K((1,)))
+        K.__len__ = lambda self: 1
+        assert tester(K((1, 2))) == 2
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_tuple_getter_negative_index():
+        from _collections import _tuplegetter
+
+        class K(tuple):
+            attr = _tuplegetter(-1, "doc")
+
+            def __getitem__(self, index):
+                raise AssertionError("tuple getter must bypass __getitem__")
+
+        def tester(obj):
+            return obj.attr
+
+        for _ in range(5):
+            with unittest.TestCase().assertRaises(IndexError):
+                tester(K((1, 2)))
+        assert_contains_bytecode(tester, "GetAttribute$TupleGetter")
+        with unittest.TestCase().assertRaises(IndexError):
+            tester(K(()))
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_tuple_getter_overridden_len():
+        from _collections import _tuplegetter
+
+        class K(tuple):
+            attr = _tuplegetter(1, "doc")
+
+            def __len__(self):
+                return 1
+
+        def tester(obj):
+            return obj.attr
+
+        obj = K((1, 2))
+        for _ in range(5):
+            assert tester(obj) == 2
+        assert_contains_bytecode(tester, "GetAttribute$TupleGetter")
+
+
+    @skipUnlessSingleContext
+    def test_get_attr_quickening_tuple_getter_does_not_call_len_or_getitem():
+        from collections import namedtuple
+        Pair = namedtuple("Pair", "first second")
+
+        class K(Pair):
+            def __len__(self):
+                raise AssertionError("tuple getter must bypass __len__")
+
+            def __getitem__(self, index):
+                raise AssertionError("tuple getter must bypass __getitem__")
+
+        def tester(obj):
+            return obj.second
+
+        obj = K("first", "second")
+        for _ in range(5):
+            assert tester(obj) == "second"
+        assert_contains_bytecode(tester, "GetAttribute$TupleGetter")
+
+
 if __name__ == '__main__':
     unittest.main()
