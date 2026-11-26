@@ -253,3 +253,59 @@ def test_iter():
         l.append(i)
 
     assert l == [b'\x02', b'\x03', b'\x04']
+
+
+def test_move():
+    m = mmap.mmap(-1, 6)
+    m[:] = b"abcdef"
+    assert m.move(1, 0, 4) is None
+    assert m[:] == b"aabcdf"
+    m[:] = b"abcdef"
+    m.move(0, 2, 4)
+    assert m[:] == b"cdefef"
+    m.move(3, 3, 3)
+    m.move(6, 0, 0)
+    assert m[:] == b"cdefef"
+    for args in [(-1, 0, 1), (0, -1, 1), (0, 0, -1), (0, 3, 4), (3, 0, 4), (7, 0, 0)]:
+        try:
+            m.move(*args)
+        except ValueError:
+            pass
+        else:
+            assert False, f"move{args} should raise ValueError"
+    m.close()
+    try:
+        m.move(0, 0, 1)
+    except ValueError:
+        pass
+    else:
+        assert False, "move on a closed mmap should raise ValueError"
+
+
+def test_move_large_overlapping():
+    # larger than the copy buffer used by MoveNode, to exercise the chunked copy in both directions
+    size = 64 * 1024 * 3 + 17
+    data = bytes(i % 251 for i in range(size))
+    for dest, src in [(1, 0), (0, 1), (1000, 3), (3, 1000)]:
+        count = size - max(dest, src)
+        m = mmap.mmap(-1, size)
+        m[:] = data
+        m.move(dest, src, count)
+        assert m[:] == data[:dest] + data[src:src + count] + data[dest + count:]
+        m.close()
+
+
+def test_move_readonly():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "move_readonly")
+        with open(path, "wb") as f:
+            f.write(b"abcdef")
+        with open(path, "rb") as f:
+            with mmap.mmap(f.fileno(), 6, access=mmap.ACCESS_READ) as m:
+                try:
+                    m.move(1, 0, 4)
+                except TypeError:
+                    pass
+                else:
+                    assert False, "move on a readonly mmap should raise TypeError"
+                assert m[:] == b"abcdef"

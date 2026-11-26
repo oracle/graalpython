@@ -53,6 +53,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_INDEX_OUT_OF_RANG
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_INDICES_MUST_BE_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_ITEM_VALUE_MUST_BE_AN_INT;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_ITEM_VALUE_MUST_BE_IN_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_MOVE_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FindNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FlushNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.MMapNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.MoveNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.SeekNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.WriteNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
@@ -829,6 +831,75 @@ public final class MMapBuiltins extends PythonBuiltins {
             } finally {
                 releaseBuffer.execute(frame, dataBuffer);
             }
+        }
+    }
+
+    @Builtin(name = "move", minNumOfPositionalArgs = 4, parameterNames = {"$self", "dest", "src", "count"})
+    @ArgumentClinic(name = "dest", conversion = ClinicConversion.LongIndex)
+    @ArgumentClinic(name = "src", conversion = ClinicConversion.LongIndex)
+    @ArgumentClinic(name = "count", conversion = ClinicConversion.LongIndex)
+    @GenerateNodeFactory
+    abstract static class MoveNode extends PythonQuaternaryClinicBuiltinNode {
+        private static final int BUFFER_SIZE = 64 * 1024;
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MoveNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object move(VirtualFrame frame, PMMap self, long dest, long src, long count,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (self.isClosed()) {
+                throw raiseNode.raise(inliningTarget, ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            if (!self.isWriteable()) {
+                throw raiseNode.raise(inliningTarget, TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+            }
+            long len = self.getLength();
+            if (dest < 0 || src < 0 || count < 0 || len - dest < count || len - src < count) {
+                throw raiseNode.raise(inliningTarget, ValueError, MMAP_MOVE_OUT_OF_RANGE);
+            }
+            if (count == 0 || dest == src) {
+                return PNone.NONE;
+            }
+            PosixSupport posixSupport = context.getPosixSupport();
+            Object handle = self.getPosixSupportHandle();
+            /*
+             * Equivalent of memmove: copy through an intermediate buffer in chunks. If the
+             * destination is after the source, copy from the end so that overlapping source bytes
+             * are read before they are overwritten.
+             */
+            byte[] buffer = new byte[(int) Math.min(count, BUFFER_SIZE)];
+            try {
+                if (dest < src) {
+                    for (long off = 0; off < count; off += buffer.length) {
+                        int n = (int) Math.min(buffer.length, count - off);
+                        copyChunk(inliningTarget, posixSupport, handle, src + off, dest + off, buffer, n, raiseNode);
+                    }
+                } else {
+                    for (long end = count; end > 0; end -= buffer.length) {
+                        int n = (int) Math.min(buffer.length, end);
+                        long off = end - n;
+                        copyChunk(inliningTarget, posixSupport, handle, src + off, dest + off, buffer, n, raiseNode);
+                    }
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        private static void copyChunk(Node inliningTarget, PosixSupport posixSupport, Object handle, long from, long to, byte[] buffer, int n, PRaiseNode raiseNode)
+                        throws PosixException {
+            int nread = posixSupport.mmapReadBytes(handle, from, buffer, n);
+            if (nread != n) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
+            }
+            posixSupport.mmapWriteBytes(handle, to, buffer, n);
         }
     }
 

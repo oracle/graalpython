@@ -1108,6 +1108,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_AN_INT = tsLiteral("mmap item value must be an int");
     public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_IN_RANGE = tsLiteral("mmap item value must be in range(0, 256)");
     public static final TruffleString MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE = tsLiteral("mmap slice assignment is wrong size");
+    public static final TruffleString MMAP_MOVE_OUT_OF_RANGE = tsLiteral("source, destination, or count out of range");
 
     // zlib errors
     public static final TruffleString WHILE_FLUSHING = tsLiteral("while flushing");
