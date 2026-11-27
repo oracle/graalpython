@@ -258,7 +258,7 @@ def has_low_variance(durations, durations_len):
 
 class BenchRunner(object):
     def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None,
-                 live_results=False, self_measurement=False):
+                 live_results=False, self_measurement=False, time_precision=3, score_mode="default", summary_only=False):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -279,6 +279,20 @@ class BenchRunner(object):
         self.startup = startup
         self.live_results = live_results
         self.self_measurement = self_measurement
+        if not isinstance(time_precision, int) or not 3 <= time_precision <= 12:
+            raise ValueError("time precision must be between 3 and 12 decimal places")
+        self.time_precision = time_precision
+        if score_mode not in ("default", "post-warmup-mean"):
+            raise ValueError("score must be default or post-warmup-mean")
+        if score_mode == "post-warmup-mean" and not 0 <= warmup < iterations:
+            raise ValueError("post-warmup-mean requires an explicit warmup count: 0 <= -w < -i")
+        self.score_mode = score_mode
+        self.score_warmup = warmup
+        if summary_only and score_mode != "post-warmup-mean":
+            raise ValueError("summary-only requires --score=post-warmup-mean")
+        if summary_only and live_results:
+            raise ValueError("summary-only cannot be combined with --live-results")
+        self.summary_only = summary_only
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -302,6 +316,8 @@ class BenchRunner(object):
             bench_module = types.ModuleType(name, bench_file)
             with _io.FileIO(bench_file, "r") as f:
                 bench_module.__file__ = bench_file
+                # Make the same compiler blackhole available inside benchmark loops.
+                bench_module.blackhole = blackhole
                 bench_module.ccompile = ccompile
                 bench_module.ensure_packages = ensure_packages
                 exec(compile(f.readall(), bench_file, "exec"), bench_module.__dict__)
@@ -339,10 +355,12 @@ class BenchRunner(object):
         self._call_attr(ATTR_SETUP, *args)
         print("### start benchmark ... ")
 
+        duration_format = "%%.%df" % self.time_precision
+
         def report_iteration(iteration, duration):
             d = duration / UNITS_PER_SECOND
-            duration_str = "%.3f" % d
-            if self._run_once:
+            duration_str = duration_format % d
+            if self._run_once and self.score_mode == "default":
                 print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
             else:
                 print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__,
@@ -357,10 +375,10 @@ class BenchRunner(object):
             cleanup = cleanup_attr
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
-        check_variance = statistics and os.environ.get("CI")
+        check_variance = statistics and os.environ.get("CI") and self.score_mode == "default"
         check_variance_threshold = 20 * UNITS_PER_SECOND
-        live_report = bool(os.environ.get("GRAALPY_BENCH_REPORT_LIVE", self.live_results))
-        if not live_report and not os.environ.get("CI"):
+        live_report = not self.summary_only and bool(os.environ.get("GRAALPY_BENCH_REPORT_LIVE", self.live_results))
+        if not live_report and not self.summary_only and not os.environ.get("CI"):
                 print("Note: export GRAALPY_BENCH_REPORT_LIVE or pass --live-results " +
                       "to print the results immediately after each iteration")
         durations = array.array('d', [0] * self.iterations)
@@ -402,7 +420,10 @@ class BenchRunner(object):
                         break
 
 
-        if not live_report:
+        # Keep every sample and the timed loop unchanged; only omit buffered output.
+        # mx turns iteration reports into individual result rows, which can make
+        # long warmup runs too large to upload. The SCORE line retains the mean.
+        if not live_report and not self.summary_only:
             for i in range(durations_len):
                 report_iteration(i, durations[i])
         durations = [d / UNITS_PER_SECOND for d in durations[:durations_len]]
@@ -414,6 +435,12 @@ class BenchRunner(object):
         print(_HRULE)
 
         # summary
+        if self.score_mode == "post-warmup-mean":
+            if len(durations) != self.iterations:
+                raise RuntimeError("post-warmup-mean requires all requested iterations to complete")
+            measured = durations[self.score_warmup:]
+            print("### SCORE name=%s, mode=post-warmup-mean, iterations=%d, duration=%.12f" %
+                  (self.bench_module.__name__, len(measured), sum(measured) / len(measured)))
         # We can do that only on Graalpython
         if report_startup:
             startup_s = get_seconds_since_startup(timestamps[self.startup[0] - 1])
@@ -448,7 +475,8 @@ class BenchRunner(object):
                 print("### NOTE: enable startup time snapshotting to increase accuracy.")
 
         print(_HRULE)
-        print("### RAW DURATIONS: %s" % str(durations))
+        if not self.summary_only:
+            print("### RAW DURATIONS: %s" % str(durations))
         print(_HRULE)
 
 
@@ -462,6 +490,9 @@ def run_benchmark(args):
     paths = []
     live_results = False
     self_measurement = False
+    time_precision = 3
+    score_mode = "default"
+    summary_only = False
 
     i = 0
     while i < len(args):
@@ -500,6 +531,12 @@ def run_benchmark(args):
             live_results = True
         elif arg == "--self-measurement":
             self_measurement = True
+        elif arg.startswith("--time-precision="):
+            time_precision = int(arg.split("=", 1)[1])
+        elif arg.startswith("--score="):
+            score_mode = arg.split("=", 1)[1]
+        elif arg == "--summary-only":
+            summary_only = True
 
         elif bench_file is None:
             bench_file = arg
@@ -528,7 +565,7 @@ def run_benchmark(args):
     if GRAALPYTHON:
         print(f"### using forced uncached interpreter: {getattr(__graalpython__, 'is_forced_uncached_interpreter', False)}")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, live_results=live_results, self_measurement=self_measurement).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, live_results=live_results, self_measurement=self_measurement, time_precision=time_precision, score_mode=score_mode, summary_only=summary_only).run()
 
 
 if __name__ == '__main__':

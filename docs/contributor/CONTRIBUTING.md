@@ -444,6 +444,24 @@ mx benchmark meso:nbody3 \
 For debugging native problems in benchmark runs, there's `BENCHMARK_DEBUG_ARGS` in `mx_graalpython_benchmark.py` to log more stuff for debugging, at the cost of performance.
 This is intended for focused reproducer runs on a branch.
 
+For long runs using `--score=post-warmup-mean`, pass `--summary-only` after the second `--`
+to omit per-iteration reports and the raw-duration dump. The harness still records every
+sample and reports the same post-warmup mean; mx uploads that score without the individual
+warmup rows. Summary-only mode requires post-warmup scoring and ignores the
+`GRAALPY_BENCH_REPORT_LIVE` environment variable. Passing `--live-results` explicitly
+with `--summary-only` is an error. For example, the [common-patterns suite](../../graalpython/com.oracle.graal.python.benchmarks/python/common-patterns/README.md)
+already supplies the scoring mode and benchmark-specific iteration counts:
+
+```bash
+mx --env native-ee benchmark common-patterns-graalpython:numeric-int \
+    -- --python-vm=graalpython --python-vm-config=default -- --summary-only
+```
+
+For the common-patterns suite, mx reports the `time` and per-iteration `warmup`
+duration metrics in microseconds (`metric.unit: "us"`), matching the JavaScript
+common-patterns suite. Harness output remains in seconds; mx converts durations
+when parsing results. Other suites retain their existing units.
+
 ### Java embedding benchmarks (JMH)
 
 `python-jmh:GRAALPYTHON_BENCH` runs the Java embedding benchmarks, including

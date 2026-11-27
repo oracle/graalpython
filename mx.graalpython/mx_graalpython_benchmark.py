@@ -190,6 +190,9 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
         return self._iterations if self._iterations is not None else requested_iterations
 
     def _override_iterations_args(self, args):
+        # Explicit post-warmup scoring requires the requested measurement interval on every VM.
+        if '--score=post-warmup-mean' in args:
+            return args
         _args = []
         i = 0
         while i < len(args):
@@ -992,6 +995,8 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def successPatterns(self):
         return [
+            re.compile(r"^### SCORE name=[a-zA-Z0-9._\-]+, mode=post-warmup-mean, "
+                       r"iterations=[0-9]+, duration=[0-9]+\.[0-9]+$", re.MULTILINE),
             re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
             re.compile(r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
         ]
@@ -1043,8 +1048,28 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = self.get_bench_name(benchmarks)
         arg = self.get_arg(self.runArgs(bm_suite_args), bench_name)
+        # Harness durations are seconds; publish common-patterns times in microseconds.
+        time_unit = "us" if self._name == 'common-patterns' else "s"
+        parse_time = (lambda value: float(value) * 1_000_000) if time_unit == "us" else float
 
         return [
+            # Explicit mean of every measured iteration after the specified warmup.
+            StdOutRule(
+                r"^### SCORE name=(?P<benchmark>[a-zA-Z0-9._\-]+), mode=post-warmup-mean, "
+                r"iterations=(?P<count>[0-9]+), duration=(?P<time>[0-9]+\.[0-9]+)$",
+                self.with_branch_and_commit_dict({
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "time",
+                    "metric.iteration": 0,
+                    "metric.average-over": ("<count>", int),
+                    "metric.type": "numeric",
+                    "metric.value": ("<time>", parse_time),
+                    "metric.unit": time_unit,
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                })
+            ),
             # warmup curves
             StdOutRule(
                 r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
@@ -1053,8 +1078,8 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "metric.name": "warmup",
                     "metric.iteration": ("<iteration>", int),
                     "metric.type": "numeric",
-                    "metric.value": ("<time>", float),
-                    "metric.unit": "s",
+                    "metric.value": ("<time>", parse_time),
+                    "metric.unit": time_unit,
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
@@ -1084,8 +1109,8 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "metric.name": "time",
                     "metric.iteration": 0,
                     "metric.type": "numeric",
-                    "metric.value": ("<time>", float),
-                    "metric.unit": "s",
+                    "metric.value": ("<time>", parse_time),
+                    "metric.unit": time_unit,
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
@@ -1108,7 +1133,10 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             self._checkup = True
             bm_suite_args.remove('--checkup')
         results = super().run(benchmarks, bm_suite_args)
-        self.addAverageAcrossLatestResults(results)
+        scored_benchmarks = {r['benchmark'] for r in results if r['metric.name'] == 'time'}
+        unscored_results = [r for r in results if r['benchmark'] not in scored_benchmarks]
+        self.addAverageAcrossLatestResults(unscored_results)
+        results.extend(r for r in unscored_results if r['metric.name'] == 'time')
         return results
 
     def defaultIterations(self, bm):
@@ -1132,7 +1160,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             if arg.startswith("-i"):
                 if len(run_args) >= i and run_args[i + 1] == "-1":
                     pass
-                elif self._checkup and len(run_args) >= i:
+                elif self._checkup and len(run_args) >= i and '--score=post-warmup-mean' not in run_args:
                     iterations = int(run_args[i + 1]) * 2
                     remaining = ["-i", str(iterations)] + run_args[i+2:]
                     break
@@ -1251,6 +1279,14 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
         vm_args += self.vmArgs(bmSuiteArgs)
         run_args = self.runArgs(bmSuiteArgs)
 
+        # Accept scoring/reporting options in both bench parameters and command-line overrides.
+        # Keep them among the harness arguments, even when they precede -i on the command line.
+        default_args = self._benchmarks[benchmark]
+        score_options = [arg for arg in default_args + run_args if arg.startswith('--score=')]
+        score_option = score_options[-1] if score_options else None
+        summary_only = '--summary-only' in default_args + run_args
+        run_args = [arg for arg in run_args if not arg.startswith('--score=') and arg != '--summary-only']
+
         cmd_args = [self._harness_path]
 
         # resolve the harness python path (for external python modules, that may be required by the benchmark)
@@ -1268,9 +1304,15 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
         cmd_args += [join(self._bench_path[benchmark], "{}.py".format(benchmark))]
 
         if "-i" not in run_args:
-            run_args += self._benchmarks[benchmark]
-            num_iterations = self.defaultIterations(benchmark) + self.getExtraIterationCount(self.defaultIterations(benchmark))
+            run_args += [arg for arg in default_args if not arg.startswith('--score=') and arg != '--summary-only']
+            num_iterations = self.defaultIterations(benchmark)
+            if score_option != '--score=post-warmup-mean':
+                num_iterations += self.getExtraIterationCount(num_iterations)
             run_args[run_args.index("-i") + 1] = str(num_iterations)
+        if score_option:
+            run_args.append(score_option)
+        if summary_only:
+            run_args.append('--summary-only')
         vm_options, run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
         return vm_options + vm_args + cmd_args

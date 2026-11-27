@@ -33,6 +33,7 @@ _BASE_PATH = os.path.join(_graalpython_suite.dir, 'graalpython', 'com.oracle.gra
 HARNESS_PATH = os.path.join(_BASE_PATH, 'harness.py')
 
 PATH_BENCH = os.path.join(_BASE_PATH, 'com.oracle.graal.python.benchmarks')
+PATH_COMMON_PATTERNS = os.path.join(_BASE_PATH, 'common-patterns')
 PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
@@ -59,6 +60,76 @@ ITER_5 = ['-i', '5']
 ITER_3 = ['-i', '3']
 ITER_1 = ['-i', '1']
 WARMUP_2 = ['-w', '2']
+
+# Paired cross-language benchmarks, run separately from the Python micro suite.
+# See graalpython/com.oracle.graal.python.benchmarks/python/common-patterns/README.md for the workloads and controls.
+COMMON_PATTERNS_BENCHMARKS = {
+    # Object comparison reuses the integer-sort warmup estimate.
+    'sort-object-int-field': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Sorting: previously determined warmups, reused without recalibration; -i includes 5,000 measured calls.
+    'sort-int': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'sort-int-control': ['-i', '62040', '-w', '57040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'sort-string': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Use the sort-string warmup as an estimate for sorting by length.
+    'sort-string-by-length': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'sort-string-control': ['-i', '65040', '-w', '60040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # String building: calibrated warmup; -i includes 5,000 measured invocations.
+    'string-build': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'string-build-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # String splitting: calibrated warmup; -i includes 5,000 measured invocations.
+    'string-tokenize': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'string-tokenize-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Argument dispatch: provisional family warmup, not calibrated for these variants.
+    'function-dispatch-1-args1': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-4-args1': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-8-args1': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-args1-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-1-args2': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-4-args2': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-8-args2': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-args2-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-1-args3': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-4-args3': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-8-args3': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-args3-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-1-args4': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-4-args4': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-8-args4': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-args4-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Callable dispatch: calibrated warmup; 5,000 measured calls (-i includes warmup).
+    'function-dispatch-1': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-1-control': ['-i', '31920', '-w', '26920', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-4': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-4-control': ['-i', '32000', '-w', '27000', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-8': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'function-dispatch-8-control': ['-i', '31640', '-w', '26640', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Calibrated map warmups; -i includes 5,000 measured invocations.
+    'map-lookup': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'map-lookup-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'map-update': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'map-insert': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'map-insert-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Field warmups use shared CPUs 0,2,8,10; -i includes 1,000 measured invocations.
+    'field-access': ['-i', '27400', '-w', '26400', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'field-access-control': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'object-allocation': ['-i', '53640', '-w', '48640', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'object-allocation-control': ['-i', '30040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Indexed updates: 25,040 warmup accepted by the authorized validation repeat on 2026-10-08.
+    'indexed-update': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Independently calibrated sequence iteration; -i includes warmup and 1,000 measured invocations.
+    'sequence-iterate': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Calibrated warmup followed by exactly 1,000 measured invocations; -i includes warmup.
+    'numeric-int': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'numeric-int-control': ['-i', '27400', '-w', '26400', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Independently calibrated float warmup and exactly 1,000 measured invocations.
+    'numeric-float': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'numeric-float-control': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    # Independently calibrated branch warmup and exactly 1,000 measured invocations.
+    'branch-predictable': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'branch-predictable-control': ['-i', '28720', '-w', '27720', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'branch-mixed': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+    'branch-mixed-control': ['-i', '26040', '-w', '25040', '--score=post-warmup-mean', '--time-precision=9', '4096'],
+}
 
 # For benchmarking with Truffle compilation
 MICRO_BENCHMARKS = {
@@ -419,6 +490,7 @@ PATH_PYTHON_LIB = os.path.join(_graalpython_suite.dir, 'graalpython', 'lib-pytho
 #
 # ----------------------------------------------------------------------------------------------------------------------
 BENCHMARKS = {
+    "common-patterns": [PATH_COMMON_PATTERNS, COMMON_PATTERNS_BENCHMARKS],
     "micro": [PATH_MICRO, MICRO_BENCHMARKS],
     "micro-native": [PATH_MICRO, MICRO_NATIVE_BENCHMARKS],
     "meso": [PATH_MESO, MESO_BENCHMARKS],

@@ -759,7 +759,32 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Blackhole extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doIt(Object value) {
+        Object doBoolean(boolean value) {
+            CompilerDirectives.blackhole(value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doInt(int value) {
+            CompilerDirectives.blackhole(value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doLong(long value) {
+            CompilerDirectives.blackhole(value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doDouble(double value) {
+            CompilerDirectives.blackhole(value);
+            return PNone.NONE;
+        }
+
+        // Replace primitive specializations once a generic value is encountered.
+        @Specialization(replaces = {"doBoolean", "doInt", "doLong", "doDouble"})
+        Object doObject(Object value) {
             CompilerDirectives.blackhole(value);
             return PNone.NONE;
         }
