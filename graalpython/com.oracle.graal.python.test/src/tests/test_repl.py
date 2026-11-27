@@ -178,6 +178,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                                 break
                             eof_output.extend(chunk)
                         proc.wait(timeout=max(0, deadline - time.monotonic()))
+                        assert proc.returncode == 0, f"REPL exited with status {proc.returncode}"
                         out = eof_output.decode('utf-8')
                         out = normalize_terminal_output(out)
                         assert not out.strip(), f"Garbage after EOF:\n{out!r}"
@@ -230,6 +231,96 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> __import__('__main__').__file__.endswith('/_pyrepl/__main__.py')
             True
         """), repls=('pyrepl',))
+
+
+    def test_pyrepl_missing_curses():
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, 'sitecustomize.py'), 'w') as f:
+                f.write(dedent("""\
+                    import ctypes
+                    import ctypes.util
+                    import sys
+
+                    sys.modules['_curses'] = None
+                    sys.modules['curses'] = None
+                    ctypes.util.find_library = lambda name: 'libncursesw.so.6'
+
+                    def missing_library(name):
+                        raise OSError('simulated missing ncurses')
+
+                    ctypes.cdll.LoadLibrary = missing_library
+                    sys.excepthook = lambda cls, exc, tb: print(f'{cls.__name__}: {exc}', file=sys.stderr)
+                """))
+            validate_repl(dedent("""\
+                Failed calling sys.__interactivehook__
+                OSError: simulated missing ncurses
+                warning: can't use pyrepl: simulated missing ncurses
+                >>> 6 * 7
+                42
+                >>> from _pyrepl.main import CAN_USE_PYREPL
+                >>> CAN_USE_PYREPL
+                False
+            """), python_args=['-q'], repls=('pyrepl',), ignore_preamble=False,
+                          extra_env={'PYTHONPATH': tmpdir})
+
+
+    def test_interactive_hook_reporting_failure():
+        source = dedent("""\
+            import sys
+
+            class BrokenStderr:
+                def write(self, message):
+                    raise RuntimeError('stderr write failed')
+
+            def hook():
+                raise OSError('interactive hook failed')
+
+            def excepthook(*args):
+                sys.stderr = sys.__stderr__
+                print('excepthook called', file=sys.stderr)
+                raise RuntimeError('excepthook failed')
+
+            sys.stderr = BrokenStderr()
+            sys.__interactivehook__ = hook
+            sys.excepthook = excepthook
+        """)
+        proc = subprocess.run(
+            [sys.executable, '-s', '-P', '-i', '-c', source],
+            input='6 * 7\n', capture_output=True, text=True, timeout=60,
+        )
+        assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+        assert 'Failed calling sys.__interactivehook__' in proc.stderr, proc.stderr
+        assert 'excepthook called' in proc.stderr, proc.stderr
+        assert 'OSError' in proc.stderr, proc.stderr
+        assert proc.stdout.strip() == '42', proc.stdout
+
+
+    def test_interactive_hook_system_exit():
+        source = dedent("""\
+            import sys
+
+            class HookExit(SystemExit):
+                pass
+
+            def hook():
+                print('hook called')
+                raise HookExit(7)
+
+            def audit(event, args):
+                if event == 'cpython.run_interactivehook':
+                    assert args == (hook,)
+                    print('hook audited')
+
+            sys.__interactivehook__ = hook
+            sys.addaudithook(audit)
+        """)
+        proc = subprocess.run(
+            [sys.executable, '-s', '-P', '-i', '-c', source],
+            input='', capture_output=True, text=True, timeout=60,
+        )
+        assert proc.returncode == 7, (proc.returncode, proc.stdout, proc.stderr)
+        assert proc.stdout.splitlines() == ['hook audited', 'hook called'], proc.stdout
+        assert '>>>' not in proc.stderr, proc.stderr
 
 
     @unittest.skipIf(sys.platform == 'darwin', "Fails with garbage after EOF")

@@ -971,7 +971,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 if ((tty && commandString == null && inputFile == null) || inspectFlag) {
                     boolean inspecting = commandString != null || inputFile != null;
                     inspectFlag = false;
-                    runInteractiveHook(sysModule);
+                    evalInternal(context, "__graalpython__.run_interactive_hook()");
                     if (inspecting) {
                         // The inspected program may have changed os.environ since the launcher started.
                         basicReplRequested = !tty || (!ignoreEnv && evalInternal(context, "import os; bool(os.environ.get('PYTHON_BASIC_REPL'))").asBoolean());
@@ -983,7 +983,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 }
             } catch (RuntimeException e) {
-                if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
+                if (e instanceof PolyglotException pe && pe.isExit()) {
+                    rc = pe.getExitStatus();
+                } else if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
                     // Python may end up with stuck threads and code would legitimately expect those to
                     // simply die with the process. In an embedding (or CPython subinterpreters) this
                     // is a problem, so Truffle throws an IllegalStateException when closing the
@@ -1410,18 +1412,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
-    private static void runInteractiveHook(Value sysModule) {
-        Value hook = null;
-        try {
-            hook = sysModule.getMember("__interactivehook__");
-        } catch (PolyglotException e) {
-            // ignore
-        }
-        if (hook != null) {
-            hook.execute();
-        }
-    }
-
     /**
      * The read-eval-print loop, which can take input from a console, command line expression or a
      * file. There are two ways the repl can terminate:
@@ -1568,7 +1558,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private Value evalInternal(Context context, String code) {
-        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).option("python.NewGlobals", "true").buildLiteral());
+        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).option("python.NewGlobals", "true").option("python.NoPythonFrame", "true").buildLiteral());
     }
 
     /**
