@@ -509,11 +509,22 @@ begin_transaction(pysqlite_Connection *self)
     return 0;
 }
 
+// GraalPy change: uncached statements stay native so close can finalize them
 static PyObject *
-get_statement_from_cache(pysqlite_Cursor *self, PyObject *operation)
+get_statement(pysqlite_Cursor *self, PyObject *operation)
 {
-    PyObject *args[] = { NULL, operation, };  // Borrowed ref.
     PyObject *cache = self->connection->statement_cache;
+    if (cache == NULL) {
+        if (Py_TYPE(self->connection)->tp_call == self->connection->state->ConnectionType->tp_call) {
+            // Inline pysqlite_connection_call to avoid managed upcall; operation is already validated as a string.
+            if (!pysqlite_check_thread(self->connection) || !pysqlite_check_connection(self->connection)) {
+                return NULL;
+            }
+            return (PyObject *)pysqlite_statement_create(self->connection, operation);
+        }
+        cache = (PyObject *)self->connection;
+    }
+    PyObject *args[] = { NULL, operation, };  // Borrowed ref.
     size_t nargsf = 1 | PY_VECTORCALL_ARGUMENTS_OFFSET;
     return PyObject_Vectorcall(cache, args + 1, nargsf, NULL);
 }
@@ -838,7 +849,8 @@ _pysqlite_query_execute(pysqlite_Cursor* self, int multiple, PyObject* operation
         (void)stmt_reset(self->statement);
     }
 
-    PyObject *stmt = get_statement_from_cache(self, operation);
+    // GraalPy change: the cache can be disabled.
+    PyObject *stmt = get_statement(self, operation);
     Py_XSETREF(self->statement, (pysqlite_Statement *)stmt);
     if (!self->statement) {
         goto error;

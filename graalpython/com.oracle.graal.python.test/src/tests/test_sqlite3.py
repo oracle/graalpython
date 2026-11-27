@@ -37,6 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 from tests.util import needs_capi
 
 
@@ -72,3 +77,26 @@ def test_fts5_works():
         import sys
         assert sys.implementation.name != "graalpy"
     conn.close()
+
+
+@needs_capi
+def test_close_releases_uncached_statement_descriptor() -> None:
+    import sqlite3
+
+    descriptors = Path("/proc/self/fd")
+    if not descriptors.is_dir():
+        raise unittest.SkipTest("Reading open descriptors requires /proc/self/fd")
+
+    with TemporaryDirectory() as directory:
+        database = Path(directory, "database.sqlite").resolve()
+        connection = sqlite3.connect(database, cached_statements=0)
+        try:
+            cursor = connection.execute("SELECT 1")
+            try:
+                assert cursor.fetchone() == (1,)
+            finally:
+                cursor.close()
+        finally:
+            connection.close()
+
+        assert all(os.path.realpath(descriptor) != str(database) for descriptor in descriptors.iterdir())
