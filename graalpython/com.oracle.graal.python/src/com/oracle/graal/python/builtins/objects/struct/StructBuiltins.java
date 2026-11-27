@@ -85,6 +85,9 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
+import com.oracle.graal.python.builtins.objects.struct.StructNodes.PackValueNode;
+import com.oracle.graal.python.builtins.objects.struct.StructNodes.UnpackArrayValueNode;
+import com.oracle.graal.python.builtins.objects.struct.StructNodes.UnpackBufferValueNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyBufferRelease;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -120,7 +123,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PStruct)
 public class StructBuiltins extends PythonBuiltins {
-    static void packInternal(VirtualFrame frame, PStruct self, StructNodes.PackValueNode packValueNode, Object[] args, byte[] buffer, int offset) {
+    static void packInternal(VirtualFrame frame, PStruct self, Object[] args, byte[] buffer, int offset,
+                    PackValueNode packValueNode) {
         assert self.getSize() <= buffer.length - offset;
         FormatCode[] codes = self.getCodes();
         int pos = 0;
@@ -134,7 +138,35 @@ public class StructBuiltins extends PythonBuiltins {
         LoopNode.reportLoopCount(packValueNode, (int) Math.min(Integer.MAX_VALUE, (long) codes.length + pos));
     }
 
-    public static Object[] unpackInternal(PStruct self, StructNodes.UnpackValueNode unpackValueNode, byte[] bytes, int offset) {
+    /**
+     * Unpacks one struct from an acquired buffer. The caller must normalize the offset to a
+     * nonnegative value and ensure that the complete struct fits within the buffer's logical length.
+     */
+    public static Object[] unpackInternal(PStruct self, Object buffer, int offset,
+                    UnpackArrayValueNode unpackArrayValueNode,
+                    UnpackBufferValueNode unpackValueNode,
+                    PythonBufferAccessLibrary bufferLib) {
+        assert offset >= 0 && self.getUnsignedSize() <= (long) bufferLib.getBufferLength(buffer) - offset;
+        if (bufferLib.hasInternalByteArray(buffer)) {
+            return unpackArrayInternal(self, bufferLib.getInternalByteArray(buffer), offset, unpackArrayValueNode);
+        }
+        Object[] values = new Object[self.getLen()];
+        FormatCode[] codes = self.getCodes();
+        int pos = 0;
+        for (FormatCode code : codes) {
+            int buffer_offset = offset + code.offset;
+            for (int j = 0; j < code.repeat; j++, pos++) {
+                Object value = unpackValueNode.execute(code, self.formatAlignment, buffer, buffer_offset, bufferLib);
+                values[pos] = value;
+                buffer_offset += code.size;
+            }
+        }
+        LoopNode.reportLoopCount(unpackValueNode, (int) Math.min(Integer.MAX_VALUE, (long) codes.length + pos));
+        return values;
+    }
+
+    private static Object[] unpackArrayInternal(PStruct self, byte[] bytes, int offset,
+                    UnpackArrayValueNode unpackValueNode) {
         Object[] values = new Object[self.getLen()];
         FormatCode[] codes = self.getCodes();
         int pos = 0;
@@ -481,7 +513,7 @@ public class StructBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, self.getLen(), args.length);
             }
             byte[] bytes = new byte[self.getSize()];
-            packInternal(frame, self, packValueNode, args, bytes, 0);
+            packInternal(frame, self, args, bytes, 0, packValueNode);
             return PFactory.createBytes(language, bytes);
         }
     }
@@ -544,7 +576,7 @@ public class StructBuiltins extends PythonBuiltins {
                 }
 
                 // TODO: GR-54860 use buffer API in the packing process
-                packInternal(frame, self, packValueNode, args, bytes, directWrite ? bufferOffset : 0);
+                packInternal(frame, self, args, bytes, directWrite ? bufferOffset : 0, packValueNode);
                 if (!directWrite) {
                     bufferLib.writeFromByteArray(buffer, bufferOffset, bytes, 0, bytes.length);
                 }
@@ -576,16 +608,16 @@ public class StructBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached StructNodes.UnpackValueNode unpackValueNode,
+                        @Cached StructNodes.UnpackArrayValueNode unpackArrayValueNode,
+                        @Cached StructNodes.UnpackBufferValueNode unpackValueNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyBufferRelease releaseBuffer) {
             try {
                 int bytesLen = bufferLib.getBufferLength(buffer);
-                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 if (bytesLen != self.getSize()) {
                     throw raiseNode.raise(inliningTarget, StructError, UNPACK_REQ_A_BUFFER_OF_N_BYTES, self.getSize());
                 }
-                return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, 0));
+                return PFactory.createTuple(language, unpackInternal(self, buffer, 0, unpackArrayValueNode, unpackValueNode, bufferLib));
             } finally {
                 releaseBuffer.execute(frame, buffer);
             }
@@ -647,13 +679,13 @@ public class StructBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached StructNodes.UnpackValueNode unpackValueNode,
+                        @Cached StructNodes.UnpackArrayValueNode unpackArrayValueNode,
+                        @Cached StructNodes.UnpackBufferValueNode unpackValueNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyBufferRelease releaseBuffer) {
             try {
                 int bufferOffset = offset;
                 int bytesLen = bufferLib.getBufferLength(buffer);
-                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
 
                 final long size = self.getUnsignedSize();
                 if (bufferOffset < 0) {
@@ -671,7 +703,7 @@ public class StructBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, StructError, STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES, size + bufferOffset, size, bufferOffset, bytesLen);
                 }
 
-                return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, bufferOffset));
+                return PFactory.createTuple(language, unpackInternal(self, buffer, bufferOffset, unpackArrayValueNode, unpackValueNode, bufferLib));
             } finally {
                 releaseBuffer.execute(frame, buffer);
             }

@@ -25,6 +25,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,7 +63,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public final class StructNodes {
     // ------------------------------------------------------------------------------------------------------------
@@ -422,8 +423,8 @@ public final class StructNodes {
     }
 
     @ImportStatic(FormatCode.class)
-    @GenerateInline(false) // footprint reduction 40 -> 22
-    public abstract static class UnpackValueNode extends StructBaseNode {
+    @GenerateInline(false)
+    public abstract static class UnpackArrayValueNode extends StructBaseNode {
         public abstract Object execute(FormatCode formatCode, FormatAlignment formatAlignment, byte[] buffer, int offset);
 
         @Specialization(guards = {"isFmtInteger(formatCode)", "numBytes == formatCode.numBytes()", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "getNumBytesLimit()")
@@ -438,12 +439,8 @@ public final class StructNodes {
                 num = numericSupport.getLongUnsigned(buffer, offset, numBytes);
             } else {
                 num = numericSupport.getLong(buffer, offset, numBytes);
-                num = handleSign(formatCode, num);
             }
-            if (profilePIntResult.profile(inliningTarget, formatCode.isUnsigned() && num < 0)) {
-                return PFactory.createInt(PythonLanguage.get(inliningTarget), getAsUnsignedBigInt(num));
-            }
-            return num;
+            return createInteger(inliningTarget, formatCode, num, formatCode.isUnsigned(), profilePIntResult);
         }
 
         @Specialization(guards = "isFmtInteger(formatCode)", replaces = "unpack8Cached")
@@ -467,10 +464,7 @@ public final class StructNodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profilePIntResult) {
             long num = getNumericSupport(formatAlignment).getLongUnsigned(buffer, offset, formatCode.numBytes());
-            if (profilePIntResult.profile(inliningTarget, num < 0)) {
-                return PFactory.createInt(PythonLanguage.get(inliningTarget), getAsUnsignedBigInt(num));
-            }
-            return num;
+            return createInteger(inliningTarget, formatCode, num, true, profilePIntResult);
         }
 
         @Specialization(guards = "isFmtBoolean(formatCode)")
@@ -478,34 +472,28 @@ public final class StructNodes {
             return buffer[offset] != 0;
         }
 
-        @Specialization(guards = "isFmtBytes(formatCode)")
-        static Object unpackBytes(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Bind Node inliningTarget,
-                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile) {
-            byte[] bytes;
-            switch (formatProfile.profile(formatCode.formatDef.format)) {
-                case FMT_CHAR:
-                    bytes = new byte[]{buffer[offset]};
-                    break;
-                case FMT_STRING:
-                    bytes = new byte[formatCode.size];
-                    PythonUtils.arraycopy(buffer, offset, bytes, 0, formatCode.size);
-                    break;
-                case FMT_PASCAL_STRING:
-                default:
-                    if (buffer.length == 0) {
-                        // (mq): CPython always allocates _PyBytesWriter.small_buffer[512] which
-                        // avoids this additional check. In our case we can do the check and avoid
-                        // such allocation.
-                        bytes = buffer;
-                        break;
-                    }
-                    int n = buffer[offset] & 0xFF;
-                    if (n >= formatCode.size) {
-                        n = formatCode.size - 1;
-                    }
-                    bytes = new byte[n];
-                    PythonUtils.arraycopy(buffer, offset + 1, bytes, 0, n);
+        @Specialization(guards = "isFormat(formatCode, FMT_CHAR)")
+        static Object unpackChar(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
+                        @Bind Node inliningTarget) {
+            byte[] bytes = new byte[]{buffer[offset]};
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
+        }
+
+        @Specialization(guards = "isFormat(formatCode, FMT_STRING)")
+        static Object unpackString(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
+                        @Bind Node inliningTarget) {
+            byte[] bytes = new byte[formatCode.size];
+            PythonUtils.arraycopy(buffer, offset, bytes, 0, bytes.length);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
+        }
+
+        @Specialization(guards = "isFormat(formatCode, FMT_PASCAL_STRING)")
+        static Object unpackPascalString(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
+                        @Bind Node inliningTarget) {
+            int length = buffer.length == 0 ? 0 : getPascalStringLength(formatCode, buffer[offset]);
+            byte[] bytes = new byte[length];
+            if (length > 0) {
+                PythonUtils.arraycopy(buffer, offset + 1, bytes, 0, length);
             }
             return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
         }
@@ -516,6 +504,162 @@ public final class StructNodes {
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
         }
+
     }
 
+    @ImportStatic(FormatCode.class)
+    @GenerateInline(false)
+    public abstract static class UnpackBufferValueNode extends StructBaseNode {
+        public abstract Object execute(FormatCode formatCode, FormatAlignment formatAlignment, Object buffer, int offset, PythonBufferAccessLibrary bufferLib);
+
+        @Specialization(guards = {"isFmtInteger(formatCode)", "numBytes == formatCode.numBytes()", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "getNumBytesLimit()")
+        static Object unpack8Cached(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset, PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget,
+                        @Cached("formatCode.numBytes()") int numBytes,
+                        @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
+                        @Shared @Cached InlinedConditionProfile profilePIntResult,
+                        @Shared @Cached InlinedConditionProfile profileSigned) {
+            long num;
+            if (profileSigned.profile(inliningTarget, formatCode.isUnsigned())) {
+                num = readInteger(buffer, offset, numBytes, numericSupport, true, bufferLib);
+            } else {
+                num = readInteger(buffer, offset, numBytes, numericSupport, false, bufferLib);
+            }
+            return createInteger(inliningTarget, formatCode, num, formatCode.isUnsigned(), profilePIntResult);
+        }
+
+        @Specialization(guards = "isFmtInteger(formatCode)", replaces = "unpack8Cached")
+        static Object unpack8(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset, PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile profilePIntResult,
+                        @Shared @Cached InlinedConditionProfile profileSigned) {
+            return unpack8Cached(formatCode, formatAlignment, buffer, offset, bufferLib, inliningTarget, formatCode.numBytes(),
+                            getNumericSupport(formatAlignment), profilePIntResult, profileSigned);
+        }
+
+        @Specialization(guards = {"isFmtFloat(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
+        static Object unpackFloat8(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset, PythonBufferAccessLibrary bufferLib,
+                        @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport) {
+            return readFloat(buffer, offset, formatCode.numBytes(), numericSupport, bufferLib);
+        }
+
+        @Specialization(guards = {"isFmtVoidPtr(formatCode)", "formatAlignment.isNative()"})
+        @SuppressWarnings("unused")
+        static Object unpackVoidPtr(FormatCode formatCode, FormatAlignment formatAlignment, Object buffer, int offset, PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile profilePIntResult) {
+            long num = readInteger(buffer, offset, formatCode.numBytes(), getNumericSupport(formatAlignment), true, bufferLib);
+            return createInteger(inliningTarget, formatCode, num, true, profilePIntResult);
+        }
+
+        @Specialization(guards = "isFmtBoolean(formatCode)")
+        static Object unpackBool(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset,
+                        PythonBufferAccessLibrary bufferLib) {
+            return readByte(buffer, offset, bufferLib) != 0;
+        }
+
+        @Specialization(guards = "isFormat(formatCode, FMT_CHAR)")
+        static Object unpackChar(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset,
+                        PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget) {
+            byte[] bytes = new byte[]{readByte(buffer, offset, bufferLib)};
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
+        }
+
+        @Specialization(guards = "isFormat(formatCode, FMT_STRING)")
+        static Object unpackString(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset,
+                        PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget) {
+            byte[] bytes = new byte[formatCode.size];
+            readBytes(buffer, offset, bytes, bytes.length, bufferLib);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
+        }
+
+        @Specialization(guards = "isFormat(formatCode, FMT_PASCAL_STRING)")
+        static Object unpackPascalString(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, Object buffer, int offset,
+                        PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget) {
+            int length = getBufferLength(buffer, bufferLib) == 0 ? 0 : getPascalStringLength(formatCode, readByte(buffer, offset, bufferLib));
+            byte[] bytes = new byte[length];
+            if (length > 0) {
+                readBytes(buffer, offset + 1, bytes, length, bufferLib);
+            }
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
+        }
+
+        @Specialization(guards = "!isSupportedFormat(formatCode)")
+        @SuppressWarnings("unused")
+        static byte[] unpackUnsupported(FormatCode formatCode, FormatAlignment formatAlignment, Object buffer, int offset, PythonBufferAccessLibrary bufferLib,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
+        }
+
+        private static long readInteger(Object buffer, int offset, int numBytes, NumericSupport numericSupport, boolean unsigned, PythonBufferAccessLibrary bufferLib) {
+            assert bufferLib.accepts(buffer);
+            ByteOrder byteOrder = getByteOrder(numericSupport);
+            switch (numBytes) {
+                case 1:
+                    byte b = bufferLib.readByte(buffer, offset);
+                    return unsigned ? b & 0xffL : b;
+                case 2:
+                    short s = bufferLib.readShortByteOrder(buffer, offset, byteOrder);
+                    return unsigned ? s & 0xffffL : s;
+                case 4:
+                    int i = bufferLib.readIntByteOrder(buffer, offset, byteOrder);
+                    return unsigned ? i & 0xffffffffL : i;
+                case 8:
+                    return bufferLib.readLongByteOrder(buffer, offset, byteOrder);
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("number of bytes must be 1, 2, 4 or 8");
+            }
+        }
+
+        private static double readFloat(Object buffer, int offset, int numBytes, NumericSupport numericSupport, PythonBufferAccessLibrary bufferLib) {
+            assert bufferLib.accepts(buffer);
+            ByteOrder byteOrder = getByteOrder(numericSupport);
+            switch (numBytes) {
+                case 2:
+                    return bufferLib.readFloat16ByteOrder(buffer, offset, byteOrder);
+                case 4:
+                    return bufferLib.readFloatByteOrder(buffer, offset, byteOrder);
+                case 8:
+                    return bufferLib.readDoubleByteOrder(buffer, offset, byteOrder);
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("number of bytes must be 2, 4 or 8");
+            }
+        }
+
+        private static byte readByte(Object buffer, int offset, PythonBufferAccessLibrary bufferLib) {
+            assert bufferLib.accepts(buffer);
+            return bufferLib.readByte(buffer, offset);
+        }
+
+        private static int getBufferLength(Object buffer, PythonBufferAccessLibrary bufferLib) {
+            assert bufferLib.accepts(buffer);
+            return bufferLib.getBufferLength(buffer);
+        }
+
+        private static void readBytes(Object buffer, int offset, byte[] dest, int length, PythonBufferAccessLibrary bufferLib) {
+            assert bufferLib.accepts(buffer);
+            bufferLib.readIntoByteArray(buffer, offset, dest, 0, length);
+        }
+    }
+
+    private static Object createInteger(Node inliningTarget, FormatCode formatCode, long value, boolean unsigned, InlinedConditionProfile profilePIntResult) {
+        if (!unsigned) {
+            value = StructBaseNode.handleSign(formatCode, value);
+        }
+        if (profilePIntResult.profile(inliningTarget, unsigned && value < 0)) {
+            return PFactory.createInt(PythonLanguage.get(inliningTarget), StructBaseNode.getAsUnsignedBigInt(value));
+        }
+        return value;
+    }
+
+    private static int getPascalStringLength(FormatCode formatCode, byte lengthByte) {
+        return Math.min(lengthByte & 0xff, formatCode.size - 1);
+    }
+
+    private static ByteOrder getByteOrder(NumericSupport numericSupport) {
+        return numericSupport == NumericSupport.bigEndian() ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+    }
 }

@@ -93,8 +93,9 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()", limit = "3")
         static Object next(VirtualFrame frame, PStructUnpackIterator self,
-                        @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
+                        @Cached StructNodes.UnpackArrayValueNode unpackArrayValueNode,
+                        @Cached StructNodes.UnpackBufferValueNode unpackValueNode,
                         @Bind PythonLanguage language,
                         @Cached PyBufferRelease releaseBuffer) {
             final PStruct struct = self.getStruct();
@@ -107,21 +108,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
                 throw iteratorExhausted();
             }
 
-            assert self.index + struct.getSize() <= bufferLen;
-
-            byte[] bytes;
-            int offset;
-            if (bufferLib.hasInternalByteArray(buffer)) {
-                offset = self.index;
-                bytes = bufferLib.getInternalByteArray(buffer);
-            } else {
-                offset = 0;
-                bytes = new byte[struct.getSize()];
-                bufferLib.readIntoByteArray(buffer, self.index, bytes, 0, bytes.length);
-            }
-
-            // TODO: GR-54860 handle buffers directly in unpack
-            Object result = PFactory.createTuple(language, unpackInternal(struct, unpackValueNode, bytes, offset));
+            Object result = PFactory.createTuple(language, unpackInternal(struct, buffer, self.index, unpackArrayValueNode, unpackValueNode, bufferLib));
             self.index += struct.getSize();
             return result;
         }
