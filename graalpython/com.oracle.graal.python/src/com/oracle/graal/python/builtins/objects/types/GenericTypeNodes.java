@@ -319,7 +319,9 @@ public abstract class GenericTypeNodes {
             Object subst = PyObjectLookupAttr.executeUncached(arg, T___TYPING_SUBST__);
             if (subst != PNone.NO_VALUE) {
                 int iparam = tupleIndex(parameters, arg);
-                assert iparam >= 0;
+                if (iparam < 0) {
+                    throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.ARGUMENT_S_WITH_TYPING_SUBST_NOT_FOUND_IN_PARAMETERS, PyObjectReprAsTruffleStringNode.executeUncached(arg));
+                }
                 arg = CallNode.executeUncached(subst, argitems[iparam]);
             } else {
                 arg = subsTvars(arg, parameters, argitems);

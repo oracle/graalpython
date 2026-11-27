@@ -79,6 +79,53 @@ class TestUnicodedata(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "undefined character name 'GIBBET NICH'"):
             unicodedata.lookup("GIBBET NICH")
 
+    def test_character_name_aliases(self):
+        cases = {
+            'NUL': '\x00',
+            'ALERT': '\x07',
+            'BEL': '\x07',
+            'TAB': '\t',
+            'HORIZONTAL TABULATION': '\t',
+            'RS': '\x1e',
+            'RECORD SEPARATOR': '\x1e',
+            'SP': ' ',
+            'DEL': '\x7f',
+            'PADDING CHARACTER': '\x80',
+            'NEL': '\x85',
+            'NEXT LINE': '\x85',
+            'NBSP': '\xa0',
+            'ZWJ': '\u200d',
+            'BOM': '\ufeff',
+            'VS1': '\ufe00',
+            'VS17': '\U000e0100',
+            'VS256': '\U000e01ef',
+            'ARABIC SMALL HIGH LIGATURE ALEF WITH YEH BARREE': '\u0616',
+            'BELL': '\U0001f514',
+            'LATIN CAPITAL LETTER A': 'A',
+            'HANGUL SYLLABLE GA': '\uac00',
+            'CJK UNIFIED IDEOGRAPH-4E00': '\u4e00',
+        }
+        for name, expected in cases.items():
+            for spelling in (name, name.lower()):
+                with self.subTest(name=spelling):
+                    self.assertEqual(unicodedata.lookup(spelling), expected)
+                    escaped = '\\N{' + spelling + '}'
+                    self.assertEqual(eval("'" + escaped + "'"), expected)
+                    self.assertEqual(escaped.encode('ascii').decode('unicode_escape'), expected)
+                    self.assertEqual((escaped + 'x' + escaped).encode('ascii').decode('unicode_escape'),
+                                     expected + 'x' + expected)
+
+    def test_invalid_character_names(self):
+        for name in ('UNKNOWN CHARACTER NAME', ' RS', 'RS ', '<control-0000>'):
+            with self.subTest(name=name):
+                with self.assertRaises(KeyError):
+                    unicodedata.lookup(name)
+                escaped = '\\N{' + name + '}'
+                with self.assertRaises(SyntaxError):
+                    eval("'" + escaped + "'")
+                with self.assertRaises(UnicodeDecodeError):
+                    escaped.encode('ascii').decode('unicode_escape')
+
     def test_lookup_named_sequence(self):
         if unicodedata.ucd_3_2_0.bidirectional == unicodedata.bidirectional:
             raise unittest.SkipTest("Only supported with CPython's unicodedata.ucd_3_2_0")

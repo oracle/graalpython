@@ -88,6 +88,11 @@ SOFTWARE.
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.graalvm.regex</groupId>
+        <artifactId>regex</artifactId>
+        <version>${graalvm.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.graalvm.shadowed</groupId>
         <artifactId>icu4j</artifactId>
         <version>${graalvm.version}</version>
@@ -130,11 +135,6 @@ SOFTWARE.
       <dependency>
         <groupId>org.graalvm.shadowed</groupId>
         <artifactId>xz</artifactId>
-        <version>${graalvm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.graalvm.regex</groupId>
-        <artifactId>regex</artifactId>
         <version>${graalvm.version}</version>
       </dependency>
       <dependency>

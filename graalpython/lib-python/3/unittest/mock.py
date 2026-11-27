@@ -590,7 +590,7 @@ class NonCallableMock(Base):
 
     __return_value_doc = "The value to be returned when the mock is called."
     return_value = property(__get_return_value, __set_return_value,
-                            __return_value_doc)
+                            doc=__return_value_doc)
 
 
     @property
@@ -2991,7 +2991,7 @@ def mock_open(mock=None, read_data=''):
             return handle.readline.return_value
         return next(_state[0])
 
-    def _exit_side_effect(exctype, excinst, exctb):
+    def _exit_side_effect(*args):
         handle.close()
 
     global file_spec

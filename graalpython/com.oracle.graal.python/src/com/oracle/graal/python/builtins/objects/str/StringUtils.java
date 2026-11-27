@@ -536,7 +536,7 @@ public final class StringUtils {
         // With ICU's UCharacter, we get cases 1), 2) and 3). As for 4), the aliases, ICU only
         // handles aliases of type 'correction'. Therefore, we extract the contents of
         // NameAliases.txt and handle aliases by ourselves.
-        String normalizedName = characterName.trim().toUpperCase(Locale.ROOT);
+        String normalizedName = characterName.toUpperCase(Locale.ROOT);
         if (UnicodeCharacterAliases.CHARACTER_ALIASES.containsKey(normalizedName)) {
             return UnicodeCharacterAliases.CHARACTER_ALIASES.get(normalizedName);
         } else {

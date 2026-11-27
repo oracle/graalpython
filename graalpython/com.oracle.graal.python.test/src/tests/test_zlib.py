@@ -119,6 +119,10 @@ class BaseCompressTestCase(object):
 
 class CompressTests(BaseCompressTestCase, unittest.TestCase):
     # Test compression in one go (whole message compression)
+    def test_empty_raw_stream(self):
+        self.assertEqual(zlib.decompress(b'\x03\x00', -zlib.MAX_WBITS), b'')
+        self.assertRaises(zlib.error, zlib.decompress, b'\x03', -zlib.MAX_WBITS)
+
     def test_speech(self):
         x = zlib.compress(HAMLET_SCENE)
         self.assertEqual(zlib.decompress(x), HAMLET_SCENE)
@@ -156,10 +160,31 @@ class CompressTests(BaseCompressTestCase, unittest.TestCase):
         compressed = zlib.compress(data, 1)
         self.assertEqual(zlib.decompress(compressed, 15, MyIndexObject(100)), data)
 
-    def test_decoding_flush_ignore_error(self):
+    def test_decoding_flush_error(self):
         d = zlib.decompressobj()
         self.assertRaises(zlib.error, d.decompress, b"asdf")
-        d.flush()
+        self.assertRaises(zlib.error, d.flush)
+
+    def test_decoding_flush_corrupt_stream(self):
+        compressed = zlib.compress(b'foo')
+        corrupt = compressed[:-1] + bytes([compressed[-1] ^ 1])
+        d = zlib.decompressobj()
+        self.assertEqual(d.decompress(corrupt, 1), b'f')
+        self.assertRaises(zlib.error, d.flush)
+
+    def test_decoding_flush_twice(self):
+        d = zlib.decompressobj()
+        self.assertEqual(d.decompress(zlib.compress(b'foo')), b'foo')
+        self.assertEqual(d.flush(), b'')
+        self.assertEqual(d.flush(), b'')
+
+    def test_decoding_flush_incomplete_stream(self):
+        compressed = zlib.compress(b'foo')
+        d = zlib.decompressobj()
+        self.assertEqual(d.decompress(compressed[:2]), b'')
+        self.assertEqual(d.flush(), b'')
+        self.assertEqual(d.decompress(compressed[2:]), b'foo')
+        self.assertEqual(d.flush(), b'')
 
 
 HAMLET_SCENE = b"""

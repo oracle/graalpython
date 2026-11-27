@@ -125,8 +125,8 @@ def open(file, mode="r", buffering=-1, encoding=None, errors=None,
     argument is given, the default buffering policy works as follows:
 
     * Binary files are buffered in fixed-size chunks; the size of the buffer
-      is chosen using a heuristic trying to determine the underlying device's
-      "block size" and falling back on `io.DEFAULT_BUFFER_SIZE`.
+      is chosen using a heuristic trying to determine the underlying
+      device's "block size" and falling back on `io.DEFAULT_BUFFER_SIZE`.
       On many systems, the buffer will typically be 4096 or 8192 bytes long.
 
     * "Interactive" text files (files for which isatty() returns True)
@@ -1856,7 +1856,7 @@ class TextIOBase(IOBase):
         """Truncate size to pos, where pos is an int."""
         self._unsupported("truncate")
 
-    def readline(self):
+    def readline(self, size=-1, /):
         """Read until newline or EOF.
 
         Returns an empty string if EOF is hit immediately.

@@ -51,6 +51,21 @@ toHex = float.hex
 
 class BasicTests(unittest.TestCase):
 
+    def test_format_precision_near_int_max(self):
+        for precision in (2**31 - 1, 2**31 - 1024):
+            for code in "fFeEgG":
+                spec = f".{precision}{code}"
+                for value in (0.0, 1e300, INF, NAN):
+                    with self.subTest(precision=precision, code=code, value=value):
+                        with self.assertRaisesRegex(ValueError, "precision too big"):
+                            format(value, spec)
+                        with self.assertRaisesRegex(ValueError, "precision too big"):
+                            format(complex(value), spec)
+                        with self.assertRaisesRegex(ValueError, "precision too big"):
+                            ("%" + spec) % value
+                        with self.assertRaisesRegex(ValueError, "precision too big"):
+                            ("%" + spec).encode() % value
+
     def test_floor_divmod_rounding(self):
         cases = [
             (1.0, 0.1, 9.0, 0.09999999999999995),

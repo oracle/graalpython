@@ -495,10 +495,11 @@ elif _sys.platform in ["android", "cygwin"]:
     # These are Unix-like platforms which use a dynamically-linked libpython.
     pythonapi = PyDLL(_sysconfig.get_config_var("LDLIBRARY"))
 else:
-    # GraalPy change: we _dlopen right here, libpython-native it may be different per context
-    pythonapi = PyDLL(None, None, _dlopen(_sys._dllhandle_name, 0))
-    # pythonapi = PyDLL(None)
-    # End GraalPy change
+    try:
+        # GraalPy change: open the context-specific libpython-native here.
+        pythonapi = PyDLL(None, None, _dlopen(_sys._dllhandle_name, 0))
+    except OSError:
+        pythonapi = None
 
 
 if _os.name == "nt":

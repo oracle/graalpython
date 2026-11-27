@@ -188,7 +188,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String IMPLEMENTATION_NAME = "GraalPy";
     public static final int MAJOR = 3;
     public static final int MINOR = 13;
-    public static final int MICRO = 14;
+    public static final int MICRO = 18;
     public static final int RELEASE_LEVEL_ALPHA = 0xA;
     public static final int RELEASE_LEVEL_BETA = 0xB;
     public static final int RELEASE_LEVEL_CANDIDATE = 0xC;

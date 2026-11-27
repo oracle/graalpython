@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.7
+* Update Python standard library to version 3.13.18
+
 ## Version 25.6
 * Add support for PyREPL and make it the default. It can be turned off by setting `PYTHON_BASIC_REPL=1` environment variable
 * New Java-based `decimal` module with significantly better performance

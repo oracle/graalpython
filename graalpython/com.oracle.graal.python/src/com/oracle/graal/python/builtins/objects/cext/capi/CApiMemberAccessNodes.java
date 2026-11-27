@@ -452,19 +452,10 @@ public class CApiMemberAccessNodes {
                         @Bind("getType()") int type,
                         @Cached PyLongAsLongAndOverflowNode asLong,
                         @Cached PRaiseNode raiseNode) {
-            try {
-                if (type == T_PYSSIZET && !PyLongCheckNode.executeUncached(newValue)) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED);
-                }
-                NativeMemory.writeLong(pointer, asSignedLong(newValue, type, inliningTarget, asLong, raiseNode));
-            } catch (PException e) {
-                /*
-                 * PyMember_SetOne assigns the integer conversion's error indication value before
-                 * checking whether the conversion raised an exception.
-                 */
-                NativeMemory.writeLong(pointer, -1);
-                throw e;
+            if (type == T_PYSSIZET && !PyLongCheckNode.executeUncached(newValue)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
+            NativeMemory.writeLong(pointer, asSignedLong(newValue, type, inliningTarget, asLong, raiseNode));
         }
     }
 
@@ -527,20 +518,8 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached PyFloatAsDoubleNode asDouble,
-                        @Cached IsBuiltinObjectProfile exceptionProfile) {
-            try {
-                NativeMemory.writeDouble(pointer, asDouble.execute(null, inliningTarget, newValue));
-            } catch (PException e) {
-                /*
-                 * Special case: if conversion raises an OverflowError, CPython still assigns the
-                 * error indication value -1 to the member. That looks rather like a bug but let's
-                 * just do the same.
-                 */
-                e.expectTypeError(inliningTarget, exceptionProfile);
-                NativeMemory.writeDouble(pointer, -1);
-                throw e;
-            }
+                        @Cached PyFloatAsDoubleNode asDouble) {
+            NativeMemory.writeDouble(pointer, asDouble.execute(null, inliningTarget, newValue));
         }
     }
 

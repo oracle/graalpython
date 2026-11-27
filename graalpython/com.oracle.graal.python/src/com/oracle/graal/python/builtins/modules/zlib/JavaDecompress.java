@@ -381,9 +381,6 @@ public class JavaDecompress extends JavaZlibCompObject {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean zdictIsSet = false;
         while (baos.size() < maxLen && !stream.inflater.finished()) {
-            if (stream.inflater.needsInput()) {
-                break;
-            }
             int bytesWritten;
             try {
                 int len = Math.min(maxLen - baos.size(), result.length);
@@ -402,6 +399,10 @@ public class JavaDecompress extends JavaZlibCompObject {
             }
             updateGZIPCrc(stream, result, bytesWritten);
             baos.write(result, 0, bytesWritten);
+            // Even with no input, inflate must run to report a previous stream error.
+            if (bytesWritten == 0 && stream.inflater.needsInput()) {
+                break;
+            }
         }
         if (stream.gzip && stream.inflater.finished()) {
             int remaining = stream.inflater.getRemaining();
@@ -436,7 +437,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             }
             while (!stream.inflater.finished()) {
                 int howmany = stream.inflater.inflate(resultArray);
-                if (howmany == 0 && stream.inflater.needsInput()) {
+                if (howmany == 0 && stream.inflater.needsInput() && !stream.inflater.finished()) {
                     throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
                 }
                 updateGZIPCrc(stream, resultArray, howmany);

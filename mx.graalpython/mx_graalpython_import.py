@@ -143,6 +143,8 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/lib-graalpython/modules/graalpy-config.py": Ignore(),
 
     # C API
+    # Backported from CPython 3.15 for experimental ABI3T support.
+    "graalpython/com.oracle.graal.python.cext/include/slots.h": Ignore(),
     "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
     # Different copyright
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
@@ -241,7 +243,8 @@ def import_python_sources(args):
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         entries = [line.strip().split(',') for line in f if ',' in line]
         cpython_files = [file for file, license in entries if
-                         license == "python.copyright" and not file.endswith('.java')]
+                         license in ("python.copyright", "expat.copyright", "siphash.copyright")
+                         and not file.endswith('.java')]
 
     import_dir = os.path.abspath(os.path.join(SUITE.dir, 'python-import'))
     shutil.rmtree(import_dir, ignore_errors=True)

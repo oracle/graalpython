@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "graalpython:pythonVersion": "3.13.14",
+    "graalpython:pythonVersion": "3.13.18",
     "version_from": "sdk",
     "release_from": "sdk",
     "groupId": "org.graalvm.python",
@@ -243,6 +243,7 @@ suite = {
             "sourceDirs": ["src"],
             "javaCompliance": "21+",
             "dependencies": [
+                "regex:TREGEX",
                 "truffle:TRUFFLE_ICU4J",
             ],
             "buildDependencies": [
