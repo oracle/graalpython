@@ -47,7 +47,13 @@ import unittest
 from tests.util import storage_to_native
 
 
-@unittest.skipUnless(sys.platform == "win32", "Windows socket errors")
+NATIVE_WINDOWS = (
+    sys.platform == "win32"
+    and (sys.implementation.name != "graalpy" or __graalpython__.posix_module_backend() == "native")
+)
+
+
+@unittest.skipUnless(NATIVE_WINDOWS, "requires native Windows socket errors")
 class TestWindowsSocketErrors(unittest.TestCase):
     def test_strerror_uses_crt_messages(self):
         # Winsock messages belong to socket exceptions, not os.strerror().
