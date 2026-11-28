@@ -223,12 +223,15 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     abstract static class SetItemNode extends SqAssItemBuiltinNode {
 
         @Specialization(guards = "!isNoValue(value)")
-        static void set(PByteArray self, int index, Object value,
+        static void set(VirtualFrame frame, PByteArray self, int index, Object value,
                         @Bind Node inliningTarget,
+                        @Cached CastToByteNode toByteNode,
                         @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
+            // The value is converted first: its __index__ can resize the bytearray.
+            int byteValue = toByteNode.execute(frame, value) & 0xFF;
             index = normalizeIndexNode.execute(index, self.getSequenceStorage().length(), ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
-            setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, value);
+            setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, byteValue);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -250,13 +253,16 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached CastToByteNode toByteNode,
                         @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
                         @Cached @Exclusive PRaiseNode raiseNode) {
             if (indexCheckNode.execute(inliningTarget, indexObj)) {
                 int index = asSizeNode.executeExact(frame, inliningTarget, indexObj);
+                // The value is converted first: its __index__ can resize the bytearray.
+                int byteValue = toByteNode.execute(frame, value) & 0xFF;
                 index = normalizeIndexNode.execute(index, self.getSequenceStorage().length(), ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
-                setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, value);
+                setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, byteValue);
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", indexObj);
             }

@@ -185,6 +185,16 @@ def test_copy():
     assert b == b'abc'
 
 
+def test_bytearray_setitem_converts_value_before_index_check():
+    import operator
+    b = bytearray(b'x')
+    assert_raises(TypeError, operator.setitem, b, 5, 1j)
+    assert_raises(ValueError, operator.setitem, b, 5, 300)
+    assert_raises(IndexError, operator.setitem, b, 5, 1)
+    b[0] = 200
+    assert b == bytearray(b'\xc8')
+
+
 def test_setitem():
     b = bytearray([1, 2, 3])
     b[1] = 100
