@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,14 +52,19 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNotImplemented)
@@ -81,6 +86,17 @@ public final class NotImplementedBuiltins extends PythonBuiltins {
         @Specialization
         public static PNotImplemented module(Object cls) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Slot(value = SlotKind.nb_bool, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class BoolNode extends NbBoolBuiltinNode {
+        @Specialization
+        static boolean doit(VirtualFrame frame, PNotImplemented self,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            warnNode.warnEx(frame, PythonBuiltinClassType.DeprecationWarning, ErrorMessages.NOTIMPLEMENTED_IN_BOOLEAN_CONTEXT, 1);
+            return true;
         }
     }
 
