@@ -239,3 +239,13 @@ class TeeDataObjectTests(unittest.TestCase):
     def test_teedataobject_list_values(self):
         t = itertools._tee_dataobject(iter([]), [1, 2], None)
         self.assertIs(type(t), itertools._tee_dataobject)
+
+
+class CombinationsArgumentOrderTests(unittest.TestCase):
+    def test_combinations_reads_iterable_before_checking_r(self):
+        self.assertRaises(TypeError, combinations, 1, -1)
+        self.assertRaises(ValueError, combinations, [1], -1)
+
+    def test_combinations_with_replacement_reads_iterable_before_checking_r(self):
+        self.assertRaises(TypeError, combinations_with_replacement, 1, -1)
+        self.assertRaises(ValueError, combinations_with_replacement, [1], -1)

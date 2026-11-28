@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -106,11 +106,12 @@ public class CombinationsWithReplacementBuiltins extends PythonBuiltins {
             if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            Object[] pool = toArrayNode.execute(frame, iterable);
             if (negativeProfile.profile(inliningTarget, r < 0)) {
                 throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
             PCombinationsWithReplacement self = PFactory.createCombinationsWithReplacement(cls, getInstanceShape.execute(cls));
-            self.setPool(toArrayNode.execute(frame, iterable));
+            self.setPool(pool);
             self.setR(r);
 
             self.setIndices(new int[r]);

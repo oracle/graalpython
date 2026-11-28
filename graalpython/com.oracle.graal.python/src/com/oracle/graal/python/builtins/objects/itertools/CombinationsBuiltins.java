@@ -131,12 +131,13 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            Object[] pool = toArrayNode.execute(frame, iterable);
             if (negativeProfile.profile(inliningTarget, r < 0)) {
                 throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
 
             PCombinations self = PFactory.createCombinations(cls, getInstanceShape.execute(cls));
-            self.setPool(toArrayNode.execute(frame, iterable));
+            self.setPool(pool);
 
             int[] indices = new int[r];
             indicesLoopProfile.profileCounted(r);
