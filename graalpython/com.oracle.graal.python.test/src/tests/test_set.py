@@ -859,3 +859,16 @@ def test_frozenset_operations_return_builtin_frozenset_for_subclass():
     assert type(f.intersection(other)) is frozenset
     assert type(f.difference(other)) is frozenset
     assert type(f.symmetric_difference(other)) is frozenset
+
+
+def test_frozenset_constructor_copies_subclass_instance():
+    class FrozenSetSubclass(frozenset):
+        pass
+
+    f = FrozenSetSubclass([1, 2])
+    result = frozenset(f)
+    assert type(result) is frozenset
+    assert result == frozenset([1, 2])
+
+    exact = frozenset([1, 2])
+    assert frozenset(exact) is exact

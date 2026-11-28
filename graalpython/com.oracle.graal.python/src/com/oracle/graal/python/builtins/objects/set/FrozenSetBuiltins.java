@@ -101,14 +101,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return PFactory.createFrozenSet(cls, getInstanceShape.execute(cls), EmptyStorage.INSTANCE);
         }
 
-        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
+        @Specialization(guards = {"isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)", "isBuiltinFrozenSet(arg)"})
         static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass) {
             return arg;
         }
 
-        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls) || !isBuiltinFrozenSet(arg)")
         static PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass,
