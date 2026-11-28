@@ -120,7 +120,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "lru_cache", minNumOfPositionalArgs = 5, takesVarArgs = true, takesVarKeywordArgs = true, //
                     parameterNames = {"$cls", "user_function", "maxsize", "typed", "cache_info_type"})
-    @ArgumentClinic(name = "typed", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "typed", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
     protected abstract static class LruCacheNewNode extends PythonClinicBuiltinNode {
 
@@ -131,7 +131,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object lruCacheNew(VirtualFrame frame, Object type,
-                        Object func, Object maxsize_O, int typed, Object cache_info_type,
+                        Object func, Object maxsize_O, boolean typed, Object cache_info_type,
                         @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyIndexCheckNode indexCheck,
@@ -170,7 +170,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.root.prev = obj.root;
             obj.root.next = obj.root;
             obj.wrapper = wrapper;
-            obj.typed = typed;
+            obj.typed = typed ? 1 : 0;
             // obj.cache = new ObjectHashMap();
 
             obj.func = func;
