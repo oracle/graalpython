@@ -427,7 +427,10 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         static TruffleString decomposition(int codepoint) {
             int type = UCharacter.getIntPropertyValue(codepoint, UProperty.DECOMPOSITION_TYPE);
             String prefix = getDecompositionPrefix(type);
-            String decomposition = Normalizer2.getNFKDInstance().getDecomposition(codepoint);
+            // Like CPython: the mapping of the UCD decomposition field, not applied recursively,
+            // and the full L V T decomposition for Hangul syllables
+            Normalizer2 nfkd = Normalizer2.getNFKDInstance();
+            String decomposition = isHangulSyllable(codepoint) ? nfkd.getDecomposition(codepoint) : nfkd.getRawDecomposition(codepoint);
 
             StringBuilder sb = new StringBuilder();
             if (prefix != null) {
@@ -445,6 +448,10 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
             }
 
             return FromJavaStringNode.getUncached().execute(sb.toString(), TS_ENCODING);
+        }
+
+        private static boolean isHangulSyllable(int codepoint) {
+            return codepoint >= 0xAC00 && codepoint <= 0xD7A3;
         }
 
         private static String getDecompositionPrefix(int type) {
