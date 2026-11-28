@@ -84,7 +84,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
@@ -342,14 +341,16 @@ public final class PropertyBuiltins extends PythonBuiltins {
             }
 
             // shortcut: create new property object directly
-            if (IsBuiltinClassProfile.profileClassSlowPath(type, PythonBuiltinClassType.PProperty)) {
+            if (IsBuiltinClassExactProfile.profileClassSlowPath(type, PythonBuiltinClassType.PProperty)) {
                 PProperty copy = PFactory.createProperty(PythonLanguage.get(null));
                 PropertyInitNode.doGenericBoundary(copy, get, set, del, doc);
                 copy.setPropertyName(pold.getPropertyName());
                 return copy;
             }
-            PProperty newProp = (PProperty) CallNode.executeUncached(type, get, set, del, doc);
-            newProp.setPropertyName(pold.getPropertyName());
+            Object newProp = CallNode.executeUncached(type, get, set, del, doc);
+            if (newProp instanceof PProperty property) {
+                property.setPropertyName(pold.getPropertyName());
+            }
             return newProp;
         }
 
