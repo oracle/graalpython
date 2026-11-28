@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -78,6 +79,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -111,9 +113,11 @@ public final class CountBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object construct(Object cls, Object start, Object step,
+        static Object construct(VirtualFrame frame, Object cls, Object start, Object step,
                         @Bind Node inliningTarget,
                         @Cached PyNumberCheckNode checkNode,
+                        @Cached PyObjectTypeCheck typeCheckNode,
+                        @Cached PyLongAsLongAndOverflowNode asLongNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
@@ -126,9 +130,22 @@ public final class CountBuiltins extends PythonBuiltins {
             if (!checkNode.execute(inliningTarget, step)) {
                 throw raiseNode.raise(inliningTarget, TypeError, NUMBER_IS_REQUIRED);
             }
+            Object cnt = start;
+            Object countStep = step;
+            if (typeCheckNode.execute(inliningTarget, start, PythonBuiltinClassType.PInt) && typeCheckNode.execute(inliningTarget, step, PythonBuiltinClassType.PInt)) {
+                try {
+                    if (asLongNode.execute(frame, inliningTarget, step) == 1) {
+                        // counting from an int by 1 yields exact ints, also for an int subclass
+                        cnt = asLongNode.execute(frame, inliningTarget, start);
+                        countStep = 1;
+                    }
+                } catch (OverflowException e) {
+                    // does not fit: keep the object
+                }
+            }
             PCount self = PFactory.createCount(cls, getInstanceShape.execute(cls));
-            self.setCnt(start);
-            self.setStep(step);
+            self.setCnt(cnt);
+            self.setStep(countStep);
             return self;
         }
     }
