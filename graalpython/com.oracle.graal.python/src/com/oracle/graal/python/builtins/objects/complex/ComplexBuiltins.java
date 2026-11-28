@@ -1193,7 +1193,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         @InliningCutoff
         @SuppressWarnings("unused")
         static Object error(Object left, Object right, Object mod,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached ToComplexValueNode toComplexLeft,
+                        @Exclusive @Cached ToComplexValueNode toComplexRight) {
+            if (toComplexLeft.execute(inliningTarget, left) == null || toComplexRight.execute(inliningTarget, right) == null) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.COMPLEX_MODULO);
         }
 

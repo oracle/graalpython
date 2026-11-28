@@ -132,6 +132,13 @@ def test_mixed_real_complex_zero_signs():
         assert math.copysign(1.0, right.imag) == -1.0
 
 
+def test_pow_modulo_converts_operands_first():
+    assert_raises(TypeError, pow, 1, int, 1j)
+    assert_raises(TypeError, pow, 1j, set(), 3)
+    assert_raises(ValueError, pow, 1j, 2, 3)
+    assert_raises(ValueError, pow, 1, 2, 1j)
+
+
 def test_div():
     c2 = 2+2j
     assert (c2 / 2) == complex(1, 1)
