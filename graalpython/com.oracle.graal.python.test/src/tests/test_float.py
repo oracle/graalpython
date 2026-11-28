@@ -1055,6 +1055,14 @@ class ReprTests(unittest.TestCase):
             self.assertEqual(v, eval(repr(v)))
         floats_file.close()
 
+    def test_repr_subnormal_one_digit(self):
+        self.assertEqual(repr(5e-324), '5e-324')
+        self.assertEqual(repr(1e-323), '1e-323')
+        self.assertEqual(repr(1.5e-323), '1.5e-323')
+        self.assertEqual(repr(5e-323), '5e-323')
+        self.assertEqual(repr(-5e-324), '-5e-324')
+        self.assertEqual(repr(2.2250738585072014e-308), '2.2250738585072014e-308')
+
     @unittest.skipUnless(getattr(sys, 'float_repr_style', '') == 'short',
                          "applies only when using short float repr style")
     def test_short_repr(self):

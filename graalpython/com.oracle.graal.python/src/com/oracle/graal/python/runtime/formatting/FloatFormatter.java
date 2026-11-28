@@ -776,6 +776,14 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
         // Most of the work is done by Double.
         String s = Double.toString(value);
+        if (value < Double.MIN_NORMAL) {
+            // Double.toString prints at least two digits, so for a subnormal it can miss a
+            // one-digit decimal that round-trips.
+            BigDecimal oneDigit = new BigDecimal(value).round(new MathContext(1, RoundingMode.HALF_EVEN));
+            if (oneDigit.doubleValue() == value) {
+                s = oneDigit.unscaledValue() + ".0E" + -oneDigit.scale();
+            }
+        }
 
         // Variables for scanning the string
         int p = 0, end = s.length(), first = 0, point = end, exp;
