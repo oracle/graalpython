@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBu
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCFROMTIMESTAMP;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCNOW;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
@@ -128,8 +127,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -1078,14 +1075,12 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         static Object fromTimestamp(VirtualFrame frame, Object cls, Object timestampObject,
                         @Bind Node inliningTarget,
                         @Cached WarnNode warnNode,
-                        @Cached CastToJavaLongExactNode castToLongNode,
-                        @Cached CastToJavaDoubleNode castToDoubleNode,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             warnNode.warnFormat(frame, DeprecationWarning, WARN_DEPRECATED_UTCFROMTIMESTAMP);
 
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return buildDateTimeInUtcFromTimestamp(cls, timestampObject, inliningTarget, castToLongNode, castToDoubleNode);
+                return buildDateTimeInUtcFromTimestamp(cls, timestampObject, inliningTarget);
             } finally {
                 // A Python method call (using DateTimeNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -1094,21 +1089,17 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object buildDateTimeInUtcFromTimestamp(Object cls, Object timestampObject, Node inliningTarget, CastToJavaLongExactNode castToLongNode, CastToJavaDoubleNode castToDoubleNode) {
-            long seconds, microseconds;
-
-            try {
-                long timestamp = castToLongNode.execute(inliningTarget, timestampObject);
-                seconds = timestamp;
+        private static Object buildDateTimeInUtcFromTimestamp(Object cls, Object timestampObject, Node inliningTarget) {
+            // CPython: _PyTime_ObjectToTimeval, as in fromtimestamp
+            final long seconds;
+            final long microseconds;
+            if (PyFloatCheckNode.executeUncached(timestampObject)) {
+                double timestamp = PyFloatAsDoubleNode.executeUncached(timestampObject);
+                seconds = (long) timestamp;
+                microseconds = (long) Math.rint((timestamp - (long) timestamp) * 1_000_000);
+            } else {
+                seconds = PyLongAsLongNode.executeUncached(timestampObject);
                 microseconds = 0;
-            } catch (CannotCastException e) {
-                try {
-                    double timestamp = castToDoubleNode.execute(inliningTarget, timestampObject);
-                    seconds = (long) timestamp;
-                    microseconds = (long) Math.rint((timestamp - (long) timestamp) * 1_000_000);
-                } catch (CannotCastException ex) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER);
-                }
             }
 
             LocalDateTime epoch = LocalDateTime.of(1970, 1, 1, 0, 0, 0, 0);

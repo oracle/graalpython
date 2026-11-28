@@ -1477,6 +1477,17 @@ class TimeDeltaTest(unittest.TestCase):
 
 class DateTimeTest(unittest.TestCase):
 
+    def test_utcfromtimestamp_index(self):
+        class Index:
+            def __index__(self):
+                return 86400
+
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(datetime.datetime.utcfromtimestamp(Index()), datetime.datetime(1970, 1, 2))
+        with self.assertWarns(DeprecationWarning):
+            with self.assertRaises(TypeError):
+                datetime.datetime.utcfromtimestamp("1")
+
     def test_strptime(self):
         # generic case
         d = datetime.datetime.strptime('2014 7 2 6 14 0 742 +0700', '%Y %m %d %H %M %S %f %z')
