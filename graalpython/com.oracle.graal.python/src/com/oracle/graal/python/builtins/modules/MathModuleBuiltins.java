@@ -1002,7 +1002,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached BuiltinFunctions.AbsNode absNode) {
-            return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
+            return absNode.execute(frame, indexNode.execute(frame, inliningTarget, args[0]));
         }
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
@@ -1158,7 +1158,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Exclusive @Cached BuiltinFunctions.AbsNode absNode) {
-            return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
+            return absNode.execute(frame, indexNode.execute(frame, inliningTarget, args[0]));
         }
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
