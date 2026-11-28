@@ -1138,7 +1138,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private void checkOptimize(int optimize, Object kwOptimize) throws PException {
             if (optimize < -1 || optimize > 2) {
-                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.INVALID_OPTIMIZE_VALUE, kwOptimize);
+                throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.INVALID_OPTIMIZE_VALUE, kwOptimize);
             }
         }
 

@@ -82,6 +82,11 @@ def test_compile_unrecognised_flags_message():
         assert False, "ValueError was not raised"
 
 
+def test_compile_invalid_optimize_is_value_error():
+    assert_raises(ValueError, compile, "1", "<input>", "exec", optimize=5)
+    assert_raises(ValueError, compile, "1", "<input>", "exec", optimize=-2)
+
+
 def test_dont_imply_dedent():
     flags = 0x4000 | 0x200  # PyCF_ALLOW_INCOMPLETE_INPUT | PyCF_DONT_IMPLY_DEDENT
     source = "def foo():\n    return 42"
